@@ -5,6 +5,7 @@
 #include <string.h>
 #include <malloc.h>
 #include <stdint.h>
+#include <algorithm>
 
 struct smallvectordata;
 
@@ -40,10 +41,10 @@ public:
         }
     }
 
-    smallvector() : _size(0) {
+    smallvector() noexcept : _size(0) {
     }
 
-    smallvector(smallvector&& other) : _size(other._size)
+    smallvector(smallvector&& other)noexcept : _size(other._size)
     {
         _data = other._data;
 
@@ -199,13 +200,22 @@ public:
         _size = newsize;
     }
 
+    void resize(uint32_t size)
+    {
+        _resize(size);
+    }
+
+    // add a totally dumb function here.
     void shrink_to_fit()
     {
     }
 
-    void resize(uint32_t size)
-    {
-        _resize(size);
+    friend bool operator==(const smallvector& a, const smallvector& b) {
+        return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin());
+    }
+
+    friend bool operator<(const smallvector& a, const smallvector& b) {
+        return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
     }
 };
 

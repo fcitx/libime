@@ -1,52 +1,23 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
 #include <map>
-#include "libime/radix.h"
+#include "libime/radixtrie.h"
+#include "libime/loudstrie.h"
 
 #define myassert(EXPR) EXPR ? (void) 0 : abort()
 
+size_t count = 0;
+void counter(const smallvector& key, const std::string& s)
+{
+    count++;
+}
+
 using namespace libime;
 
-class A {
-public:
-    A(const std::string& _s): s(_s) {
-    }
-#if 0
-    A(const A& a) : s(a.s) {
-        std::cout << "AAA" << std::endl;
-    }
-    A& operator=(const A& a) {
-        s = a.s;
-        return *this;
-    }
-#else
-    A(const A& a)= delete;
-    A& operator=(const A& a) = delete;
-#endif
-    A(A&& a) : s(std::move(a.s)) {
-        std::cout << "BBB" << std::endl;
-    }
-    A& operator=(A&& a) {
-        s = std::move(a.s);
-        return *this;
-    }
-
-    std::string s;
-};
 int main(int argc, char* argv[]) {
-    int pagesize = sysconf(_SC_PAGESIZE);
-    mallopt(M_TRIM_THRESHOLD, 5 * pagesize);
-    std::vector<A> as;
-//     FcitxRadixTree<uint8_t, void*> tree;
-//     myassert(tree.add("abc", (void*)0x1));
-//     myassert(tree.add("ab", (void*)0x1));
-//     myassert(!tree.add("ab", (void*)0x1));
-//     myassert(!tree.add("abc", (void*)0x1));
-//     myassert(tree.remove("ab"));
-//     myassert(!tree.add("abc", (void*)0x1));
-//     myassert(tree.add("ab", (void*)0x1));
     if (argc > 1) {
         int fd = open(argv[1], O_RDONLY);
         if (fd == -1) {
@@ -55,16 +26,26 @@ int main(int argc, char* argv[]) {
         dup2(fd, 0);
     }
 
-    RadixTree<std::string> tree2;
-    std::map<std::string, std::string> cmp;
+    RadixTrie<std::string> tree;
     std::string key, value;
+
+    LoudsTrieBuilder builder;
     while (std::cin >> key >> value) {
-         tree2.add(key, value);
-//          tree2.remove(key);
-//          cmp[key] = value;
+         tree.add(key, value);
+         builder.add(key.c_str(), key.c_str() + key.length());
     }
 
-    std::cout << tree2.size() << cmp.size()<< std::endl;
-    sleep(5);
+    tree.prefix_foreach(std::string("a"), counter);
+    count = 0;
+    tree.foreach(counter);
+    assert(count == tree.size());
+
+    std::cout << tree.size() << " " << count << std::endl;
+    //sleep(5);
+
+    std::ofstream fout;
+    fout.open("test");
+    builder.build(fout);
+
     return 0;
 }

@@ -13,36 +13,37 @@
 namespace libime
 {
 
-template<typename _Value, bool _sorted>
-struct RadixNode {
+template<typename _Value>
+struct RadixTrieNode {
     typedef uint8_t key_type;
     typedef smallvector keyvec_type;
-    typedef RadixNode<_Value, _sorted> node_type;
+    typedef RadixTrieNode<_Value> node_type;
     typedef typename keyvec_type::iterator keyiter;
     typedef typename std::list<node_type> nodes_type;
     typedef typename nodes_type::iterator nodeiter;
 
-    RadixNode()
+    RadixTrieNode()
     {
     }
 
     template<typename _Iter>
-    RadixNode(_Iter begin, _Iter end) : key(begin, end)
+    RadixTrieNode(_Iter begin, _Iter end) : key(begin, end)
     {
     }
 
     template<typename _Iter>
-    RadixNode(_Iter begin, _Iter end, _Value&& _data) : key(begin, end), data(std::forward<_Value>(_data))
+    RadixTrieNode(_Iter begin, _Iter end, _Value&& _data) : key(begin, end), data(std::forward<_Value>(_data))
     {
     }
 
-    RadixNode(RadixNode&& node) :
+    RadixTrieNode(RadixTrieNode&& node) noexcept :
         key(std::move(node.key)),
         data(std::move(node.data)),
         _subNodes(std::move(node._subNodes))
     {
     }
-    RadixNode& operator=(RadixNode&& node)
+
+    RadixTrieNode& operator=(RadixTrieNode&& node) noexcept
     {
         key = std::move(node.key);
         data = std::move(node.data);
@@ -50,13 +51,13 @@ struct RadixNode {
         return *this;
     }
 
-    RadixNode(const RadixNode& node) :
+    RadixTrieNode(const RadixTrieNode& node) :
         key(node.key),
         data(node.data),
         _subNodes(node._subNodes ? new nodes_type(*node._subNodes) : 0)
     {
     }
-    RadixNode& operator=(const RadixNode& node)
+    RadixTrieNode& operator=(const RadixTrieNode& node)
     {
         key = node.key;
         data = node.data;
@@ -102,13 +103,10 @@ struct RadixNode {
     template<typename T>
     void addSubNode(T&& node)
     {
-        subNodes()->push_back(std::forward<T>(node));/*
-        if (_sorted) {
-            std::sort(begin(), end());
-        }*/
+        subNodes()->push_back(std::forward<T>(node));
     }
 
-    bool operator <(const RadixNode& node) const {
+    bool operator <(const RadixTrieNode& node) const {
         return key[0] < node.key[0];
     }
 
@@ -127,15 +125,6 @@ struct RadixNode {
     nodeiter find(const key_type& t)
     {
         if (_subNodes) {
-
-/*
-            if (_sorted) {
-                auto iter = std::lower_bound(begin(), end(), t);
-                if (iter != end() && *iter == t) {
-                    return iter;
-                }
-                return end();
-            }*/
             return std::find(begin(), end(), t);
         }
 
@@ -157,38 +146,18 @@ private:
     }
 };
 
-template<typename _Key>
-struct RadixTreeIterator : std::iterator<std::forward_iterator_tag,
-                                              std::pair<std::vector<_Key>, void*>>
-{
-    std::vector<_Key> key;
-
-    RadixTreeIterator& operator++()
-    {
-
-        return (*this);
-    }
-
-    RadixTreeIterator operator++(int)
-    {
-        RadixTreeIterator __tmp = *this;
-        ++(*this);
-        return __tmp;
-    }
-};
-
-template<typename _Value, bool _sorted = true>
-class RadixTree
+template<typename _Value>
+class RadixTrie
 {
 public:
     typedef uint8_t key_type;
     typedef _Value value_type;
-    typedef RadixNode<value_type, _sorted> node_type;
+    typedef RadixTrieNode<value_type> node_type;
+    typedef typename node_type::keyvec_type keyvec_type;
     typedef typename node_type::keyiter keyiter;
     typedef typename node_type::nodeiter nodeiter;
-    typedef RadixTreeIterator<key_type> iterator;
 
-    RadixTree() : _size(), _root(node_type()) {
+    RadixTrie() : _size(), _root(node_type()) {
     }
 
     std::size_t size()
@@ -225,8 +194,97 @@ public:
     }
 
 
+
+    template<typename Container>
+    bool remove(const Container& container)
+    {
+        return remove(container.begin(), container.end());
+    }
+
     template<typename _Iter>
-    nodeiter _find(_Iter keyBegin, _Iter keyEnd, node_type** parent = nullptr, _Iter* keyOff = nullptr, keyiter* nodeKeyOff = nullptr)
+    bool remove(_Iter begin, _Iter end)
+    {
+        node_type* node;
+        auto subNodeIter = _find(begin, end, node);
+        auto& subNode = *subNodeIter;
+
+        if (subNodeIter != node->end() && subNode.data) {
+            subNode.data.reset();
+
+            // if the dict is a, ab, and remove a.
+            if (subNode.size() == 0) {
+                node->erase(subNodeIter);
+
+                if (node->size() == 1 && node != &_root && node->data) {
+                    _merge(*node);
+                }
+            } else if (subNode.size() == 1) {
+                // if dict contains a, ab, abc, and remove ab.
+                _merge(subNode);
+            }
+            _size --;
+            return true;
+        }
+        return false;
+    }
+
+    template<typename _Iter>
+    value_type* find(_Iter begin, _Iter end)
+    {
+        node_type* node;
+        auto subNodeIter = _find(begin, end, node);
+        if (subNodeIter != node->end()) {
+            return NULL;
+        }
+        return subNodeIter->data;
+    }
+
+    template<typename _Visitor>
+    void foreach(_Visitor& visitor)
+    {
+        prefix_foreach(static_cast<key_type*>(nullptr), static_cast<key_type*>(nullptr), visitor);
+    }
+
+
+    template<typename Container, typename _Visitor>
+    void prefix_foreach(const Container& container, _Visitor& visitor)
+    {
+        prefix_foreach(container.begin(), container.end(), visitor);
+    }
+
+    template<typename _Iter, typename _Visitor>
+    void prefix_foreach(_Iter begin, _Iter end, _Visitor& visitor)
+    {
+        node_type* node = nullptr;
+        _Iter keyOff;
+        keyiter nodeKey;
+        keyvec_type currentKey;
+        if (begin != end) {
+            auto subNode = _find(begin, end, node, &keyOff, &nodeKey);
+
+            // there's no prefix
+            if (keyOff != end) {
+                return;
+            }
+
+            for (_Iter iter = begin; iter != keyOff; iter++) {
+                currentKey.push_back(*iter);
+            }
+            if (subNode == node->end()) {
+                for (; nodeKey != node->key.end(); nodeKey++) {
+                    currentKey.push_back(*nodeKey);
+                }
+            }
+
+            _foreach(currentKey, subNode == node->end() ? *node: *subNode, visitor);
+        } else {
+            _foreach(currentKey, _root, visitor);
+        }
+    }
+
+private:
+    template<typename _Iter>
+    nodeiter _find(_Iter keyBegin, _Iter keyEnd, node_type*& parent, _Iter* keyOff = nullptr, keyiter* nodeKeyOff = nullptr)
     {
         node_type* node = &_root;
         nodeiter subNodeIter;
@@ -258,9 +316,7 @@ public:
             }
         }
 
-        if (parent) {
-            *parent = node;
-        }
+        parent = node;
         if (keyOff) {
             *keyOff = keyBegin;
         }
@@ -275,7 +331,7 @@ public:
     {
         node_type* node = nullptr;
         keyiter nodeKey;
-        auto subNodeIter = _find(begin, end, &node, &begin, &nodeKey);
+        auto subNodeIter = _find(begin, end, node, &begin, &nodeKey);
         if (subNodeIter != node->end()) {
             auto& subNode = *subNodeIter;
             if (subNode.data) {
@@ -305,39 +361,6 @@ public:
         return true;
     }
 
-    template<typename Container>
-    bool remove(const Container& container)
-    {
-        return remove(container.begin(), container.end());
-    }
-
-    template<typename _Iter>
-    bool remove(_Iter begin, _Iter end)
-    {
-        node_type* node;
-        auto subNodeIter = _find(begin, end, &node);
-        auto& subNode = *subNodeIter;
-
-        if (subNodeIter != node->end() && subNode.data) {
-            subNode.data.reset();
-
-            // if the dict is a, ab, and remove a.
-            if (subNode.size() == 0) {
-                node->erase(subNodeIter);
-
-                if (node->size() == 1 && node != &_root && node->data) {
-                    _merge(*node);
-                }
-            } else if (subNode.size() == 1) {
-                // if dict contains a, ab, abc, and remove ab.
-                _merge(subNode);
-            }
-            _size --;
-            return true;
-        }
-        return false;
-    }
-
     void _merge(node_type& node)
     {
         auto sub2iter = node.begin();
@@ -353,33 +376,22 @@ public:
         node._subNodes = std::move(sub2._subNodes);
     }
 
-    iterator begin()
-    {
-        iterator iter;
-        return iter;
-    }
 
-    iterator end()
+    template<typename _Visitor>
+    void _foreach(keyvec_type& currentKey, node_type& node, _Visitor& visitor)
     {
-        return iterator();
-    }
-
-    template<typename _Iter>
-    iterator prefix(_Iter begin, _Iter end)
-    {
-        node_type* node = nullptr;
-        _Iter keyOff;
-        keyiter nodeKey;
-        auto subNode = _find(begin, end, &node, &keyOff, &nodeKey);
-        if (begin != end) {
-            return end();
+        if (node.data) {
+            visitor(currentKey, node.data.get());
         }
 
-        iterator iter;
-        iter.key.assign(begin, keyOff);
-        iter.key.insert(iter.key.end(), nodeKey, node->key.end());
-
-        return iter;
+        auto len = currentKey.size();
+        for (auto iter = node.begin(); iter != node.end(); iter ++ ) {
+            for (auto key = iter->key.begin(); key != iter->key.end(); key++) {
+                currentKey.push_back(*key);
+            }
+            _foreach(currentKey, *iter, visitor);
+        }
+        currentKey.resize(len);
     }
 
 private:

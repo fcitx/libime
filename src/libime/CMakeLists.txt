@@ -17,7 +17,8 @@ set_target_properties(kenlm PROPERTIES COMPILE_FLAGS "-fPIC")
 
 set(LIBIME_SRCS
     dynamictriedictionary.cpp
-    radix.cpp
+    radixtrie.cpp
+    loudstrie.cpp
     )
 
 add_library(libime SHARED ${LIBIME_SRCS})

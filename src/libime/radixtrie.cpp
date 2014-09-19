@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <limits.h>
 
-#include "radix.h"
+#include "radixtrie.h"
 
 /*
 void fcitx_radix_tree_node_add_subnode(FcitxRadixTree* radix, FcitxRadixTreeNode* parent, FcitxRadixTreeNode* sub)

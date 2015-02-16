@@ -64,7 +64,6 @@ struct DATriePrivate {
             throw_if_io_fail(unmarshall(in, check));
         }
 
-
         node& operator=(const node& other)
         {
             base = other.base;
@@ -923,6 +922,22 @@ DATrie<T>::DATrie() :
 }
 
 template<typename T>
+DATrie<T>::DATrie(const char* filename) :
+    DATrie()
+{
+    std::ifstream fin(filename, std::ios::in | std::ios::binary);
+    throw_if_io_fail(fin);
+    d->open(fin);
+}
+
+template<typename T>
+DATrie<T>::DATrie(std::istream& fin) :
+    DATrie()
+{
+    d->open(fin);
+}
+
+template<typename T>
 DATrie<T>::~DATrie()
 {
 
@@ -940,23 +955,10 @@ DATrie<T>::DATrie(const DATrie< T >& other) :
 }
 
 template<typename T>
-void swap(DATrie<T>& first, DATrie<T>& second) noexcept {
-    using std::swap;
-    swap(first.d, second.d);
-}
-
-template<typename T>
-void DATrie<T>::open(const char* filename)
+DATrie<T>& DATrie<T>::operator=(DATrie<T> other)
 {
-    std::ifstream fin(filename, std::ios::in | std::ios::binary);
-    throw_if_io_fail(fin);
-    open(fin);
-}
-
-template<typename T>
-void DATrie<T>::open(std::istream& stream)
-{
-    d->open(stream);
+    swap(*this, other);
+    return *this;
 }
 
 template<typename T>

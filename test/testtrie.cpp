@@ -71,7 +71,8 @@ int main(int argc, char* argv[]) {
 
     assert(!tree.erase(map.begin()->first));
     assert(tree.size() == 0);
-    tree.open("trie_data");
+    decltype(tree) trie2("trie_data");
+    swap(tree, trie2);
 
     foreach_count = 0;
     tree.foreach([&tree, &map, &tempKey, &foreach_count](int32_t value, size_t len, uint64_t pos) {

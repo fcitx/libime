@@ -40,6 +40,17 @@ template <> struct NaN <float> { enum { N1 = 0x7f800001, N2 = 0x7f800002 }; };
 template<typename T>
 void swap(DATrie<T>& first, DATrie<T>& second) noexcept;
 
+/**
+ * This is a trie based on cedar<www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/>.
+ *
+ * comparing with original version, this version takes care of endianness when
+ * doing serialization, and handle the possible unaligned memory access on some
+ * platform.
+ *
+ * It also exploits the C++11 feature which can let you implement update easily
+ * with lambda, comparing with the original version's add/set.
+ *
+ */
 template<typename T>
 class DATrie
 {
@@ -56,12 +67,14 @@ public:
     DATrie();
     DATrie(const DATrie<T>& other);
     DATrie(DATrie<T>&& other);
+    DATrie(const char* filename);
+    DATrie(std::istream& in);
     virtual ~DATrie();
+
+    DATrie& operator=(DATrie other);
 
     friend void swap<>(DATrie& first, DATrie& second) noexcept;
 
-    void open(const char* filename);
-    void open(std::istream& stream);
     void save(const char* filename);
     void save(std::ostream& stream);
 
@@ -95,6 +108,14 @@ public:
 private:
     std::unique_ptr<DATriePrivate<value_type>> d;
 };
+
+
+template<typename T>
+void swap(DATrie<T>& first, DATrie<T>& second) noexcept
+{
+    using std::swap;
+    swap(first.d, second.d);
+}
 
 template class LIBIME_API DATrie<float>;
 template class LIBIME_API DATrie<int32_t>;

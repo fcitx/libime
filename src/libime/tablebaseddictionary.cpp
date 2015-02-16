@@ -417,16 +417,16 @@ void TableBasedDictionary::open(std::istream& in)
     while (size--) {
         d->rules.emplace_back(in);
     }
-    d->phraseTrie.open(in);
-    d->singleCharTrie.open(in);
+    d->phraseTrie = decltype(d->phraseTrie)(in);
+    d->singleCharTrie = decltype(d->singleCharTrie)(in);
     if (hasRule()) {
-        d->singleCharConstTrie.open(in);
+        d->singleCharConstTrie = decltype(d->singleCharConstTrie)(in);
     }
     if (d->promptKey) {
-        d->promptTrie.open(in);
+        d->promptTrie = decltype(d->promptTrie)(in);
     }
     if (d->pinyinKey) {
-        d->pinyinPhraseTrie.open(in);
+        d->pinyinPhraseTrie = decltype(d->pinyinPhraseTrie)(in);
     }
 }
 

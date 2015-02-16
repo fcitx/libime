@@ -1,5 +1,7 @@
 set(LIBIME_SINGLE_FILE_TEST
-    testtrie)
+    testtrie
+    testtable
+    )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
     add_executable(${TESTCASE} ${TESTCASE}.cpp)

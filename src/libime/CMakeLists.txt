@@ -1,4 +1,5 @@
 include_directories(kenlm)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # logic from setup.py
 file(GLOB __KENLM_SRCS kenlm/lm/*.cc kenlm/util/*.cc kenlm/util/double-conversion/*.cc)
@@ -16,15 +17,12 @@ add_library(kenlm STATIC ${KENLM_SRCS})
 set_target_properties(kenlm PROPERTIES COMPILE_FLAGS "-fPIC")
 
 set(LIBIME_SRCS
-    dynamictriedictionary.cpp
-    radixtrie.cpp
-    loudstrie.cpp
+    datrie.cpp
+    tablebaseddictionary.cpp
     )
 
 add_library(libime SHARED ${LIBIME_SRCS})
-target_link_libraries(libime kenlm ${ICU_LIBRARIES})
+target_link_libraries(libime kenlm ICU::ICU)
 
 add_executable(libime_slm_build_binary kenlm/lm/build_binary_main.cc)
-target_link_libraries(libime_slm_build_binary kenlm ${ICU_LIBRARIES})
-
-
+target_link_libraries(libime_slm_build_binary kenlm ICU::ICU)

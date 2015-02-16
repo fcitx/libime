@@ -1,19 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cassert>
 #include <unistd.h>
 #include <fcntl.h>
 #include <map>
-#include "libime/radixtrie.h"
-#include "libime/loudstrie.h"
-
-#define myassert(EXPR) EXPR ? (void) 0 : abort()
-
-size_t count = 0;
-void counter(const smallvector& key, const std::string& s)
-{
-    count++;
-}
+#include "libime/datrie.h"
 
 using namespace libime;
 
@@ -26,26 +18,73 @@ int main(int argc, char* argv[]) {
         dup2(fd, 0);
     }
 
-    RadixTrie<std::string> tree;
-    std::string key, value;
+    typedef DATrie<int32_t> TestTrie;
+    TestTrie tree;
+    std::string key;
+    std::map<std::string, int32_t> map;
 
-    LoudsTrieBuilder builder;
-    while (std::cin >> key >> value) {
-         tree.add(key, value);
-         builder.add(key.c_str(), key.c_str() + key.length());
+    int count = 1;
+    // key can be same as other
+    while (std::cin >> key) {
+        map[key] = count;
+        tree.update(key, [count, &map, &key](TestTrie::value_type v) -> TestTrie::value_type {
+            if (v != 0) {
+                // this is a key inserted twice
+                assert(map.find(key) != map.end());
+            }
+            // std::cout << key << " " << v << " " << count << std::endl;
+            return count;
+        } );
+        assert(tree.exactMatchSearch(key) == count);
+        count++;
     }
 
-    tree.prefix_foreach(std::string("a"), counter);
-    count = 0;
-    tree.foreach(counter);
-    assert(count == tree.size());
+    std::vector<TestTrie::value_type> d;
+    d.resize(tree.size());
+    tree.dump(d.data(), d.size());
 
-    std::cout << tree.size() << " " << count << std::endl;
-    //sleep(5);
+    assert(tree.size() == map.size());
+    for (auto& p : map) {
+        // std::cout << p.first << " " << tree.exactMatchSearch(p.first) << " " << p.second << std::endl;
+        assert(tree.exactMatchSearch(p.first) == p.second);
+    }
 
-    std::ofstream fout;
-    fout.open("test");
-    builder.build(fout);
+    std::string tempKey;
+    size_t foreach_count = 0;
+    tree.foreach([&tree, &map, &tempKey, &foreach_count](TestTrie::value_type value, size_t len, uint64_t pos) {
+        (void) value;
+        tree.suffix(tempKey, len, pos);
+        assert(map.find(tempKey) != map.end());
+        assert(tree.exactMatchSearch(tempKey) == value);
+        assert(map[tempKey] == value);
+        tree.update(tempKey, [](int32_t v) { return v + 1; } );
+        foreach_count++;
+        return true;
+    });
+
+    tree.erase(map.begin()->first);
+    assert(tree.size() == foreach_count - 1);
+
+    tree.save("trie_data");
+
+    tree.clear();
+
+    assert(!tree.erase(map.begin()->first));
+    assert(tree.size() == 0);
+    tree.open("trie_data");
+
+    foreach_count = 0;
+    tree.foreach([&tree, &map, &tempKey, &foreach_count](int32_t value, size_t len, uint64_t pos) {
+        (void) value;
+        tree.suffix(tempKey, len, pos);
+        assert(map.find(tempKey) != map.end());
+        assert(tree.exactMatchSearch(tempKey) == value);
+        assert(map[tempKey] + 1 == value);
+        foreach_count++;
+        return true;
+    });
+
+    assert(tree.size() == foreach_count);
 
     return 0;
 }

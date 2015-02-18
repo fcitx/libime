@@ -25,6 +25,8 @@
 #include <cassert>
 #include "utils.h"
 #include "datrie.h"
+#include "naivevector.h"
+#include <array>
 
 namespace libime
 {
@@ -154,11 +156,11 @@ struct DATriePrivate {
         }
     };
 
-    std::vector<node>   m_array;
-    std::vector<char> m_tail;
-    std::vector<int> m_tail0;
-    std::vector<block> m_block;
-    std::vector<ninfo> m_ninfo;
+    naivevector<node>   m_array;
+    naivevector<char> m_tail;
+    naivevector<int> m_tail0;
+    naivevector<block> m_block;
+    naivevector<ninfo> m_ninfo;
 
     int32_t m_bheadF;  // first block of Full;   0
     int32_t m_bheadC;  // first block of Closed; 0 if no Closed
@@ -337,30 +339,28 @@ struct DATriePrivate {
         return d.result_value;
     }
 
-    inline void update (const std::string& key, const updater_type &callback)
-    {
-        update(key.c_str(), key.size(), callback);
-    }
-
-    inline void update (const char* key, const updater_type &callback)
+    template<typename U>
+    inline void update (const char* key, U &&callback)
     {
         update (key, std::strlen (key), callback);
     }
 
-    inline void update (const char* key, size_t len, const updater_type &callback)
+    template<typename U>
+    inline void update (const char* key, size_t len, U &&callback)
     {
         npos_t from;
         size_t pos (0);
         update (key, from, pos, len, callback);
     }
 
-    inline void update (const char* key, npos_t& from, size_t& pos, size_t len, const updater_type &callback)
+    template<typename U>
+    inline void update (const char* key, npos_t& from, size_t& pos, size_t len, U &&callback)
     {
         update (key, from, pos, len, callback, [](const int, const int){});
     }
 
-    template <typename T>
-    void update (const char* key, npos_t& npos, size_t& pos, size_t len, const updater_type &callback, T cf) {
+    template <typename U, typename T>
+    void update (const char* key, npos_t& npos, size_t& pos, size_t len, U &&callback, T &&cf) {
         if (! len && ! npos) {
             throw std::invalid_argument("failed to insert zero-length key");
         }
@@ -978,7 +978,7 @@ void DATrie<T>::save(std::ostream& stream)
 template<typename T>
 void DATrie<T>::set(const std::string& key, value_type val)
 {
-    d->update(key, [val](value_type) { return val; } );
+    d->update(key.c_str(), key.size(), [val](value_type) { return val; } );
 }
 
 template<typename T>
@@ -988,13 +988,13 @@ void DATrie<T>::set(const char* key, size_t len, value_type val)
 }
 
 template<typename T>
-void DATrie<T>::update(const std::string& key, const DATrie<T>::updater_type &updater)
+void DATrie<T>::update(const std::string& key, DATrie<T>::updater_type updater)
 {
-    d->update(key, updater);
+    d->update(key.c_str(), key.size(), updater);
 }
 
 template<typename T>
-void DATrie<T>::update(const char* key, size_t len, const DATrie<T>::updater_type &updater)
+void DATrie<T>::update(const char* key, size_t len, DATrie<T>::updater_type updater)
 {
     d->update(key, len, updater);
 }

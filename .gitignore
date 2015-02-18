@@ -1,3 +1,5 @@
 *.kdev4
 *~
 build
+test/bench.cpp
+test/cedarpp.h

@@ -86,8 +86,8 @@ public:
     DATrie< T >::value_type traverse(const std::string& key, position_type& from, size_t& pos);
     void set(const std::string& key, value_type val);
     void set(const char* key, size_t len, value_type val);
-    void update(const std::string& key, const updater_type &updater);
-    void update(const char* key, size_t len, const updater_type &updater);
+    void update(const std::string& key, updater_type updater);
+    void update(const char* key, size_t len, updater_type updater);
     void dump(value_type* data, std::size_t size);
     void dump(std::vector<value_type>& data);
     void dump(std::vector<std::tuple<value_type, size_t, position_type>>& data);

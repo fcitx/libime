@@ -1,0 +1,5 @@
+@PACKAGE_INIT@
+
+find_dependency(ICU)
+
+include("${CMAKE_CURRENT_LIST_DIR}/LibIMETargets.cmake")

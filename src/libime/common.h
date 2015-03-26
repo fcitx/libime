@@ -20,8 +20,6 @@
 #ifndef LIBIME_TYPES_H
 #define LIBIME_TYPES_H
 
-#define LIBIME_API __attribute__ ((visibility("default")))
-
 #define LIBIME_UNUSED(expr) do { (void)(expr); } while (0)
 
 #endif // LIBIME_TYPES_H

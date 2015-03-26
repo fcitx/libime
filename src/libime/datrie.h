@@ -20,6 +20,8 @@
 #ifndef LIBIME_DATRIE_H
 #define LIBIME_DATRIE_H
 
+#include "libime_export.h"
+
 #include <functional>
 #include <memory>
 #include <vector>
@@ -117,8 +119,8 @@ void swap(DATrie<T>& first, DATrie<T>& second) noexcept
     swap(first.d, second.d);
 }
 
-template class LIBIME_API DATrie<float>;
-template class LIBIME_API DATrie<int32_t>;
+template class LIBIME_EXPORT DATrie<float>;
+template class LIBIME_EXPORT DATrie<int32_t>;
 
 }
 

@@ -19,6 +19,7 @@
 #ifndef LIBIME_TABLE_H
 #define LIBIME_TABLE_H
 
+#include "libime_export.h"
 #include <memory>
 #include "common.h"
 
@@ -33,7 +34,7 @@ enum PhraseFlag {
     PhraseFlagConstructPhrase
 };
 
-class LIBIME_API TableBasedDictionary
+class LIBIME_EXPORT TableBasedDictionary
 {
 public:
     enum class TableFormat {

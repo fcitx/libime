@@ -11,7 +11,8 @@ namespace libime {
 
 template<typename T>
 struct naivevector {
-    static_assert(std::is_trivially_destructible<T>::value, "this class should only use with trivially copyable class, but well, we only care about fundamental type");
+    static_assert(std::is_trivially_destructible<T>::value && std::is_standard_layout<T>::value,
+                  "this class should only use with trivially copyable class, but well, we only care about fundamental type");
 
     typedef T                           value_type;
     typedef value_type*                 pointer;
@@ -25,12 +26,12 @@ struct naivevector {
     typedef std::reverse_iterator<iterator>         reverse_iterator;
     typedef std::reverse_iterator<const_iterator>   const_reverse_iterator;
 
-    naivevector()
-        :m_start(nullptr), m_end(nullptr), m_cap(nullptr)
+    naivevector() noexcept
+        : m_start(nullptr), m_end(nullptr), m_cap(nullptr)
     {
     }
 
-    ~naivevector() {
+    ~naivevector() noexcept {
         std::free(m_start);
     }
 
@@ -122,8 +123,10 @@ struct naivevector {
             reserve(cap);
 
             m_end = m_start + new_size;
-            for (auto p = m_start + old_size; p != m_end; p++) {
-                new (p)value_type();
+            if (!std::is_trivial<value_type>::value) {
+                for (auto p = m_start + old_size; p != m_end; p++) {
+                    new (p)value_type();
+                }
             }
         } else {
             m_end = m_start + new_size;
@@ -258,6 +261,12 @@ private:
     value_type* m_end;
     value_type* m_cap;
 };
+
+template<typename T>
+void swap(naivevector<T> &lhs, naivevector<T> &rhs)
+{
+    lhs.swap(rhs);
+}
 
 }
 

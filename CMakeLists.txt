@@ -3,6 +3,7 @@ project(libime)
 
 find_package(ECM 0.0.11 REQUIRED)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+set(LibIME_VERSION 0.0.1)
 
 include(CheckCXXCompilerFlag)
 
@@ -30,11 +31,18 @@ set(CMAKE_MODULE_LINKER_FLAGS "-Wl,--as-needed ${CMAKE_MODULE_LINKER_FLAGS}")
 #########################################
 # Dependency
 #########################################
+
+include(GNUInstallDirs)
+include(FeatureSummary)
+include(GenerateExportHeader)
+include(ECMPackageConfigHelpers)
+include(ECMSetupVersion)
+include(ECMGenerateHeaders)
+include(ECMGeneratePkgConfigFile)
+
 find_package(ICU REQUIRED)
 find_package(Boost REQUIRED)
 
-include_directories(${ICU_INCLUDE_DIRS})
-include_directories(${Boost_INCLUDE_DIRS})
 include_directories(src)
 
 if(ENABLE_TEST)

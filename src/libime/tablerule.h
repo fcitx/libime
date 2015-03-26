@@ -20,6 +20,8 @@
 #ifndef LIBIME_TABLERULE_H
 #define LIBIME_TABLERULE_H
 
+#include "libime_export.h"
+
 #include <iostream>
 #include <vector>
 #include <cstdint>
@@ -42,7 +44,7 @@ enum class TableRuleFlag : std::uint32_t {
     LengthEqual
 };
 
-struct LIBIME_API TableRuleEntry
+struct LIBIME_EXPORT TableRuleEntry
 {
 
     TableRuleEntry(TableRuleEntryFlag _flag = TableRuleEntryFlag::FromFront, uint8_t _character = 0, uint8_t _encodingIndex = 0) :

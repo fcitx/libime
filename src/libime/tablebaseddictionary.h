@@ -21,7 +21,6 @@
 
 #include "libime_export.h"
 #include <memory>
-#include "common.h"
 
 namespace libime
 {

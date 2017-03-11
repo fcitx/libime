@@ -1,5 +1,4 @@
 set(LIBIME_SINGLE_FILE_TEST
-    testtrie
     testtable
     )
 

@@ -6,13 +6,9 @@ ecm_setup_version(${LibIME_VERSION} VARIABLE_PREFIX LIBIME
 # create a Config.cmake and a ConfigVersion.cmake file and install them
 set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/cmake/LibIME")
 
-ecm_configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/LibIMEConfig.cmake.in"
-                                  "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfig.cmake"
-                                  INSTALL_DESTINATION  ${CMAKECONFIG_INSTALL_DIR})
-
-ecm_generate_pkgconfig_file(BASE_NAME libime
-                            DEPS "icu-uc"
-                            INSTALL)
+configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/LibIMEConfig.cmake.in"
+                              "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfig.cmake"
+                              INSTALL_DESTINATION  ${CMAKECONFIG_INSTALL_DIR})
 
 install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfig.cmake"
                "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfigVersion.cmake"

@@ -51,7 +51,8 @@ static const char *strConst[2][STR_LAST] = {
     {"KeyCode=", "Length=", "InvalidChar=", "Pinyin=", "PinyinLength=", "[Data]", "[Rule]", "Prompt=",
      "ConstructPhrase="}};
 
-struct TableBasedDictionaryPrivate {
+class TableBasedDictionaryPrivate {
+public:
     std::vector<TableRule> rules;
     std::set<char> inputCode;
     std::set<char> ignoreChars;

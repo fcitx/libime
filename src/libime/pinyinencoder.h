@@ -23,8 +23,8 @@
 #include <boost/utility/string_view.hpp>
 #include <cassert>
 #include <fcitx-utils/flags.h>
-#include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace libime {
@@ -142,7 +142,7 @@ public:
 
 private:
     std::string data_;
-    std::map<size_t, std::vector<size_t>> next_;
+    std::unordered_map<size_t, std::vector<size_t>> next_;
 };
 
 class LIBIME_EXPORT PinyinEncoder {

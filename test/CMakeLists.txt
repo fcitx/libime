@@ -17,3 +17,6 @@ target_compile_definitions(testmodel PRIVATE -DKENLM_MAX_ORDER=3 -DHAVE_ICU)
 
 add_executable(testpinyindictionary testpinyindictionary.cpp)
 target_link_libraries(testpinyindictionary libime)
+
+add_executable(testtrie testtrie.cpp)
+target_link_libraries(testtrie libime)

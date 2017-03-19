@@ -3,9 +3,9 @@
 #include <fcntl.h>
 #include <fstream>
 #include <iostream>
-#include <map>
 #include <string>
 #include <unistd.h>
+#include <unordered_map>
 
 using namespace libime;
 
@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     typedef DATrie<int32_t> TestTrie;
     TestTrie tree;
     std::string key;
-    std::map<std::string, int32_t> map;
+    std::unordered_map<std::string, int32_t> map;
 
     int count = 1;
     // key can be same as other

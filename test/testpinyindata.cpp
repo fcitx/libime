@@ -26,8 +26,6 @@ using namespace libime;
 
 int main() {
     std::set<std::string> seen;
-    std::set<char> last;
-    std::set<char> first;
     for (auto p : getPinyinMap()) {
         auto pinyin = p.pinyin();
         auto initial = p.initial();
@@ -40,14 +38,6 @@ int main() {
             auto result = seen.insert(pinyin.to_string());
             assert(result.second);
         }
-        last.insert(p.pinyin().back());
-        first.insert(p.pinyin().front());
-    }
-    for (auto c : last) {
-        std::cout << c;
-    }
-    for (auto c : first) {
-        std::cout << c;
     }
     return 0;
 }

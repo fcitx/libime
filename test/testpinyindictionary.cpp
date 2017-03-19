@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     char c[] = {static_cast<char>(PinyinInitial::N), static_cast<char>(PinyinInitial::H),
                 PinyinEncoder::initialFinalSepartor, static_cast<char>(PinyinEncoder::wildcard),
                 static_cast<char>(PinyinEncoder::wildcard)};
-    dict.matchWords(c, sizeof(c), [](const char *encodedPinyin, const std::string &hanzi, float cost) {
+    dict.matchWords(c, sizeof(c), [c](const char *encodedPinyin, const std::string &hanzi, float cost) {
         std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin, sizeof(c)) << " " << hanzi << " " << cost
                   << std::endl;
         return true;

@@ -1,26 +1,25 @@
+#include "libime/tablebaseddictionary.h"
+#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <cassert>
 #include <unistd.h>
-#include "libime/tablebaseddictionary.h"
 
 using namespace libime;
 
 int main() {
 
-    std::string test =
-    "KeyCode=abcdefghijklmnopqrstuvwxy\n"
-    "Length=4\n"
-    "Pinyin=@\n"
-    "[Rule]\n"
-    "e2=p11+p12+p21+p22\n"
-    "e3=p11+p21+p31+p32\n"
-    "a4=p11+p21+p31+n11\n"
-    "[Data]\n"
-    "xycq 统\n"
-    "yfh 计\n"
-    "nnkd 局\n";
+    std::string test = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
+                       "Length=4\n"
+                       "Pinyin=@\n"
+                       "[Rule]\n"
+                       "e2=p11+p12+p21+p22\n"
+                       "e3=p11+p21+p31+p32\n"
+                       "a4=p11+p21+p31+n11\n"
+                       "[Data]\n"
+                       "xycq 统\n"
+                       "yfh 计\n"
+                       "nnkd 局\n";
 
     std::stringstream ss(test);
 
@@ -53,7 +52,7 @@ int main() {
         assert(table.insert("你好"));
         table.statistic();
         table.dump(std::cout);
-    } catch (std::ios_base::failure& e) {
+    } catch (std::ios_base::failure &e) {
         std::cout << e.what() << std::endl;
     }
 

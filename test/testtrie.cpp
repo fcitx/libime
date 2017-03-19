@@ -1,15 +1,15 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <cassert>
-#include <unistd.h>
-#include <fcntl.h>
-#include <map>
 #include "libime/datrie.h"
+#include <cassert>
+#include <fcntl.h>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <string>
+#include <unistd.h>
 
 using namespace libime;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     if (argc > 1) {
         int fd = open(argv[1], O_RDONLY);
         if (fd == -1) {
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
             }
             // std::cout << key << " " << v << " " << count << std::endl;
             return count;
-        } );
+        });
         assert(tree.exactMatchSearch(key) == count);
         count++;
     }
@@ -44,20 +44,20 @@ int main(int argc, char* argv[]) {
     tree.dump(d.data(), d.size());
 
     assert(tree.size() == map.size());
-    for (auto& p : map) {
+    for (auto &p : map) {
         // std::cout << p.first << " " << tree.exactMatchSearch(p.first) << " " << p.second << std::endl;
         assert(tree.exactMatchSearch(p.first) == p.second);
     }
 
     std::string tempKey;
     size_t foreach_count = 0;
-    tree.foreach([&tree, &map, &tempKey, &foreach_count](TestTrie::value_type value, size_t len, uint64_t pos) {
-        (void) value;
+    tree.foreach ([&tree, &map, &tempKey, &foreach_count](TestTrie::value_type value, size_t len, uint64_t pos) {
+        (void)value;
         tree.suffix(tempKey, len, pos);
         assert(map.find(tempKey) != map.end());
         assert(tree.exactMatchSearch(tempKey) == value);
         assert(map[tempKey] == value);
-        tree.update(tempKey, [](int32_t v) { return v + 1; } );
+        tree.update(tempKey, [](int32_t v) { return v + 1; });
         foreach_count++;
         return true;
     });
@@ -75,8 +75,8 @@ int main(int argc, char* argv[]) {
     swap(tree, trie2);
 
     foreach_count = 0;
-    tree.foreach([&tree, &map, &tempKey, &foreach_count](int32_t value, size_t len, uint64_t pos) {
-        (void) value;
+    tree.foreach ([&tree, &map, &tempKey, &foreach_count](int32_t value, size_t len, uint64_t pos) {
+        (void)value;
         tree.suffix(tempKey, len, pos);
         assert(map.find(tempKey) != map.end());
         assert(tree.exactMatchSearch(tempKey) == value);

@@ -1,0 +1,61 @@
+/*
+ * Copyright (C) 2017~2017 by CSSlayer
+ * wengxt@gmail.com
+ *
+ * This library is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; see the file COPYING. If not,
+ * see <http://www.gnu.org/licenses/>.
+ */
+#ifndef _FCITX_LIBIME_PINYINDATA_H_
+#define _FCITX_LIBIME_PINYINDATA_H_
+
+#include "libime_export.h"
+#include "pinyinencoder.h"
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index_container.hpp>
+#include <string>
+#include <utility>
+
+namespace libime {
+struct PinyinHash : std::unary_function<boost::string_view, std::size_t> {
+    std::size_t operator()(boost::string_view const &val) const { return boost::hash_range(val.begin(), val.end()); }
+};
+
+class PinyinEntry {
+public:
+    PinyinEntry(const char *pinyin, PinyinInitial initial, PinyinFinal final, PinyinFuzzyFlags flags)
+        : pinyin_(pinyin), initial_(initial), final_(final), flags_(flags) {}
+
+    boost::string_view pinyin() const { return pinyin_; }
+    PinyinInitial initial() const { return initial_; }
+    PinyinFinal final() const { return final_; }
+    PinyinFuzzyFlags flags() const { return flags_; }
+
+private:
+    std::string pinyin_;
+    PinyinInitial initial_;
+    PinyinFinal final_;
+    PinyinFuzzyFlags flags_;
+};
+
+using PinyinMap = boost::multi_index_container<
+    PinyinEntry,
+    boost::multi_index::indexed_by<boost::multi_index::hashed_non_unique<
+        boost::multi_index::const_mem_fun<PinyinEntry, boost::string_view, &PinyinEntry::pinyin>, PinyinHash>>>;
+
+LIBIME_EXPORT
+const PinyinMap &getPinyinMap();
+}
+
+#endif // _FCITX_LIBIME_PINYINDATA_H_

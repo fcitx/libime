@@ -33,7 +33,7 @@ for line in lines:
             in_gram=True
             print("\\{0}-grams:".format(num))
     elif in_gram:
-        tokens = [t if t != "<unknown>" else "<unk>" for t in line.split()[:-1]]
+        tokens = [t if t != "<unknown>" else "<unk>" for t in line.split()]
         if len(tokens) < 3:
             continue
         if is_prob(tokens[-1]):

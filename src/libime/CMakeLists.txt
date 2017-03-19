@@ -46,11 +46,17 @@ set(LIBIME_HDRS
     datrie.h
     tablebaseddictionary.h
     tablerule.h
+    pinyinencoder.h
+    pinyindata.h
     )
 
 set(LIBIME_SRCS
     datrie.cpp
+    decoder.cpp
     tablebaseddictionary.cpp
+    pinyinencoder.cpp
+    pinyindata.cpp
+    pinyindictionary.cpp
     )
 
 add_library(libime SHARED ${LIBIME_SRCS})
@@ -69,7 +75,7 @@ set_target_properties(libime
 )
 
 target_link_libraries(libime PRIVATE kenlm
-                             PUBLIC ICU::ICU)
+                             PUBLIC ICU::ICU Fcitx5::Utils)
 
 add_executable(libime_slm_build_binary kenlm/lm/build_binary_main.cc)
 target_link_libraries(libime_slm_build_binary kenlm ICU::ICU)

@@ -26,20 +26,25 @@
 #include <memory>
 #include <vector>
 
-namespace libime
-{
+namespace libime {
 
-template<typename T>
+template <typename T>
 class DATriePrivate;
 
-template<typename T>
+template <typename T>
 class DATrie;
 
-template <typename T> struct NaN { enum { N1 = -1, N2 = -2 }; };
-template <> struct NaN <float> { enum { N1 = 0x7f800001, N2 = 0x7f800002 }; };
+template <typename T>
+struct NaN {
+    enum { N1 = -1, N2 = -2 };
+};
+template <>
+struct NaN<float> {
+    enum { N1 = 0x7f800001, N2 = 0x7f800002 };
+};
 
-template<typename T>
-void swap(DATrie<T>& first, DATrie<T>& second) noexcept;
+template <typename T>
+void swap(DATrie<T> &first, DATrie<T> &second) noexcept;
 
 /**
  * This is a trie based on cedar<www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/>.
@@ -52,51 +57,66 @@ void swap(DATrie<T>& first, DATrie<T>& second) noexcept;
  * with lambda, comparing with the original version's add/set.
  *
  */
-template<typename T>
-class DATrie
-{
+template <typename T>
+class DATrie {
 public:
     typedef T value_type;
     typedef uint64_t position_type;
-    typedef std::function< bool(value_type, size_t, position_type)> callback_type;
+    typedef std::function<bool(value_type, size_t, position_type)> callback_type;
     typedef std::function<value_type(value_type)> updater_type;
 
-    enum {
-        NO_VALUE = NaN<value_type>::N1,
-        NO_PATH = NaN<value_type>::N2
-    };
+    enum { NO_VALUE = NaN<value_type>::N1, NO_PATH = NaN<value_type>::N2 };
     DATrie();
-    DATrie(const DATrie<T>& other);
-    DATrie(DATrie<T>&& other);
-    DATrie(const char* filename);
-    DATrie(std::istream& in);
+    DATrie(const DATrie<T> &other);
+    DATrie(DATrie<T> &&other);
+    DATrie(const char *filename);
+    DATrie(std::istream &in);
     virtual ~DATrie();
 
-    DATrie& operator=(DATrie other);
+    DATrie &operator=(DATrie other);
 
-    friend void swap<>(DATrie& first, DATrie& second) noexcept;
+    friend void swap<>(DATrie &first, DATrie &second) noexcept;
 
-    void save(const char* filename);
-    void save(std::ostream& stream);
+    void save(const char *filename);
+    void save(std::ostream &stream);
 
     size_t size() const;
 
-    void suffix(std::string& s, size_t len, position_type pos);
-    value_type exactMatchSearch(const std::string& key);
-    value_type exactMatchSearch(const char* key, size_t len);
-    DATrie< T >::value_type traverse(const std::string& key, position_type& from, size_t& pos);
-    void set(const std::string& key, value_type val);
-    void set(const char* key, size_t len, value_type val);
-    void update(const std::string& key, updater_type updater);
-    void update(const char* key, size_t len, updater_type updater);
-    void dump(value_type* data, std::size_t size);
-    void dump(std::vector<value_type>& data);
-    void dump(std::vector<std::tuple<value_type, size_t, position_type>>& data);
-    bool erase(const std::string& key, position_type from = 0);
+    // retrive the string via len and pos
+    void suffix(std::string &s, size_t len, position_type pos);
+
+    // result will be NO_VALUE
+    value_type exactMatchSearch(const char *key, size_t len);
+    value_type exactMatchSearch(const std::string &key) { return exactMatchSearch(key.c_str(), key.size()); }
+
+    DATrie<T>::value_type traverse(const std::string &key, position_type &from) {
+        return traverse(key.c_str(), key.size(), from);
+    }
+    DATrie<T>::value_type traverse(const char *key, size_t len, position_type &from);
+
+    // set value
+    void set(const std::string &key, value_type val) { return set(key.c_str(), key.size(), val); }
+    void set(const char *key, size_t len, value_type val);
+
+    void update(const std::string &key, updater_type updater) { update(key.c_str(), key.size(), updater); }
+    void update(const char *key, size_t len, updater_type updater);
+
+    void dump(value_type *data, std::size_t size);
+    void dump(std::vector<value_type> &data);
+    void dump(std::vector<std::tuple<value_type, size_t, position_type>> &data);
+
+    // remove key
+    bool erase(const std::string &key, position_type from = 0) { return erase(key.c_str(), key.size(), from); }
+    bool erase(const char *key, size_t len, position_type from = 0);
     bool erase(position_type from = 0);
 
-    void foreach(callback_type func);
-    void foreach(const std::string& prefix, callback_type func, position_type pos = 0);
+    // call callback on each key
+    void foreach (callback_type func, position_type pos = 0);
+    // search by prefix
+    void foreach (const char *prefix, size_t size, callback_type func, position_type pos = 0);
+    void foreach (const std::string &prefix, callback_type func, position_type pos = 0) {
+        return foreach (prefix.c_str(), prefix.size(), func, pos);
+    }
     void clear();
     void shrink_tail();
 
@@ -110,17 +130,14 @@ private:
     std::unique_ptr<DATriePrivate<value_type>> d;
 };
 
-
-template<typename T>
-void swap(DATrie<T>& first, DATrie<T>& second) noexcept
-{
+template <typename T>
+void swap(DATrie<T> &first, DATrie<T> &second) noexcept {
     using std::swap;
     swap(first.d, second.d);
 }
 
 template class LIBIME_EXPORT DATrie<float>;
 template class LIBIME_EXPORT DATrie<int32_t>;
-
 }
 
 #endif // LIBIME_DATRIE_H

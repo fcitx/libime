@@ -5,15 +5,8 @@ project(libime VERSION ${LibIME_VERSION})
 find_package(ECM 1.0 REQUIRED)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-include(CheckCXXCompilerFlag)
-
-check_cxx_compiler_flag("-std=c++11" SUPPORT_CXX11)
-
-if(NOT SUPPORT_CXX11)
-    message(FATAL_ERROR "need c++ 11 compatible compiler to compile")
-endif()
-
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_STANDARD 14)
 
 #########################################
 # Options
@@ -41,7 +34,8 @@ include(ECMGenerateHeaders)
 include(ECMGeneratePkgConfigFile)
 
 find_package(ICU REQUIRED)
-find_package(Boost REQUIRED)
+find_package(Boost 1.61 REQUIRED)
+find_package(Fcitx5Utils REQUIRED)
 
 include_directories(src)
 

@@ -23,6 +23,7 @@
 #include <boost/utility/string_view.hpp>
 #include <cassert>
 #include <fcitx-utils/flags.h>
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -117,6 +118,10 @@ enum class PinyinFinal : char {
     Zero
 };
 
+class PinyinSegments;
+typedef std::function<bool(const PinyinSegments &, const std::vector<size_t> &)>
+    PinyinSegmentCallback;
+
 class PinyinSegments {
 public:
     PinyinSegments(const std::string &data) : data_(data) {}
@@ -125,6 +130,8 @@ public:
 
     size_t start() const { return 0; }
     size_t end() const { return data_.size(); }
+
+    boost::string_view pinyin() const { return data_; }
 
     boost::string_view segment(size_t start, size_t end) const {
         assert(start < end);
@@ -140,35 +147,80 @@ public:
         next_[from].push_back(to);
     }
 
+    void dfs(PinyinSegmentCallback callback) const {
+        std::vector<size_t> path;
+        dfsHelper(path, 0, callback);
+    }
+
 private:
+    bool dfsHelper(std::vector<size_t> &path, size_t start, PinyinSegmentCallback callback) const {
+        if (start == end()) {
+            return callback(*this, path);
+        }
+        auto &nexts = next(start);
+        for (auto next : nexts) {
+            path.push_back(next);
+            if (!dfsHelper(path, next, callback)) {
+                return false;
+            }
+            path.pop_back();
+        }
+        return true;
+    }
+
     std::string data_;
     std::unordered_map<size_t, std::vector<size_t>> next_;
 };
 
+struct LIBIME_EXPORT PinyinSyllable {
+public:
+    PinyinSyllable(PinyinInitial initial, PinyinFinal final) : initial_(initial), final_(final) {}
+    PinyinSyllable(const PinyinSyllable &) = default;
+
+    PinyinInitial initial() const { return initial_; }
+    PinyinFinal final() const { return final_; }
+
+    std::string toString() const;
+
+    PinyinSyllable &operator=(const PinyinSyllable &) = default;
+    bool operator==(const PinyinSyllable &other) {
+        return initial_ == other.initial_ && final_ == other.final_;
+    }
+
+private:
+    PinyinInitial initial_;
+    PinyinFinal final_;
+};
+
 class LIBIME_EXPORT PinyinEncoder {
 public:
-    static PinyinSegments parseUserPinyin(const boost::string_view &pinyin, PinyinFuzzyFlags flags);
+    static PinyinSegments parseUserPinyin(boost::string_view pinyin, PinyinFuzzyFlags flags);
 
-    static std::vector<char> encodeFullPinyin(const boost::string_view &pinyin);
+    static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
 
-    static std::string decodeFullPinyin(const std::vector<char> &v) { return decodeFullPinyin(v.data(), v.size()); }
+    static std::string decodeFullPinyin(const std::vector<char> &v) {
+        return decodeFullPinyin(v.data(), v.size());
+    }
     static std::string decodeFullPinyin(const char *data, size_t size);
-    static bool isValidPinyin(const std::string &pinyin);
-    static std::string finalToString(PinyinFinal final);
-    static PinyinFinal stringToFinal(const std::string &str);
+
     static std::string initialToString(PinyinInitial initial);
     static PinyinInitial stringToInitial(const std::string &str);
-    static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags);
-
     static bool isValidInitial(char c) { return c >= firstInitial && c <= lastInitial; }
+
+    static std::string finalToString(PinyinFinal final);
+    static PinyinFinal stringToFinal(const std::string &str);
     static bool isValidFinal(char c) { return c >= firstFinal && c <= lastFinal; }
+
+    static bool isValidInitialFinal(PinyinInitial initial, PinyinFinal final);
+
+    static std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>>
+    stringToSyllables(boost::string_view pinyin, PinyinFuzzyFlags flags);
 
     static const char initialFinalSepartor = '!';
     static const char firstInitial = static_cast<char>(PinyinInitial::B);
     static const char lastInitial = static_cast<char>(PinyinInitial::Zero);
     static const char firstFinal = static_cast<char>(PinyinFinal::A);
     static const char lastFinal = static_cast<char>(PinyinFinal::Zero);
-    static const char wildcard = '*';
 };
 }
 

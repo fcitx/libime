@@ -45,13 +45,15 @@ int main(int argc, char *argv[]) {
 
     assert(tree.size() == map.size());
     for (auto &p : map) {
-        // std::cout << p.first << " " << tree.exactMatchSearch(p.first) << " " << p.second << std::endl;
+        // std::cout << p.first << " " << tree.exactMatchSearch(p.first) << " " << p.second <<
+        // std::endl;
         assert(tree.exactMatchSearch(p.first) == p.second);
     }
 
     std::string tempKey;
     size_t foreach_count = 0;
-    tree.foreach ([&tree, &map, &tempKey, &foreach_count](TestTrie::value_type value, size_t len, uint64_t pos) {
+    tree.foreach ([&tree, &map, &tempKey, &foreach_count](TestTrie::value_type value, size_t len,
+                                                          uint64_t pos) {
         (void)value;
         tree.suffix(tempKey, len, pos);
         assert(map.find(tempKey) != map.end());

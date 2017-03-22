@@ -26,7 +26,12 @@
 namespace libime {
 class TableBasedDictionaryPrivate;
 
-enum PhraseFlag { PhraseFlagNone = 1, PhraseFlagPinyin, PhraseFlagPrompt, PhraseFlagConstructPhrase };
+enum PhraseFlag {
+    PhraseFlagNone = 1,
+    PhraseFlagPinyin,
+    PhraseFlagPrompt,
+    PhraseFlagConstructPhrase
+};
 
 class LIBIME_EXPORT TableBasedDictionary {
 public:
@@ -50,8 +55,8 @@ public:
     void save(std::ostream &out);
 
     bool hasRule() const noexcept;
-    bool insert(const std::string &key, const std::string &value, libime::PhraseFlag flag = PhraseFlagNone,
-                bool verifyWithRule = false);
+    bool insert(const std::string &key, const std::string &value,
+                libime::PhraseFlag flag = PhraseFlagNone, bool verifyWithRule = false);
     bool insert(const std::string &value);
     bool generate(const std::string &value, std::string &key);
 

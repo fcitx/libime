@@ -48,7 +48,8 @@ inline void store_data(char *data, T v) {
 }
 
 template <typename T>
-typename std::enable_if<sizeof(T) == sizeof(uint32_t), std::ostream &>::type marshall(std::ostream &out, T data) {
+typename std::enable_if<sizeof(T) == sizeof(uint32_t), std::ostream &>::type
+marshall(std::ostream &out, T data) {
     union {
         uint32_t i;
         T v;
@@ -60,12 +61,14 @@ typename std::enable_if<sizeof(T) == sizeof(uint32_t), std::ostream &>::type mar
 }
 
 template <typename T>
-typename std::enable_if<sizeof(T) == sizeof(uint8_t), std::ostream &>::type marshall(std::ostream &out, T data) {
+typename std::enable_if<sizeof(T) == sizeof(uint8_t), std::ostream &>::type
+marshall(std::ostream &out, T data) {
     return out.write(reinterpret_cast<char *>(&data), sizeof(data));
 }
 
 template <typename T>
-typename std::enable_if<sizeof(T) == sizeof(uint16_t), std::ostream &>::type marshall(std::ostream &out, T data) {
+typename std::enable_if<sizeof(T) == sizeof(uint16_t), std::ostream &>::type
+marshall(std::ostream &out, T data) {
     union {
         uint16_t i;
         T v;
@@ -77,7 +80,8 @@ typename std::enable_if<sizeof(T) == sizeof(uint16_t), std::ostream &>::type mar
 }
 
 template <typename T>
-typename std::enable_if<sizeof(T) == sizeof(uint32_t), std::istream &>::type unmarshall(std::istream &in, T &data) {
+typename std::enable_if<sizeof(T) == sizeof(uint32_t), std::istream &>::type
+unmarshall(std::istream &in, T &data) {
     union {
         uint32_t i;
         T v;
@@ -91,12 +95,14 @@ typename std::enable_if<sizeof(T) == sizeof(uint32_t), std::istream &>::type unm
 }
 
 template <typename T>
-typename std::enable_if<sizeof(T) == sizeof(uint8_t), std::istream &>::type unmarshall(std::istream &in, T &data) {
+typename std::enable_if<sizeof(T) == sizeof(uint8_t), std::istream &>::type
+unmarshall(std::istream &in, T &data) {
     return in.read(reinterpret_cast<char *>(&data), sizeof(data));
 }
 
 template <typename T>
-typename std::enable_if<sizeof(T) == sizeof(uint16_t), std::istream &>::type unmarshall(std::istream &in, T &data) {
+typename std::enable_if<sizeof(T) == sizeof(uint16_t), std::istream &>::type
+unmarshall(std::istream &in, T &data) {
     union {
         uint16_t i;
         T v;
@@ -116,7 +122,9 @@ void throw_if_fail(bool fail, E &&e) {
     }
 }
 
-inline void throw_if_io_fail(const std::ios &s) { throw_if_fail(!s, std::ios_base::failure("io fail")); }
+inline void throw_if_io_fail(const std::ios &s) {
+    throw_if_fail(!s, std::ios_base::failure("io fail"));
+}
 }
 
 #endif // LIBIME_UTILS_H

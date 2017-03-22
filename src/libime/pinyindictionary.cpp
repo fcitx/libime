@@ -31,10 +31,102 @@ namespace libime {
 
 class PinyinDictionaryPrivate {
 public:
-    DATrie<float> trie;
+    DATrie<float> trie_;
+    PinyinFuzzyFlags flags_;
 };
 
-void PinyinDictionary::matchWords(const char *data, size_t size, MatchCallback callback) {
+void PinyinDictionary::matchPrefix(const Segments &seg, MatchCallback callback) {
+    FCITX_D();
+    std::list<std::pair<decltype(d->trie_)::position_type, std::vector<std::vector<PinyinFinal>>>>
+        nodes;
+    nodes.emplace_back(std::piecewise_construct, std::forward_as_tuple(0), std::forward_as_tuple());
+
+    size_t i = 0;
+    while (boost::starts_with(seg.at(i), "\'")) {
+        i++;
+    }
+    while (i < seg.size()) {
+        boost::string_view pinyin = seg.at(i);
+        i++;
+
+        // skip "'"
+        while (i < seg.size() && boost::starts_with(seg.at(i), "\'")) {
+            i++;
+        }
+        const auto syls = PinyinEncoder::stringToSyllables(pinyin, d->flags_);
+
+        decltype(nodes) newNodes;
+        for (auto &node : nodes) {
+            for (auto &syl : syls) {
+                char initial = static_cast<char>(syl.first);
+                auto pos = node.first;
+                auto result = d->trie_.traverse(&initial, 1, pos);
+                if (!decltype(d->trie_)::isNoPath(result)) {
+                    auto finals = node.second;
+                    finals.push_back(syl.second);
+                    newNodes.emplace_back(std::piecewise_construct, std::forward_as_tuple(pos),
+                                          std::forward_as_tuple(std::move(finals)));
+                }
+            }
+        }
+
+        // after we match initial, we first try to match final for current word.
+        for (const auto &node : newNodes) {
+            char sep = PinyinEncoder::initialFinalSepartor;
+            auto pos = node.first;
+            auto result = d->trie_.traverse(&sep, 1, pos);
+            if (decltype(d->trie_)::isNoPath(result)) {
+                continue;
+            }
+
+            std::list<decltype(d->trie_)::position_type> finalNodes = {pos};
+            for (auto finals : node.second) {
+                decltype(finalNodes) nextNodes;
+
+                for (auto pos : finalNodes) {
+                    auto updateNext = [d, &nextNodes](char current, auto pos) {
+                        auto result = d->trie_.traverse(&current, 1, pos);
+
+                        if (!decltype(d->trie_)::isNoPath(result)) {
+                            nextNodes.push_back(pos);
+                        }
+                    };
+                    if (finals.size() > 1 || finals[0] != PinyinFinal::Invalid) {
+                        for (auto final : finals) {
+                            updateNext(static_cast<char>(final), pos);
+                        }
+                    } else {
+                        for (char test = PinyinEncoder::firstFinal;
+                             test <= PinyinEncoder::lastFinal; test++) {
+                            updateNext(test, pos);
+                        }
+                    }
+                }
+                finalNodes = std::move(nextNodes);
+                if (finalNodes.empty()) {
+                    break;
+                }
+            }
+
+            auto size = node.second.size();
+            for (auto finalNode : finalNodes) {
+                d->trie_.foreach (
+                    [d, &callback, size, i](decltype(d->trie_)::value_type value, size_t len,
+                                            uint64_t pos) {
+                        std::string s;
+                        d->trie_.suffix(s, len + size * 2 + 1, pos);
+                        callback(i - 1, s.substr(size * 2 + 1), value);
+                        return true;
+                    },
+                    finalNode);
+            }
+        }
+
+        nodes = std::move(newNodes);
+    }
+}
+
+void PinyinDictionary::matchWords(const char *data, size_t size, PinyinMatchCallback callback) {
     if (size % 2 != 1 || data[size / 2] != PinyinEncoder::initialFinalSepartor) {
         throw std::invalid_argument("invalid pinyin");
     }
@@ -42,7 +134,8 @@ void PinyinDictionary::matchWords(const char *data, size_t size, MatchCallback c
     return matchWords(data, data + size / 2 + 1, size / 2, callback);
 }
 
-void PinyinDictionary::matchWords(const char *initials, const char *finals, size_t size, MatchCallback callback) {
+void PinyinDictionary::matchWords(const char *initials, const char *finals, size_t size,
+                                  PinyinMatchCallback callback) {
     FCITX_D();
     for (size_t i = 0; i < size; i++) {
         if (!PinyinEncoder::isValidInitial(initials[i])) {
@@ -50,7 +143,7 @@ void PinyinDictionary::matchWords(const char *initials, const char *finals, size
         }
     }
 
-    std::list<decltype(d->trie)::position_type> nodes;
+    std::list<decltype(d->trie_)::position_type> nodes;
     nodes.emplace_back(0);
     for (size_t i = 0, e = size * 2 + 1; i < e && nodes.size(); i++) {
         char current;
@@ -64,21 +157,22 @@ void PinyinDictionary::matchWords(const char *initials, const char *finals, size
         decltype(nodes) extraNodes;
         auto iter = nodes.begin();
         while (iter != nodes.end()) {
-            if (current != PinyinEncoder::wildcard) {
-                decltype(d->trie)::value_type result;
-                result = d->trie.traverse(&current, 1, *iter);
+            if (current != 0) {
+                decltype(d->trie_)::value_type result;
+                result = d->trie_.traverse(&current, 1, *iter);
 
-                if (decltype(d->trie)::isNoPath(result)) {
+                if (decltype(d->trie_)::isNoPath(result)) {
                     nodes.erase(iter++);
                 } else {
                     iter++;
                 }
             } else {
                 bool changed = false;
-                for (char test = PinyinEncoder::firstFinal; test <= PinyinEncoder::lastFinal; test++) {
+                for (char test = PinyinEncoder::firstFinal; test <= PinyinEncoder::lastFinal;
+                     test++) {
                     decltype(extraNodes)::value_type p = *iter;
-                    auto result = d->trie.traverse(&test, 1, p);
-                    if (!decltype(d->trie)::isNoPath(result)) {
+                    auto result = d->trie_.traverse(&test, 1, p);
+                    if (!decltype(d->trie_)::isNoPath(result)) {
                         extraNodes.push_back(p);
                         changed = true;
                     }
@@ -95,10 +189,10 @@ void PinyinDictionary::matchWords(const char *initials, const char *finals, size
     }
 
     for (auto node : nodes) {
-        d->trie.foreach (
-            [d, &callback, size](decltype(d->trie)::value_type value, size_t len, uint64_t pos) {
+        d->trie_.foreach (
+            [d, &callback, size](decltype(d->trie_)::value_type value, size_t len, uint64_t pos) {
                 std::string s;
-                d->trie.suffix(s, len + size * 2 + 1, pos);
+                d->trie_.suffix(s, len + size * 2 + 1, pos);
                 return callback(s.c_str(), s.substr(size * 2 + 1), value);
             },
             node);
@@ -147,12 +241,13 @@ void PinyinDictionary::build(std::ifstream &in) {
                     prob = std::log10(1.0f / (tokens.size() - 2));
                     pinyin = tokens[i];
                 } else {
-                    prob = std::log10(std::stof(tokens[i].substr(colon + 1, tokens[i].size() - colon - 2)) / 100);
+                    prob = std::log10(
+                        std::stof(tokens[i].substr(colon + 1, tokens[i].size() - colon - 2)) / 100);
                     pinyin = boost::string_view(tokens[i]).substr(0, colon);
                 }
                 auto result = PinyinEncoder::encodeFullPinyin(pinyin.to_string());
                 result.insert(result.end(), hanzi.begin(), hanzi.end());
-                d->trie.set(result.data(), result.size(), prob);
+                d->trie_.set(result.data(), result.size(), prob);
             }
         }
     }
@@ -160,7 +255,7 @@ void PinyinDictionary::build(std::ifstream &in) {
 
 void PinyinDictionary::open(std::ifstream &in) {
     FCITX_D();
-    d->trie = decltype(d->trie)(in);
+    d->trie_ = decltype(d->trie_)(in);
 }
 
 void PinyinDictionary::save(const char *filename) {
@@ -171,19 +266,20 @@ void PinyinDictionary::save(const char *filename) {
 
 void PinyinDictionary::save(std::ostream &out) {
     FCITX_D();
-    d->trie.save(out);
+    d->trie_.save(out);
 }
 
 void PinyinDictionary::dump(std::ostream &out) {
     FCITX_D();
     std::string buf;
-    d->trie.foreach ([this, d, &buf, &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
-        d->trie.suffix(buf, _len, pos);
-        auto sep = buf.find(PinyinEncoder::initialFinalSepartor);
-        boost::string_view ref(buf);
-        auto fullPinyin = PinyinEncoder::decodeFullPinyin(ref.data(), sep * 2 + 1);
-        out << fullPinyin << " " << ref.substr(sep * 2 + 1) << " " << buf << std::endl;
-        return true;
-    });
+    d->trie_.foreach (
+        [this, d, &buf, &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+            d->trie_.suffix(buf, _len, pos);
+            auto sep = buf.find(PinyinEncoder::initialFinalSepartor);
+            boost::string_view ref(buf);
+            auto fullPinyin = PinyinEncoder::decodeFullPinyin(ref.data(), sep * 2 + 1);
+            out << fullPinyin << " " << ref.substr(sep * 2 + 1) << " " << buf << std::endl;
+            return true;
+        });
 }
 }

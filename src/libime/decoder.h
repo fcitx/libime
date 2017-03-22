@@ -19,6 +19,7 @@
 #ifndef _LIBIME_DECODER_H_
 #define _LIBIME_DECODER_H_
 
+#include "dictionary.h"
 #include "segments.h"
 #include <cstdint>
 #include <memory>
@@ -26,15 +27,18 @@
 
 namespace libime {
 
-class Segment;
 class DecoderPrivate;
+class Dictionary;
+class LanguageModel;
 
 class Decoder {
-    Decoder();
+    Decoder(Dictionary *dict, LanguageModel *model);
+    virtual ~Decoder();
 
-    Segment decode(const Segments &input, int nbest, const std::vector<int> &constrains);
+    void decode(const Segments &input, int nbest, const std::vector<int> &constrains);
 
-    Segment decode(const Segments &input, int nbest, const std::vector<int> &constrains, double max, double min);
+    void decode(const Segments &input, int nbest, const std::vector<int> &constrains, double max,
+                double min);
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;

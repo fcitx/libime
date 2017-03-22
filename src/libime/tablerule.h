@@ -186,7 +186,8 @@ struct TableRule {
     std::string toString() const {
         std::stringstream ss;
 
-        ss << ((flag == TableRuleFlag::LengthEqual) ? 'e' : 'a') << static_cast<char>('0' + phraseLength) << '=';
+        ss << ((flag == TableRuleFlag::LengthEqual) ? 'e' : 'a')
+           << static_cast<char>('0' + phraseLength) << '=';
         bool first = true;
         for (const auto &entry : entries) {
             if (first) {
@@ -195,7 +196,8 @@ struct TableRule {
                 ss << '+';
             }
             ss << ((entry.flag == TableRuleEntryFlag::FromFront) ? 'p' : 'n')
-               << static_cast<char>('0' + entry.character) << static_cast<char>('0' + entry.encodingIndex);
+               << static_cast<char>('0' + entry.character)
+               << static_cast<char>('0' + entry.encodingIndex);
         }
         return ss.str();
     }

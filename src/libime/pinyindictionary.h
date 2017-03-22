@@ -19,7 +19,9 @@
 #ifndef _FCITX_LIBIME_UTF8_PINYINDICTIONARY_H_
 #define _FCITX_LIBIME_UTF8_PINYINDICTIONARY_H_
 
+#include "dictionary.h"
 #include "libime_export.h"
+#include "pinyinencoder.h"
 #include <fcitx-utils/macros.h>
 #include <memory>
 
@@ -29,19 +31,24 @@ enum class PinyinDictFormat { Text, Binary };
 
 class PinyinDictionaryPrivate;
 
-typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi, float cost)> MatchCallback;
+typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi, float cost)>
+    PinyinMatchCallback;
 
-class LIBIME_EXPORT PinyinDictionary {
+class LIBIME_EXPORT PinyinDictionary : public Dictionary {
 public:
     explicit PinyinDictionary(const char *filename, PinyinDictFormat format);
     ~PinyinDictionary();
 
-    void matchWords(const char *data, size_t size, MatchCallback callback);
-    void matchWords(const char *initials, const char *finals, size_t size, MatchCallback callback);
+    void matchPrefix(const Segments &seg, MatchCallback callback) override;
+    void matchWords(const char *data, size_t size, PinyinMatchCallback callback);
+    void matchWords(const char *initials, const char *finals, size_t size,
+                    PinyinMatchCallback callback);
 
     void save(const char *filename);
     void save(std::ostream &out);
     void dump(std::ostream &out);
+
+    void setFuzzyFlags(PinyinFuzzyFlags flags);
 
 private:
     void build(std::ifstream &in);

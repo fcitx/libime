@@ -19,8 +19,9 @@
 
 #include "decoder.h"
 #include "datrie.h"
+#include "languagemodel.h"
 #include "lm/model.hh"
-#include "segment.h"
+#include "segments.h"
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <limits>
 #include <memory>
@@ -31,49 +32,56 @@ class LatticeNode {};
 
 class UnigramNode : public LatticeNode {
 public:
-    UnigramNode(lm::WordIndex idx) : idx_(idx) {}
+    UnigramNode(WordIndex idx, float cost = 0) : idx_(idx), cost_(cost) {}
 
-    lm::WordIndex idx_;
+    WordIndex idx_;
+    float cost_;
 };
 
 class DecoderPrivate {
 public:
-    lm::ngram::Model model;
-    DATrie<float> trie;
+    DecoderPrivate(Dictionary *dict, LanguageModel *model) : dict_(dict), model_(model) {}
 
     std::vector<boost::ptr_vector<LatticeNode>> buildLattice(const Segments &input,
                                                              const std::vector<int> &constrains) {
         std::vector<boost::ptr_vector<LatticeNode>> lattice;
         lattice.resize(input.size() + 2);
 
-        auto &v = model.GetVocabulary();
-        lattice[0].push_back(new UnigramNode(v.BeginSentence()));
-        lattice[input.size() + 1].push_back(new UnigramNode(v.EndSentence()));
+        lattice[0].push_back(new UnigramNode(model_->beginSentence()));
+        lattice[input.size() + 1].push_back(new UnigramNode(model_->endSentence()));
 
         for (size_t i = 0; i < input.size(); i++) {
-            auto _input = input.right(i);
-            auto size = input.rightSize(i);
-            trie.foreach (_input, size, [](float value, size_t len, uint64_t pos) {
+            auto seg = input.right(i);
+            dict_->matchPrefix(
+                seg, [this, i, &seg, &lattice](size_t to, boost::string_view entry, float adjust) {
 #if 0
-                var j = i + entry.input.char_count ();
                 if (!check_constraint (constraint, i, j))
-                    continue;
-                var node = new UnigramTrellisNode (entry, j);
-                trellis[j].add (node);
+                    return;
 #endif
-                return true;
-            });
+                    lattice[i + to].push_back(new UnigramNode(model_->index(entry), adjust));
+
+                });
         }
         return lattice;
     }
+
+private:
+    Dictionary *dict_;
+    LanguageModel *model_;
 };
 
-libime::Segment Decoder::decode(const Segments &input, int nbest, const std::vector<int> &constrains) {
-    return decode(input, nbest, constrains, std::numeric_limits<double>::max(), -std::numeric_limits<double>::max());
+Decoder::Decoder(Dictionary *dict, LanguageModel *model)
+    : d_ptr(std::make_unique<DecoderPrivate>(dict, model)) {}
+
+Decoder::~Decoder() {}
+
+void Decoder::decode(const Segments &input, int nbest, const std::vector<int> &constrains) {
+    return decode(input, nbest, constrains, std::numeric_limits<double>::max(),
+                  -std::numeric_limits<double>::max());
 }
 
-libime::Segment Decoder::decode(const Segments &input, int nbest, const std::vector<int> &constrains, double max,
-                                double min) {
+void Decoder::decode(const Segments &input, int nbest, const std::vector<int> &constrains,
+                     double max, double min) {
     d_ptr->buildLattice(input, constrains);
 }
 }

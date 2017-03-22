@@ -48,6 +48,8 @@ set(LIBIME_HDRS
     tablerule.h
     pinyinencoder.h
     pinyindata.h
+    pinyindictionary.h
+    languagemodel.h
     )
 
 set(LIBIME_SRCS
@@ -57,6 +59,7 @@ set(LIBIME_SRCS
     pinyinencoder.cpp
     pinyindata.cpp
     pinyindictionary.cpp
+    languagemodel.cpp
     )
 
 add_library(libime SHARED ${LIBIME_SRCS})

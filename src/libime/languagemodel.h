@@ -16,12 +16,32 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#ifndef _LIBIME_SEGMENT_H_
-#define _LIBIME_SEGMENT_H_
+#ifndef _FCITX_LIBIME_LANGUAGEMODEL_H_
+#define _FCITX_LIBIME_LANGUAGEMODEL_H_
+
+#include "libime_export.h"
+#include <boost/utility/string_view.hpp>
+#include <fcitx-utils/macros.h>
+#include <memory>
 
 namespace libime {
 
-class Segment {};
+using WordIndex = unsigned int;
+
+class LanguageModelPrivate;
+class LIBIME_EXPORT LanguageModel {
+public:
+    LanguageModel(const char *file);
+    virtual ~LanguageModel();
+
+    WordIndex beginSentence();
+    WordIndex endSentence();
+    WordIndex index(boost::string_view view);
+
+private:
+    std::unique_ptr<LanguageModelPrivate> d_ptr;
+    FCITX_DECLARE_PRIVATE(LanguageModel);
+};
 }
 
-#endif // _LIBIME_SEGMENT_H_
+#endif // _FCITX_LIBIME_LANGUAGEMODEL_H_

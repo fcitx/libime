@@ -86,7 +86,8 @@ inline bool is_code_point_valid(u32 cp) {
 }
 
 template <typename octet_iterator>
-inline typename std::iterator_traits<octet_iterator>::difference_type sequence_length(octet_iterator lead_it) {
+inline typename std::iterator_traits<octet_iterator>::difference_type
+sequence_length(octet_iterator lead_it) {
     uint8_t lead = utf8::internal::mask8(*lead_it);
     if (lead < 0x80)
         return 1;
@@ -116,7 +117,14 @@ inline bool is_overlong_sequence(uint32_t cp, octet_difference_type length) {
     return false;
 }
 
-enum utf_error { UTF8_OK, NOT_ENOUGH_ROOM, INVALID_LEAD, INCOMPLETE_SEQUENCE, OVERLONG_SEQUENCE, INVALID_CODE_POINT };
+enum utf_error {
+    UTF8_OK,
+    NOT_ENOUGH_ROOM,
+    INVALID_LEAD,
+    INCOMPLETE_SEQUENCE,
+    OVERLONG_SEQUENCE,
+    INVALID_CODE_POINT
+};
 
 /// Helper for get_sequence_x
 template <typename octet_iterator>
@@ -130,11 +138,11 @@ utf_error increase_safely(octet_iterator &it, octet_iterator end) {
     return UTF8_OK;
 }
 
-#define UTF8_CPP_INCREASE_AND_RETURN_ON_ERROR(IT, END)                                                                 \
-    {                                                                                                                  \
-        utf_error ret = increase_safely(IT, END);                                                                      \
-        if (ret != UTF8_OK)                                                                                            \
-            return ret;                                                                                                \
+#define UTF8_CPP_INCREASE_AND_RETURN_ON_ERROR(IT, END)                                             \
+    {                                                                                              \
+        utf_error ret = increase_safely(IT, END);                                                  \
+        if (ret != UTF8_OK)                                                                        \
+            return ret;                                                                            \
     }
 
 /// get_sequence_x functions decode utf-8 sequences of the length x

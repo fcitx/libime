@@ -19,11 +19,18 @@
 #ifndef _FCITX_LIBIME_DICTIONARY_H_
 #define _FCITX_LIBIME_DICTIONARY_H_
 
+#include "libime_export.h"
+#include "segments.h"
+#include <boost/utility/string_view.hpp>
+#include <functional>
+
 namespace libime {
 
-class Dictionary {
+typedef std::function<void(size_t, boost::string_view, float)> MatchCallback;
+
+class LIBIME_EXPORT Dictionary {
 public:
-    void lookup(const char *s, size_t size);
+    virtual void matchPrefix(const Segments &segs, MatchCallback callback) = 0;
 };
 }
 

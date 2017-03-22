@@ -102,7 +102,9 @@ public:
 
         operator bool() { return offset != 0 && index != 0; }
 
-        bool operator==(const npos_t &other) const { return offset == other.offset && index == other.index; }
+        bool operator==(const npos_t &other) const {
+            return offset == other.offset && index == other.index;
+        }
 
         bool operator!=(const npos_t &other) const { return !operator==(other); }
 
@@ -127,8 +129,8 @@ public:
         }
 
         friend std::ostream &operator<<(std::ostream &out, const block &b) {
-            marshall(out, b.prev) && marshall(out, b.next) && marshall(out, b.num) && marshall(out, b.reject) &&
-                marshall(out, b.trial) && marshall(out, b.ehead);
+            marshall(out, b.prev) && marshall(out, b.next) && marshall(out, b.num) &&
+                marshall(out, b.reject) && marshall(out, b.trial) && marshall(out, b.ehead);
             return out;
         }
     };
@@ -162,9 +164,9 @@ public:
     DATriePrivate() { init(); }
 
     DATriePrivate(const DATriePrivate &other)
-        : m_array(other.m_array), m_tail(other.m_tail), m_tail0(other.m_tail0), m_block(other.m_block),
-          m_ninfo(other.m_ninfo), m_bheadF(other.m_bheadF), m_bheadC(other.m_bheadC), m_bheadO(other.m_bheadO),
-          m_reject(other.m_reject) {}
+        : m_array(other.m_array), m_tail(other.m_tail), m_tail0(other.m_tail0),
+          m_block(other.m_block), m_ninfo(other.m_ninfo), m_bheadF(other.m_bheadF),
+          m_bheadC(other.m_bheadC), m_bheadO(other.m_bheadO), m_reject(other.m_reject) {}
 
     size_t size() const { return m_ninfo.size(); }
 
@@ -236,7 +238,8 @@ public:
         assert(m_block.size() << 8 == m_ninfo.size());
         throw_if_io_fail(marshall(fout, length));
         throw_if_io_fail(marshall(fout, size_));
-        throw_if_io_fail(fout.write(reinterpret_cast<char *>(m_tail.data()), sizeof(char) * length));
+        throw_if_io_fail(
+            fout.write(reinterpret_cast<char *>(m_tail.data()), sizeof(char) * length));
 
         auto s = size_;
         for (auto &n : m_array) {
@@ -293,8 +296,8 @@ public:
                 len_tail = len;
                 len = 0;
             }
-            std::copy(&m_tail[static_cast<size_t>(offset) - len_tail], &m_tail[static_cast<size_t>(offset)],
-                      key.begin() + len);
+            std::copy(&m_tail[static_cast<size_t>(offset) - len_tail],
+                      &m_tail[static_cast<size_t>(offset)], key.begin() + len);
         }
         while (len--) {
             const int from = m_array[to].check;
@@ -326,7 +329,8 @@ public:
 
     template <typename U>
     inline void update(const char *key, npos_t &from, size_t &pos, size_t len, U &&callback) {
-        update(key, from, pos, len, std::forward<decltype(callback)>(callback), [](const int, const int) {});
+        update(key, from, pos, len, std::forward<decltype(callback)>(callback),
+               [](const int, const int) {});
     }
 
     template <typename U, typename T>
@@ -338,7 +342,8 @@ public:
         auto &from = npos.index;
         auto offset = npos.offset;
         if (!offset) { // node on trie
-            for (const uchar *const key_ = reinterpret_cast<const uchar *>(key); m_array[from].base >= 0; ++pos) {
+            for (const uchar *const key_ = reinterpret_cast<const uchar *>(key);
+                 m_array[from].base >= 0; ++pos) {
                 if (pos == len) {
                     const auto to = _follow(from, 0, cf);
                     m_array[to].value = callback(m_array[to].value);
@@ -367,7 +372,8 @@ public:
             if (npos.offset) {
                 npos.offset = 0; // reset to update tail offset
                 for (auto offset_ = static_cast<size_t>(-m_array[from].base); offset_ < offset;) {
-                    from = static_cast<size_t>(_follow(from, static_cast<uchar>(m_tail[offset_]), cf));
+                    from =
+                        static_cast<size_t>(_follow(from, static_cast<uchar>(m_tail[offset_]), cf));
                     ++offset_;
                 }
             }
@@ -390,7 +396,8 @@ public:
             for (auto i = offset; i <= moved; i += 1 + sizeof(value_type)) {
                 if (m_tail0.capacity() == m_tail0.size()) {
                     auto quota =
-                        m_tail0.capacity() + (m_tail0.size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : m_tail0.size());
+                        m_tail0.capacity() +
+                        (m_tail0.size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : m_tail0.size());
                     m_tail0.reserve(quota);
                 }
                 m_tail0.push_back(i);
@@ -419,9 +426,10 @@ public:
             return;
         }
         if (m_tail.capacity() < m_tail.size() + needed) {
-            auto quota = m_tail.capacity() + ((needed > m_tail.size() || needed > MAX_ALLOC_SIZE)
-                                                  ? needed
-                                                  : (m_tail.size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : m_tail.size()));
+            auto quota = m_tail.capacity() +
+                         ((needed > m_tail.size() || needed > MAX_ALLOC_SIZE)
+                              ? needed
+                              : (m_tail.size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : m_tail.size()));
             m_tail.reserve(quota);
         }
         m_array[from].base = -m_tail.size();
@@ -493,8 +501,8 @@ public:
             ;
     }
     void shrink_tail() {
-        const size_t length_ =
-            static_cast<size_t>(m_tail.size()) - static_cast<size_t>(m_tail0.size()) * (1 + sizeof(value_type));
+        const size_t length_ = static_cast<size_t>(m_tail.size()) -
+                               static_cast<size_t>(m_tail0.size()) * (1 + sizeof(value_type));
         decltype(m_tail) t;
         // a dummy entry
         t.resize(sizeof(int32_t));
@@ -583,7 +591,8 @@ public:
         auto &from = npos.index;
         auto offset = npos.offset;
         if (!offset) { // node on trie
-            for (const uchar *const key_ = reinterpret_cast<const uchar *>(key); m_array[from].base >= 0;) {
+            for (const uchar *const key_ = reinterpret_cast<const uchar *>(key);
+                 m_array[from].base >= 0;) {
                 if (pos == len) {
                     const node &n = m_array[m_array[from].base ^ 0];
                     if (n.check != static_cast<int>(from)) {
@@ -666,7 +675,8 @@ public:
     }
 
     static void _set_result(result_type *x, value_type r, size_t = 0, npos_t = npos_t()) { *x = r; }
-    static void _set_result(std::tuple<value_type, size_t, position_type> *x, value_type r, size_t len, npos_t npos) {
+    static void _set_result(std::tuple<value_type, size_t, position_type> *x, value_type r,
+                            size_t len, npos_t npos) {
         *x = std::make_tuple<>(r, len, npos.toInt());
     }
     void _pop_block(const int bi, int &head_in, const bool last) {
@@ -780,7 +790,8 @@ public:
         m_ninfo[e] = ninfo(); // reset ninfo; no child, no sibling
     }
     // push label to from's child
-    void _push_sibling(const int32_t from, const int base, const uchar label, const bool flag = true) {
+    void _push_sibling(const int32_t from, const int base, const uchar label,
+                       const bool flag = true) {
         uchar *c = &m_ninfo[from].child;
         if (flag && (ORDERED ? label > *c : !*c)) {
             do {
@@ -974,8 +985,8 @@ void DATrie<T>::dump(std::vector<typename DATrie<T>::value_type> &data) {
 }
 
 template <typename T>
-void DATrie<T>::dump(
-    std::vector<std::tuple<typename DATrie<T>::value_type, size_t, typename DATrie<T>::position_type>> &data) {
+void DATrie<T>::dump(std::vector<std::tuple<typename DATrie<T>::value_type, size_t,
+                                            typename DATrie<T>::position_type>> &data) {
     data.resize(size());
     d->dump(data.data(), data.size());
 }
@@ -1003,7 +1014,8 @@ typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key, size
 }
 
 template <typename T>
-typename DATrie<T>::value_type DATrie<T>::traverse(const char *key, size_t len, position_type &from) {
+typename DATrie<T>::value_type DATrie<T>::traverse(const char *key, size_t len,
+                                                   position_type &from) {
     size_t pos = 0;
     typename DATriePrivate<T>::npos_t npos(from);
     auto result = d->traverse(key, npos, pos, len);
@@ -1044,9 +1056,12 @@ template <typename T>
 size_t DATrie<T>::mem_size() {
     //     std::cout << "tail" << d->m_tail.size() << std::endl
     //               << "tail0" << d->m_tail0.size() * sizeof(int) << std::endl
-    //               << "array" << sizeof(typename decltype(d->m_array)::value_type) * d->m_array.size() << std::endl
-    //               << "block" << sizeof(typename decltype(d->m_block)::value_type) * d->m_block.size() << std::endl
-    //               << "ninfo" << sizeof(typename decltype(d->m_ninfo)::value_type) * d->m_ninfo.size() << std::endl;
+    //               << "array" << sizeof(typename decltype(d->m_array)::value_type) *
+    //               d->m_array.size() << std::endl
+    //               << "block" << sizeof(typename decltype(d->m_block)::value_type) *
+    //               d->m_block.size() << std::endl
+    //               << "ninfo" << sizeof(typename decltype(d->m_ninfo)::value_type) *
+    //               d->m_ninfo.size() << std::endl;
     return d->m_tail.size() + d->m_tail0.size() * sizeof(int) +
            sizeof(typename decltype(d->m_array)::value_type) * d->m_array.size() +
            sizeof(typename decltype(d->m_block)::value_type) * d->m_block.size() +

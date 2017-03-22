@@ -54,7 +54,8 @@ octet_iterator append(uint32_t cp, octet_iterator result) {
 template <typename octet_iterator>
 uint32_t next(octet_iterator &it) {
     uint32_t cp = utf8::internal::mask8(*it);
-    typename std::iterator_traits<octet_iterator>::difference_type length = utf8::internal::sequence_length(it);
+    typename std::iterator_traits<octet_iterator>::difference_type length =
+        utf8::internal::sequence_length(it);
     switch (length) {
     case 1:
         break;
@@ -94,7 +95,8 @@ uint32_t prior(octet_iterator &it) {
     return utf8::unchecked::next(temp);
 }
 
-// Deprecated in versions that include prior, but only for the sake of consistency (see utf8::previous)
+// Deprecated in versions that include prior, but only for the sake of consistency (see
+// utf8::previous)
 template <typename octet_iterator>
 inline uint32_t previous(octet_iterator &it) {
     return utf8::unchecked::prior(it);
@@ -107,7 +109,8 @@ void advance(octet_iterator &it, distance_type n) {
 }
 
 template <typename octet_iterator>
-typename std::iterator_traits<octet_iterator>::difference_type distance(octet_iterator first, octet_iterator last) {
+typename std::iterator_traits<octet_iterator>::difference_type distance(octet_iterator first,
+                                                                        octet_iterator last) {
     typename std::iterator_traits<octet_iterator>::difference_type dist;
     for (dist = 0; first < last; ++dist)
         utf8::unchecked::next(first);

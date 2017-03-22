@@ -30,9 +30,9 @@ namespace libime {
 
 template <typename T>
 struct naivevector {
-    static_assert(
-        std::is_trivially_destructible<T>::value && std::is_standard_layout<T>::value,
-        "this class should only use with trivially copyable class, but well, we only care about fundamental type");
+    static_assert(std::is_trivially_destructible<T>::value && std::is_standard_layout<T>::value,
+                  "this class should only use with trivially copyable class, but well, we only "
+                  "care about fundamental type");
 
     typedef T value_type;
     typedef value_type *pointer;
@@ -111,7 +111,8 @@ struct naivevector {
 
     void shrink_to_fit() {
         if (m_cap > m_end) {
-            _realloc_array(size_type(reinterpret_cast<char *>(m_end) - reinterpret_cast<char *>(m_start)));
+            _realloc_array(
+                size_type(reinterpret_cast<char *>(m_end) - reinterpret_cast<char *>(m_start)));
         }
     }
 
@@ -181,7 +182,8 @@ private:
             std::free(m_start);
             m_start = m_end = m_cap = nullptr;
         } else {
-            auto old_bytes = size_type(reinterpret_cast<char *>(m_end) - reinterpret_cast<char *>(m_start));
+            auto old_bytes =
+                size_type(reinterpret_cast<char *>(m_end) - reinterpret_cast<char *>(m_start));
             auto new_start = reinterpret_cast<pointer>(std::realloc(m_start, bytes));
             if (new_start) {
                 m_start = new_start;

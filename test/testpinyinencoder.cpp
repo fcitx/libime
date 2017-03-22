@@ -22,35 +22,49 @@
 
 using namespace libime;
 
-void dfs(const PinyinSegments &segs, std::vector<size_t> &path, size_t start = 0) {
-    if (start == segs.end()) {
-        size_t s = 0;
-        for (auto e : path) {
-            std::cout << segs.segment(s, e) << " ";
-            s = e;
-        }
-        std::cout << std::endl;
-        return;
+bool callback(const PinyinSegments &segs, const std::vector<size_t> &path) {
+    size_t s = 0;
+    for (auto e : path) {
+        std::cout << segs.segment(s, e) << " ";
+        s = e;
     }
-    auto &nexts = segs.next(start);
-    for (auto next : nexts) {
-        path.push_back(next);
-        dfs(segs, path, next);
-        path.pop_back();
-    }
+    std::cout << std::endl;
+    return true;
 }
 
 int main() {
-    std::vector<size_t> path;
-    dfs(PinyinEncoder::parseUserPinyin("lvenu", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("woaizuguotiananmen", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("wanan", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("biiiiiilp", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("zhm", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("zzhzhhzhzh", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("shuou", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("tanan", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("lven", PinyinFuzzyFlag::None), path);
-    dfs(PinyinEncoder::parseUserPinyin("ananananana", PinyinFuzzyFlag::None), path);
+    PinyinEncoder::parseUserPinyin("wa'nan'''", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("lvenu", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("woaizuguotiananmen", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("wanan", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("biiiiiilp", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("zhm", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("zzhzhhzhzh", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("shuou", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("tanan", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("lven", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("ananananana", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("wa'nan", PinyinFuzzyFlag::None).dfs(callback);
+
+    for (auto syl : PinyinEncoder::stringToSyllables(
+             "niagn", PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
+                                       PinyinFuzzyFlag::NG_GN})) {
+        for (auto f : syl.second) {
+            std::cout << PinyinSyllable(syl.first, f).toString() << std::endl;
+        }
+    }
+    for (auto syl : PinyinEncoder::stringToSyllables(
+             "n", PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
+                                   PinyinFuzzyFlag::NG_GN})) {
+        for (auto f : syl.second) {
+            std::cout << PinyinSyllable(syl.first, f).toString() << std::endl;
+        }
+    }
+    for (auto syl : PinyinEncoder::stringToSyllables(
+             "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG, PinyinFuzzyFlag::NG_GN})) {
+        for (auto f : syl.second) {
+            std::cout << PinyinSyllable(syl.first, f).toString() << std::endl;
+        }
+    }
     return 0;
 }

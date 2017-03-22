@@ -48,8 +48,8 @@ enum class BuildPhase { PhaseConfig, PhaseRule, PhaseData } phase = BuildPhase::
 
 static const char *strConst[2][STR_LAST] = {
     {"键码=", "码长=", "规避字符=", "拼音=", "拼音长度=", "[数据]", "[组词规则]", "提示=", "构词="},
-    {"KeyCode=", "Length=", "InvalidChar=", "Pinyin=", "PinyinLength=", "[Data]", "[Rule]", "Prompt=",
-     "ConstructPhrase="}};
+    {"KeyCode=", "Length=", "InvalidChar=", "Pinyin=", "PinyinLength=", "[Data]", "[Rule]",
+     "Prompt=", "ConstructPhrase="}};
 
 class TableBasedDictionaryPrivate {
 public:
@@ -71,11 +71,11 @@ public:
     }
 
     TableBasedDictionaryPrivate(const TableBasedDictionaryPrivate &other)
-        : rules(other.rules), inputCode(other.inputCode), ignoreChars(other.ignoreChars), pinyinKey(other.pinyinKey),
-          promptKey(other.promptKey), phraseKey(other.phraseKey), codeLength(other.codeLength),
-          phraseTrie(other.phraseTrie), singleCharTrie(other.singleCharTrie),
-          singleCharConstTrie(other.singleCharConstTrie), promptTrie(other.promptTrie),
-          pinyinPhraseTrie(other.pinyinPhraseTrie) {
+        : rules(other.rules), inputCode(other.inputCode), ignoreChars(other.ignoreChars),
+          pinyinKey(other.pinyinKey), promptKey(other.promptKey), phraseKey(other.phraseKey),
+          codeLength(other.codeLength), phraseTrie(other.phraseTrie),
+          singleCharTrie(other.singleCharTrie), singleCharConstTrie(other.singleCharConstTrie),
+          promptTrie(other.promptTrie), pinyinPhraseTrie(other.pinyinPhraseTrie) {
         charCheck = [this](char c) { return inputCode.find(c) != inputCode.end(); };
     }
 
@@ -109,11 +109,12 @@ public:
     }
 };
 
-void updateReverseLookupEntry(DATrie<int32_t> &trie, const boost::string_view &key, const boost::string_view &value) {
+void updateReverseLookupEntry(DATrie<int32_t> &trie, boost::string_view key,
+                              boost::string_view value) {
     auto reverseEntry = value.to_string() + keyValueSeparator;
     bool insert = true;
-    trie.foreach (reverseEntry, [&trie, &key, &value, &insert, &reverseEntry](int32_t, size_t len,
-                                                                              DATrie<int32_t>::position_type pos) {
+    trie.foreach (reverseEntry, [&trie, &key, &value, &insert, &reverseEntry](
+                                    int32_t, size_t len, DATrie<int32_t>::position_type pos) {
         auto oldKeyLen = len;
         if (key.length() > oldKeyLen) {
             std::string oldEntry;
@@ -130,19 +131,22 @@ void updateReverseLookupEntry(DATrie<int32_t> &trie, const boost::string_view &k
     }
 }
 
-TableBasedDictionary::TableBasedDictionary() : d_ptr(std::make_unique<TableBasedDictionaryPrivate>()) {
+TableBasedDictionary::TableBasedDictionary()
+    : d_ptr(std::make_unique<TableBasedDictionaryPrivate>()) {
     FCITX_D();
     d->reset();
 }
 
 TableBasedDictionary::~TableBasedDictionary() {}
 
-TableBasedDictionary::TableBasedDictionary(TableBasedDictionary &&other) noexcept : d_ptr(std::move(other.d_ptr)) {}
+TableBasedDictionary::TableBasedDictionary(TableBasedDictionary &&other) noexcept
+    : d_ptr(std::move(other.d_ptr)) {}
 
 TableBasedDictionary::TableBasedDictionary(const libime::TableBasedDictionary &other)
     : d_ptr(std::make_unique<TableBasedDictionaryPrivate>(*other.d_ptr)) {}
 
-TableBasedDictionary::TableBasedDictionary(const char *filename, TableBasedDictionary::TableFormat format)
+TableBasedDictionary::TableBasedDictionary(const char *filename,
+                                           TableBasedDictionary::TableFormat format)
     : TableBasedDictionary() {
     std::ifstream in(filename, std::ios::in | std::ios::binary);
     throw_if_io_fail(in);
@@ -159,7 +163,8 @@ TableBasedDictionary::TableBasedDictionary(const char *filename, TableBasedDicti
     }
 }
 
-TableBasedDictionary::TableBasedDictionary(std::istream &in, TableBasedDictionary::TableFormat format)
+TableBasedDictionary::TableBasedDictionary(std::istream &in,
+                                           TableBasedDictionary::TableFormat format)
     : TableBasedDictionary() {
     switch (format) {
     case TableFormat::Binary:
@@ -256,7 +261,8 @@ void TableBasedDictionary::build(std::istream &in) {
         }
         case BuildPhase::PhaseData: {
             std::array<char, 3> special = {d->pinyinKey, d->phraseKey, d->promptKey};
-            PhraseFlag specialFlag[] = {PhraseFlagPinyin, PhraseFlagConstructPhrase, PhraseFlagPrompt};
+            PhraseFlag specialFlag[] = {PhraseFlagPinyin, PhraseFlagConstructPhrase,
+                                        PhraseFlagPrompt};
             auto spacePos = buf.find_first_of(" \n\r\f\v\t");
             if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
                 continue;
@@ -327,7 +333,8 @@ void TableBasedDictionary::dump(std::ostream &out) {
     out << strConst[1][STR_DATA] << std::endl;
     std::string buf;
     if (d->promptKey) {
-        d->promptTrie.foreach ([this, d, &buf, &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+        d->promptTrie.foreach ([this, d, &buf, &out](int32_t, size_t _len,
+                                                     DATrie<int32_t>::position_type pos) {
             d->promptTrie.suffix(buf, _len, pos);
             auto sep = buf.find(keyValueSeparator);
             boost::string_view ref(buf);
@@ -336,29 +343,31 @@ void TableBasedDictionary::dump(std::ostream &out) {
         });
     }
     if (d->phraseKey) {
-        d->singleCharConstTrie.foreach (
-            [this, d, &buf, &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
-                d->singleCharConstTrie.suffix(buf, _len, pos);
-                auto sep = buf.find(keyValueSeparator);
-                boost::string_view ref(buf);
-                out << d->promptKey << ref.substr(sep + 1) << " " << ref.substr(0, sep) << std::endl;
-                return true;
-            });
+        d->singleCharConstTrie.foreach ([this, d, &buf, &out](int32_t, size_t _len,
+                                                              DATrie<int32_t>::position_type pos) {
+            d->singleCharConstTrie.suffix(buf, _len, pos);
+            auto sep = buf.find(keyValueSeparator);
+            boost::string_view ref(buf);
+            out << d->promptKey << ref.substr(sep + 1) << " " << ref.substr(0, sep) << std::endl;
+            return true;
+        });
     }
-    d->phraseTrie.foreach ([this, d, &buf, &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
-        d->phraseTrie.suffix(buf, _len, pos);
-        auto sep = buf.find(keyValueSeparator);
-        boost::string_view ref(buf);
-        out << ref.substr(0, sep) << " " << ref.substr(sep + 1) << std::endl;
-        return true;
-    });
-    d->pinyinPhraseTrie.foreach ([this, d, &buf, &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
-        d->pinyinPhraseTrie.suffix(buf, _len, pos);
-        auto sep = buf.find(keyValueSeparator);
-        boost::string_view ref(buf);
-        out << d->pinyinKey << ref.substr(0, sep) << " " << ref.substr(sep + 1) << std::endl;
-        return true;
-    });
+    d->phraseTrie.foreach (
+        [this, d, &buf, &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+            d->phraseTrie.suffix(buf, _len, pos);
+            auto sep = buf.find(keyValueSeparator);
+            boost::string_view ref(buf);
+            out << ref.substr(0, sep) << " " << ref.substr(sep + 1) << std::endl;
+            return true;
+        });
+    d->pinyinPhraseTrie.foreach (
+        [this, d, &buf, &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+            d->pinyinPhraseTrie.suffix(buf, _len, pos);
+            auto sep = buf.find(keyValueSeparator);
+            boost::string_view ref(buf);
+            out << d->pinyinKey << ref.substr(0, sep) << " " << ref.substr(sep + 1) << std::endl;
+            return true;
+        });
 }
 
 void TableBasedDictionary::open(std::istream &in) {
@@ -574,7 +583,8 @@ bool TableBasedDictionary::generate(const std::string &value, std::string &key) 
 
             size_t len = 0;
             d->singleCharConstTrie.foreach (
-                s, [this, d, &len, &entry](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+                s,
+                [this, d, &len, &entry](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
                     len = _len;
                     d->singleCharConstTrie.suffix(entry, _len, pos);
                     return false;

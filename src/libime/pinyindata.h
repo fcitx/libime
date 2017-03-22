@@ -25,16 +25,20 @@
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index_container.hpp>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace libime {
 struct PinyinHash : std::unary_function<boost::string_view, std::size_t> {
-    std::size_t operator()(boost::string_view const &val) const { return boost::hash_range(val.begin(), val.end()); }
+    std::size_t operator()(boost::string_view const &val) const {
+        return boost::hash_range(val.begin(), val.end());
+    }
 };
 
 class PinyinEntry {
 public:
-    PinyinEntry(const char *pinyin, PinyinInitial initial, PinyinFinal final, PinyinFuzzyFlags flags)
+    PinyinEntry(const char *pinyin, PinyinInitial initial, PinyinFinal final,
+                PinyinFuzzyFlags flags)
         : pinyin_(pinyin), initial_(initial), final_(final), flags_(flags) {}
 
     boost::string_view pinyin() const { return pinyin_; }
@@ -52,10 +56,12 @@ private:
 using PinyinMap = boost::multi_index_container<
     PinyinEntry,
     boost::multi_index::indexed_by<boost::multi_index::hashed_non_unique<
-        boost::multi_index::const_mem_fun<PinyinEntry, boost::string_view, &PinyinEntry::pinyin>, PinyinHash>>>;
+        boost::multi_index::const_mem_fun<PinyinEntry, boost::string_view, &PinyinEntry::pinyin>,
+        PinyinHash>>>;
 
 LIBIME_EXPORT
 const PinyinMap &getPinyinMap();
+LIBIME_EXPORT const std::unordered_set<int16_t> &getEncodedInitialFinal();
 }
 
 #endif // _FCITX_LIBIME_PINYINDATA_H_

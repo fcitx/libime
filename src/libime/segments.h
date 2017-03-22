@@ -19,46 +19,40 @@
 #ifndef _LIBIME_SEGMENTS_H_
 #define _LIBIME_SEGMENTS_H_
 
-#include <string>
+#include <boost/utility/string_view.hpp>
 #include <vector>
 
 namespace libime {
 
 class Segments {
 public:
-    void clear() {
-        data_.clear();
-        idx_.clear();
-    }
-
-    void append(const std::string &s) { return append(s.c_str(), s.size()); }
-
-    void append(const char *s, size_t n) {
-        idx_.push_back(data_.size());
-        data_.insert(data_.end(), s, s + n);
-    }
-
-    void pop() {
-        auto i = idx_.back();
-        idx_.pop_back();
-        data_.erase(std::next(data_.begin(), i), data_.end());
-    }
+    Segments(boost::string_view view, std::vector<size_t> idx)
+        : data_(view), idx_(std::move(idx)) {}
 
     size_t size() const { return idx_.size(); }
+    boost::string_view data() const { return data_; }
 
-    std::vector<char> at(size_t i) const {
-        auto start = idx_[i];
-        auto end = (i + 1 < idx_.size()) ? idx_[i + 1] : data_.size();
-        return {std::next(data_.begin(), start), std::next(data_.begin(), end)};
+    boost::string_view at(size_t i) const {
+        auto start = i == 0 ? 0 : idx_[i - 1];
+        auto end = idx_[i];
+        return data_.substr(start, end - start);
     }
 
-    const char *right(size_t i) const { return data_.data() + idx_[i]; }
+    boost::string_view prefix(size_t i) const {
+        auto end = idx_[i];
+        return data_.substr(0, end);
+    }
 
-    size_t rightSize(int i) const { return data_.size() - idx_[i]; }
+    Segments right(size_t i) const {
+        if (i == 0) {
+            return *this;
+        }
+        return {data_.substr(idx_[i - 1]), {idx_.begin() + i - 1, idx_.end()}};
+    }
 
 private:
-    std::vector<char> data_;
-    std::vector<int> idx_;
+    boost::string_view data_;
+    std::vector<size_t> idx_;
 };
 }
 

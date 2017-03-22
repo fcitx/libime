@@ -87,7 +87,9 @@ public:
 
     // result will be NO_VALUE
     value_type exactMatchSearch(const char *key, size_t len);
-    value_type exactMatchSearch(const std::string &key) { return exactMatchSearch(key.c_str(), key.size()); }
+    value_type exactMatchSearch(const std::string &key) {
+        return exactMatchSearch(key.c_str(), key.size());
+    }
 
     DATrie<T>::value_type traverse(const std::string &key, position_type &from) {
         return traverse(key.c_str(), key.size(), from);
@@ -98,7 +100,9 @@ public:
     void set(const std::string &key, value_type val) { return set(key.c_str(), key.size(), val); }
     void set(const char *key, size_t len, value_type val);
 
-    void update(const std::string &key, updater_type updater) { update(key.c_str(), key.size(), updater); }
+    void update(const std::string &key, updater_type updater) {
+        update(key.c_str(), key.size(), updater);
+    }
     void update(const char *key, size_t len, updater_type updater);
 
     void dump(value_type *data, std::size_t size);
@@ -106,7 +110,9 @@ public:
     void dump(std::vector<std::tuple<value_type, size_t, position_type>> &data);
 
     // remove key
-    bool erase(const std::string &key, position_type from = 0) { return erase(key.c_str(), key.size(), from); }
+    bool erase(const std::string &key, position_type from = 0) {
+        return erase(key.c_str(), key.size(), from);
+    }
     bool erase(const char *key, size_t len, position_type from = 0);
     bool erase(position_type from = 0);
 

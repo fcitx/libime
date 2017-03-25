@@ -23,10 +23,12 @@
 #include <boost/utility/string_view.hpp>
 #include <fcitx-utils/macros.h>
 #include <memory>
+#include <vector>
 
 namespace libime {
 
 using WordIndex = unsigned int;
+using State = std::vector<char>;
 
 class LanguageModelPrivate;
 class LIBIME_EXPORT LanguageModel {
@@ -34,9 +36,13 @@ public:
     LanguageModel(const char *file);
     virtual ~LanguageModel();
 
-    WordIndex beginSentence();
-    WordIndex endSentence();
-    WordIndex index(boost::string_view view);
+    WordIndex beginSentence() const;
+    WordIndex endSentence() const;
+    WordIndex unknown() const;
+    State beginState() const;
+    State nullState() const;
+    WordIndex index(boost::string_view view) const;
+    float score(const State &state, WordIndex word, State &out) const;
 
 private:
     std::unique_ptr<LanguageModelPrivate> d_ptr;

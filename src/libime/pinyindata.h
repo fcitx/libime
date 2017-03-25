@@ -62,6 +62,9 @@ using PinyinMap = boost::multi_index_container<
 LIBIME_EXPORT
 const PinyinMap &getPinyinMap();
 LIBIME_EXPORT const std::unordered_set<int16_t> &getEncodedInitialFinal();
+
+LIBIME_EXPORT const std::unordered_map<std::string, std::pair<std::string, std::string>> &
+getInnerSegment();
 }
 
 #endif // _FCITX_LIBIME_PINYINDATA_H_

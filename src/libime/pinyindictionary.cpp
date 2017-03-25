@@ -29,19 +29,39 @@
 
 namespace libime {
 
+static const float fuzzyCost = std::log10(0.5f);
+
 class PinyinDictionaryPrivate {
 public:
     DATrie<float> trie_;
     PinyinFuzzyFlags flags_;
 };
 
-void PinyinDictionary::matchPrefix(const Segments &seg, MatchCallback callback) {
+size_t numOfFuzzy(const Segments &seg, size_t from, size_t to, boost::string_view encodedPinyin) {
+    assert((to - from) * 2 + 1 == encodedPinyin.size());
+    size_t count = 0;
+    for (size_t i = 0; i < to - from; i++) {
+        auto initial = encodedPinyin[i];
+        auto final = encodedPinyin[i + (to - from) + 1];
+        auto pinyin = seg.at(i + from);
+        auto &initialString = PinyinEncoder::initialToString(static_cast<PinyinInitial>(initial));
+        auto &finalString = PinyinEncoder::finalToString(static_cast<PinyinFinal>(final));
+        if (initialString.size() + finalString.size() != pinyin.size() ||
+            !boost::starts_with(pinyin, initialString) || !boost::ends_with(pinyin, finalString)) {
+            assert(initialString + finalString != pinyin);
+            count++;
+        }
+    }
+    return count;
+}
+
+void PinyinDictionary::matchPrefix(const Segments &seg, size_t from, MatchCallback callback) {
     FCITX_D();
     std::list<std::pair<decltype(d->trie_)::position_type, std::vector<std::vector<PinyinFinal>>>>
         nodes;
     nodes.emplace_back(std::piecewise_construct, std::forward_as_tuple(0), std::forward_as_tuple());
 
-    size_t i = 0;
+    size_t i = from;
     while (boost::starts_with(seg.at(i), "\'")) {
         i++;
     }
@@ -111,11 +131,13 @@ void PinyinDictionary::matchPrefix(const Segments &seg, MatchCallback callback) 
             auto size = node.second.size();
             for (auto finalNode : finalNodes) {
                 d->trie_.foreach (
-                    [d, &callback, size, i](decltype(d->trie_)::value_type value, size_t len,
-                                            uint64_t pos) {
+                    [d, &callback, size, i, seg, from](decltype(d->trie_)::value_type value,
+                                                       size_t len, uint64_t pos) {
                         std::string s;
                         d->trie_.suffix(s, len + size * 2 + 1, pos);
-                        callback(i - 1, s.substr(size * 2 + 1), value);
+                        size_t fuzzy =
+                            numOfFuzzy(seg, from, i, boost::string_view(s).substr(0, size * 2 + 1));
+                        callback(i - 1, s.substr(size * 2 + 1), value + fuzzy * fuzzyCost);
                         return true;
                     },
                     finalNode);

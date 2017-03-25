@@ -45,6 +45,11 @@ int main() {
     PinyinEncoder::parseUserPinyin("lven", PinyinFuzzyFlag::None).dfs(callback);
     PinyinEncoder::parseUserPinyin("ananananana", PinyinFuzzyFlag::None).dfs(callback);
     PinyinEncoder::parseUserPinyin("wa'nan", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::Inner).dfs(callback);
+    PinyinEncoder::parseUserPinyin("xi'an", PinyinFuzzyFlag::Inner).dfs(callback);
+    PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::Inner).dfs(callback);
 
     for (auto syl : PinyinEncoder::stringToSyllables(
              "niagn", PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,

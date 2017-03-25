@@ -22,6 +22,7 @@
 #include "dictionary.h"
 #include "segments.h"
 #include <cstdint>
+#include <fcitx-utils/macros.h>
 #include <memory>
 #include <vector>
 
@@ -31,7 +32,8 @@ class DecoderPrivate;
 class Dictionary;
 class LanguageModel;
 
-class Decoder {
+class LIBIME_EXPORT Decoder {
+public:
     Decoder(Dictionary *dict, LanguageModel *model);
     virtual ~Decoder();
 
@@ -42,6 +44,7 @@ class Decoder {
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;
+    FCITX_DECLARE_PRIVATE(Decoder);
 };
 }
 

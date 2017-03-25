@@ -17,20 +17,22 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "lm/model.hh"
+#include "libime/languagemodel.h"
+#include <iostream>
 
 int main(int argc, char *argv[]) {
-    using namespace lm::ngram;
-    lm::ngram::Config config;
-    config.sentence_marker_missing = lm::SILENT;
-    TrieModel model(argv[1], config);
-    State state(model.BeginSentenceState()), out_state;
-    const auto &vocab = model.GetVocabulary();
+    using namespace libime;
+    LanguageModel model(argv[1]);
+    State state(model.nullState()), out_state = model.nullState();
     std::string word;
+    float sum = 0.0f;
     while (std::cin >> word) {
-        std::cout << model.Score(state, vocab.Index(word), out_state) << '\n';
+        float s;
+        std::cout << (s = model.score(state, model.index(word), out_state)) << '\n';
         state = out_state;
+        sum += s;
     }
+    std::cout << sum << std::endl;
 
     return 0;
 }

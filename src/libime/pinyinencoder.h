@@ -46,6 +46,7 @@ enum class PinyinFuzzyFlag {
     S_SH = 1 << 11,    // 3
     Z_ZH = 1 << 12,    // 4
     VE_UE = 1 << 13,
+    Inner = 1 << 14,
 };
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;
@@ -203,11 +204,11 @@ public:
     }
     static std::string decodeFullPinyin(const char *data, size_t size);
 
-    static std::string initialToString(PinyinInitial initial);
+    static const std::string &initialToString(PinyinInitial initial);
     static PinyinInitial stringToInitial(const std::string &str);
     static bool isValidInitial(char c) { return c >= firstInitial && c <= lastInitial; }
 
-    static std::string finalToString(PinyinFinal final);
+    static const std::string &finalToString(PinyinFinal final);
     static PinyinFinal stringToFinal(const std::string &str);
     static bool isValidFinal(char c) { return c >= firstFinal && c <= lastFinal; }
 

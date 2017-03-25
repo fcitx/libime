@@ -53,6 +53,33 @@ const std::unordered_set<int16_t> &getEncodedInitialFinal() {
     return encodedInitialFinal;
 }
 
+const std::unordered_map<std::string, std::pair<std::string, std::string>> &getInnerSegment() {
+    static const std::unordered_map<std::string, std::pair<std::string, std::string>> innerSegment =
+        {
+            {"xiao", {"xi", "ao"}},     {"xiang", {"xi", "ang"}},   {"xian", {"xi", "an"}},
+            {"jiao", {"ji", "ao"}},     {"jiang", {"ji", "ang"}},   {"jian", {"ji", "an"}},
+            {"luan", {"lu", "an"}},     {"miao", {"mi", "ao"}},     {"mian", {"mi", "an"}},
+            {"kuang", {"ku", "ang"}},   {"kuan", {"ku", "an"}},     {"kuai", {"ku", "ai"}},
+            {"nuan", {"nu", "an"}},     {"piao", {"pi", "ao"}},     {"pian", {"pi", "an"}},
+            {"quan", {"qu", "an"}},     {"juan", {"ju", "an"}},     {"qiao", {"qi", "ao"}},
+            {"qiang", {"qi", "ang"}},   {"qian", {"qi", "an"}},     {"yuan", {"yu", "an"}},
+            {"zhuang", {"zhu", "ang"}}, {"zhuan", {"zhu", "an"}},   {"zhuai", {"zhu", "ai"}},
+            {"niao", {"ni", "ao"}},     {"niang", {"ni", "ang"}},   {"nian", {"ni", "an"}},
+            {"liao", {"li", "ao"}},     {"liang", {"li", "ang"}},   {"lian", {"li", "an"}},
+            {"zuan", {"zu", "an"}},     {"tuan", {"tu", "an"}},     {"tiao", {"ti", "ao"}},
+            {"tian", {"ti", "an"}},     {"xuan", {"xu", "an"}},     {"suan", {"su", "an"}},
+            {"biao", {"bi", "ao"}},     {"bian", {"bi", "an"}},     {"shuang", {"shu", "ang"}},
+            {"shuan", {"shu", "an"}},   {"shuai", {"shu", "ai"}},   {"ruan", {"ru", "an"}},
+            {"huang", {"hu", "ang"}},   {"huan", {"hu", "an"}},     {"huai", {"hu", "ai"}},
+            {"guang", {"gu", "ang"}},   {"guan", {"gu", "an"}},     {"guai", {"gu", "ai"}},
+            {"duan", {"du", "an"}},     {"diao", {"di", "ao"}},     {"dian", {"di", "an"}},
+            {"cuan", {"cu", "an"}},     {"chuang", {"chu", "ang"}}, {"chuan", {"chu", "an"}},
+            {"chuai", {"chu", "ai"}},
+        };
+
+    return innerSegment;
+}
+
 const PinyinMap &getPinyinMap() {
     static const PinyinMap pinyinMap = {
         {"zuo", PinyinInitial::Z, PinyinFinal::UO, PinyinFuzzyFlag::None},

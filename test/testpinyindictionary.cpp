@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
                 std::cout << segs.at(i) << " ";
             }
             std::cout << std::endl;
-            dict.matchPrefix(segs, [&segs](size_t to, boost::string_view hanzi, float value) {
+            dict.matchPrefix(segs, 0, [&segs](size_t to, boost::string_view hanzi, float value) {
                 std::cout << segs.prefix(to) << " " << hanzi << " " << value << std::endl;
             });
             return true;

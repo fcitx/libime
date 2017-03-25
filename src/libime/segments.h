@@ -43,13 +43,6 @@ public:
         return data_.substr(0, end);
     }
 
-    Segments right(size_t i) const {
-        if (i == 0) {
-            return *this;
-        }
-        return {data_.substr(idx_[i - 1]), {idx_.begin() + i - 1, idx_.end()}};
-    }
-
 private:
     boost::string_view data_;
     std::vector<size_t> idx_;

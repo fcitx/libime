@@ -30,6 +30,8 @@
 
 namespace libime {
 
+static const std::string emptyString;
+
 template <typename L, typename R>
 boost::bimap<L, R> makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
     return boost::bimap<L, R>(list.begin(), list.end());
@@ -126,6 +128,16 @@ PinyinSegments PinyinEncoder::parseUserPinyin(boost::string_view pinyin, PinyinF
         if (top + str.size() < pinyin.size()) {
             q.push(top + str.size());
         }
+
+        if (str.size() >= 4 && flags.test(PinyinFuzzyFlag::Inner)) {
+            auto &innerSegments = getInnerSegment();
+            auto iter = innerSegments.find(str.to_string());
+            if (iter != innerSegments.end()) {
+                result.addNext(top, top + iter->second.first.size());
+                result.addNext(top + iter->second.first.size(), top + str.size());
+            }
+        }
+
         if (str.size() > 1 && top + str.size() < pinyin.size()) {
             // pinyin may end with aegimnoruv
             // and may start with abcdefghjklmnopqrstwxyz.
@@ -188,12 +200,12 @@ std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
     return result.str();
 }
 
-std::string PinyinEncoder::initialToString(PinyinInitial initial) {
+const std::string &PinyinEncoder::initialToString(PinyinInitial initial) {
     auto iter = initialMap.left.find(initial);
     if (iter != initialMap.left.end()) {
         return iter->second;
     }
-    return {};
+    return emptyString;
 }
 
 PinyinInitial PinyinEncoder::stringToInitial(const std::string &str) {
@@ -204,12 +216,12 @@ PinyinInitial PinyinEncoder::stringToInitial(const std::string &str) {
     return PinyinInitial::Invalid;
 }
 
-std::string PinyinEncoder::finalToString(PinyinFinal final) {
+const std::string &PinyinEncoder::finalToString(PinyinFinal final) {
     auto iter = finalMap.left.find(final);
     if (iter != finalMap.left.end()) {
         return iter->second;
     }
-    return {};
+    return emptyString;
 }
 
 PinyinFinal PinyinEncoder::stringToFinal(const std::string &str) {
@@ -237,6 +249,13 @@ static void getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFina
     PinyinFinal finals[2] = {syl.final(), PinyinFinal::Invalid};
     int initialSize = 1;
     int finalSize = 1;
+
+    // for {s,z,c} we also want them to match {sh,zh,ch}
+    if (syl.final() == PinyinFinal::Zero) {
+        flags |= PinyinFuzzyFlag::C_CH;
+        flags |= PinyinFuzzyFlag::Z_ZH;
+        flags |= PinyinFuzzyFlag::S_SH;
+    }
 
     const static std::vector<std::tuple<PinyinInitial, PinyinInitial, PinyinFuzzyFlag>>
         initialFuzzies = {
@@ -305,8 +324,8 @@ std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>>
 PinyinEncoder::stringToSyllables(boost::string_view pinyin, PinyinFuzzyFlags flags) {
     std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> result;
     auto &map = getPinyinMap();
-    // we only want M/Invalid and N/Invalid, so we could get match for everything.
-    if (pinyin != "m" && pinyin != "n") {
+    // we only want {M,N,R}/Invalid instead of {M,N,R}/Zero, so we could get match for everything.
+    if (pinyin != "m" && pinyin != "n" && pinyin != "r") {
         auto iterPair = map.equal_range(pinyin);
         for (auto &item : boost::make_iterator_range(iterPair.first, iterPair.second)) {
             if (flags.test(item.flags())) {

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import sys
 import fileinput
+import math
 
 def is_prob(s):
     return len(s) > 2 and '.' in s and s[0].isdigit()
@@ -38,9 +39,9 @@ for line in lines:
             continue
         if is_prob(tokens[-1]):
             if is_prob(tokens[-2]):
-                tokens=["-" + tokens[-2]] + tokens[0:-2] + ["-" + tokens[-1]]
+                tokens=[str(math.log10(float(tokens[-2])))] + tokens[0:-2] + [str(math.log10(float(tokens[-1])))]
             else:
-                tokens=["-" + tokens[-1]] + tokens[0:-1]
+                tokens=[str(math.log10(float(tokens[-1])))] + tokens[0:-1]
             print("\t".join(tokens))
         else:
             print(tokens, file=sys.stderr)

@@ -20,12 +20,12 @@
 #include "tablebaseddictionary.h"
 #include "datrie.h"
 #include "tablerule.h"
-#include "utf8.h"
 #include <boost/algorithm/string.hpp>
 #include <cstring>
 #include <fstream>
 #include <set>
 #include <string>
+#include <fcitx-utils/utf8.h>
 
 namespace libime {
 
@@ -470,7 +470,7 @@ bool TableBasedDictionary::insert(const std::string &key, const std::string &val
     }
 
     // invalid char
-    if (!utf8::is_valid(value.begin(), value.end())) {
+    if (!fcitx::utf8::validate(value.c_str())) {
         return false;
     }
 
@@ -492,7 +492,7 @@ bool TableBasedDictionary::insert(const std::string &key, const std::string &val
         }
         d->phraseTrie.set(entry, flag);
 
-        if (utf8::unchecked::distance(value.begin(), value.end()) == 1) {
+        if (fcitx_utf8_strnlen(value.c_str(), value.size()) == 1) {
             updateReverseLookupEntry(d->singleCharTrie, key, value);
 
             if (hasRule() && !d->phraseKey) {
@@ -511,7 +511,7 @@ bool TableBasedDictionary::insert(const std::string &key, const std::string &val
     }
     case PhraseFlagPrompt:
         if (key.size() == 1) {
-            auto promptChar = utf8::unchecked::peek_next(value.begin());
+            auto promptChar = fcitx::utf8::getCharValidated(value);
             d->promptTrie.set(key, promptChar);
         } else {
             return false;
@@ -532,11 +532,11 @@ bool TableBasedDictionary::generate(const std::string &value, std::string &key) 
         return false;
     }
 
-    if (!utf8::is_valid(value.begin(), value.end())) {
+    if (!fcitx::utf8::validate(value)) {
         return false;
     }
 
-    auto valueLen = utf8::unchecked::distance(value.begin(), value.end());
+    auto valueLen = fcitx::utf8::length(value);
 
     std::string newKey;
     std::string entry;
@@ -549,7 +549,7 @@ bool TableBasedDictionary::generate(const std::string &value, std::string &key) 
 
         bool success = true;
         for (const auto &ruleEntry : rule.entries) {
-            utf8::iterator<std::string::const_iterator> iter;
+            std::string::const_iterator iter;
             if (ruleEntry.character == 0 && ruleEntry.encodingIndex == 0) {
                 continue;
             }
@@ -560,25 +560,18 @@ bool TableBasedDictionary::generate(const std::string &value, std::string &key) 
                     break;
                 }
 
-                iter = decltype(iter)(value.begin(), value.begin(), value.end());
-                auto c = ruleEntry.character; // start from 1
-                while (--c) {
-                    iter++;
-                }
+                iter = value.begin() + fcitx::utf8::nthChar(value, ruleEntry.character - 1);
             } else {
                 if (ruleEntry.character > valueLen) {
                     success = false;
                     break;
                 }
 
-                iter = decltype(iter)(value.end(), value.begin(), value.end());
-                auto c = ruleEntry.character; // start from 1
-                while (c--) {
-                    iter--;
-                }
+                iter = value.begin() + fcitx::utf8::nthChar(value, valueLen -  ruleEntry.character);
             }
-            auto prev = iter++;
-            std::string s(prev.base(), iter.base());
+            auto prev = iter;
+            iter = value.begin() + fcitx::utf8::nthChar(value, iter - value.begin(), 1);
+            std::string s(prev, iter);
             s += keyValueSeparator;
 
             size_t len = 0;

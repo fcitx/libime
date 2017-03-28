@@ -339,6 +339,11 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin, PinyinFuzzyFlags fla
         getFuzzy(result, {iter->second, PinyinFinal::Invalid}, flags);
     }
 
+    if (result.size() == 0) {
+        result.emplace_back(std::piecewise_construct, std::forward_as_tuple(PinyinInitial::Invalid),
+                            std::forward_as_tuple(1, PinyinFinal::Invalid));
+    }
+
     return result;
 }
 }

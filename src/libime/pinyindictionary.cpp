@@ -30,6 +30,7 @@
 namespace libime {
 
 static const float fuzzyCost = std::log10(0.5f);
+static const float invalidPinyinCost = -100.0f;
 
 class PinyinDictionaryPrivate {
 public:
@@ -65,6 +66,8 @@ void PinyinDictionary::matchPrefix(const Segments &seg, size_t from, MatchCallba
     while (boost::starts_with(seg.at(i), "\'")) {
         i++;
     }
+    size_t start = i;
+    bool matched = false;
     while (i < seg.size()) {
         boost::string_view pinyin = seg.at(i);
         i++;
@@ -131,13 +134,14 @@ void PinyinDictionary::matchPrefix(const Segments &seg, size_t from, MatchCallba
             auto size = node.second.size();
             for (auto finalNode : finalNodes) {
                 d->trie_.foreach (
-                    [d, &callback, size, i, seg, from](decltype(d->trie_)::value_type value,
-                                                       size_t len, uint64_t pos) {
+                    [d, &matched, &callback, size, i, seg,
+                     from](decltype(d->trie_)::value_type value, size_t len, uint64_t pos) {
                         std::string s;
                         d->trie_.suffix(s, len + size * 2 + 1, pos);
                         size_t fuzzy =
                             numOfFuzzy(seg, from, i, boost::string_view(s).substr(0, size * 2 + 1));
                         callback(i - 1, s.substr(size * 2 + 1), value + fuzzy * fuzzyCost);
+                        matched = true;
                         return true;
                     },
                     finalNode);
@@ -145,6 +149,18 @@ void PinyinDictionary::matchPrefix(const Segments &seg, size_t from, MatchCallba
         }
 
         nodes = std::move(newNodes);
+    }
+
+    if (!matched) {
+        i = start;
+        boost::string_view pinyin = seg.at(i);
+        i++;
+
+        // skip "'"
+        while (i < seg.size() && boost::starts_with(seg.at(i), "\'")) {
+            i++;
+        }
+        callback(i - 1, pinyin, invalidPinyinCost);
     }
 }
 

@@ -2,6 +2,7 @@ set(LIBIME_SINGLE_FILE_TEST
     testtable
     testpinyindata
     testpinyinencoder
+    testinputbuffer
     )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})

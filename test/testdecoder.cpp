@@ -43,5 +43,11 @@ int main(int argc, char *argv[]) {
             decoder.decode(segs, 1, {});
             return true;
         });
+    PinyinEncoder::parseUserPinyin("xiian", PinyinFuzzyFlag::Inner)
+        .dfs([&decoder](const PinyinSegments &pyseg, const std::vector<size_t> &pos) {
+            Segments segs(pyseg.pinyin(), pos);
+            decoder.decode(segs, 1, {});
+            return true;
+        });
     return 0;
 }

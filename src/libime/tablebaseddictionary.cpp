@@ -22,10 +22,10 @@
 #include "tablerule.h"
 #include <boost/algorithm/string.hpp>
 #include <cstring>
+#include <fcitx-utils/utf8.h>
 #include <fstream>
 #include <set>
 #include <string>
-#include <fcitx-utils/utf8.h>
 
 namespace libime {
 
@@ -567,7 +567,7 @@ bool TableBasedDictionary::generate(const std::string &value, std::string &key) 
                     break;
                 }
 
-                iter = value.begin() + fcitx::utf8::nthChar(value, valueLen -  ruleEntry.character);
+                iter = value.begin() + fcitx::utf8::nthChar(value, valueLen - ruleEntry.character);
             }
             auto prev = iter;
             iter = value.begin() + fcitx::utf8::nthChar(value, iter - value.begin(), 1);

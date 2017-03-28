@@ -27,6 +27,7 @@
 #include <memory>
 
 namespace libime {
+static const float unknownWordCost = -100.0f;
 
 class LatticeNode {
 public:
@@ -59,7 +60,7 @@ public:
                                              size_t to, boost::string_view entry, float adjust) {
                 // FIXME
                 if (model_->index(entry) == model_->unknown()) {
-                    return;
+                    adjust += unknownWordCost;
                 }
                 lattice[to + 1].push_back(new LatticeNode(model_, entry, i, adjust));
             });
@@ -110,6 +111,7 @@ void Decoder::decode(const Segments &input, int nbest, const std::vector<int> &c
             node.score_ = max + node.cost_;
             node.state_ = std::move(maxState);
             node.prev_ = maxNode;
+#if 0
             {
                 auto pos = &node;
                 auto bos = &lattice.front()[0];
@@ -120,6 +122,7 @@ void Decoder::decode(const Segments &input, int nbest, const std::vector<int> &c
                 }
                 std::cout << sentence << " " << node.score_ << std::endl;
             }
+#endif
         }
     }
 

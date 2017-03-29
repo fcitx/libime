@@ -62,7 +62,8 @@ class DATrie {
 public:
     typedef T value_type;
     typedef uint64_t position_type;
-    typedef std::function<bool(value_type, size_t, position_type)> callback_type;
+    typedef std::function<bool(value_type, size_t, position_type)>
+        callback_type;
     typedef std::function<value_type(value_type)> updater_type;
 
     enum { NO_VALUE = NaN<value_type>::N1, NO_PATH = NaN<value_type>::N2 };
@@ -91,13 +92,17 @@ public:
         return exactMatchSearch(key.c_str(), key.size());
     }
 
-    DATrie<T>::value_type traverse(const std::string &key, position_type &from) {
+    DATrie<T>::value_type traverse(const std::string &key,
+                                   position_type &from) {
         return traverse(key.c_str(), key.size(), from);
     }
-    DATrie<T>::value_type traverse(const char *key, size_t len, position_type &from);
+    DATrie<T>::value_type traverse(const char *key, size_t len,
+                                   position_type &from);
 
     // set value
-    void set(const std::string &key, value_type val) { return set(key.c_str(), key.size(), val); }
+    void set(const std::string &key, value_type val) {
+        return set(key.c_str(), key.size(), val);
+    }
     void set(const char *key, size_t len, value_type val);
 
     void update(const std::string &key, updater_type updater) {
@@ -119,8 +124,10 @@ public:
     // call callback on each key
     void foreach (callback_type func, position_type pos = 0);
     // search by prefix
-    void foreach (const char *prefix, size_t size, callback_type func, position_type pos = 0);
-    void foreach (const std::string &prefix, callback_type func, position_type pos = 0) {
+    void foreach (const char *prefix, size_t size, callback_type func,
+                  position_type pos = 0);
+    void foreach (const std::string &prefix, callback_type func,
+                  position_type pos = 0) {
         return foreach (prefix.c_str(), prefix.size(), func, pos);
     }
     void clear();

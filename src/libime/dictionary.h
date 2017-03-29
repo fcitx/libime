@@ -30,7 +30,8 @@ typedef std::function<void(size_t, boost::string_view, float)> MatchCallback;
 
 class LIBIME_EXPORT Dictionary {
 public:
-    virtual void matchPrefix(const Segments &segs, size_t from, MatchCallback callback) = 0;
+    virtual void matchPrefix(const Segments &segs, size_t from,
+                             MatchCallback callback) = 0;
 };
 }
 

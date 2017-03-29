@@ -27,7 +27,8 @@ int main(int argc, char *argv[]) {
     // key can be same as other
     while (std::cin >> key) {
         map[key] = count;
-        tree.update(key, [count, &map, &key](TestTrie::value_type v) -> TestTrie::value_type {
+        tree.update(key, [count, &map, &key](
+                             TestTrie::value_type v) -> TestTrie::value_type {
             if (v != 0) {
                 // this is a key inserted twice
                 assert(map.find(key) != map.end());
@@ -45,15 +46,16 @@ int main(int argc, char *argv[]) {
 
     assert(tree.size() == map.size());
     for (auto &p : map) {
-        // std::cout << p.first << " " << tree.exactMatchSearch(p.first) << " " << p.second <<
+        // std::cout << p.first << " " << tree.exactMatchSearch(p.first) << " "
+        // << p.second <<
         // std::endl;
         assert(tree.exactMatchSearch(p.first) == p.second);
     }
 
     std::string tempKey;
     size_t foreach_count = 0;
-    tree.foreach ([&tree, &map, &tempKey, &foreach_count](TestTrie::value_type value, size_t len,
-                                                          uint64_t pos) {
+    tree.foreach ([&tree, &map, &tempKey, &foreach_count](
+        TestTrie::value_type value, size_t len, uint64_t pos) {
         (void)value;
         tree.suffix(tempKey, len, pos);
         assert(map.find(tempKey) != map.end());
@@ -77,7 +79,8 @@ int main(int argc, char *argv[]) {
     swap(tree, trie2);
 
     foreach_count = 0;
-    tree.foreach ([&tree, &map, &tempKey, &foreach_count](int32_t value, size_t len, uint64_t pos) {
+    tree.foreach ([&tree, &map, &tempKey,
+                   &foreach_count](int32_t value, size_t len, uint64_t pos) {
         (void)value;
         tree.suffix(tempKey, len, pos);
         assert(map.find(tempKey) != map.end());

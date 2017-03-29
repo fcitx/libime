@@ -42,12 +42,15 @@ public:
 
     TableBasedDictionary(const TableBasedDictionary &other);
     TableBasedDictionary(TableBasedDictionary &&other) noexcept;
-    explicit TableBasedDictionary(const char *filename, TableFormat format = TableFormat::Binary);
-    explicit TableBasedDictionary(std::istream &in, TableFormat format = TableFormat::Binary);
+    explicit TableBasedDictionary(const char *filename,
+                                  TableFormat format = TableFormat::Binary);
+    explicit TableBasedDictionary(std::istream &in,
+                                  TableFormat format = TableFormat::Binary);
 
     TableBasedDictionary &operator=(TableBasedDictionary other);
 
-    friend void swap(TableBasedDictionary &lhs, TableBasedDictionary &rhs) noexcept;
+    friend void swap(TableBasedDictionary &lhs,
+                     TableBasedDictionary &rhs) noexcept;
 
     void dump(const char *filename);
     void dump(std::ostream &out);
@@ -56,7 +59,8 @@ public:
 
     bool hasRule() const noexcept;
     bool insert(const std::string &key, const std::string &value,
-                libime::PhraseFlag flag = PhraseFlagNone, bool verifyWithRule = false);
+                libime::PhraseFlag flag = PhraseFlagNone,
+                bool verifyWithRule = false);
     bool insert(const std::string &value);
     bool generate(const std::string &value, std::string &key);
 

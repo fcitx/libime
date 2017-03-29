@@ -32,54 +32,61 @@ class LIBIME_EXPORT InputBuffer {
 public:
     class iterator
         : public boost::iterator_facade<iterator, boost::string_view,
-                                        boost::bidirectional_traversal_tag, boost::string_view> {
+                                        boost::bidirectional_traversal_tag,
+                                        boost::string_view> {
     public:
         iterator() {}
-        iterator(const InputBuffer *buffer, size_t idx, size_t length)
-            : buffer_(buffer), idx_(idx), length_(length) {}
+        iterator(const InputBuffer *buffer, size_t idx)
+            : buffer_(buffer), idx_(idx) {}
 
         bool equal(iterator const &other) const {
-            return buffer_ == other.buffer_ && idx_ == other.idx_ && length_ == other.length_;
+            return buffer_ == other.buffer_ && idx_ == other.idx_;
         }
 
-        void increment() {
-            length_ += buffer_->sizeAt(idx_);
-            idx_++;
-        }
+        void increment() { idx_++; }
 
-        void decrement() {
-            idx_--;
-            length_ -= buffer_->sizeAt(idx_);
-        }
+        void decrement() { idx_--; }
 
-        boost::string_view dereference() const {
-            return boost::string_view(buffer_->userInput()).substr(length_, buffer_->sizeAt(idx_));
-        }
+        boost::string_view dereference() const { return buffer_->at(idx_); }
 
     private:
         const InputBuffer *buffer_ = nullptr;
-        size_t idx_ = 0, length_ = 0;
+        size_t idx_ = 0;
     };
 
     InputBuffer(bool asciiOnly = false);
     virtual ~InputBuffer();
 
+    virtual void type(boost::string_view s);
+    virtual void erase(size_t from, size_t to);
+
     const std::string &userInput() const;
     void type(uint32_t unicode);
-    virtual void type(const std::string &s);
     size_t cursor() const;
     size_t cursorByChar() const;
     size_t size() const;
     void setCursor(size_t cursor);
-    virtual void erase(size_t from, size_t to);
     boost::string_view at(size_t i) const;
     size_t sizeAt(size_t i) const;
+    inline void del() {
+        auto c = cursor();
+        if (c < size()) {
+            erase(c, c + 1);
+        }
+    }
+    inline void backspace() {
+        auto c = cursor();
+        if (c > 0) {
+            erase(c - 1, c);
+        }
+    }
+    inline void clear() { erase(0, size()); }
 
     boost::string_view operator[](size_t i) const { return at(i); }
 
-    iterator begin() { return iterator(this, 0, 0); }
+    iterator begin() { return iterator(this, 0); }
 
-    iterator end() { return iterator(this, size(), userInput().size()); }
+    iterator end() { return iterator(this, size()); }
 
 private:
     std::unique_ptr<InputBufferPrivate> d_ptr;

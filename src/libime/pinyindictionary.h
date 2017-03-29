@@ -31,7 +31,8 @@ enum class PinyinDictFormat { Text, Binary };
 
 class PinyinDictionaryPrivate;
 
-typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi, float cost)>
+typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi,
+                           float cost)>
     PinyinMatchCallback;
 
 class LIBIME_EXPORT PinyinDictionary : public Dictionary {
@@ -39,8 +40,10 @@ public:
     explicit PinyinDictionary(const char *filename, PinyinDictFormat format);
     ~PinyinDictionary();
 
-    void matchPrefix(const Segments &seg, size_t from, MatchCallback callback) override;
-    void matchWords(const char *data, size_t size, PinyinMatchCallback callback);
+    void matchPrefix(const Segments &seg, size_t from,
+                     MatchCallback callback) override;
+    void matchWords(const char *data, size_t size,
+                    PinyinMatchCallback callback);
     void matchWords(const char *initials, const char *finals, size_t size,
                     PinyinMatchCallback callback);
 

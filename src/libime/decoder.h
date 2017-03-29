@@ -37,10 +37,11 @@ public:
     Decoder(Dictionary *dict, LanguageModel *model);
     virtual ~Decoder();
 
-    void decode(const Segments &input, int nbest, const std::vector<int> &constrains);
+    void decode(const Segments &input, int nbest,
+                const std::vector<int> &constrains);
 
-    void decode(const Segments &input, int nbest, const std::vector<int> &constrains, double max,
-                double min);
+    void decode(const Segments &input, int nbest,
+                const std::vector<int> &constrains, double max, double min);
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;

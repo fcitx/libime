@@ -56,15 +56,17 @@ private:
 using PinyinMap = boost::multi_index_container<
     PinyinEntry,
     boost::multi_index::indexed_by<boost::multi_index::hashed_non_unique<
-        boost::multi_index::const_mem_fun<PinyinEntry, boost::string_view, &PinyinEntry::pinyin>,
+        boost::multi_index::const_mem_fun<PinyinEntry, boost::string_view,
+                                          &PinyinEntry::pinyin>,
         PinyinHash>>>;
 
 LIBIME_EXPORT
 const PinyinMap &getPinyinMap();
 LIBIME_EXPORT const std::unordered_set<int16_t> &getEncodedInitialFinal();
 
-LIBIME_EXPORT const std::unordered_map<std::string, std::pair<std::string, std::string>> &
-getInnerSegment();
+LIBIME_EXPORT const
+    std::unordered_map<std::string, std::pair<std::string, std::string>> &
+    getInnerSegment();
 }
 
 #endif // _FCITX_LIBIME_PINYINDATA_H_

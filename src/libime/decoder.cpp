@@ -31,8 +31,10 @@ static const float unknownWordCost = -100.0f;
 
 class LatticeNode {
 public:
-    LatticeNode(LanguageModel *model, boost::string_view word, size_t from, float cost = 0)
-        : word_(word.to_string()), from_(from), cost_(cost), state_(model->nullState()) {}
+    LatticeNode(LanguageModel *model, boost::string_view word, size_t from,
+                float cost = 0)
+        : word_(word.to_string()), from_(from), cost_(cost),
+          state_(model->nullState()) {}
 
     std::string word_;
     size_t from_;
@@ -44,26 +46,31 @@ public:
 
 class DecoderPrivate {
 public:
-    DecoderPrivate(Dictionary *dict, LanguageModel *model) : dict_(dict), model_(model) {}
+    DecoderPrivate(Dictionary *dict, LanguageModel *model)
+        : dict_(dict), model_(model) {}
 
-    std::vector<boost::ptr_vector<LatticeNode>> buildLattice(const Segments &input,
-                                                             const std::vector<int> &constrains) {
+    std::vector<boost::ptr_vector<LatticeNode>>
+    buildLattice(const Segments &input, const std::vector<int> &constrains) {
         std::vector<boost::ptr_vector<LatticeNode>> lattice;
         lattice.resize(input.size() + 2);
 
         lattice[0].push_back(new LatticeNode(model_, "", 0));
         lattice[0][0].state_ = model_->beginState();
-        lattice[input.size() + 1].push_back(new LatticeNode(model_, "", input.size()));
+        lattice[input.size() + 1].push_back(
+            new LatticeNode(model_, "", input.size()));
 
         for (size_t i = 0; i < input.size(); i++) {
-            dict_->matchPrefix(input, i, [this, i, &input, &lattice](
-                                             size_t to, boost::string_view entry, float adjust) {
-                // FIXME
-                if (model_->index(entry) == model_->unknown()) {
-                    adjust += unknownWordCost;
-                }
-                lattice[to + 1].push_back(new LatticeNode(model_, entry, i, adjust));
-            });
+            dict_->matchPrefix(
+                input, i,
+                [this, i, &input, &lattice](size_t to, boost::string_view entry,
+                                            float adjust) {
+                    // FIXME
+                    if (model_->index(entry) == model_->unknown()) {
+                        adjust += unknownWordCost;
+                    }
+                    lattice[to + 1].push_back(
+                        new LatticeNode(model_, entry, i, adjust));
+                });
         }
         return lattice;
     }
@@ -77,13 +84,15 @@ Decoder::Decoder(Dictionary *dict, LanguageModel *model)
 
 Decoder::~Decoder() {}
 
-void Decoder::decode(const Segments &input, int nbest, const std::vector<int> &constrains) {
+void Decoder::decode(const Segments &input, int nbest,
+                     const std::vector<int> &constrains) {
     return decode(input, nbest, constrains, std::numeric_limits<double>::max(),
                   -std::numeric_limits<double>::max());
 }
 
-void Decoder::decode(const Segments &input, int nbest, const std::vector<int> &constrains,
-                     double max, double min) {
+void Decoder::decode(const Segments &input, int nbest,
+                     const std::vector<int> &constrains, double max,
+                     double min) {
     FCITX_D();
     auto lattice = d->buildLattice(input, constrains);
     for (size_t i = 1; i < lattice.size(); i++) {
@@ -100,7 +109,8 @@ void Decoder::decode(const Segments &input, int nbest, const std::vector<int> &c
                 } else {
                     idx = d->model_->index(node.word_);
                 }
-                auto score = parent.score_ + d->model_->score(parent.state_, idx, state);
+                auto score =
+                    parent.score_ + d->model_->score(parent.state_, idx, state);
                 if (score > max) {
                     max = score;
                     maxNode = &parent;

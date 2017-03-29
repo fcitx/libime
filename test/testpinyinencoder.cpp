@@ -33,40 +33,56 @@ bool callback(const PinyinSegments &segs, const std::vector<size_t> &path) {
 }
 
 int main() {
-    PinyinEncoder::parseUserPinyin("wa'nan'''", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("lvenu", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("woaizuguotiananmen", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("wanan", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("biiiiiilp", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("wa'nan'''", PinyinFuzzyFlag::None)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("lvenu", PinyinFuzzyFlag::None)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("woaizuguotiananmen", PinyinFuzzyFlag::None)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("wanan", PinyinFuzzyFlag::None)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("biiiiiilp", PinyinFuzzyFlag::None)
+        .dfs(callback);
     PinyinEncoder::parseUserPinyin("zhm", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("zzhzhhzhzh", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("shuou", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("tanan", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("zzhzhhzhzh", PinyinFuzzyFlag::None)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("shuou", PinyinFuzzyFlag::None)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("tanan", PinyinFuzzyFlag::None)
+        .dfs(callback);
     PinyinEncoder::parseUserPinyin("lven", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("ananananana", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("wa'nan", PinyinFuzzyFlag::None).dfs(callback);
+    PinyinEncoder::parseUserPinyin("ananananana", PinyinFuzzyFlag::None)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("wa'nan", PinyinFuzzyFlag::None)
+        .dfs(callback);
     PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::Inner).dfs(callback);
-    PinyinEncoder::parseUserPinyin("xi'an", PinyinFuzzyFlag::Inner).dfs(callback);
+    PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::Inner)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("xi'an", PinyinFuzzyFlag::Inner)
+        .dfs(callback);
     PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::Inner).dfs(callback);
+    PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::Inner)
+        .dfs(callback);
 
     for (auto syl : PinyinEncoder::stringToSyllables(
-             "niagn", PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
-                                       PinyinFuzzyFlag::NG_GN})) {
+             "niagn",
+             PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
+                              PinyinFuzzyFlag::NG_GN})) {
         for (auto f : syl.second) {
             std::cout << PinyinSyllable(syl.first, f).toString() << std::endl;
         }
     }
     for (auto syl : PinyinEncoder::stringToSyllables(
-             "n", PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
-                                   PinyinFuzzyFlag::NG_GN})) {
+             "n",
+             PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
+                              PinyinFuzzyFlag::NG_GN})) {
         for (auto f : syl.second) {
             std::cout << PinyinSyllable(syl.first, f).toString() << std::endl;
         }
     }
     for (auto syl : PinyinEncoder::stringToSyllables(
-             "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG, PinyinFuzzyFlag::NG_GN})) {
+             "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
+                       PinyinFuzzyFlag::NG_GN})) {
         for (auto f : syl.second) {
             std::cout << PinyinSyllable(syl.first, f).toString() << std::endl;
         }

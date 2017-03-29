@@ -28,7 +28,8 @@ int main(int argc, char *argv[]) {
     float sum = 0.0f;
     while (std::cin >> word) {
         float s;
-        std::cout << (s = model.score(state, model.index(word), out_state)) << '\n';
+        std::cout << (s = model.score(state, model.index(word), out_state))
+                  << '\n';
         state = out_state;
         sum += s;
     }

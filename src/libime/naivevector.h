@@ -30,8 +30,10 @@ namespace libime {
 
 template <typename T>
 struct naivevector {
-    static_assert(std::is_trivially_destructible<T>::value && std::is_standard_layout<T>::value,
-                  "this class should only use with trivially copyable class, but well, we only "
+    static_assert(std::is_trivially_destructible<T>::value &&
+                      std::is_standard_layout<T>::value,
+                  "this class should only use with trivially copyable class, "
+                  "but well, we only "
                   "care about fundamental type");
 
     typedef T value_type;
@@ -68,24 +70,34 @@ struct naivevector {
 
     reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
 
-    const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+    const_reverse_iterator rbegin() const noexcept {
+        return const_reverse_iterator(end());
+    }
 
     reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
 
-    const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+    const_reverse_iterator rend() const noexcept {
+        return const_reverse_iterator(begin());
+    }
 
     const_iterator cbegin() const noexcept { return const_iterator(data()); }
 
     const_iterator cend() const noexcept { return const_iterator(m_end); }
 
-    const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
+    const_reverse_iterator crbegin() const noexcept {
+        return const_reverse_iterator(end());
+    }
 
-    const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
+    const_reverse_iterator crend() const noexcept {
+        return const_reverse_iterator(begin());
+    }
 
     // Capacity.
     size_type size() const noexcept { return size_type(m_end - m_start); }
 
-    constexpr size_type max_size() const noexcept { return size_type(-1) / sizeof(value_type); }
+    constexpr size_type max_size() const noexcept {
+        return size_type(-1) / sizeof(value_type);
+    }
 
     void resize(size_type new_size) {
         if (new_size > size()) {
@@ -102,7 +114,8 @@ struct naivevector {
                     new (p) value_type();
                 }
             } else {
-                std::memset(m_start + old_size, 0, sizeof(value_type) * (new_size - old_size));
+                std::memset(m_start + old_size, 0,
+                            sizeof(value_type) * (new_size - old_size));
             }
         } else {
             m_end = m_start + new_size;
@@ -111,8 +124,8 @@ struct naivevector {
 
     void shrink_to_fit() {
         if (m_cap > m_end) {
-            _realloc_array(
-                size_type(reinterpret_cast<char *>(m_end) - reinterpret_cast<char *>(m_start)));
+            _realloc_array(size_type(reinterpret_cast<char *>(m_end) -
+                                     reinterpret_cast<char *>(m_start)));
         }
     }
 
@@ -133,7 +146,9 @@ struct naivevector {
     // Element access.
     reference operator[](size_type __n) noexcept { return m_start[__n]; }
 
-    const_reference operator[](size_type __n) const noexcept { return m_start[__n]; }
+    const_reference operator[](size_type __n) const noexcept {
+        return m_start[__n];
+    }
 
     reference at(size_type __n) {
         if (__n >= size()) {
@@ -155,7 +170,9 @@ struct naivevector {
 
     reference back() noexcept { return size() ? *(end() - 1) : *end(); }
 
-    const_reference back() const noexcept { return size() ? *(cend() - 1) : *cend(); }
+    const_reference back() const noexcept {
+        return size() ? *(cend() - 1) : *cend();
+    }
 
     pointer data() noexcept { return m_start; }
 
@@ -182,13 +199,16 @@ private:
             std::free(m_start);
             m_start = m_end = m_cap = nullptr;
         } else {
-            auto old_bytes =
-                size_type(reinterpret_cast<char *>(m_end) - reinterpret_cast<char *>(m_start));
-            auto new_start = reinterpret_cast<pointer>(std::realloc(m_start, bytes));
+            auto old_bytes = size_type(reinterpret_cast<char *>(m_end) -
+                                       reinterpret_cast<char *>(m_start));
+            auto new_start =
+                reinterpret_cast<pointer>(std::realloc(m_start, bytes));
             if (new_start) {
                 m_start = new_start;
-                m_cap = reinterpret_cast<pointer>(reinterpret_cast<char *>(new_start) + bytes);
-                m_end = reinterpret_cast<pointer>(reinterpret_cast<char *>(new_start) + old_bytes);
+                m_cap = reinterpret_cast<pointer>(
+                    reinterpret_cast<char *>(new_start) + bytes);
+                m_end = reinterpret_cast<pointer>(
+                    reinterpret_cast<char *>(new_start) + old_bytes);
             } else {
                 throw std::bad_alloc();
             }

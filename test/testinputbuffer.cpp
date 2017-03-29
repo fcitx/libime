@@ -24,6 +24,7 @@ void test_basic(bool ascii) {
     InputBuffer buffer(ascii);
     assert(buffer.size() == 0);
     assert(buffer.cursor() == 0);
+    assert(buffer.cursorByChar() == 0);
     buffer.type('a');
     assert(buffer.size() == 1);
     assert(buffer.cursor() == 1);
@@ -73,6 +74,20 @@ void test_utf8() {
         assert(c == buffer[idx]);
         idx++;
     }
+    buffer.type("a\xe5\x95\x8a");
+    assert(buffer.size() == 3);
+    assert(buffer.cursor() == 3);
+    assert(buffer.cursorByChar() == 7);
+    buffer.setCursor(0);
+    assert(buffer.cursorByChar() == 0);
+    buffer.setCursor(1);
+    assert(buffer.cursorByChar() == 3);
+    buffer.setCursor(2);
+    assert(buffer.cursorByChar() == 4);
+    buffer.clear();
+    assert(buffer.cursorByChar() == 0);
+    assert(buffer.cursor() == 0);
+    assert(buffer.size() == 0);
 }
 
 int main() {

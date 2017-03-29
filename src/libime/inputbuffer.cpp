@@ -19,6 +19,7 @@
 #include "inputbuffer.h"
 #include "segments.h"
 #include <boost/iterator/function_input_iterator.hpp>
+#include <boost/range/iterator_range.hpp>
 #include <exception>
 #include <fcitx-utils/utf8.h>
 #include <numeric>
@@ -28,13 +29,34 @@ namespace libime {
 class InputBufferPrivate {
 public:
     InputBufferPrivate(bool asciiOnly) : asciiOnly_(asciiOnly) {}
+
+    // make sure acc_[i] is valid, i \in [0, size()]
+    // acc_[i] = sum(j \in 0..i-1 | sz_[j])
+    void ensureAccTill(size_t i) const {
+        if (accDirty_ <= i) {
+            if (accDirty_ == 0) {
+                // acc_[0] is always 0
+                accDirty_++;
+            }
+            for (auto s : boost::make_iterator_range(
+                     std::next(sz_.begin(), accDirty_ - 1),
+                     std::next(sz_.begin(), i))) {
+                acc_[accDirty_] = acc_[accDirty_ - 1] + s;
+                accDirty_++;
+            }
+        }
+    }
+
     const bool asciiOnly_;
     std::string input_;
     size_t cursor_ = 0;
-    std::vector<size_t> idx_; // utf8 lengthindex helper
+    std::vector<size_t> sz_; // utf8 lengthindex helper
+    mutable std::vector<size_t> acc_ = {0};
+    mutable size_t accDirty_ = 0;
 };
 
-InputBuffer::InputBuffer(bool asciiOnly) : d_ptr(std::make_unique<InputBufferPrivate>(asciiOnly)) {}
+InputBuffer::InputBuffer(bool asciiOnly)
+    : d_ptr(std::make_unique<InputBufferPrivate>(asciiOnly)) {}
 
 InputBuffer::~InputBuffer() {}
 
@@ -45,16 +67,18 @@ const std::string &InputBuffer::userInput() const {
     return d->input_;
 }
 
-void InputBuffer::type(const std::string &s) {
+void InputBuffer::type(boost::string_view s) {
     FCITX_D();
-    auto len = fcitx::utf8::lengthValidated(s);
+    auto len = fcitx::utf8::lengthValidated(s.begin(), s.end());
     if (len == fcitx::utf8::INVALID_LENGTH) {
         throw std::invalid_argument("Invalid UTF-8 string");
     }
     if (d->asciiOnly_ && len != s.size()) {
-        throw std::invalid_argument("ascii only buffer only accept ascii only string");
+        throw std::invalid_argument(
+            "ascii only buffer only accept ascii only string");
     }
-    d->input_.insert(cursorByChar(), s);
+    d->input_.insert(std::next(d->input_.begin(), cursorByChar()), s.begin(),
+                     s.end());
     if (!d->asciiOnly_) {
         auto iter = s.begin();
         std::function<size_t()> func = [&iter]() {
@@ -63,9 +87,12 @@ void InputBuffer::type(const std::string &s) {
             iter = next;
             return diff;
         };
-        d->idx_.insert(d->idx_.begin() + d->cursor_,
-                       boost::make_function_input_iterator(func, static_cast<size_t>(0)),
-                       boost::make_function_input_iterator(func, len));
+        d->sz_.insert(
+            std::next(d->sz_.begin(), d->cursor_),
+            boost::make_function_input_iterator(func, static_cast<size_t>(0)),
+            boost::make_function_input_iterator(func, len));
+        d->acc_.resize(d->sz_.size() + 1);
+        d->accDirty_ = d->cursor_ > 0 ? d->cursor_ - 1 : 0;
     }
     d->cursor_ += len;
 }
@@ -75,7 +102,11 @@ size_t InputBuffer::cursorByChar() const {
     if (d->asciiOnly_) {
         return d->cursor_;
     }
-    return std::accumulate(d->idx_.begin(), d->idx_.begin() + d->cursor_, 0);
+    if (d->cursor_ == size()) {
+        return d->input_.size();
+    }
+    d->ensureAccTill(d->cursor_);
+    return d->acc_[d->cursor_];
 }
 
 size_t InputBuffer::cursor() const {
@@ -85,7 +116,7 @@ size_t InputBuffer::cursor() const {
 
 size_t InputBuffer::size() const {
     FCITX_D();
-    return d->asciiOnly_ ? d->input_.size() : d->idx_.size();
+    return d->asciiOnly_ ? d->input_.size() : d->sz_.size();
 }
 
 void InputBuffer::setCursor(size_t cursor) {
@@ -104,9 +135,13 @@ void InputBuffer::erase(size_t from, size_t to) {
             fromByChar = from;
             lengthByChar = to - from;
         } else {
-            fromByChar = std::accumulate(d->idx_.begin(), d->idx_.begin() + from, 0);
-            lengthByChar = std::accumulate(d->idx_.begin() + from, d->idx_.begin() + to, 0);
-            d->idx_.erase(std::next(d->idx_.begin(), from), std::next(d->idx_.begin(), to));
+            d->ensureAccTill(to);
+            fromByChar = d->acc_[from];
+            lengthByChar = d->acc_[to] - fromByChar;
+            d->sz_.erase(std::next(d->sz_.begin(), from),
+                         std::next(d->sz_.begin(), to));
+            d->accDirty_ = from;
+            d->acc_.resize(d->sz_.size() + 1);
         }
         if (d->cursor_ > from) {
             if (d->cursor_ <= to) {
@@ -127,8 +162,8 @@ boost::string_view InputBuffer::at(size_t i) const {
     if (d->asciiOnly_) {
         return boost::string_view(d->input_).substr(i, 1);
     } else {
-        auto from = std::accumulate(d->idx_.begin(), d->idx_.begin() + i, 0);
-        return boost::string_view(d->input_).substr(from, d->idx_[i]);
+        d->ensureAccTill(i);
+        return boost::string_view(d->input_).substr(d->acc_[i], d->sz_[i]);
     }
 }
 
@@ -137,7 +172,7 @@ size_t InputBuffer::sizeAt(size_t i) const {
     if (d->asciiOnly_) {
         return 1;
     } else {
-        return d->idx_[i];
+        return d->sz_[i];
     }
 }
 }

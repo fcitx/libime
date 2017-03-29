@@ -39,8 +39,8 @@ enum class TableRuleFlag : std::uint32_t { LengthLongerThan, LengthEqual };
 
 struct LIBIME_EXPORT TableRuleEntry {
 
-    TableRuleEntry(TableRuleEntryFlag _flag = TableRuleEntryFlag::FromFront, uint8_t _character = 0,
-                   uint8_t _encodingIndex = 0)
+    TableRuleEntry(TableRuleEntryFlag _flag = TableRuleEntryFlag::FromFront,
+                   uint8_t _character = 0, uint8_t _encodingIndex = 0)
         : flag(_flag), character(_character), encodingIndex(_encodingIndex) {}
 
     TableRuleEntry(std::istream &in) {
@@ -49,8 +49,10 @@ struct LIBIME_EXPORT TableRuleEntry {
         throw_if_io_fail(unmarshall(in, encodingIndex));
     }
 
-    friend std::ostream &operator<<(std::ostream &out, const TableRuleEntry &r) {
-        marshall(out, r.flag) && marshall(out, r.character) && marshall(out, r.encodingIndex);
+    friend std::ostream &operator<<(std::ostream &out,
+                                    const TableRuleEntry &r) {
+        marshall(out, r.flag) && marshall(out, r.character) &&
+            marshall(out, r.encodingIndex);
         return out;
     }
 
@@ -86,14 +88,16 @@ struct TableRule {
             throw std::invalid_argument("invalid rule string");
         }
 
-        auto afterEqualSign = boost::string_view(ruleString).substr(equalSignPos + 1);
+        auto afterEqualSign =
+            boost::string_view(ruleString).substr(equalSignPos + 1);
         std::vector<std::string> entryStrings;
         boost::split(entryStrings, afterEqualSign, boost::is_any_of("+"));
         if (entryStrings.empty() || entryStrings.size() > maxLength) {
             throw std::invalid_argument("invalid rule string");
         }
 
-        auto beforeEqualSign = boost::string_view(ruleString).substr(0, equalSignPos);
+        auto beforeEqualSign =
+            boost::string_view(ruleString).substr(0, equalSignPos);
         if (beforeEqualSign.size() != 2 || !isdigit(beforeEqualSign[1])) {
             throw std::invalid_argument("invalid rule string");
         }
@@ -120,29 +124,36 @@ struct TableRule {
                 throw std::invalid_argument("invalid rule entry flag");
             }
 
-            if (entryString.size() != 3 || !isdigit(entryString[1]) || !isdigit(entryString[2])) {
+            if (entryString.size() != 3 || !isdigit(entryString[1]) ||
+                !isdigit(entryString[2])) {
                 throw std::invalid_argument("invalid rule entry");
             }
 
             uint8_t character = entryString[1] - '0';     // 0 ~ maxLength
             uint8_t encodingIndex = entryString[2] - '0'; // 0 ~ maxLength
-            if (character <= 0 || encodingIndex > maxLength || encodingIndex <= 0 ||
+            if (character <= 0 || encodingIndex > maxLength ||
+                encodingIndex <= 0 ||
                 ((character == 0) ^ (encodingIndex == 0))) {
                 throw std::invalid_argument("invalid rule entry");
             }
 
-            entries.push_back(TableRuleEntry(entryFlag, character, encodingIndex));
+            entries.push_back(
+                TableRuleEntry(entryFlag, character, encodingIndex));
         }
     }
 
-    TableRule(TableRuleFlag _flag = TableRuleFlag::LengthEqual, int _phraseLength = 0,
+    TableRule(TableRuleFlag _flag = TableRuleFlag::LengthEqual,
+              int _phraseLength = 0,
               std::vector<TableRuleEntry> _entries = decltype(entries)())
-        : flag(_flag), phraseLength(_phraseLength), entries(std::move(_entries)) {}
+        : flag(_flag), phraseLength(_phraseLength),
+          entries(std::move(_entries)) {}
 
-    TableRule(const TableRule &other) : TableRule(other.flag, other.phraseLength, other.entries) {}
+    TableRule(const TableRule &other)
+        : TableRule(other.flag, other.phraseLength, other.entries) {}
 
     TableRule(TableRule &&other) noexcept
-        : flag(other.flag), phraseLength(other.phraseLength), entries(std::move(other.entries)) {}
+        : flag(other.flag), phraseLength(other.phraseLength),
+          entries(std::move(other.entries)) {}
 
     TableRule(std::istream &in) {
         uint32_t size;

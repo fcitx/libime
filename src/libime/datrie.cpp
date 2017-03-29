@@ -57,20 +57,25 @@ public:
         value_type result_value;
     };
 
-    enum error_code { CEDAR_NO_VALUE = base_type::NO_VALUE, CEDAR_NO_PATH = base_type::NO_PATH };
+    enum error_code {
+        CEDAR_NO_VALUE = base_type::NO_VALUE,
+        CEDAR_NO_PATH = base_type::NO_PATH
+    };
     static const int MAX_ALLOC_SIZE = 1 << 16; // must be divisible by 256
     const int MAX_TRIAL = 1;
     const bool ORDERED = true;
     typedef value_type result_type;
     typedef uint8_t uchar;
-    static_assert(sizeof(value_type) <= sizeof(int32_t), "value size need to be same as int32_t");
+    static_assert(sizeof(value_type) <= sizeof(int32_t),
+                  "value size need to be same as int32_t");
     struct node {
         union {
             int32_t base;
             value_type value;
         };
         int32_t check;
-        node(const int32_t base_ = 0, const int32_t check_ = 0) : base(base_), check(check_) {}
+        node(const int32_t base_ = 0, const int32_t check_ = 0)
+            : base(base_), check(check_) {}
 
         node(std::istream &in) {
             throw_if_io_fail(unmarshall(in, base));
@@ -106,9 +111,13 @@ public:
             return offset == other.offset && index == other.index;
         }
 
-        bool operator!=(const npos_t &other) const { return !operator==(other); }
+        bool operator!=(const npos_t &other) const {
+            return !operator==(other);
+        }
 
-        position_type toInt() { return (static_cast<position_type>(offset) << 32) | index; }
+        position_type toInt() {
+            return (static_cast<position_type>(offset) << 32) | index;
+        }
     };
     struct block {      // a block w/ 256 elements
         int32_t prev;   // prev block; 3 bytes
@@ -129,8 +138,9 @@ public:
         }
 
         friend std::ostream &operator<<(std::ostream &out, const block &b) {
-            marshall(out, b.prev) && marshall(out, b.next) && marshall(out, b.num) &&
-                marshall(out, b.reject) && marshall(out, b.trial) && marshall(out, b.ehead);
+            marshall(out, b.prev) && marshall(out, b.next) &&
+                marshall(out, b.num) && marshall(out, b.reject) &&
+                marshall(out, b.trial) && marshall(out, b.ehead);
             return out;
         }
     };
@@ -165,8 +175,9 @@ public:
 
     DATriePrivate(const DATriePrivate &other)
         : m_array(other.m_array), m_tail(other.m_tail), m_tail0(other.m_tail0),
-          m_block(other.m_block), m_ninfo(other.m_ninfo), m_bheadF(other.m_bheadF),
-          m_bheadC(other.m_bheadC), m_bheadO(other.m_bheadO), m_reject(other.m_reject) {}
+          m_block(other.m_block), m_ninfo(other.m_ninfo),
+          m_bheadF(other.m_bheadF), m_bheadC(other.m_bheadC),
+          m_bheadO(other.m_bheadO), m_reject(other.m_reject) {}
 
     size_t size() const { return m_ninfo.size(); }
 
@@ -209,7 +220,8 @@ public:
         m_block.reserve(size_ >> 8);
         m_block.resize(0);
 
-        throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_tail.data()), sizeof(char) * length_));
+        throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_tail.data()),
+                                  sizeof(char) * length_));
 
         for (auto i = 0U; i < size_; i++) {
             m_array.emplace_back(fin);
@@ -238,8 +250,8 @@ public:
         assert(m_block.size() << 8 == m_ninfo.size());
         throw_if_io_fail(marshall(fout, length));
         throw_if_io_fail(marshall(fout, size_));
-        throw_if_io_fail(
-            fout.write(reinterpret_cast<char *>(m_tail.data()), sizeof(char) * length));
+        throw_if_io_fail(fout.write(reinterpret_cast<char *>(m_tail.data()),
+                                    sizeof(char) * length));
 
         auto s = size_;
         for (auto &n : m_array) {
@@ -268,7 +280,8 @@ public:
         m_array[0] = node(0, -1);
 
         for (int i = 1; i < 256; ++i)
-            m_array[i] = node(i == 1 ? -255 : -(i - 1), i == 255 ? -1 : -(i + 1));
+            m_array[i] =
+                node(i == 1 ? -255 : -(i - 1), i == 255 ? -1 : -(i + 1));
         m_ninfo.resize(256);
 
         m_block.reserve(1);
@@ -301,7 +314,8 @@ public:
         }
         while (len--) {
             const int from = m_array[to].check;
-            key[len] = static_cast<char>(m_array[from].base ^ static_cast<int>(to));
+            key[len] =
+                static_cast<char>(m_array[from].base ^ static_cast<int>(to));
             to = from;
         }
     }
@@ -309,7 +323,8 @@ public:
         return traverse(key, from, pos, std::strlen(key));
     }
 
-    value_type traverse(const char *key, npos_t &from, size_t &pos, size_t len) const {
+    value_type traverse(const char *key, npos_t &from, size_t &pos,
+                        size_t len) const {
         decorder_type d;
         d.result = _find(key, from, pos, len);
         return d.result_value;
@@ -317,7 +332,8 @@ public:
 
     template <typename U>
     inline void update(const char *key, U &&callback) {
-        update(key, std::strlen(key), std::forward<decltype(callback)>(callback));
+        update(key, std::strlen(key),
+               std::forward<decltype(callback)>(callback));
     }
 
     template <typename U>
@@ -328,13 +344,15 @@ public:
     }
 
     template <typename U>
-    inline void update(const char *key, npos_t &from, size_t &pos, size_t len, U &&callback) {
+    inline void update(const char *key, npos_t &from, size_t &pos, size_t len,
+                       U &&callback) {
         update(key, from, pos, len, std::forward<decltype(callback)>(callback),
                [](const int, const int) {});
     }
 
     template <typename U, typename T>
-    void update(const char *key, npos_t &npos, size_t &pos, size_t len, U &&callback, T &&cf) {
+    void update(const char *key, npos_t &npos, size_t &pos, size_t len,
+                U &&callback, T &&cf) {
         if (!len && !npos) {
             throw std::invalid_argument("failed to insert zero-length key");
         }
@@ -360,8 +378,9 @@ public:
                 ++pos;
             }
             //
-            if (pos == len && tail[pos] == '\0') {          // found exact key
-                if (const ssize_t moved = pos - pos_orig) { // search end on tail
+            if (pos == len && tail[pos] == '\0') { // found exact key
+                if (const ssize_t moved =
+                        pos - pos_orig) { // search end on tail
                     npos.offset = offset + moved;
                 }
                 char *const data = &tail[len + 1];
@@ -371,14 +390,16 @@ public:
             // otherwise, insert the common prefix in tail if any
             if (npos.offset) {
                 npos.offset = 0; // reset to update tail offset
-                for (auto offset_ = static_cast<size_t>(-m_array[from].base); offset_ < offset;) {
-                    from =
-                        static_cast<size_t>(_follow(from, static_cast<uchar>(m_tail[offset_]), cf));
+                for (auto offset_ = static_cast<size_t>(-m_array[from].base);
+                     offset_ < offset;) {
+                    from = static_cast<size_t>(
+                        _follow(from, static_cast<uchar>(m_tail[offset_]), cf));
                     ++offset_;
                 }
             }
             for (size_t pos_ = pos_orig; pos_ < pos; ++pos_) {
-                from = static_cast<size_t>(_follow(from, static_cast<uchar>(key[pos_]), cf));
+                from = static_cast<size_t>(
+                    _follow(from, static_cast<uchar>(key[pos_]), cf));
             }
             // for example:
             // we originally had abcde in trie, then bcde is in tail
@@ -388,7 +409,8 @@ public:
             // and tail[pos] will not be empty in this case
             ssize_t moved = pos - pos_orig;
             if (tail[pos]) { // remember to move offset to existing tail
-                const int to_ = _follow(from, static_cast<uchar>(tail[pos]), cf);
+                const int to_ =
+                    _follow(from, static_cast<uchar>(tail[pos]), cf);
                 m_array[to_].base = -static_cast<int>(offset + ++moved);
                 moved -= 1 + sizeof(value_type); // keep record
             }
@@ -396,8 +418,9 @@ public:
             for (auto i = offset; i <= moved; i += 1 + sizeof(value_type)) {
                 if (m_tail0.capacity() == m_tail0.size()) {
                     auto quota =
-                        m_tail0.capacity() +
-                        (m_tail0.size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : m_tail0.size());
+                        m_tail0.capacity() + (m_tail0.size() >= MAX_ALLOC_SIZE
+                                                  ? MAX_ALLOC_SIZE
+                                                  : m_tail0.size());
                     m_tail0.reserve(quota);
                 }
                 m_tail0.push_back(i);
@@ -408,11 +431,13 @@ public:
                     m_array[to].value = callback(m_array[to].value);
                     return;
                 }
-                // tail[pos] == 0, so the actual content in tail can be get rid of
+                // tail[pos] == 0, so the actual content in tail can be get rid
+                // of
                 // and tail0 is used to track those hole
                 m_array[to].value = load_data<value_type>(&tail[pos + 1]);
             }
-            from = static_cast<size_t>(_follow(from, static_cast<uchar>(key[pos]), cf));
+            from = static_cast<size_t>(
+                _follow(from, static_cast<uchar>(key[pos]), cf));
             ++pos;
         }
         const auto needed = len - pos + 1 + sizeof(value_type);
@@ -426,10 +451,12 @@ public:
             return;
         }
         if (m_tail.capacity() < m_tail.size() + needed) {
-            auto quota = m_tail.capacity() +
-                         ((needed > m_tail.size() || needed > MAX_ALLOC_SIZE)
-                              ? needed
-                              : (m_tail.size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : m_tail.size()));
+            auto quota =
+                m_tail.capacity() +
+                ((needed > m_tail.size() || needed > MAX_ALLOC_SIZE)
+                     ? needed
+                     : (m_tail.size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE
+                                                        : m_tail.size()));
             m_tail.reserve(quota);
         }
         m_array[from].base = -m_tail.size();
@@ -480,8 +507,10 @@ public:
         decorder_type b;
         size_t p(0);
         npos_t from = root;
-        for (b.result = begin(from, p); b.result != CEDAR_NO_PATH; b.result = next(from, p, root)) {
-            if (b.result != CEDAR_NO_VALUE && !callback(b.result_value, p, from.toInt())) {
+        for (b.result = begin(from, p); b.result != CEDAR_NO_PATH;
+             b.result = next(from, p, root)) {
+            if (b.result != CEDAR_NO_VALUE &&
+                !callback(b.result_value, p, from.toInt())) {
                 break;
             }
         }
@@ -490,7 +519,8 @@ public:
     template <typename T>
     void dump(T *result, const size_t result_len) {
         size_t num(0);
-        foreach ([result, result_len, &num](value_type value, size_t len, position_type pos) {
+        foreach ([result, result_len, &num](value_type value, size_t len,
+                                            position_type pos) {
             if (num < result_len) {
                 _set_result(&result[num++], value, len, npos_t(pos));
             } else {
@@ -501,8 +531,9 @@ public:
             ;
     }
     void shrink_tail() {
-        const size_t length_ = static_cast<size_t>(m_tail.size()) -
-                               static_cast<size_t>(m_tail0.size()) * (1 + sizeof(value_type));
+        const size_t length_ =
+            static_cast<size_t>(m_tail.size()) -
+            static_cast<size_t>(m_tail0.size()) * (1 + sizeof(value_type));
         decltype(m_tail) t;
         // a dummy entry
         t.resize(sizeof(int32_t));
@@ -517,7 +548,8 @@ public:
                     t.push_back(tail_[i]);
                 } while (tail_[i++]);
                 t.resize(t.size() + sizeof(value_type));
-                store_data(&t[t.size() - sizeof(value_type)], load_data<value_type>(&tail_[i]));
+                store_data(&t[t.size() - sizeof(value_type)],
+                           load_data<value_type>(&tail_[i]));
             }
         }
         using std::swap;
@@ -529,7 +561,8 @@ public:
     // return the first child for a tree rooted by a given node
     int32_t begin(npos_t &npos, size_t &len) {
         auto &from = npos.index;
-        int base = npos.offset ? -static_cast<int>(npos.offset) : m_array[from].base;
+        int base =
+            npos.offset ? -static_cast<int>(npos.offset) : m_array[from].base;
         if (base >= 0) { // on trie
             uchar c = m_ninfo[from].child;
             if (!from && !(c = m_ninfo[base ^ c].sibling)) { // bug fix
@@ -587,7 +620,8 @@ public:
     }
 
     // find key from double array
-    int32_t _find(const char *key, npos_t &npos, size_t &pos, const size_t len) const {
+    int32_t _find(const char *key, npos_t &npos, size_t &pos,
+                  const size_t len) const {
         auto &from = npos.index;
         auto offset = npos.offset;
         if (!offset) { // node on trie
@@ -650,7 +684,8 @@ public:
                 if (b.num >= nc && nc < b.reject) // explore configuration
                     for (int e = b.ehead;;) {
                         const int base = e ^ *first;
-                        for (const uchar *p = first; m_array[base ^ *++p].check < 0;) {
+                        for (const uchar *p = first;
+                             m_array[base ^ *++p].check < 0;) {
                             if (p == last) {
                                 return b.ehead = e; // no conflict
                             }
@@ -674,9 +709,12 @@ public:
         return _add_block() << 8;
     }
 
-    static void _set_result(result_type *x, value_type r, size_t = 0, npos_t = npos_t()) { *x = r; }
-    static void _set_result(std::tuple<value_type, size_t, position_type> *x, value_type r,
-                            size_t len, npos_t npos) {
+    static void _set_result(result_type *x, value_type r, size_t = 0,
+                            npos_t = npos_t()) {
+        *x = r;
+    }
+    static void _set_result(std::tuple<value_type, size_t, position_type> *x,
+                            value_type r, size_t len, npos_t npos) {
         *x = std::make_tuple<>(r, len, npos.toInt());
     }
     void _pop_block(const int bi, int &head_in, const bool last) {
@@ -705,7 +743,9 @@ public:
     int _add_block() {
         // size depends on m_info.size()
         if (size() == capacity()) { // allocate memory if needed
-            auto new_capacity = capacity() + (size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : size());
+            auto new_capacity =
+                capacity() +
+                (size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE : size());
             m_array.reserve(new_capacity);
             m_array.resize(new_capacity);
             m_ninfo.reserve(new_capacity);
@@ -809,7 +849,8 @@ public:
         *c = m_ninfo[base ^ label].sibling;
     }
     // check whether to replace branching w/ the newly added node
-    bool _consult(const int base_n, const int base_p, uchar c_n, uchar c_p) const {
+    bool _consult(const int base_n, const int base_p, uchar c_n,
+                  uchar c_p) const {
         do {
             c_n = m_ninfo[base_n ^ c_n].sibling;
             c_p = m_ninfo[base_p ^ c_p].sibling;
@@ -840,18 +881,22 @@ public:
     }
     // resolve conflict on base_n ^ label_n = base_p ^ label_p
     template <typename T>
-    int _resolve(uint32_t &from_n, const int base_n, const uchar label_n, T cf) {
+    int _resolve(uint32_t &from_n, const int base_n, const uchar label_n,
+                 T cf) {
         // examine siblings of conflicted nodes
         const int to_pn = base_n ^ label_n;
         const int from_p = m_array[to_pn].check;
         const int base_p = m_array[from_p].base;
         const bool flag // whether to replace siblings of newly added
-            = _consult(base_n, base_p, m_ninfo[from_n].child, m_ninfo[from_p].child);
+            = _consult(base_n, base_p, m_ninfo[from_n].child,
+                       m_ninfo[from_p].child);
         uchar child[256];
         uchar *const first = &child[0];
-        uchar *const last = flag ? _set_child(first, base_n, m_ninfo[from_n].child, label_n)
-                                 : _set_child(first, base_p, m_ninfo[from_p].child);
-        const int base = (first == last ? _find_place() : _find_place(first, last)) ^ *first;
+        uchar *const last =
+            flag ? _set_child(first, base_n, m_ninfo[from_n].child, label_n)
+                 : _set_child(first, base_p, m_ninfo[from_p].child);
+        const int base =
+            (first == last ? _find_place() : _find_place(first, last)) ^ *first;
         // replace & modify empty list
         const int from = flag ? static_cast<int>(from_n) : from_p;
         const int base_ = flag ? base_n : base_p;
@@ -942,7 +987,8 @@ void DATrie<T>::set(const char *key, size_t len, value_type val) {
 }
 
 template <typename T>
-void DATrie<T>::update(const char *key, size_t len, DATrie<T>::updater_type updater) {
+void DATrie<T>::update(const char *key, size_t len,
+                       DATrie<T>::updater_type updater) {
     d->update(key, len, updater);
 }
 
@@ -952,7 +998,8 @@ size_t DATrie<T>::size() const {
 }
 
 template <typename T>
-void DATrie<T>::foreach (const char *key, size_t size, callback_type func, position_type _pos) {
+void DATrie<T>::foreach (const char *key, size_t size, callback_type func,
+                         position_type _pos) {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t from(_pos);
     if (d->_find(key, from, pos, size) == NO_PATH) {
@@ -985,8 +1032,9 @@ void DATrie<T>::dump(std::vector<typename DATrie<T>::value_type> &data) {
 }
 
 template <typename T>
-void DATrie<T>::dump(std::vector<std::tuple<typename DATrie<T>::value_type, size_t,
-                                            typename DATrie<T>::position_type>> &data) {
+void DATrie<T>::dump(
+    std::vector<std::tuple<typename DATrie<T>::value_type, size_t,
+                           typename DATrie<T>::position_type>> &data) {
     data.resize(size());
     d->dump(data.data(), data.size());
 }
@@ -1002,7 +1050,8 @@ bool DATrie<T>::erase(position_type from) {
 }
 
 template <typename T>
-typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key, size_t len) {
+typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key,
+                                                           size_t len) {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t npos;
     typename DATriePrivate<T>::decorder_type decoder;
@@ -1056,15 +1105,21 @@ template <typename T>
 size_t DATrie<T>::mem_size() {
     //     std::cout << "tail" << d->m_tail.size() << std::endl
     //               << "tail0" << d->m_tail0.size() * sizeof(int) << std::endl
-    //               << "array" << sizeof(typename decltype(d->m_array)::value_type) *
+    //               << "array" << sizeof(typename
+    //               decltype(d->m_array)::value_type) *
     //               d->m_array.size() << std::endl
-    //               << "block" << sizeof(typename decltype(d->m_block)::value_type) *
+    //               << "block" << sizeof(typename
+    //               decltype(d->m_block)::value_type) *
     //               d->m_block.size() << std::endl
-    //               << "ninfo" << sizeof(typename decltype(d->m_ninfo)::value_type) *
+    //               << "ninfo" << sizeof(typename
+    //               decltype(d->m_ninfo)::value_type) *
     //               d->m_ninfo.size() << std::endl;
     return d->m_tail.size() + d->m_tail0.size() * sizeof(int) +
-           sizeof(typename decltype(d->m_array)::value_type) * d->m_array.size() +
-           sizeof(typename decltype(d->m_block)::value_type) * d->m_block.size() +
-           sizeof(typename decltype(d->m_ninfo)::value_type) * d->m_ninfo.size();
+           sizeof(typename decltype(d->m_array)::value_type) *
+               d->m_array.size() +
+           sizeof(typename decltype(d->m_block)::value_type) *
+               d->m_block.size() +
+           sizeof(typename decltype(d->m_ninfo)::value_type) *
+               d->m_ninfo.size();
 }
 }

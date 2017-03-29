@@ -33,6 +33,9 @@ public:
     PinyinContext(PinyinIME *ime);
     virtual ~PinyinContext();
 
+    void type(boost::string_view s) override;
+    void erase(size_t from, size_t to) override;
+
 private:
     std::unique_ptr<PinyinContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinContext);

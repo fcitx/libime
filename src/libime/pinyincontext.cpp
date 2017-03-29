@@ -17,17 +17,35 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "pinyincontext.h"
+#include "pinyinencoder.h"
 
 namespace libime {
 
 class PinyinContextPrivate {
 public:
     PinyinContextPrivate(PinyinIME *ime) : ime_(ime) {}
+
+    void discardFrom(size_t from) {}
+
     PinyinIME *ime_;
+    PinyinSegments segs_;
 };
 
 PinyinContext::PinyinContext(PinyinIME *ime)
     : InputBuffer(true), d_ptr(std::make_unique<PinyinContextPrivate>(ime)) {}
 
 PinyinContext::~PinyinContext() {}
+
+void PinyinContext::type(boost::string_view s) {
+    FCITX_D();
+    auto c = cursor();
+    d->discardFrom(c);
+    InputBuffer::type(s);
+}
+
+void PinyinContext::erase(size_t from, size_t to) {
+    FCITX_D();
+    InputBuffer::erase(from, to);
+    d->discardFrom(from);
+}
 }

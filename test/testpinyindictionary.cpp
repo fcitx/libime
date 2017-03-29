@@ -28,25 +28,30 @@ int main(int argc, char *argv[]) {
     using namespace libime;
     PinyinDictionary dict(argv[1], PinyinDictFormat::Text);
     // dict.dump(std::cout);
-    char c[] = {static_cast<char>(PinyinInitial::N), static_cast<char>(PinyinInitial::H),
+    char c[] = {static_cast<char>(PinyinInitial::N),
+                static_cast<char>(PinyinInitial::H),
                 PinyinEncoder::initialFinalSepartor, 0, 0};
-    dict.matchWords(c, sizeof(c),
-                    [c](const char *encodedPinyin, const std::string &hanzi, float cost) {
-                        std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin, sizeof(c))
-                                  << " " << hanzi << " " << cost << std::endl;
-                        return true;
-                    });
+    dict.matchWords(c, sizeof(c), [c](const char *encodedPinyin,
+                                      const std::string &hanzi, float cost) {
+        std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin, sizeof(c))
+                  << " " << hanzi << " " << cost << std::endl;
+        return true;
+    });
 
     PinyinEncoder::parseUserPinyin("zuishengmengsi''", PinyinFuzzyFlag::None)
-        .dfs([&dict](const PinyinSegments &pyseg, const std::vector<size_t> &pos) {
+        .dfs([&dict](const PinyinSegments &pyseg,
+                     const std::vector<size_t> &pos) {
             Segments segs(pyseg.pinyin(), pos);
             for (size_t i = 0; i < segs.size(); i++) {
                 std::cout << segs.at(i) << " ";
             }
             std::cout << std::endl;
-            dict.matchPrefix(segs, 0, [&segs](size_t to, boost::string_view hanzi, float value) {
-                std::cout << segs.prefix(to) << " " << hanzi << " " << value << std::endl;
-            });
+            dict.matchPrefix(
+                segs, 0,
+                [&segs](size_t to, boost::string_view hanzi, float value) {
+                    std::cout << segs.prefix(to) << " " << hanzi << " " << value
+                              << std::endl;
+                });
             return true;
         });
     dict.save(argv[2]);

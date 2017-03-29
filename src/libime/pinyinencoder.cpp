@@ -33,34 +33,45 @@ namespace libime {
 static const std::string emptyString;
 
 template <typename L, typename R>
-boost::bimap<L, R> makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
+boost::bimap<L, R>
+makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
     return boost::bimap<L, R>(list.begin(), list.end());
 }
 
 static const auto initialMap = makeBimap<PinyinInitial, std::string>({
-    {PinyinInitial::B, "b"},   {PinyinInitial::P, "p"},   {PinyinInitial::M, "m"},
-    {PinyinInitial::F, "f"},   {PinyinInitial::D, "d"},   {PinyinInitial::T, "t"},
-    {PinyinInitial::N, "n"},   {PinyinInitial::L, "l"},   {PinyinInitial::G, "g"},
-    {PinyinInitial::K, "k"},   {PinyinInitial::H, "h"},   {PinyinInitial::J, "j"},
-    {PinyinInitial::Q, "q"},   {PinyinInitial::X, "x"},   {PinyinInitial::ZH, "zh"},
-    {PinyinInitial::CH, "ch"}, {PinyinInitial::SH, "sh"}, {PinyinInitial::R, "r"},
-    {PinyinInitial::Z, "z"},   {PinyinInitial::C, "c"},   {PinyinInitial::S, "s"},
-    {PinyinInitial::Y, "y"},   {PinyinInitial::W, "w"},   {PinyinInitial::Zero, ""},
+    {PinyinInitial::B, "b"},   {PinyinInitial::P, "p"},
+    {PinyinInitial::M, "m"},   {PinyinInitial::F, "f"},
+    {PinyinInitial::D, "d"},   {PinyinInitial::T, "t"},
+    {PinyinInitial::N, "n"},   {PinyinInitial::L, "l"},
+    {PinyinInitial::G, "g"},   {PinyinInitial::K, "k"},
+    {PinyinInitial::H, "h"},   {PinyinInitial::J, "j"},
+    {PinyinInitial::Q, "q"},   {PinyinInitial::X, "x"},
+    {PinyinInitial::ZH, "zh"}, {PinyinInitial::CH, "ch"},
+    {PinyinInitial::SH, "sh"}, {PinyinInitial::R, "r"},
+    {PinyinInitial::Z, "z"},   {PinyinInitial::C, "c"},
+    {PinyinInitial::S, "s"},   {PinyinInitial::Y, "y"},
+    {PinyinInitial::W, "w"},   {PinyinInitial::Zero, ""},
 });
 
 static const auto finalMap = makeBimap<PinyinFinal, std::string>({
-    {PinyinFinal::A, "a"},       {PinyinFinal::AI, "ai"},     {PinyinFinal::AN, "an"},
-    {PinyinFinal::ANG, "ang"},   {PinyinFinal::AO, "ao"},     {PinyinFinal::E, "e"},
-    {PinyinFinal::EI, "ei"},     {PinyinFinal::EN, "en"},     {PinyinFinal::ENG, "eng"},
-    {PinyinFinal::ER, "er"},     {PinyinFinal::O, "o"},       {PinyinFinal::ONG, "ong"},
-    {PinyinFinal::OU, "ou"},     {PinyinFinal::I, "i"},       {PinyinFinal::IA, "ia"},
-    {PinyinFinal::IE, "ie"},     {PinyinFinal::IAO, "iao"},   {PinyinFinal::IU, "iu"},
-    {PinyinFinal::IAN, "ian"},   {PinyinFinal::IN, "in"},     {PinyinFinal::IANG, "iang"},
-    {PinyinFinal::ING, "ing"},   {PinyinFinal::IONG, "iong"}, {PinyinFinal::U, "u"},
-    {PinyinFinal::UA, "ua"},     {PinyinFinal::UO, "uo"},     {PinyinFinal::UAI, "uai"},
-    {PinyinFinal::UI, "ui"},     {PinyinFinal::UAN, "uan"},   {PinyinFinal::UN, "un"},
-    {PinyinFinal::UANG, "uang"}, {PinyinFinal::V, "v"},       {PinyinFinal::UE, "ue"},
-    {PinyinFinal::VE, "ve"},     {PinyinFinal::NG, "ng"},     {PinyinFinal::Zero, ""},
+    {PinyinFinal::A, "a"},       {PinyinFinal::AI, "ai"},
+    {PinyinFinal::AN, "an"},     {PinyinFinal::ANG, "ang"},
+    {PinyinFinal::AO, "ao"},     {PinyinFinal::E, "e"},
+    {PinyinFinal::EI, "ei"},     {PinyinFinal::EN, "en"},
+    {PinyinFinal::ENG, "eng"},   {PinyinFinal::ER, "er"},
+    {PinyinFinal::O, "o"},       {PinyinFinal::ONG, "ong"},
+    {PinyinFinal::OU, "ou"},     {PinyinFinal::I, "i"},
+    {PinyinFinal::IA, "ia"},     {PinyinFinal::IE, "ie"},
+    {PinyinFinal::IAO, "iao"},   {PinyinFinal::IU, "iu"},
+    {PinyinFinal::IAN, "ian"},   {PinyinFinal::IN, "in"},
+    {PinyinFinal::IANG, "iang"}, {PinyinFinal::ING, "ing"},
+    {PinyinFinal::IONG, "iong"}, {PinyinFinal::U, "u"},
+    {PinyinFinal::UA, "ua"},     {PinyinFinal::UO, "uo"},
+    {PinyinFinal::UAI, "uai"},   {PinyinFinal::UI, "ui"},
+    {PinyinFinal::UAN, "uan"},   {PinyinFinal::UN, "un"},
+    {PinyinFinal::UANG, "uang"}, {PinyinFinal::V, "v"},
+    {PinyinFinal::UE, "ue"},     {PinyinFinal::VE, "ve"},
+    {PinyinFinal::NG, "ng"},     {PinyinFinal::Zero, ""},
 });
 
 static const int maxPinyinLength = 6;
@@ -72,7 +83,8 @@ boost::string_view longestMatch(Range _range, PinyinFuzzyFlags flags) {
     for (; range.size(); range.remove_suffix(1)) {
         auto iterPair = map.equal_range(range);
         if (iterPair.first != iterPair.second) {
-            for (auto &item : boost::make_iterator_range(iterPair.first, iterPair.second)) {
+            for (auto &item :
+                 boost::make_iterator_range(iterPair.first, iterPair.second)) {
                 if (flags.test(item.flags())) {
                     return range;
                 }
@@ -94,10 +106,12 @@ boost::string_view longestMatch(Range _range, PinyinFuzzyFlags flags) {
 }
 
 std::string PinyinSyllable::toString() const {
-    return PinyinEncoder::initialToString(initial_) + PinyinEncoder::finalToString(final_);
+    return PinyinEncoder::initialToString(initial_) +
+           PinyinEncoder::finalToString(final_);
 }
 
-PinyinSegments PinyinEncoder::parseUserPinyin(boost::string_view pinyin, PinyinFuzzyFlags flags) {
+PinyinSegments PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
+                                              PinyinFuzzyFlags flags) {
     PinyinSegments result(pinyin.to_string());
 
     std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> q;
@@ -134,16 +148,18 @@ PinyinSegments PinyinEncoder::parseUserPinyin(boost::string_view pinyin, PinyinF
             auto iter = innerSegments.find(str.to_string());
             if (iter != innerSegments.end()) {
                 result.addNext(top, top + iter->second.first.size());
-                result.addNext(top + iter->second.first.size(), top + str.size());
+                result.addNext(top + iter->second.first.size(),
+                               top + str.size());
             }
         }
 
         if (str.size() > 1 && top + str.size() < pinyin.size()) {
             // pinyin may end with aegimnoruv
             // and may start with abcdefghjklmnopqrstwxyz.
-            // the interection is aegmnor, while for m, it only 'm', so don't consider it
-            if (str.back() == 'a' || str.back() == 'e' || str.back() == 'g' || str.back() == 'n' ||
-                str.back() == 'o' || str.back() == 'r') {
+            // the interection is aegmnor, while for m, it only 'm', so don't
+            // consider it
+            if (str.back() == 'a' || str.back() == 'e' || str.back() == 'g' ||
+                str.back() == 'n' || str.back() == 'o' || str.back() == 'r') {
                 auto &map = getPinyinMap();
                 if (map.find(str.substr(0, str.size() - 1)) != map.end()) {
                     auto end = pinyin.end();
@@ -151,7 +167,8 @@ PinyinSegments PinyinEncoder::parseUserPinyin(boost::string_view pinyin, PinyinF
                     if (std::distance(end, iter) > maxPinyinLength) {
                         end = iter + maxPinyinLength;
                     }
-                    auto nextMatch = longestMatch(boost::make_iterator_range(iter, end), flags);
+                    auto nextMatch = longestMatch(
+                        boost::make_iterator_range(iter, end), flags);
                     if (nextMatch.size() > 1) {
                         result.addNext(top, top + str.size() - 1);
                         q.push(top + str.size() - 1);
@@ -174,7 +191,8 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(boost::string_view pinyin) {
         auto &map = getPinyinMap();
         auto iter = map.find(singlePinyin);
         if (iter == map.end() || iter->flags() != PinyinFuzzyFlag::None) {
-            throw std::invalid_argument("invalid full pinyin: " + pinyin.to_string());
+            throw std::invalid_argument("invalid full pinyin: " +
+                                        pinyin.to_string());
         }
         result[idx] = static_cast<char>(iter->initial());
         result[pinyins.size() + idx + 1] = static_cast<char>(iter->final());
@@ -232,18 +250,21 @@ PinyinFinal PinyinEncoder::stringToFinal(const std::string &str) {
     return {};
 }
 
-bool PinyinEncoder::isValidInitialFinal(PinyinInitial initial, PinyinFinal final) {
+bool PinyinEncoder::isValidInitialFinal(PinyinInitial initial,
+                                        PinyinFinal final) {
     if (initial != PinyinInitial::Invalid && final != PinyinFinal::Invalid) {
-        int16_t encode = ((static_cast<int16_t>(initial) - PinyinEncoder::firstInitial) *
-                          (PinyinEncoder::lastInitial - PinyinEncoder::firstInitial + 1)) +
-                         (static_cast<int16_t>(final) - PinyinEncoder::firstFinal);
+        int16_t encode =
+            ((static_cast<int16_t>(initial) - PinyinEncoder::firstInitial) *
+             (PinyinEncoder::lastInitial - PinyinEncoder::firstInitial + 1)) +
+            (static_cast<int16_t>(final) - PinyinEncoder::firstFinal);
         return getEncodedInitialFinal().count(encode) != 0;
     }
     return false;
 }
 
-static void getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> &syls,
-                     PinyinSyllable syl, PinyinFuzzyFlags flags) {
+static void
+getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> &syls,
+         PinyinSyllable syl, PinyinFuzzyFlags flags) {
     // ng/gn is already handled by table
     PinyinInitial initials[2] = {syl.initial(), PinyinInitial::Invalid};
     PinyinFinal finals[2] = {syl.final(), PinyinFinal::Invalid};
@@ -257,7 +278,8 @@ static void getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFina
         flags |= PinyinFuzzyFlag::S_SH;
     }
 
-    const static std::vector<std::tuple<PinyinInitial, PinyinInitial, PinyinFuzzyFlag>>
+    const static std::vector<
+        std::tuple<PinyinInitial, PinyinInitial, PinyinFuzzyFlag>>
         initialFuzzies = {
             {PinyinInitial::C, PinyinInitial::CH, PinyinFuzzyFlag::C_CH},
             {PinyinInitial::S, PinyinInitial::SH, PinyinFuzzyFlag::S_SH},
@@ -270,29 +292,34 @@ static void getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFina
         if ((syl.initial() == std::get<0>(initialFuzzy) ||
              syl.initial() == std::get<1>(initialFuzzy)) &&
             flags & std::get<2>(initialFuzzy)) {
-            initials[1] = syl.initial() == std::get<0>(initialFuzzy) ? std::get<1>(initialFuzzy)
-                                                                     : std::get<0>(initialFuzzy);
+            initials[1] = syl.initial() == std::get<0>(initialFuzzy)
+                              ? std::get<1>(initialFuzzy)
+                              : std::get<0>(initialFuzzy);
             initialSize = 2;
             break;
         }
     }
 
-    const static std::vector<std::tuple<PinyinFinal, PinyinFinal, PinyinFuzzyFlag>> finalFuzzies = {
-        {PinyinFinal::V, PinyinFinal::U, PinyinFuzzyFlag::V_U},
-        {PinyinFinal::AN, PinyinFinal::ANG, PinyinFuzzyFlag::AN_ANG},
-        {PinyinFinal::EN, PinyinFinal::ENG, PinyinFuzzyFlag::EN_ENG},
-        {PinyinFinal::IAN, PinyinFinal::IANG, PinyinFuzzyFlag::IAN_IANG},
-        {PinyinFinal::IN, PinyinFinal::ING, PinyinFuzzyFlag::IN_ING},
-        {PinyinFinal::U, PinyinFinal::OU, PinyinFuzzyFlag::U_OU},
-        {PinyinFinal::UAN, PinyinFinal::UANG, PinyinFuzzyFlag::UAN_UANG},
-        {PinyinFinal::VE, PinyinFinal::UE, PinyinFuzzyFlag::VE_UE},
-    };
+    const static std::vector<
+        std::tuple<PinyinFinal, PinyinFinal, PinyinFuzzyFlag>>
+        finalFuzzies = {
+            {PinyinFinal::V, PinyinFinal::U, PinyinFuzzyFlag::V_U},
+            {PinyinFinal::AN, PinyinFinal::ANG, PinyinFuzzyFlag::AN_ANG},
+            {PinyinFinal::EN, PinyinFinal::ENG, PinyinFuzzyFlag::EN_ENG},
+            {PinyinFinal::IAN, PinyinFinal::IANG, PinyinFuzzyFlag::IAN_IANG},
+            {PinyinFinal::IN, PinyinFinal::ING, PinyinFuzzyFlag::IN_ING},
+            {PinyinFinal::U, PinyinFinal::OU, PinyinFuzzyFlag::U_OU},
+            {PinyinFinal::UAN, PinyinFinal::UANG, PinyinFuzzyFlag::UAN_UANG},
+            {PinyinFinal::VE, PinyinFinal::UE, PinyinFuzzyFlag::VE_UE},
+        };
 
     for (auto &finalFuzzy : finalFuzzies) {
-        if ((syl.final() == std::get<0>(finalFuzzy) || syl.final() == std::get<1>(finalFuzzy)) &&
+        if ((syl.final() == std::get<0>(finalFuzzy) ||
+             syl.final() == std::get<1>(finalFuzzy)) &&
             flags & std::get<2>(finalFuzzy)) {
-            finals[1] = syl.final() == std::get<0>(finalFuzzy) ? std::get<1>(finalFuzzy)
-                                                               : std::get<0>(finalFuzzy);
+            finals[1] = syl.final() == std::get<0>(finalFuzzy)
+                            ? std::get<1>(finalFuzzy)
+                            : std::get<0>(finalFuzzy);
             finalSize = 2;
             break;
         }
@@ -304,15 +331,18 @@ static void getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFina
             auto final = finals[j];
             if ((i == 0 && j == 0) || final == PinyinFinal::Invalid ||
                 PinyinEncoder::isValidInitialFinal(initial, final)) {
-                auto iter = std::find_if(syls.begin(), syls.end(),
-                                         [initial](const auto &p) { return p.first == initial; });
+                auto iter = std::find_if(
+                    syls.begin(), syls.end(),
+                    [initial](const auto &p) { return p.first == initial; });
                 if (iter == syls.end()) {
-                    syls.emplace_back(std::piecewise_construct, std::forward_as_tuple(initial),
+                    syls.emplace_back(std::piecewise_construct,
+                                      std::forward_as_tuple(initial),
                                       std::forward_as_tuple());
                     iter = std::prev(syls.end());
                 }
                 auto &finals = iter->second;
-                if (std::find(finals.begin(), finals.end(), final) == finals.end()) {
+                if (std::find(finals.begin(), finals.end(), final) ==
+                    finals.end()) {
                     finals.push_back(final);
                 }
             }
@@ -321,13 +351,16 @@ static void getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFina
 }
 
 std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>>
-PinyinEncoder::stringToSyllables(boost::string_view pinyin, PinyinFuzzyFlags flags) {
+PinyinEncoder::stringToSyllables(boost::string_view pinyin,
+                                 PinyinFuzzyFlags flags) {
     std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> result;
     auto &map = getPinyinMap();
-    // we only want {M,N,R}/Invalid instead of {M,N,R}/Zero, so we could get match for everything.
+    // we only want {M,N,R}/Invalid instead of {M,N,R}/Zero, so we could get
+    // match for everything.
     if (pinyin != "m" && pinyin != "n" && pinyin != "r") {
         auto iterPair = map.equal_range(pinyin);
-        for (auto &item : boost::make_iterator_range(iterPair.first, iterPair.second)) {
+        for (auto &item :
+             boost::make_iterator_range(iterPair.first, iterPair.second)) {
             if (flags.test(item.flags())) {
                 getFuzzy(result, {item.initial(), item.final()}, flags);
             }
@@ -340,7 +373,8 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin, PinyinFuzzyFlags fla
     }
 
     if (result.size() == 0) {
-        result.emplace_back(std::piecewise_construct, std::forward_as_tuple(PinyinInitial::Invalid),
+        result.emplace_back(std::piecewise_construct,
+                            std::forward_as_tuple(PinyinInitial::Invalid),
                             std::forward_as_tuple(1, PinyinFinal::Invalid));
     }
 

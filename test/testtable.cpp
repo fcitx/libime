@@ -24,7 +24,8 @@ int main() {
     std::stringstream ss(test);
 
     try {
-        libime::TableBasedDictionary table(ss, libime::TableBasedDictionary::TableFormat::Text);
+        libime::TableBasedDictionary table(
+            ss, libime::TableBasedDictionary::TableFormat::Text);
         assert(table.hasRule());
         std::string key;
         assert(!table.generate("你好", key));

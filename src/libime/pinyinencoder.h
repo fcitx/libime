@@ -125,7 +125,7 @@ typedef std::function<bool(const PinyinSegments &, const std::vector<size_t> &)>
 
 class PinyinSegments {
 public:
-    PinyinSegments(const std::string &data) : data_(data) {}
+    PinyinSegments(const std::string &data = {}) : data_(data) {}
     PinyinSegments(const PinyinSegments &seg) = default;
     ~PinyinSegments() {}
 
@@ -154,7 +154,8 @@ public:
     }
 
 private:
-    bool dfsHelper(std::vector<size_t> &path, size_t start, PinyinSegmentCallback callback) const {
+    bool dfsHelper(std::vector<size_t> &path, size_t start,
+                   PinyinSegmentCallback callback) const {
         if (start == end()) {
             return callback(*this, path);
         }
@@ -175,7 +176,8 @@ private:
 
 struct LIBIME_EXPORT PinyinSyllable {
 public:
-    PinyinSyllable(PinyinInitial initial, PinyinFinal final) : initial_(initial), final_(final) {}
+    PinyinSyllable(PinyinInitial initial, PinyinFinal final)
+        : initial_(initial), final_(final) {}
     PinyinSyllable(const PinyinSyllable &) = default;
 
     PinyinInitial initial() const { return initial_; }
@@ -195,7 +197,8 @@ private:
 
 class LIBIME_EXPORT PinyinEncoder {
 public:
-    static PinyinSegments parseUserPinyin(boost::string_view pinyin, PinyinFuzzyFlags flags);
+    static PinyinSegments parseUserPinyin(boost::string_view pinyin,
+                                          PinyinFuzzyFlags flags);
 
     static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
 
@@ -206,11 +209,15 @@ public:
 
     static const std::string &initialToString(PinyinInitial initial);
     static PinyinInitial stringToInitial(const std::string &str);
-    static bool isValidInitial(char c) { return c >= firstInitial && c <= lastInitial; }
+    static bool isValidInitial(char c) {
+        return c >= firstInitial && c <= lastInitial;
+    }
 
     static const std::string &finalToString(PinyinFinal final);
     static PinyinFinal stringToFinal(const std::string &str);
-    static bool isValidFinal(char c) { return c >= firstFinal && c <= lastFinal; }
+    static bool isValidFinal(char c) {
+        return c >= firstFinal && c <= lastFinal;
+    }
 
     static bool isValidInitialFinal(PinyinInitial initial, PinyinFinal final);
 

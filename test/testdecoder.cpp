@@ -32,19 +32,22 @@ int main(int argc, char *argv[]) {
     LanguageModel model(argv[2]);
     Decoder decoder(&dict, &model);
     PinyinEncoder::parseUserPinyin("wojiushixiangceshi", PinyinFuzzyFlag::None)
-        .dfs([&decoder](const PinyinSegments &pyseg, const std::vector<size_t> &pos) {
+        .dfs([&decoder](const PinyinSegments &pyseg,
+                        const std::vector<size_t> &pos) {
             Segments segs(pyseg.pinyin(), pos);
             decoder.decode(segs, 1, {});
             return true;
         });
     PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::Inner)
-        .dfs([&decoder](const PinyinSegments &pyseg, const std::vector<size_t> &pos) {
+        .dfs([&decoder](const PinyinSegments &pyseg,
+                        const std::vector<size_t> &pos) {
             Segments segs(pyseg.pinyin(), pos);
             decoder.decode(segs, 1, {});
             return true;
         });
     PinyinEncoder::parseUserPinyin("xiian", PinyinFuzzyFlag::Inner)
-        .dfs([&decoder](const PinyinSegments &pyseg, const std::vector<size_t> &pos) {
+        .dfs([&decoder](const PinyinSegments &pyseg,
+                        const std::vector<size_t> &pos) {
             Segments segs(pyseg.pinyin(), pos);
             decoder.decode(segs, 1, {});
             return true;

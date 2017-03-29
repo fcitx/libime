@@ -54,7 +54,8 @@ marshall(std::ostream &out, T data) {
         uint32_t i;
         T v;
     };
-    static_assert(sizeof(T) == sizeof(uint32_t), "this function is only for 4 byte data");
+    static_assert(sizeof(T) == sizeof(uint32_t),
+                  "this function is only for 4 byte data");
     v = data;
     i = htonl(i);
     return out.write(reinterpret_cast<char *>(&i), sizeof(i));
@@ -73,7 +74,8 @@ marshall(std::ostream &out, T data) {
         uint16_t i;
         T v;
     };
-    static_assert(sizeof(T) == sizeof(uint16_t), "this function is only for 2 byte data");
+    static_assert(sizeof(T) == sizeof(uint16_t),
+                  "this function is only for 2 byte data");
     v = data;
     i = htons(i);
     return out.write(reinterpret_cast<char *>(&i), sizeof(i));
@@ -86,7 +88,8 @@ unmarshall(std::istream &in, T &data) {
         uint32_t i;
         T v;
     };
-    static_assert(sizeof(T) == sizeof(uint32_t), "this function is only for 4 byte data");
+    static_assert(sizeof(T) == sizeof(uint32_t),
+                  "this function is only for 4 byte data");
     if (in.read(reinterpret_cast<char *>(&i), sizeof(i))) {
         i = ntohl(i);
         data = v;
@@ -107,7 +110,8 @@ unmarshall(std::istream &in, T &data) {
         uint16_t i;
         T v;
     };
-    static_assert(sizeof(T) == sizeof(uint16_t), "this function is only for 4 byte data");
+    static_assert(sizeof(T) == sizeof(uint16_t),
+                  "this function is only for 4 byte data");
     if (in.read(reinterpret_cast<char *>(&i), sizeof(i))) {
         i = ntohs(i);
         data = v;

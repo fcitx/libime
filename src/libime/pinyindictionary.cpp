@@ -38,7 +38,7 @@ public:
     PinyinFuzzyFlags flags_;
 };
 
-size_t numOfFuzzy(const Segments &seg, size_t from, size_t to,
+size_t numOfFuzzy(const SegmentPath &seg, size_t from, size_t to,
                   boost::string_view encodedPinyin) {
     assert((to - from) * 2 + 1 == encodedPinyin.size());
     size_t count = 0;
@@ -60,7 +60,7 @@ size_t numOfFuzzy(const Segments &seg, size_t from, size_t to,
     return count;
 }
 
-void PinyinDictionary::matchPrefix(const Segments &seg, size_t from,
+void PinyinDictionary::matchPrefix(const SegmentPath &seg, size_t from,
                                    MatchCallback callback) {
     FCITX_D();
     std::list<std::pair<decltype(d->trie_)::position_type,

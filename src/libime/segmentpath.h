@@ -16,17 +16,17 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#ifndef _LIBIME_SEGMENTS_H_
-#define _LIBIME_SEGMENTS_H_
+#ifndef _LIBIME_SEGMENTPATH_H_
+#define _LIBIME_SEGMENTPATH_H_
 
 #include <boost/utility/string_view.hpp>
 #include <vector>
 
 namespace libime {
 
-class Segments {
+class SegmentPath {
 public:
-    Segments(boost::string_view view, std::vector<size_t> idx)
+    SegmentPath(boost::string_view view, std::vector<size_t> idx)
         : data_(view), idx_(std::move(idx)) {}
 
     size_t size() const { return idx_.size(); }
@@ -49,4 +49,4 @@ private:
 };
 }
 
-#endif // _LIBIME_SEGMENTS_H_
+#endif // _LIBIME_SEGMENTPATH_H_

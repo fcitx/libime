@@ -28,7 +28,7 @@ public:
     void discardFrom(size_t from) {}
 
     PinyinIME *ime_;
-    PinyinSegments segs_;
+    SegmentGraph segs_;
 };
 
 PinyinContext::PinyinContext(PinyinIME *ime)

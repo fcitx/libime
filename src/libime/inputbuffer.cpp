@@ -17,7 +17,7 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "inputbuffer.h"
-#include "segments.h"
+#include "segmentpath.h"
 #include <boost/iterator/function_input_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <exception>

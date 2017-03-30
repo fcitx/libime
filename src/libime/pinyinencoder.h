@@ -20,6 +20,7 @@
 #define _FCITX_LIBIME_PINYINENCODER_H_
 
 #include "libime_export.h"
+#include "segmentgraph.h"
 #include <boost/utility/string_view.hpp>
 #include <cassert>
 #include <fcitx-utils/flags.h>
@@ -119,61 +120,6 @@ enum class PinyinFinal : char {
     Zero
 };
 
-class PinyinSegments;
-typedef std::function<bool(const PinyinSegments &, const std::vector<size_t> &)>
-    PinyinSegmentCallback;
-
-class PinyinSegments {
-public:
-    PinyinSegments(const std::string &data = {}) : data_(data) {}
-    PinyinSegments(const PinyinSegments &seg) = default;
-    ~PinyinSegments() {}
-
-    size_t start() const { return 0; }
-    size_t end() const { return data_.size(); }
-
-    boost::string_view pinyin() const { return data_; }
-
-    boost::string_view segment(size_t start, size_t end) const {
-        assert(start < end);
-        return boost::string_view(data_.data() + start, end - start);
-    }
-
-    const std::vector<size_t> &next(size_t idx) const {
-        auto iter = next_.find(idx);
-        return iter->second;
-    }
-    void addNext(size_t from, size_t to) {
-        assert(from < to);
-        next_[from].push_back(to);
-    }
-
-    void dfs(PinyinSegmentCallback callback) const {
-        std::vector<size_t> path;
-        dfsHelper(path, 0, callback);
-    }
-
-private:
-    bool dfsHelper(std::vector<size_t> &path, size_t start,
-                   PinyinSegmentCallback callback) const {
-        if (start == end()) {
-            return callback(*this, path);
-        }
-        auto &nexts = next(start);
-        for (auto next : nexts) {
-            path.push_back(next);
-            if (!dfsHelper(path, next, callback)) {
-                return false;
-            }
-            path.pop_back();
-        }
-        return true;
-    }
-
-    std::string data_;
-    std::unordered_map<size_t, std::vector<size_t>> next_;
-};
-
 struct LIBIME_EXPORT PinyinSyllable {
 public:
     PinyinSyllable(PinyinInitial initial, PinyinFinal final)
@@ -197,8 +143,8 @@ private:
 
 class LIBIME_EXPORT PinyinEncoder {
 public:
-    static PinyinSegments parseUserPinyin(boost::string_view pinyin,
-                                          PinyinFuzzyFlags flags);
+    static SegmentGraph parseUserPinyin(boost::string_view pinyin,
+                                        PinyinFuzzyFlags flags);
 
     static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
 

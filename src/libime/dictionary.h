@@ -20,7 +20,7 @@
 #define _FCITX_LIBIME_DICTIONARY_H_
 
 #include "libime_export.h"
-#include "segments.h"
+#include "segmentpath.h"
 #include <boost/utility/string_view.hpp>
 #include <functional>
 
@@ -30,7 +30,7 @@ typedef std::function<void(size_t, boost::string_view, float)> MatchCallback;
 
 class LIBIME_EXPORT Dictionary {
 public:
-    virtual void matchPrefix(const Segments &segs, size_t from,
+    virtual void matchPrefix(const SegmentPath &segs, size_t from,
                              MatchCallback callback) = 0;
 };
 }

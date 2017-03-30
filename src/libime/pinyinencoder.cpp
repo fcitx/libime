@@ -110,9 +110,9 @@ std::string PinyinSyllable::toString() const {
            PinyinEncoder::finalToString(final_);
 }
 
-PinyinSegments PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
-                                              PinyinFuzzyFlags flags) {
-    PinyinSegments result(pinyin.to_string());
+SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
+                                            PinyinFuzzyFlags flags) {
+    SegmentGraph result(pinyin.to_string());
 
     std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> q;
     q.push(0);
@@ -130,7 +130,9 @@ PinyinSegments PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
             }
             auto next = std::distance(pinyin.begin(), iter);
             result.addNext(top, next);
-            q.push(next);
+            if (next < pinyin.size()) {
+                q.push(next);
+            }
             continue;
         }
         auto end = pinyin.end();

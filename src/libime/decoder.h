@@ -20,7 +20,7 @@
 #define _LIBIME_DECODER_H_
 
 #include "dictionary.h"
-#include "segments.h"
+#include "segmentpath.h"
 #include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <memory>
@@ -37,10 +37,10 @@ public:
     Decoder(Dictionary *dict, LanguageModel *model);
     virtual ~Decoder();
 
-    void decode(const Segments &input, int nbest,
+    void decode(const SegmentPath &input, int nbest,
                 const std::vector<int> &constrains);
 
-    void decode(const Segments &input, int nbest,
+    void decode(const SegmentPath &input, int nbest,
                 const std::vector<int> &constrains, double max, double min);
 
 private:

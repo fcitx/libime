@@ -21,7 +21,7 @@
 #include "datrie.h"
 #include "languagemodel.h"
 #include "lm/model.hh"
-#include "segments.h"
+#include "segmentpath.h"
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <limits>
 #include <memory>
@@ -50,7 +50,7 @@ public:
         : dict_(dict), model_(model) {}
 
     std::vector<boost::ptr_vector<LatticeNode>>
-    buildLattice(const Segments &input, const std::vector<int> &constrains) {
+    buildLattice(const SegmentPath &input, const std::vector<int> &constrains) {
         std::vector<boost::ptr_vector<LatticeNode>> lattice;
         lattice.resize(input.size() + 2);
 
@@ -84,13 +84,13 @@ Decoder::Decoder(Dictionary *dict, LanguageModel *model)
 
 Decoder::~Decoder() {}
 
-void Decoder::decode(const Segments &input, int nbest,
+void Decoder::decode(const SegmentPath &input, int nbest,
                      const std::vector<int> &constrains) {
     return decode(input, nbest, constrains, std::numeric_limits<double>::max(),
                   -std::numeric_limits<double>::max());
 }
 
-void Decoder::decode(const Segments &input, int nbest,
+void Decoder::decode(const SegmentPath &input, int nbest,
                      const std::vector<int> &constrains, double max,
                      double min) {
     FCITX_D();

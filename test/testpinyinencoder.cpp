@@ -22,7 +22,7 @@
 
 using namespace libime;
 
-bool callback(const PinyinSegments &segs, const std::vector<size_t> &path) {
+bool callback(const SegmentGraph &segs, const std::vector<size_t> &path) {
     size_t s = 0;
     for (auto e : path) {
         std::cout << segs.segment(s, e) << " ";

@@ -20,9 +20,35 @@
 #include "languagemodel.h"
 #include "pinyindictionary.h"
 #include "pinyinencoder.h"
+#include <chrono>
 #include <iostream>
 
+struct ScopedNanoTimer {
+    std::chrono::high_resolution_clock::time_point t0;
+    std::function<void(int)> cb;
+
+    ScopedNanoTimer(std::function<void(int)> callback)
+        : t0(std::chrono::high_resolution_clock::now()), cb(callback) {}
+    ~ScopedNanoTimer(void) {
+        auto t1 = std::chrono::high_resolution_clock::now();
+        auto nanos =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0)
+                .count();
+
+        cb(nanos);
+    }
+};
+
 using namespace libime;
+
+void testTime(Decoder &decoder, const char *pinyin, PinyinFuzzyFlags flags) {
+    auto printTime = [](int t) {
+        std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
+    };
+    ScopedNanoTimer timer(printTime);
+    auto graph = PinyinEncoder::parseUserPinyin(pinyin, flags);
+    decoder.decode(graph, 1);
+}
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -31,26 +57,32 @@ int main(int argc, char *argv[]) {
     PinyinDictionary dict(argv[1], PinyinDictFormat::Text);
     LanguageModel model(argv[2]);
     Decoder decoder(&dict, &model);
-    PinyinEncoder::parseUserPinyin("wojiushixiangceshi", PinyinFuzzyFlag::None)
-        .dfs([&decoder](const SegmentGraph &pyseg,
-                        const std::vector<size_t> &pos) {
-            SegmentPath segs(pyseg.data(), pos);
-            decoder.decode(segs, 1, {});
+    decoder.setUnknownHandler(
+        [](const SegmentGraph &graph,
+           const std::vector<const SegmentGraphNode *> &path,
+           boost::string_view entry, float &adjust) -> bool {
+#if 0
+        do {
+            if (path.front() == &graph.start()) {
+                break;
+            }
+            return false;
+        } while(0);
+#endif
+            adjust += -100.0f;
             return true;
         });
-    PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::Inner)
-        .dfs([&decoder](const SegmentGraph &pyseg,
-                        const std::vector<size_t> &pos) {
-            SegmentPath segs(pyseg.data(), pos);
-            decoder.decode(segs, 1, {});
-            return true;
-        });
-    PinyinEncoder::parseUserPinyin("xiian", PinyinFuzzyFlag::Inner)
-        .dfs([&decoder](const SegmentGraph &pyseg,
-                        const std::vector<size_t> &pos) {
-            SegmentPath segs(pyseg.data(), pos);
-            decoder.decode(segs, 1, {});
-            return true;
-        });
+    testTime(decoder, "wojiushixiangceshi", PinyinFuzzyFlag::None);
+    testTime(decoder, "xian", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "xiian", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "tanan", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "jin'an", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "sh'a", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "xiian", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "anqilaibufangbian", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "zhizuoxujibianchengleshunshuituizhoudeshiqing",
+             PinyinFuzzyFlag::Inner);
+    testTime(decoder, "xi'ian", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "zuishengmengsi'''", PinyinFuzzyFlag::Inner);
     return 0;
 }

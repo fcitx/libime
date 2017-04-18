@@ -38,22 +38,6 @@ int main(int argc, char *argv[]) {
         return true;
     });
 
-    PinyinEncoder::parseUserPinyin("zuishengmengsi''", PinyinFuzzyFlag::None)
-        .dfs(
-            [&dict](const SegmentGraph &pyseg, const std::vector<size_t> &pos) {
-                SegmentPath segs(pyseg.data(), pos);
-                for (size_t i = 0; i < segs.size(); i++) {
-                    std::cout << segs.at(i) << " ";
-                }
-                std::cout << std::endl;
-                dict.matchPrefix(
-                    segs, 0,
-                    [&segs](size_t to, boost::string_view hanzi, float value) {
-                        std::cout << segs.prefix(to) << " " << hanzi << " "
-                                  << value << std::endl;
-                    });
-                return true;
-            });
     dict.save(argv[2]);
     return 0;
 }

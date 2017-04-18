@@ -20,19 +20,24 @@
 #define _FCITX_LIBIME_PINYINIME_H_
 
 #include "libime_export.h"
+#include "pinyinencoder.h"
 #include <fcitx-utils/macros.h>
 #include <memory>
 
 namespace libime {
+
+class PinyinIMEPrivate;
 
 class LIBIME_EXPORT PinyinIME {
 public:
     PinyinIME();
     virtual ~PinyinIME();
 
+    PinyinFuzzyFlags fuzzyFlags() const;
+
 private:
     std::unique_ptr<PinyinIMEPrivate> d_ptr;
-    FCITX_DECLARE_PRVIATE(PinyinIME);
+    FCITX_DECLARE_PRIVATE(PinyinIME);
 };
 }
 

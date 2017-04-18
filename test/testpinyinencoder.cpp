@@ -63,6 +63,10 @@ int main() {
     PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::None).dfs(callback);
     PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::Inner)
         .dfs(callback);
+    PinyinEncoder::parseUserPinyin("jiaou", PinyinFuzzyFlag::Inner)
+        .dfs(callback);
+    PinyinEncoder::parseUserPinyin("jin'an", PinyinFuzzyFlag::Inner)
+        .dfs(callback);
 
     for (auto syl : PinyinEncoder::stringToSyllables(
              "niagn",
@@ -86,6 +90,33 @@ int main() {
         for (auto f : syl.second) {
             std::cout << PinyinSyllable(syl.first, f).toString() << std::endl;
         }
+    }
+
+    {
+        // xiang o n
+        PinyinEncoder::parseUserPinyin("xiangon", PinyinFuzzyFlag::None)
+            .dfs(callback);
+
+        // xian gong
+        PinyinEncoder::parseUserPinyin("xiangong", PinyinFuzzyFlag::None)
+            .dfs(callback);
+
+        // xiang o n
+        PinyinEncoder::parseUserPinyin("xiangon", PinyinFuzzyFlag::None)
+            .dfs(callback);
+    }
+    {
+        // xiang o n
+        PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::None)
+            .dfs(callback);
+
+        // xian gong
+        PinyinEncoder::parseUserPinyin("xiangong", PinyinFuzzyFlag::None)
+            .dfs(callback);
+
+        // xiang o n
+        PinyinEncoder::parseUserPinyin("xiangon", PinyinFuzzyFlag::None)
+            .dfs(callback);
     }
     return 0;
 }

@@ -3,6 +3,7 @@ set(LIBIME_SINGLE_FILE_TEST
     testpinyindata
     testpinyinencoder
     testinputbuffer
+    testpinyincontext
     )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})

@@ -53,6 +53,7 @@ set(LIBIME_HDRS
     pinyinime.h
     pinyincontext.h
     inputbuffer.h
+    segmentgraph.h
     )
 
 set(LIBIME_SRCS
@@ -63,7 +64,7 @@ set(LIBIME_SRCS
     pinyindata.cpp
     pinyindictionary.cpp
     languagemodel.cpp
-    pinyinime.h
+    pinyinime.cpp
     pinyincontext.cpp
     inputbuffer.cpp
     )

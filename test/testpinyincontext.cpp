@@ -16,26 +16,7 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#ifndef _FCITX_LIBIME_DICTIONARY_H_
-#define _FCITX_LIBIME_DICTIONARY_H_
 
-#include "libime_export.h"
-#include "segmentgraph.h"
-#include <boost/utility/string_view.hpp>
-#include <functional>
+#include "pinyincontext.h"
 
-namespace libime {
-
-typedef std::function<void(size_t, boost::string_view, float)> MatchCallback;
-typedef std::function<void(const std::vector<const SegmentGraphNode *> &,
-                           boost::string_view, float)>
-    GraphMatchCallback;
-
-class LIBIME_EXPORT Dictionary {
-public:
-    virtual void matchPrefix(const SegmentGraph &graph,
-                             GraphMatchCallback callback) = 0;
-};
-}
-
-#endif // _FCITX_LIBIME_DICTIONARY_H_
+int main() { return 0; }

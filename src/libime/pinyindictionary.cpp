@@ -26,6 +26,8 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <queue>
+#include <type_traits>
 
 namespace libime {
 
@@ -38,14 +40,20 @@ public:
     PinyinFuzzyFlags flags_;
 };
 
-size_t numOfFuzzy(const SegmentPath &seg, size_t from, size_t to,
+size_t numOfFuzzy(const SegmentGraph &seg,
+                  const std::vector<const SegmentGraphNode *> &path,
                   boost::string_view encodedPinyin) {
-    assert((to - from) * 2 + 1 == encodedPinyin.size());
     size_t count = 0;
-    for (size_t i = 0; i < to - from; i++) {
-        auto initial = encodedPinyin[i];
-        auto final = encodedPinyin[i + (to - from) + 1];
-        auto pinyin = seg.at(i + from);
+    size_t j = 0;
+    auto finalOffset = encodedPinyin.size() / 2 + 1;
+    for (size_t i = 0; i < path.size() - 1; i++) {
+        auto pinyin = seg.segment(path[i]->index(), path[i + 1]->index());
+        if (boost::starts_with(pinyin, "\'")) {
+            continue;
+        }
+        auto initial = encodedPinyin[j];
+        auto final = encodedPinyin[j + finalOffset];
+        j++;
         auto &initialString =
             PinyinEncoder::initialToString(static_cast<PinyinInitial>(initial));
         auto &finalString =
@@ -60,119 +68,197 @@ size_t numOfFuzzy(const SegmentPath &seg, size_t from, size_t to,
     return count;
 }
 
-void PinyinDictionary::matchPrefix(const SegmentPath &seg, size_t from,
-                                   MatchCallback callback) {
-    FCITX_D();
-    std::list<std::pair<decltype(d->trie_)::position_type,
-                        std::vector<std::vector<PinyinFinal>>>>
-        nodes;
-    nodes.emplace_back(std::piecewise_construct, std::forward_as_tuple(0),
-                       std::forward_as_tuple());
+struct TrieEdge {
 
-    size_t i = from;
-    while (boost::starts_with(seg.at(i), "\'")) {
-        i++;
+    TrieEdge(uint64_t pos, std::vector<const SegmentGraphNode *> path,
+             std::vector<std::vector<PinyinFinal>> remain)
+        : pos_(pos), path_(std::move(path)), remain_(std::move(remain)) {}
+
+    uint64_t pos_;
+    std::vector<const SegmentGraphNode *> path_;
+    std::vector<std::vector<PinyinFinal>> remain_;
+};
+
+struct SegmentGraphNodeLess {
+    bool operator()(const SegmentGraphNode *lhs,
+                    const SegmentGraphNode *rhs) const {
+        return lhs->index() > rhs->index();
     }
-    size_t start = i;
-    bool matched = false;
-    while (i < seg.size()) {
-        boost::string_view pinyin = seg.at(i);
-        i++;
+};
 
-        // skip "'"
-        while (i < seg.size() && boost::starts_with(seg.at(i), "\'")) {
-            i++;
+const SegmentGraphNode *prevIsSeparator(const SegmentGraph &graph,
+                                        const SegmentGraphNode *node) {
+    auto prev = node->prev();
+    if (!prev.empty()) {
+        auto iter = prev.begin();
+        ++iter;
+        if (iter == prev.end()) {
+            auto i = prev.begin();
+            auto pinyin = graph.segment(i->index(), node->index());
+            if (boost::starts_with(pinyin, "\'")) {
+                return &(*i);
+            }
         }
-        const auto syls = PinyinEncoder::stringToSyllables(pinyin, d->flags_);
+    }
+    return nullptr;
+}
 
-        decltype(nodes) newNodes;
-        for (auto &node : nodes) {
-            for (auto &syl : syls) {
-                char initial = static_cast<char>(syl.first);
-                auto pos = node.first;
-                auto result = d->trie_.traverse(&initial, 1, pos);
-                if (!decltype(d->trie_)::isNoPath(result)) {
-                    auto finals = node.second;
-                    finals.push_back(syl.second);
-                    newNodes.emplace_back(
-                        std::piecewise_construct, std::forward_as_tuple(pos),
-                        std::forward_as_tuple(std::move(finals)));
+void PinyinDictionary::matchPrefix(const SegmentGraph &graph,
+                                   GraphMatchCallback callback) {
+    FCITX_D();
+
+    std::unordered_map<const SegmentGraphNode *, std::list<TrieEdge>> search;
+    std::priority_queue<const SegmentGraphNode *,
+                        std::vector<const SegmentGraphNode *>,
+                        SegmentGraphNodeLess>
+        q;
+
+    auto &start = graph.start();
+    q.push(&start);
+
+    while (!q.empty()) {
+        auto current = q.top();
+        q.pop();
+
+        if (!search.count(current)) {
+            auto &currentNodes = search[current];
+            if (current != &graph.end() &&
+                !boost::starts_with(
+                    graph.segment(current->index(), current->index() + 1),
+                    "\'")) {
+                std::vector<const SegmentGraphNode *> vec;
+                if (auto prev = prevIsSeparator(graph, current)) {
+                    vec.push_back(prev);
                 }
-            }
-        }
 
-        // after we match initial, we first try to match final for current word.
-        for (const auto &node : newNodes) {
-            char sep = PinyinEncoder::initialFinalSepartor;
-            auto pos = node.first;
-            auto result = d->trie_.traverse(&sep, 1, pos);
-            if (decltype(d->trie_)::isNoPath(result)) {
-                continue;
+                vec.push_back(current);
+                currentNodes.emplace_back(
+                    0, std::move(vec), std::vector<std::vector<PinyinFinal>>());
             }
 
-            std::list<decltype(d->trie_)::position_type> finalNodes = {pos};
-            for (auto finals : node.second) {
-                decltype(finalNodes) nextNodes;
-
-                for (auto pos : finalNodes) {
-                    auto updateNext = [d, &nextNodes](char current, auto pos) {
-                        auto result = d->trie_.traverse(&current, 1, pos);
-
-                        if (!decltype(d->trie_)::isNoPath(result)) {
-                            nextNodes.push_back(pos);
-                        }
-                    };
-                    if (finals.size() > 1 ||
-                        finals[0] != PinyinFinal::Invalid) {
-                        for (auto final : finals) {
-                            updateNext(static_cast<char>(final), pos);
-                        }
-                    } else {
-                        for (char test = PinyinEncoder::firstFinal;
-                             test <= PinyinEncoder::lastFinal; test++) {
-                            updateNext(test, pos);
+            for (auto &prevNode : current->prev()) {
+                auto pinyin = graph.segment(prevNode.index(), current->index());
+                if (boost::starts_with(pinyin, "\'")) {
+                    auto newNodes = search[&prevNode];
+                    for (auto &edge : newNodes) {
+                        edge.path_.push_back(current);
+                    }
+                    currentNodes.splice(currentNodes.end(), newNodes);
+                    if (current == &graph.end()) {
+                        callback({&prevNode, current}, "", 0);
+                    }
+                } else {
+                    bool matched = false;
+                    const auto syls =
+                        PinyinEncoder::stringToSyllables(pinyin, d->flags_);
+                    auto &nodes = search[&prevNode];
+                    std::remove_reference_t<decltype(nodes)> newNodes;
+                    for (auto &node : nodes) {
+                        for (auto &syl : syls) {
+                            char initial = static_cast<char>(syl.first);
+                            auto pos = node.pos_;
+                            auto result = d->trie_.traverse(&initial, 1, pos);
+                            if (!decltype(d->trie_)::isNoPath(result)) {
+                                auto finals = node.remain_;
+                                finals.push_back(syl.second);
+                                auto v = node.path_;
+                                v.push_back(current);
+                                newNodes.emplace_back(pos, std::move(v),
+                                                      std::move(finals));
+                            }
                         }
                     }
-                }
-                finalNodes = std::move(nextNodes);
-                if (finalNodes.empty()) {
-                    break;
-                }
-            }
 
-            auto size = node.second.size();
-            for (auto finalNode : finalNodes) {
-                d->trie_.foreach (
-                    [d, &matched, &callback, size, i, seg,
-                     from](decltype(d->trie_)::value_type value, size_t len,
-                           uint64_t pos) {
-                        std::string s;
-                        d->trie_.suffix(s, len + size * 2 + 1, pos);
-                        size_t fuzzy = numOfFuzzy(
-                            seg, from, i,
-                            boost::string_view(s).substr(0, size * 2 + 1));
-                        callback(i - 1, s.substr(size * 2 + 1),
-                                 value + fuzzy * fuzzyCost);
-                        matched = true;
-                        return true;
-                    },
-                    finalNode);
+                    // after we match initial, we first try to match final for
+                    // current word.
+                    for (const auto &node : newNodes) {
+                        char sep = PinyinEncoder::initialFinalSepartor;
+                        auto pos = node.pos_;
+                        auto result = d->trie_.traverse(&sep, 1, pos);
+                        if (decltype(d->trie_)::isNoPath(result)) {
+                            continue;
+                        }
+
+                        std::list<decltype(d->trie_)::position_type>
+                            finalNodes = {pos};
+                        for (auto finals : node.remain_) {
+                            decltype(finalNodes) nextNodes;
+
+                            for (auto pos : finalNodes) {
+                                auto updateNext = [d, &nextNodes](char current,
+                                                                  auto pos) {
+                                    auto result =
+                                        d->trie_.traverse(&current, 1, pos);
+
+                                    if (!decltype(d->trie_)::isNoPath(result)) {
+                                        nextNodes.push_back(pos);
+                                    }
+                                };
+                                if (finals.size() > 1 ||
+                                    finals[0] != PinyinFinal::Invalid) {
+                                    for (auto final : finals) {
+                                        updateNext(static_cast<char>(final),
+                                                   pos);
+                                    }
+                                } else {
+                                    for (char test = PinyinEncoder::firstFinal;
+                                         test <= PinyinEncoder::lastFinal;
+                                         test++) {
+                                        updateNext(test, pos);
+                                    }
+                                }
+                            }
+                            finalNodes = std::move(nextNodes);
+                            if (finalNodes.empty()) {
+                                break;
+                            }
+                        }
+
+                        for (auto finalNode : finalNodes) {
+                            d->trie_.foreach (
+                                [d, &callback, &node, &graph, &matched,
+                                 &prevNode](
+                                    decltype(d->trie_)::value_type value,
+                                    size_t len, uint64_t pos) {
+                                    auto size = node.remain_.size();
+                                    std::string s;
+                                    d->trie_.suffix(s, len + size * 2 + 1, pos);
+                                    size_t fuzzy =
+                                        numOfFuzzy(graph, node.path_,
+                                                   boost::string_view(s).substr(
+                                                       0, size * 2 + 1));
+                                    callback(node.path_, s.substr(size * 2 + 1),
+                                             value + fuzzy * fuzzyCost);
+                                    if (node.remain_.size() == 1 &&
+                                        node.path_[node.path_.size() - 2] ==
+                                            &prevNode) {
+                                        matched = true;
+                                    }
+                                    return true;
+                                },
+                                finalNode);
+                        }
+                    }
+
+                    if (!matched) {
+                        std::vector<const SegmentGraphNode *> vec;
+                        vec.reserve(3);
+                        if (auto prevPrev = prevIsSeparator(graph, &prevNode)) {
+                            vec.push_back(prevPrev);
+                        }
+                        vec.push_back(&prevNode);
+                        vec.push_back(current);
+                        callback(vec, pinyin, invalidPinyinCost);
+                    }
+
+                    currentNodes.splice(currentNodes.end(), newNodes);
+                }
             }
         }
 
-        nodes = std::move(newNodes);
-    }
-
-    if (!matched) {
-        i = start;
-        boost::string_view pinyin = seg.at(i);
-        i++;
-
-        // skip "'"
-        while (i < seg.size() && boost::starts_with(seg.at(i), "\'")) {
-            i++;
+        for (auto &node : current->next()) {
+            q.push(&node);
         }
-        callback(i - 1, pinyin, invalidPinyinCost);
     }
 }
 

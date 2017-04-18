@@ -76,9 +76,13 @@ static const auto finalMap = makeBimap<PinyinFinal, std::string>({
 
 static const int maxPinyinLength = 6;
 
-template <typename Range>
-boost::string_view longestMatch(Range _range, PinyinFuzzyFlags flags) {
-    auto range = boost::string_view(&*_range.begin(), _range.size());
+template <typename Iter>
+std::pair<boost::string_view, bool> longestMatch(Iter iter, Iter end,
+                                                 PinyinFuzzyFlags flags) {
+    if (std::distance(iter, end) > maxPinyinLength) {
+        end = iter + maxPinyinLength;
+    }
+    auto range = boost::string_view(&*iter, std::distance(iter, end));
     auto &map = getPinyinMap();
     for (; range.size(); range.remove_suffix(1)) {
         auto iterPair = map.equal_range(range);
@@ -86,23 +90,23 @@ boost::string_view longestMatch(Range _range, PinyinFuzzyFlags flags) {
             for (auto &item :
                  boost::make_iterator_range(iterPair.first, iterPair.second)) {
                 if (flags.test(item.flags())) {
-                    return range;
+                    return std::make_pair(range, true);
                 }
             }
         }
         if (range.size() <= 2) {
             auto iter = initialMap.right.find(range.to_string());
             if (iter != initialMap.right.end()) {
-                return range;
+                return std::make_pair(range, false);
             }
         }
     }
 
     if (!range.size()) {
-        range = boost::string_view(&*_range.begin(), 1);
+        range = boost::string_view(&*iter, 1);
     }
 
-    return range;
+    return std::make_pair(range, false);
 }
 
 std::string PinyinSyllable::toString() const {
@@ -110,76 +114,107 @@ std::string PinyinSyllable::toString() const {
            PinyinEncoder::finalToString(final_);
 }
 
+static void addNext(SegmentGraph &g, size_t from, size_t to) {
+    if (g.nodes(from).empty()) {
+        g.newNode(from);
+    }
+    if (g.nodes(to).empty()) {
+        g.newNode(to);
+    }
+    g.addNext(from, to);
+}
+
 SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
                                             PinyinFuzzyFlags flags) {
     SegmentGraph result(pinyin.to_string());
-
+    pinyin = result.data();
+    auto end = pinyin.end();
     std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> q;
     q.push(0);
-
     while (q.size()) {
         size_t top;
         do {
             top = q.top();
             q.pop();
         } while (q.size() && q.top() == top);
+        if (top >= pinyin.size()) {
+            continue;
+        }
         auto iter = std::next(pinyin.begin(), top);
         if (*iter == '\'') {
             while (*iter == '\'' && iter != pinyin.end()) {
                 iter++;
             }
             auto next = std::distance(pinyin.begin(), iter);
-            result.addNext(top, next);
-            if (next < pinyin.size()) {
+            addNext(result, top, next);
+            if (static_cast<size_t>(next) < pinyin.size()) {
                 q.push(next);
             }
             continue;
         }
-        auto end = pinyin.end();
-        if (std::distance(iter, end) > maxPinyinLength) {
-            end = iter + maxPinyinLength;
-        }
-        auto str = longestMatch(boost::make_iterator_range(iter, end), flags);
-        result.addNext(top, top + str.size());
-        if (top + str.size() < pinyin.size()) {
+        boost::string_view str;
+        bool isCompletePinyin;
+        std::tie(str, isCompletePinyin) = longestMatch(iter, end, flags);
+
+        // it's not complete a pinyin, no need to try
+        if (!isCompletePinyin) {
+            addNext(result, top, top + str.size());
             q.push(top + str.size());
-        }
-
-        if (str.size() >= 4 && flags.test(PinyinFuzzyFlag::Inner)) {
-            auto &innerSegments = getInnerSegment();
-            auto iter = innerSegments.find(str.to_string());
-            if (iter != innerSegments.end()) {
-                result.addNext(top, top + iter->second.first.size());
-                result.addNext(top + iter->second.first.size(),
-                               top + str.size());
-            }
-        }
-
-        if (str.size() > 1 && top + str.size() < pinyin.size()) {
+        } else {
+            // check fuzzy seg
             // pinyin may end with aegimnoruv
             // and may start with abcdefghjklmnopqrstwxyz.
             // the interection is aegmnor, while for m, it only 'm', so don't
             // consider it
-            if (str.back() == 'a' || str.back() == 'e' || str.back() == 'g' ||
-                str.back() == 'n' || str.back() == 'o' || str.back() == 'r') {
-                auto &map = getPinyinMap();
-                if (map.find(str.substr(0, str.size() - 1)) != map.end()) {
-                    auto end = pinyin.end();
-                    iter += str.size() - 1;
-                    if (std::distance(end, iter) > maxPinyinLength) {
-                        end = iter + maxPinyinLength;
-                    }
-                    auto nextMatch = longestMatch(
-                        boost::make_iterator_range(iter, end), flags);
-                    if (nextMatch.size() > 1) {
-                        result.addNext(top, top + str.size() - 1);
-                        q.push(top + str.size() - 1);
+            // also, make sure current pinyin does not end with a separator,
+            // other wise, jin'an may be parsed into ji'n because, nextMatch is
+            // starts with "'".
+            auto &map = getPinyinMap();
+            std::array<size_t, 2> nextSize;
+            size_t nNextSize = 0;
+            if (str.size() > 1 && top + str.size() < pinyin.size() &&
+                pinyin[top + str.size()] != '\'' &&
+                (str.back() == 'a' || str.back() == 'e' || str.back() == 'g' ||
+                 str.back() == 'n' || str.back() == 'o' || str.back() == 'r') &&
+                map.find(str.substr(0, str.size() - 1)) != map.end()) {
+                // str[0:-1] is also a full pinyin, check next pinyin
+                auto nextMatch = longestMatch(iter + str.size(), end, flags);
+                auto nextMatchAlt =
+                    longestMatch(iter + str.size() - 1, end, flags);
+                auto matchSize = str.size() + nextMatch.first.size();
+                auto matchSizeAlt = str.size() - 1 + nextMatchAlt.first.size();
+                if (std::make_pair(nextMatch.second, matchSize) >=
+                    std::make_pair(nextMatchAlt.second, matchSizeAlt)) {
+                    addNext(result, top, top + str.size());
+                    q.push(top + str.size());
+                    nextSize[nNextSize++] = str.size();
+                }
+                if (std::make_pair(nextMatch.second, matchSize) <=
+                    std::make_pair(nextMatchAlt.second, matchSizeAlt)) {
+                    addNext(result, top, top + str.size() - 1);
+                    q.push(top + str.size() - 1);
+                    nextSize[nNextSize++] = str.size() - 1;
+                }
+            } else {
+                addNext(result, top, top + str.size());
+                q.push(top + str.size());
+                nextSize[nNextSize++] = str.size();
+            }
+
+            for (size_t i = 0; i < nNextSize; i++) {
+                if (nextSize[i] >= 4 && flags.test(PinyinFuzzyFlag::Inner)) {
+                    auto &innerSegments = getInnerSegment();
+                    auto iter = innerSegments.find(
+                        str.substr(0, nextSize[i]).to_string());
+                    if (iter != innerSegments.end()) {
+                        addNext(result, top, top + iter->second.first.size());
+                        addNext(result, top + iter->second.first.size(),
+                                top + nextSize[i]);
                     }
                 }
             }
         }
     }
-
     return result;
 }
 

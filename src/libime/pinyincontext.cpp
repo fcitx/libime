@@ -18,14 +18,13 @@
  */
 #include "pinyincontext.h"
 #include "pinyinencoder.h"
+#include "pinyinime.h"
 
 namespace libime {
 
 class PinyinContextPrivate {
 public:
     PinyinContextPrivate(PinyinIME *ime) : ime_(ime) {}
-
-    void discardFrom(size_t from) {}
 
     PinyinIME *ime_;
     SegmentGraph segs_;
@@ -39,13 +38,15 @@ PinyinContext::~PinyinContext() {}
 void PinyinContext::type(boost::string_view s) {
     FCITX_D();
     auto c = cursor();
-    d->discardFrom(c);
     InputBuffer::type(s);
+    d->segs_ =
+        PinyinEncoder::parseUserPinyin(userInput(), d->ime_->fuzzyFlags());
 }
 
 void PinyinContext::erase(size_t from, size_t to) {
     FCITX_D();
     InputBuffer::erase(from, to);
-    d->discardFrom(from);
+    d->segs_ =
+        PinyinEncoder::parseUserPinyin(userInput(), d->ime_->fuzzyFlags());
 }
 }

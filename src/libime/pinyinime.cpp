@@ -17,3 +17,20 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "pinyinime.h"
+
+namespace libime {
+
+class PinyinIMEPrivate {
+public:
+    PinyinFuzzyFlags flags_;
+};
+
+PinyinIME::PinyinIME() : d_ptr(std::make_unique<PinyinIMEPrivate>()) {}
+
+PinyinIME::~PinyinIME() {}
+
+PinyinFuzzyFlags PinyinIME::fuzzyFlags() const {
+    FCITX_D();
+    return d->flags_;
+}
+}

@@ -40,8 +40,8 @@ public:
     explicit PinyinDictionary(const char *filename, PinyinDictFormat format);
     ~PinyinDictionary();
 
-    void matchPrefix(const SegmentPath &seg, size_t from,
-                     MatchCallback callback) override;
+    void matchPrefix(const SegmentGraph &graph,
+                     GraphMatchCallback callback) override;
     void matchWords(const char *data, size_t size,
                     PinyinMatchCallback callback);
     void matchWords(const char *initials, const char *finals, size_t size,

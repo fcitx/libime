@@ -20,7 +20,7 @@
 #define _LIBIME_DECODER_H_
 
 #include "dictionary.h"
-#include "segmentpath.h"
+#include "segmentgraph.h"
 #include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <memory>
@@ -32,16 +32,21 @@ class DecoderPrivate;
 class Dictionary;
 class LanguageModel;
 
+typedef std::function<bool(const SegmentGraph &,
+                           const std::vector<const SegmentGraphNode *> &,
+                           boost::string_view, float &)>
+    UnknownHandler;
+
 class LIBIME_EXPORT Decoder {
 public:
     Decoder(Dictionary *dict, LanguageModel *model);
     virtual ~Decoder();
 
-    void decode(const SegmentPath &input, int nbest,
-                const std::vector<int> &constrains);
+    void decode(const SegmentGraph &graph, int nbest, double max, double min);
 
-    void decode(const SegmentPath &input, int nbest,
-                const std::vector<int> &constrains, double max, double min);
+    void decode(const SegmentGraph &graph, int nbest);
+
+    void setUnknownHandler(UnknownHandler handler);
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;

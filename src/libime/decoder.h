@@ -42,10 +42,8 @@ public:
     Decoder(Dictionary *dict, LanguageModel *model);
     virtual ~Decoder();
 
-    void decode(const SegmentGraph &graph, int nbest, double max, double min);
-
-    void decode(const SegmentGraph &graph, int nbest);
-
+    void decode(const SegmentGraph &graph, size_t nbest, float max, float min);
+    void decode(const SegmentGraph &graph, size_t nbest);
     void setUnknownHandler(UnknownHandler handler);
 
 private:

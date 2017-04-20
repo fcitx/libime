@@ -521,7 +521,7 @@ bool TableBasedDictionary::insert(const std::string &key,
         }
         d->phraseTrie.set(entry, flag);
 
-        if (fcitx_utf8_strnlen(value.c_str(), value.size()) == 1) {
+        if (fcitx::utf8::length(value) == 1) {
             updateReverseLookupEntry(d->singleCharTrie, key, value);
 
             if (hasRule() && !d->phraseKey) {

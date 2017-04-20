@@ -143,8 +143,7 @@ struct TableRule {
     }
 
     TableRule(TableRuleFlag _flag = TableRuleFlag::LengthEqual,
-              int _phraseLength = 0,
-              std::vector<TableRuleEntry> _entries = decltype(entries)())
+              int _phraseLength = 0, std::vector<TableRuleEntry> _entries = {})
         : flag(_flag), phraseLength(_phraseLength),
           entries(std::move(_entries)) {}
 

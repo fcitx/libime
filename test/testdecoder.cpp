@@ -21,6 +21,7 @@
 #include "pinyindictionary.h"
 #include "pinyinencoder.h"
 #include <chrono>
+#include <cmath>
 #include <iostream>
 
 struct ScopedNanoTimer {
@@ -41,20 +42,21 @@ struct ScopedNanoTimer {
 
 using namespace libime;
 
-void testTime(Decoder &decoder, const char *pinyin, PinyinFuzzyFlags flags) {
+void testTime(Decoder &decoder, const char *pinyin, PinyinFuzzyFlags flags,
+              int nbest = 1) {
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
     };
     ScopedNanoTimer timer(printTime);
     auto graph = PinyinEncoder::parseUserPinyin(pinyin, flags);
-    decoder.decode(graph, 1);
+    decoder.decode(graph, nbest);
 }
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         return 1;
     }
-    PinyinDictionary dict(argv[1], PinyinDictFormat::Text);
+    PinyinDictionary dict(argv[1], PinyinDictFormat::Binary);
     LanguageModel model(argv[2]);
     Decoder decoder(&dict, &model);
     decoder.setUnknownHandler(
@@ -69,7 +71,8 @@ int main(int argc, char *argv[]) {
             return false;
         } while(0);
 #endif
-            adjust += -100.0f;
+            static const auto unknown = std::log10(1.0f / 150000);
+            adjust += unknown;
             return true;
         });
     testTime(decoder, "wojiushixiangceshi", PinyinFuzzyFlag::None);
@@ -81,8 +84,16 @@ int main(int argc, char *argv[]) {
     testTime(decoder, "xiian", PinyinFuzzyFlag::Inner);
     testTime(decoder, "anqilaibufangbian", PinyinFuzzyFlag::Inner);
     testTime(decoder, "zhizuoxujibianchengleshunshuituizhoudeshiqing",
-             PinyinFuzzyFlag::Inner);
+             PinyinFuzzyFlag::Inner, 2);
     testTime(decoder, "xi'ian", PinyinFuzzyFlag::Inner);
     testTime(decoder, "zuishengmengsi'''", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "yongtiechuichuidanchuibupo", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "feibenkerenyuanbunengrunei", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "feibenkerenyuanbuderunei", PinyinFuzzyFlag::Inner);
+    testTime(decoder, "yongtiechuichuidanchuibupo", PinyinFuzzyFlag::Inner, 2);
+    testTime(decoder, "feibenkerenyuanbuderunei", PinyinFuzzyFlag::Inner, 2);
+    testTime(decoder, "tashiyigehaoren", PinyinFuzzyFlag::Inner, 3);
+    testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 20);
+    testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 1);
     return 0;
 }

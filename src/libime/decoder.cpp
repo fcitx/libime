@@ -20,17 +20,19 @@
 #include "decoder.h"
 #include "datrie.h"
 #include "languagemodel.h"
-#include "lm/model.hh"
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <iostream>
 #include <limits>
 #include <memory>
+#include <queue>
+#include <sstream>
 
 namespace libime {
 
-class LatticeNode2 {
+class LatticeNode {
 public:
-    LatticeNode2(LanguageModel *model, boost::string_view word, WordIndex idx,
-                 const SegmentGraphNode *from, float cost = 0)
+    LatticeNode(LanguageModel *model, boost::string_view word, WordIndex idx,
+                const SegmentGraphNode *from, float cost = 0)
         : word_(word.to_string()), idx_(idx), from_(from), cost_(cost),
           state_(model->nullState()) {}
 
@@ -40,7 +42,17 @@ public:
     float cost_;
     float score_ = 0.0f;
     State state_;
-    LatticeNode2 *prev_ = nullptr;
+    LatticeNode *prev_ = nullptr;
+};
+
+struct NBestNode {
+    NBestNode(const LatticeNode *node) : node_(node) {}
+
+    const LatticeNode *node_;
+    // for nbest
+    float gn_ = 0.0f;
+    float fn_ = -std::numeric_limits<float>::max();
+    NBestNode *next_ = nullptr;
 };
 
 class DecoderPrivate {
@@ -48,9 +60,9 @@ public:
     DecoderPrivate(Dictionary *dict, LanguageModel *model)
         : dict_(dict), model_(model) {}
 
-    std::unordered_map<const SegmentGraphNode *, std::vector<LatticeNode2>>
+    std::unordered_map<const SegmentGraphNode *, std::vector<LatticeNode>>
     buildLattice(const SegmentGraph &graph) {
-        std::unordered_map<const SegmentGraphNode *, std::vector<LatticeNode2>>
+        std::unordered_map<const SegmentGraphNode *, std::vector<LatticeNode>>
             lattice;
 
         lattice[&graph.start()].emplace_back(model_, "",
@@ -91,28 +103,39 @@ Decoder::Decoder(Dictionary *dict, LanguageModel *model)
 
 Decoder::~Decoder() {}
 
-void Decoder::decode(const SegmentGraph &graph, int nbest) {
-    return decode(graph, nbest, std::numeric_limits<double>::max(),
-                  -std::numeric_limits<double>::max());
+std::string concatNBest(NBestNode *node, boost::string_view sep = "") {
+    std::stringstream ss;
+    while (node != nullptr) {
+        ss << node->node_->word_ << sep;
+        node = node->next_;
+    }
+    return ss.str();
 }
 
-void Decoder::decode(const SegmentGraph &graph, int nbest, double max,
-                     double min) {
+void Decoder::decode(const SegmentGraph &graph, size_t nbest) {
+    return decode(graph, nbest, std::numeric_limits<float>::max(),
+                  -std::numeric_limits<float>::max());
+}
+
+void Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
+                     float min) {
     FCITX_D();
     auto lattice = d->buildLattice(graph);
     // std::cout << "Lattice Size: " << lattice.size() << std::endl;
+
+    // forward search
     auto updateForNode = [&](const SegmentGraphNode *graphNode) {
         if (!lattice.count(graphNode)) {
             return;
         }
         auto &latticeNodes = lattice[graphNode];
         std::unordered_map<const SegmentGraphNode *,
-                           std::tuple<float, LatticeNode2 *, State>>
+                           std::tuple<float, LatticeNode *, State>>
             unknownIdCache;
         for (auto &node : latticeNodes) {
             auto from = node.from_;
             float max = -std::numeric_limits<float>::max();
-            LatticeNode2 *maxNode = nullptr;
+            LatticeNode *maxNode = nullptr;
             State maxState = d->model_->nullState();
             if (node.idx_ == d->model_->unknown()) {
                 auto iter = unknownIdCache.find(from);
@@ -166,6 +189,7 @@ void Decoder::decode(const SegmentGraph &graph, int nbest, double max,
     }
     updateForNode(nullptr);
 
+    // backward search
     if (nbest == 1) {
         assert(lattice[&graph.start()].size() == 1);
         assert(lattice[nullptr].size() == 1);
@@ -177,6 +201,67 @@ void Decoder::decode(const SegmentGraph &graph, int nbest, double max,
             pos = pos->prev_;
         }
         std::cout << sentence << std::endl;
+    } else {
+        struct NBestNodeLess {
+            bool operator()(const NBestNode *lhs, const NBestNode *rhs) const {
+                return lhs->fn_ < rhs->fn_;
+            }
+        };
+        std::priority_queue<NBestNode *, std::vector<NBestNode *>,
+                            NBestNodeLess>
+            q, result;
+        std::unordered_set<std::string> dup;
+        std::list<NBestNode> nbestNodePool;
+
+        auto eos = &lattice[nullptr][0];
+        auto newNBestNode = [&nbestNodePool](const LatticeNode *node) {
+            nbestNodePool.emplace_back(node);
+            return &nbestNodePool.back();
+        };
+        q.push(newNBestNode(eos));
+        auto bos = &lattice[&graph.start()][0];
+        while (!q.empty()) {
+            auto node = q.top();
+            q.pop();
+            if (bos == node->node_) {
+                auto sentence = concatNBest(node);
+                if (dup.count(sentence)) {
+                    continue;
+                }
+
+                if (eos->score_ - node->fn_ > max) {
+                    break;
+                }
+                result.push(node);
+                if (result.size() >= nbest) {
+                    break;
+                }
+                dup.insert(sentence);
+            } else {
+                State state = d->model_->nullState();
+                for (auto &from : lattice[node->node_->from_]) {
+                    auto score = d->model_->score(from.state_,
+                                                  node->node_->idx_, state) +
+                                 node->node_->cost_;
+                    if (&from != bos && score < min)
+                        continue;
+                    auto parent = newNBestNode(&from);
+                    parent->gn_ = score + node->gn_;
+                    parent->fn_ = parent->gn_ + parent->node_->score_;
+                    parent->next_ = node;
+
+                    q.push(parent);
+                }
+            }
+        }
+
+        while (!result.empty()) {
+            auto node = result.top();
+            result.pop();
+            // TODO
+            std::cout << concatNBest(node, " ") << node->fn_ << " "
+                      << node->fn_ - eos->score_ << std::endl;
+        }
     }
 }
 

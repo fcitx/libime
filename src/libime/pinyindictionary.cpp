@@ -79,7 +79,7 @@ struct TrieEdge {
     std::vector<std::vector<PinyinFinal>> remain_;
 };
 
-struct SegmentGraphNodeLess {
+struct SegmentGraphNodeGreater {
     bool operator()(const SegmentGraphNode *lhs,
                     const SegmentGraphNode *rhs) const {
         return lhs->index() > rhs->index();
@@ -110,7 +110,7 @@ void PinyinDictionary::matchPrefix(const SegmentGraph &graph,
     std::unordered_map<const SegmentGraphNode *, std::list<TrieEdge>> search;
     std::priority_queue<const SegmentGraphNode *,
                         std::vector<const SegmentGraphNode *>,
-                        SegmentGraphNodeLess>
+                        SegmentGraphNodeGreater>
         q;
 
     auto &start = graph.start();

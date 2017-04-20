@@ -53,12 +53,12 @@ marshall(std::ostream &out, T data) {
     union {
         uint32_t i;
         T v;
-    };
+    } c;
     static_assert(sizeof(T) == sizeof(uint32_t),
                   "this function is only for 4 byte data");
-    v = data;
-    i = htonl(i);
-    return out.write(reinterpret_cast<char *>(&i), sizeof(i));
+    c.v = data;
+    c.i = htonl(c.i);
+    return out.write(reinterpret_cast<char *>(&c.i), sizeof(c.i));
 }
 
 template <typename T>
@@ -73,12 +73,12 @@ marshall(std::ostream &out, T data) {
     union {
         uint16_t i;
         T v;
-    };
+    } c;
     static_assert(sizeof(T) == sizeof(uint16_t),
                   "this function is only for 2 byte data");
-    v = data;
-    i = htons(i);
-    return out.write(reinterpret_cast<char *>(&i), sizeof(i));
+    c.v = data;
+    c.i = htons(c.i);
+    return out.write(reinterpret_cast<char *>(&c.i), sizeof(c.i));
 }
 
 template <typename T>
@@ -87,12 +87,12 @@ unmarshall(std::istream &in, T &data) {
     union {
         uint32_t i;
         T v;
-    };
+    } c;
     static_assert(sizeof(T) == sizeof(uint32_t),
                   "this function is only for 4 byte data");
-    if (in.read(reinterpret_cast<char *>(&i), sizeof(i))) {
-        i = ntohl(i);
-        data = v;
+    if (in.read(reinterpret_cast<char *>(&c.i), sizeof(c.i))) {
+        c.i = ntohl(c.i);
+        data = c.v;
     }
     return in;
 }
@@ -109,12 +109,12 @@ unmarshall(std::istream &in, T &data) {
     union {
         uint16_t i;
         T v;
-    };
+    } c;
     static_assert(sizeof(T) == sizeof(uint16_t),
                   "this function is only for 4 byte data");
-    if (in.read(reinterpret_cast<char *>(&i), sizeof(i))) {
-        i = ntohs(i);
-        data = v;
+    if (in.read(reinterpret_cast<char *>(&c.i), sizeof(c.i))) {
+        c.i = ntohs(c.i);
+        data = c.v;
     }
     return in;
 }

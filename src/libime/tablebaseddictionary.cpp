@@ -61,10 +61,10 @@ public:
     std::vector<TableRule> rules;
     std::set<char> inputCode;
     std::set<char> ignoreChars;
-    char pinyinKey;
-    char promptKey;
-    char phraseKey;
-    int32_t codeLength;
+    char pinyinKey = '\0';
+    char promptKey = '\0';
+    char phraseKey = '\0';
+    int32_t codeLength = 0;
     DATrie<int32_t> phraseTrie;          // base dictionary
     DATrie<int32_t> singleCharTrie;      // reverse lookup from single character
     DATrie<int32_t> singleCharConstTrie; // lookup char for new phrase

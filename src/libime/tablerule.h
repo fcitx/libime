@@ -212,8 +212,8 @@ struct TableRule {
         return ss.str();
     }
 
-    TableRuleFlag flag;
-    unsigned short phraseLength;
+    TableRuleFlag flag = TableRuleFlag::LengthLongerThan;
+    unsigned short phraseLength = 0;
     std::vector<TableRuleEntry> entries;
 };
 }

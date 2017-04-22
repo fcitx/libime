@@ -27,10 +27,10 @@ static_assert(std::is_pod<lm::ngram::State>::value, "State should be pod");
 static_assert(std::is_same<WordIndex, lm::WordIndex>::value,
               "word index should be same type");
 
-lm::ngram::State &lmState(State &state) {
+static inline lm::ngram::State &lmState(State &state) {
     return *reinterpret_cast<lm::ngram::State *>(state.data());
 }
-const lm::ngram::State &lmState(const State &state) {
+static inline const lm::ngram::State &lmState(const State &state) {
     return *reinterpret_cast<const lm::ngram::State *>(state.data());
 }
 

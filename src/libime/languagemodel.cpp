@@ -93,6 +93,7 @@ State LanguageModel::nullState() const {
 float LanguageModel::score(const State &state, WordIndex word,
                            State &out) const {
     FCITX_D();
+    assert(&state != &out);
     return d->model_.Score(lmState(state), word, lmState(out));
 }
 }

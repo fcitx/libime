@@ -50,7 +50,6 @@ void PinyinContext::type(boost::string_view s) {
 }
 
 void PinyinContext::erase(size_t from, size_t to) {
-    FCITX_D();
     cancelTill(from);
     InputBuffer::erase(from, to);
     update();
@@ -71,7 +70,8 @@ void PinyinContext::select(size_t idx) {
 
     auto &selection = d->selected.back();
     for (auto &p : d->candidates_[idx].sentence()) {
-        selection.emplace_back(offset + p.first->index(), p.second.to_string());
+        selection.emplace_back(offset + p.first.back()->index(),
+                               p.second.to_string());
     }
     // add some special code for handling separator at the end
     auto remain = boost::string_view(userInput()).substr(selectedLength());
@@ -102,8 +102,24 @@ void PinyinContext::cancel() {
 void PinyinContext::update() {
     FCITX_D();
     size_t start = 0;
+    State state;
     if (d->selected.size()) {
         start = d->selected.back().back().first;
+
+        auto model = d->ime_->model();
+        state = model->nullState();
+
+        for (auto &s : d->selected) {
+            for (auto &item : s) {
+                if (item.second.empty()) {
+                    continue;
+                }
+                auto idx = model->index(item.second);
+                State temp = model->nullState();
+                model->score(state, idx, temp);
+                state = std::move(temp);
+            }
+        }
     }
     d->segs_ = PinyinEncoder::parseUserPinyin(
         boost::string_view(userInput()).substr(start), d->ime_->fuzzyFlags());
@@ -111,7 +127,7 @@ void PinyinContext::update() {
 
     d->lattice_ = d->ime_->decoder()->decode(
         d->segs_, d->ime_->nbest(), std::numeric_limits<float>::max(),
-        -std::numeric_limits<float>::max());
+        -std::numeric_limits<float>::max(), std::move(state));
 
     d->candidates_.clear();
     std::unordered_set<std::string> dup;
@@ -200,16 +216,18 @@ std::string PinyinContext::preedit() const {
     ss << selectedSentence();
 
     if (d->candidates_.size()) {
-        size_t start = 0;
         bool first = true;
         for (auto &s : d->candidates_[0].sentence()) {
-            if (!first) {
-                ss << " ";
-            } else {
-                first = false;
+            for (auto iter = s.first.begin(), end = std::prev(s.first.end());
+                 iter < end; iter++) {
+                if (!first) {
+                    ss << " ";
+                } else {
+                    first = false;
+                }
+                ss << d->segs_.segment((*iter)->index(),
+                                       (*std::next(iter))->index());
             }
-            ss << d->segs_.segment(start, s.first->index());
-            start = s.first->index();
         }
     }
     return ss.str();

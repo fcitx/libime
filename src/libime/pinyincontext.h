@@ -1,4 +1,3 @@
-#include "lattice.h"
 /*
  * Copyright (C) 2017~2017 by CSSlayer
  * wengxt@gmail.com
@@ -21,6 +20,7 @@
 #define _FCITX_LIBIME_PINYINCONTEXT_H_
 
 #include "inputbuffer.h"
+#include "lattice.h"
 #include "libime_export.h"
 #include <fcitx-utils/macros.h>
 #include <memory>

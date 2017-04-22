@@ -66,7 +66,14 @@ int main(int argc, char *argv[]) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
-    c.select(1);
+    int i = 0;
+    for (auto &candidate : c.candidates()) {
+        if (candidate.toString() == "西安市") {
+            break;
+        }
+        i++;
+    }
+    c.select(i);
     assert(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
@@ -84,6 +91,45 @@ int main(int argc, char *argv[]) {
     std::cout << "--------------------------------" << std::endl;
     c.clear();
     assert(!c.selected());
+    std::cout << c.sentence() << std::endl;
+    std::cout << c.preedit() << std::endl;
+    for (auto &candidate : c.candidates()) {
+        std::cout << candidate.toString() << std::endl;
+    }
+    std::cout << "--------------------------------" << std::endl;
+    c.type("zi'ji'ge'zi'");
+    assert(!c.selected());
+    std::cout << c.sentence() << std::endl;
+    std::cout << c.preedit() << std::endl;
+    for (auto &candidate : c.candidates()) {
+        std::cout << candidate.toString() << std::endl;
+    }
+    std::cout << "--------------------------------" << std::endl;
+    i = 0;
+    for (auto &candidate : c.candidates()) {
+        if (candidate.toString() == "子集") {
+            break;
+        }
+        i++;
+    }
+    c.select(i);
+    assert(!c.selected());
+    std::cout << c.sentence() << std::endl;
+    std::cout << c.preedit() << std::endl;
+    for (auto &candidate : c.candidates()) {
+        std::cout << candidate.toString() << std::endl;
+    }
+
+    std::cout << "--------------------------------" << std::endl;
+    i = 0;
+    for (auto &candidate : c.candidates()) {
+        if (candidate.toString() == "各自") {
+            break;
+        }
+        i++;
+    }
+    c.select(i);
+    assert(c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     for (auto &candidate : c.candidates()) {

@@ -49,8 +49,8 @@ public:
         LatticeMap lattice;
 
         lattice[&graph.start()].push_back(
-            q->createLatticeNode(model_, "", model_->beginSentence(), nullptr,
-                                 &graph.start(), 0, state));
+            q->createLatticeNode(model_, "", model_->beginSentence(),
+                                 {nullptr, &graph.start()}, 0, state));
         dict_->matchPrefix(
             graph, [this, &graph,
                     &lattice](const std::vector<const SegmentGraphNode *> &path,
@@ -63,15 +63,15 @@ public:
                     idx = model_->index(entry);
                 }
                 assert(path.front());
-                auto node = q->createLatticeNode(
-                    model_, entry, idx, path.front(), path.back(), adjust);
+                auto node =
+                    q->createLatticeNode(model_, entry, idx, path, adjust);
                 if (node) {
                     lattice[path.back()].push_back(node);
                 }
             });
         assert(lattice.count(&graph.end()));
         lattice[nullptr].push_back(q->createLatticeNode(
-            model_, "", model_->endSentence(), &graph.end(), nullptr));
+            model_, "", model_->endSentence(), {&graph.end(), nullptr}));
         return lattice;
     }
 
@@ -247,7 +247,7 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
             result.reserve(count);
             pivot = node->next_;
             while (pivot != nullptr) {
-                result.emplace_back(pivot->node_->to(), pivot->node_->word());
+                result.emplace_back(pivot->node_->path(), pivot->node_->word());
                 pivot = pivot->next_;
             }
             p->nbests.emplace_back(std::move(result), node->fn_);
@@ -258,20 +258,16 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
     return {p.release()};
 }
 
-LatticeNode *Decoder::createLatticeNode(LanguageModel *model,
-                                        boost::string_view word, WordIndex idx,
-                                        const SegmentGraphNode *from,
-                                        const SegmentGraphNode *to, float cost,
-                                        State state) const {
-    return createLatticeNodeImpl(model, word, idx, from, to, cost, state);
+LatticeNode *Decoder::createLatticeNode(
+    LanguageModel *model, boost::string_view word, WordIndex idx,
+    std::vector<const SegmentGraphNode *> path, float cost, State state) const {
+    return createLatticeNodeImpl(model, word, idx, std::move(path), cost,
+                                 state);
 }
 
-LatticeNode *Decoder::createLatticeNodeImpl(LanguageModel *model,
-                                            boost::string_view word,
-                                            WordIndex idx,
-                                            const SegmentGraphNode *from,
-                                            const SegmentGraphNode *to,
-                                            float cost, State state) const {
-    return new LatticeNode(model, word, idx, from, to, cost, state);
+LatticeNode *Decoder::createLatticeNodeImpl(
+    LanguageModel *model, boost::string_view word, WordIndex idx,
+    std::vector<const SegmentGraphNode *> path, float cost, State state) const {
+    return new LatticeNode(model, word, idx, std::move(path), cost, state);
 }
 }

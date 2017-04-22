@@ -36,15 +36,13 @@ class SegmentGraphNode;
 
 class SentenceResult {
 public:
-    typedef std::vector<std::pair<const SegmentGraphNode *, boost::string_view>>
+    typedef std::vector<
+        std::pair<std::vector<const SegmentGraphNode *>, boost::string_view>>
         Sentence;
     SentenceResult(Sentence sentence = {}, float score = 0.0f)
         : sentence_(std::move(sentence)), score_(score) {}
 
-    const std::vector<std::pair<const SegmentGraphNode *, boost::string_view>>
-    sentence() const {
-        return sentence_;
-    }
+    Sentence sentence() const { return sentence_; }
 
     float score() const { return score_; }
 
@@ -64,18 +62,17 @@ public:
     }
 
 private:
-    std::vector<std::pair<const SegmentGraphNode *, boost::string_view>>
-        sentence_;
+    Sentence sentence_;
     float score_;
 };
 
 class LatticeNode {
 public:
     LatticeNode(LanguageModel *model, boost::string_view word, WordIndex idx,
-                const SegmentGraphNode *from, const SegmentGraphNode *to,
-                float cost = 0, State state = {})
-        : word_(word.to_string()), idx_(idx), from_(from), to_(to), cost_(cost),
-          state_(state.empty() ? model->nullState() : state) {}
+                std::vector<const SegmentGraphNode *> path, float cost = 0,
+                State state = {})
+        : word_(word.to_string()), idx_(idx), path_(std::move(path)),
+          cost_(cost), state_(state.empty() ? model->nullState() : state) {}
 
     const std::string &word() const { return word_; }
     float cost() const { return cost_; }
@@ -83,8 +80,9 @@ public:
     float score() const { return score_; }
     void setScore(float score) { score_ = score; }
 
-    const SegmentGraphNode *from() const { return from_; }
-    const SegmentGraphNode *to() const { return to_; }
+    const SegmentGraphNode *from() const { return path_.front(); }
+    const SegmentGraphNode *to() const { return path_.back(); }
+    const std::vector<const SegmentGraphNode *> &path() const { return path_; }
 
     LatticeNode *prev() const { return prev_; }
     void setPrev(LatticeNode *prev) { prev_ = prev; }
@@ -116,7 +114,7 @@ public:
         // to skip bos
         while (pivot->prev() != nullptr) {
             if (pivot->to()) {
-                result.emplace_back(pivot->to(), pivot->word());
+                result.emplace_back(pivot->path(), pivot->word());
             }
             pivot = pivot->prev();
         }
@@ -131,7 +129,7 @@ public:
 protected:
     std::string word_;
     WordIndex idx_;
-    const SegmentGraphNode *from_, *to_;
+    std::vector<const SegmentGraphNode *> path_;
     float cost_;
     float score_ = 0.0f;
     State state_;

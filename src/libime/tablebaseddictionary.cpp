@@ -283,8 +283,7 @@ void TableBasedDictionary::build(std::istream &in) {
             d->rules.emplace_back(buf, d->codeLength);
         }
         case BuildPhase::PhaseData: {
-            std::array<char, 3> special = {d->pinyinKey, d->phraseKey,
-                                           d->promptKey};
+            char special[3] = {d->pinyinKey, d->phraseKey, d->promptKey};
             PhraseFlag specialFlag[] = {
                 PhraseFlagPinyin, PhraseFlagConstructPhrase, PhraseFlagPrompt};
             auto spacePos = buf.find_first_of(" \n\r\f\v\t");
@@ -299,10 +298,11 @@ void TableBasedDictionary::build(std::istream &in) {
             auto key = boost::string_view(buf).substr(0, spacePos);
             auto value = boost::string_view(buf).substr(wordPos);
 
-            auto iter = std::find(special.begin(), special.end(), key[0]);
+            auto iter =
+                std::find(std::begin(special), std::end(special), key[0]);
             PhraseFlag flag = PhraseFlagNone;
-            if (iter != special.end()) {
-                flag = specialFlag[iter - special.begin()];
+            if (iter != std::end(special)) {
+                flag = specialFlag[iter - std::begin(special)];
                 key = key.substr(1);
             }
 

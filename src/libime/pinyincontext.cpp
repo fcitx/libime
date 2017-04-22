@@ -55,6 +55,14 @@ void PinyinContext::erase(size_t from, size_t to) {
     update();
 }
 
+void PinyinContext::setCursor(size_t pos) {
+    auto cancelled = cancelTill(pos);
+    InputBuffer::setCursor(pos);
+    if (cancelled) {
+        update();
+    }
+}
+
 const std::vector<SentenceResult> &PinyinContext::candidates() const {
     FCITX_D();
     return d->candidates_;
@@ -85,10 +93,13 @@ void PinyinContext::select(size_t idx) {
     update();
 }
 
-void PinyinContext::cancelTill(size_t pos) {
+bool PinyinContext::cancelTill(size_t pos) {
+    bool cancelled = false;
     while (selectedLength() > pos) {
         cancel();
+        cancelled = true;
     }
+    return cancelled;
 }
 
 void PinyinContext::cancel() {

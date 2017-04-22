@@ -59,13 +59,13 @@ public:
 
     virtual void type(boost::string_view s);
     virtual void erase(size_t from, size_t to);
+    virtual void setCursor(size_t cursor);
 
     const std::string &userInput() const;
     void type(uint32_t unicode);
     size_t cursor() const;
     size_t cursorByChar() const;
     size_t size() const;
-    void setCursor(size_t cursor);
     boost::string_view at(size_t i) const;
     size_t sizeAt(size_t i) const;
     inline void del() {

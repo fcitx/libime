@@ -38,11 +38,12 @@ public:
 
     void type(boost::string_view s) override;
     void erase(size_t from, size_t to) override;
+    void setCursor(size_t pos) override;
 
     const std::vector<SentenceResult> &candidates() const;
     void select(size_t idx);
     void cancel();
-    void cancelTill(size_t pos);
+    bool cancelTill(size_t pos);
 
     bool selected() const;
     std::string sentence() const {

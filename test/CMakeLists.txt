@@ -3,24 +3,25 @@ set(LIBIME_SINGLE_FILE_TEST
     testpinyindata
     testpinyinencoder
     testinputbuffer
-    testpinyincontext
     )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
     add_executable(${TESTCASE} ${TESTCASE}.cpp)
-    target_link_libraries(${TESTCASE} libime )
+    target_link_libraries(${TESTCASE} LibIME::LibIME )
     add_test(NAME ${TESTCASE}
              COMMAND ${TESTCASE})
 endforeach()
 
 add_executable(testmodel testmodel.cpp)
-target_link_libraries(testmodel libime)
+target_link_libraries(testmodel LibIME::LibIME)
 target_compile_definitions(testmodel PRIVATE -DKENLM_MAX_ORDER=3 -DHAVE_ICU)
 
 add_executable(testpinyindictionary testpinyindictionary.cpp)
-target_link_libraries(testpinyindictionary libime)
+target_link_libraries(testpinyindictionary LibIME::LibIME)
+add_executable(testpinyincontext testpinyincontext.cpp)
+target_link_libraries(testpinyincontext LibIME::LibIME)
 
 add_executable(testtrie testtrie.cpp)
-target_link_libraries(testtrie libime)
+target_link_libraries(testtrie LibIME::LibIME)
 add_executable(testdecoder testdecoder.cpp)
-target_link_libraries(testdecoder libime)
+target_link_libraries(testdecoder LibIME::LibIME)

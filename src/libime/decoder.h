@@ -20,6 +20,7 @@
 #define _LIBIME_DECODER_H_
 
 #include "dictionary.h"
+#include "lattice.h"
 #include "segmentgraph.h"
 #include <cstdint>
 #include <fcitx-utils/macros.h>
@@ -38,13 +39,29 @@ typedef std::function<bool(const SegmentGraph &,
     UnknownHandler;
 
 class LIBIME_EXPORT Decoder {
+    friend class DecoderPrivate;
+
 public:
     Decoder(Dictionary *dict, LanguageModel *model);
     virtual ~Decoder();
 
-    void decode(const SegmentGraph &graph, size_t nbest, float max, float min);
-    void decode(const SegmentGraph &graph, size_t nbest);
-    void setUnknownHandler(UnknownHandler handler);
+    Lattice decode(const SegmentGraph &graph, size_t nbest = 1,
+                   float max = std::numeric_limits<float>::max(),
+                   float min = -std::numeric_limits<float>::max(),
+                   State state = {}) const;
+
+protected:
+    LatticeNode *createLatticeNode(LanguageModel *model,
+                                   boost::string_view word, WordIndex idx,
+                                   const SegmentGraphNode *from,
+                                   const SegmentGraphNode *to, float cost = 0,
+                                   State state = {}) const;
+    virtual LatticeNode *createLatticeNodeImpl(LanguageModel *model,
+                                               boost::string_view word,
+                                               WordIndex idx,
+                                               const SegmentGraphNode *from,
+                                               const SegmentGraphNode *to,
+                                               float cost, State state) const;
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;

@@ -16,38 +16,41 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#ifndef _FCITX_LIBIME_PINYINIME_H_
-#define _FCITX_LIBIME_PINYINIME_H_
 
-#include "libime_export.h"
-#include "pinyinencoder.h"
-#include <fcitx-utils/macros.h>
-#include <memory>
+#include "lattice.h"
+#include "lattice_p.h"
 
 namespace libime {
 
-class PinyinIMEPrivate;
-class PinyinDecoder;
-class PinyinDictionary;
-class LanguageModel;
+Lattice::Lattice() {}
 
-class LIBIME_EXPORT PinyinIME {
-public:
-    PinyinIME(PinyinDictionary *dict, LanguageModel *model);
-    virtual ~PinyinIME();
+Lattice::Lattice(Lattice &&other) : d_ptr(std::move(other.d_ptr)) {}
 
-    PinyinFuzzyFlags fuzzyFlags() const;
-    void setFuzzyFlags(PinyinFuzzyFlags flags);
-    size_t nbest() const;
-    void setNBest(size_t n);
+Lattice::Lattice(LatticePrivate *d) : d_ptr(d) {}
 
-    PinyinDecoder *decoder() const;
-    LanguageModel *model() const;
+Lattice::~Lattice() {}
 
-private:
-    std::unique_ptr<PinyinIMEPrivate> d_ptr;
-    FCITX_DECLARE_PRIVATE(PinyinIME);
-};
+Lattice &Lattice::operator=(Lattice &&other) {
+    d_ptr = std::move(other.d_ptr);
+    return *this;
 }
 
-#endif // _FCITX_LIBIME_PINYINIME_H_
+size_t Lattice::sentenceSize() const {
+    FCITX_D();
+    return d->nbests.size();
+}
+
+const SentenceResult &Lattice::sentence(size_t idx) const {
+    FCITX_D();
+    return d->nbests[idx];
+}
+
+Lattice::NodeRange Lattice::nodes(const SegmentGraphNode *node) const {
+    FCITX_D();
+    auto iter = d->lattice.find(node);
+    if (iter == d->lattice.end()) {
+        return {};
+    }
+    return {iter->second.begin(), iter->second.end()};
+}
+}

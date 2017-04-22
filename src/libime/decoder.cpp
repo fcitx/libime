@@ -20,30 +20,14 @@
 #include "decoder.h"
 #include "datrie.h"
 #include "languagemodel.h"
+#include "lattice_p.h"
 #include <boost/ptr_container/ptr_vector.hpp>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <queue>
 #include <sstream>
 
 namespace libime {
-
-class LatticeNode {
-public:
-    LatticeNode(LanguageModel *model, boost::string_view word, WordIndex idx,
-                const SegmentGraphNode *from, float cost = 0)
-        : word_(word.to_string()), idx_(idx), from_(from), cost_(cost),
-          state_(model->nullState()) {}
-
-    std::string word_;
-    WordIndex idx_;
-    const SegmentGraphNode *from_;
-    float cost_;
-    float score_ = 0.0f;
-    State state_;
-    LatticeNode *prev_ = nullptr;
-};
 
 struct NBestNode {
     NBestNode(const LatticeNode *node) : node_(node) {}
@@ -57,71 +41,71 @@ struct NBestNode {
 
 class DecoderPrivate {
 public:
-    DecoderPrivate(Dictionary *dict, LanguageModel *model)
-        : dict_(dict), model_(model) {}
+    DecoderPrivate(Decoder *q, Dictionary *dict, LanguageModel *model)
+        : q_ptr(q), dict_(dict), model_(model) {}
 
-    std::unordered_map<const SegmentGraphNode *, std::vector<LatticeNode>>
-    buildLattice(const SegmentGraph &graph) {
-        std::unordered_map<const SegmentGraphNode *, std::vector<LatticeNode>>
-            lattice;
+    LatticeMap buildLattice(State state, const SegmentGraph &graph) const {
+        FCITX_Q();
+        LatticeMap lattice;
 
-        lattice[&graph.start()].emplace_back(model_, "",
-                                             model_->beginSentence(), nullptr);
-        lattice[&graph.start()][0].state_ = model_->beginState();
+        lattice[&graph.start()].push_back(
+            q->createLatticeNode(model_, "", model_->beginSentence(), nullptr,
+                                 &graph.start(), 0, state));
         dict_->matchPrefix(
             graph, [this, &graph,
                     &lattice](const std::vector<const SegmentGraphNode *> &path,
                               boost::string_view entry, float adjust) {
+                FCITX_Q();
                 WordIndex idx;
                 if (entry.empty()) {
                     idx = model_->endSentence();
                 } else {
                     idx = model_->index(entry);
                 }
-                if (idx == model_->unknown()) {
-                    if (!unknownHandler_(graph, path, entry, adjust)) {
-                        return;
-                    }
-                }
                 assert(path.front());
-                lattice[path.back()].emplace_back(model_, entry, idx,
-                                                  path.front(), adjust);
+                auto node = q->createLatticeNode(
+                    model_, entry, idx, path.front(), path.back(), adjust);
+                if (node) {
+                    lattice[path.back()].push_back(node);
+                }
             });
         assert(lattice.count(&graph.end()));
-        lattice[nullptr].emplace_back(model_, "", model_->endSentence(),
-                                      &graph.end());
+        lattice[nullptr].push_back(q->createLatticeNode(
+            model_, "", model_->endSentence(), &graph.end(), nullptr));
         return lattice;
     }
 
+    Decoder *q_ptr;
+    FCITX_DECLARE_PUBLIC(Decoder);
     Dictionary *dict_;
     LanguageModel *model_;
     UnknownHandler unknownHandler_;
 };
 
 Decoder::Decoder(Dictionary *dict, LanguageModel *model)
-    : d_ptr(std::make_unique<DecoderPrivate>(dict, model)) {}
+    : d_ptr(std::make_unique<DecoderPrivate>(this, dict, model)) {}
 
 Decoder::~Decoder() {}
 
 std::string concatNBest(NBestNode *node, boost::string_view sep = "") {
     std::stringstream ss;
     while (node != nullptr) {
-        ss << node->node_->word_ << sep;
+        ss << node->node_->word() << sep;
         node = node->next_;
     }
     return ss.str();
 }
 
-void Decoder::decode(const SegmentGraph &graph, size_t nbest) {
-    return decode(graph, nbest, std::numeric_limits<float>::max(),
-                  -std::numeric_limits<float>::max());
-}
-
-void Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
-                     float min) {
+Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
+                        float min, State beginState) const {
     FCITX_D();
-    auto lattice = d->buildLattice(graph);
+    if (beginState.empty()) {
+        beginState = d->model_->beginState();
+    }
+    auto lattice = d->buildLattice(beginState, graph);
     // std::cout << "Lattice Size: " << lattice.size() << std::endl;
+    // avoid repeated allocation
+    State state = d->model_->nullState();
 
     // forward search
     auto updateForNode = [&](const SegmentGraphNode *graphNode) {
@@ -133,41 +117,40 @@ void Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
                            std::tuple<float, LatticeNode *, State>>
             unknownIdCache;
         for (auto &node : latticeNodes) {
-            auto from = node.from_;
-            float max = -std::numeric_limits<float>::max();
+            auto from = node.from();
+            float maxScore = -std::numeric_limits<float>::max();
             LatticeNode *maxNode = nullptr;
             State maxState = d->model_->nullState();
-            if (node.idx_ == d->model_->unknown()) {
+            if (node.idx() == d->model_->unknown()) {
                 auto iter = unknownIdCache.find(from);
                 if (iter != unknownIdCache.end()) {
-                    std::tie(max, maxNode, maxState) = iter->second;
+                    std::tie(maxScore, maxNode, maxState) = iter->second;
                 }
             }
 
             if (!maxNode) {
-                State state = d->model_->nullState();
                 for (auto &parent : lattice[from]) {
                     auto score =
-                        parent.score_ +
-                        d->model_->score(parent.state_, node.idx_, state);
-                    if (score > max) {
-                        max = score;
+                        parent.score() +
+                        d->model_->score(parent.state(), node.idx(), state);
+                    if (score > maxScore) {
+                        maxScore = score;
                         maxNode = &parent;
                         maxState = state;
                     }
                 }
 
-                if (node.idx_ == d->model_->unknown()) {
+                if (node.idx() == d->model_->unknown()) {
                     unknownIdCache.emplace(
                         std::piecewise_construct, std::forward_as_tuple(from),
-                        std::forward_as_tuple(max, maxNode, maxState));
+                        std::forward_as_tuple(maxScore, maxNode, maxState));
                 }
             }
 
             assert(maxNode);
-            node.score_ = max + node.cost_;
-            node.prev_ = maxNode;
-            node.state_ = std::move(maxState);
+            node.setScore(maxScore + node.cost());
+            node.setPrev(maxNode);
+            node.state() = std::move(maxState);
 #if 0
             {
                 auto pos = &node;
@@ -189,18 +172,13 @@ void Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
     }
     updateForNode(nullptr);
 
+    auto p = std::make_unique<LatticePrivate>();
     // backward search
     if (nbest == 1) {
         assert(lattice[&graph.start()].size() == 1);
         assert(lattice[nullptr].size() == 1);
         auto pos = &lattice[nullptr][0];
-        auto bos = &lattice[&graph.start()][0];
-        std::string sentence;
-        while (pos != bos) {
-            sentence = pos->word_ + " " + sentence;
-            pos = pos->prev_;
-        }
-        std::cout << sentence << std::endl;
+        p->nbests.push_back(pos->toSentenceResult());
     } else {
         struct NBestNodeLess {
             bool operator()(const NBestNode *lhs, const NBestNode *rhs) const {
@@ -229,7 +207,7 @@ void Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
                     continue;
                 }
 
-                if (eos->score_ - node->fn_ > max) {
+                if (eos->score() - node->fn_ > max) {
                     break;
                 }
                 result.push(node);
@@ -238,16 +216,15 @@ void Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
                 }
                 dup.insert(sentence);
             } else {
-                State state = d->model_->nullState();
-                for (auto &from : lattice[node->node_->from_]) {
-                    auto score = d->model_->score(from.state_,
-                                                  node->node_->idx_, state) +
-                                 node->node_->cost_;
+                for (auto &from : lattice[node->node_->from()]) {
+                    auto score = d->model_->score(from.state(),
+                                                  node->node_->idx(), state) +
+                                 node->node_->cost();
                     if (&from != bos && score < min)
                         continue;
                     auto parent = newNBestNode(&from);
                     parent->gn_ = score + node->gn_;
-                    parent->fn_ = parent->gn_ + parent->node_->score_;
+                    parent->fn_ = parent->gn_ + parent->node_->score();
                     parent->next_ = node;
 
                     q.push(parent);
@@ -258,15 +235,43 @@ void Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
         while (!result.empty()) {
             auto node = result.top();
             result.pop();
-            // TODO
-            std::cout << concatNBest(node, " ") << node->fn_ << " "
-                      << node->fn_ - eos->score_ << std::endl;
+            // loop twice to avoid problem
+            size_t count = 0;
+            // skip bos
+            auto pivot = node->next_;
+            while (pivot != nullptr) {
+                pivot = pivot->next_;
+                count++;
+            }
+            SentenceResult::Sentence result;
+            result.reserve(count);
+            pivot = node->next_;
+            while (pivot != nullptr) {
+                result.emplace_back(pivot->node_->to(), pivot->node_->word());
+                pivot = pivot->next_;
+            }
+            p->nbests.emplace_back(std::move(result), node->fn_);
         }
     }
+
+    p->lattice = std::move(lattice);
+    return {p.release()};
 }
 
-void Decoder::setUnknownHandler(UnknownHandler handler) {
-    FCITX_D();
-    d->unknownHandler_ = handler;
+LatticeNode *Decoder::createLatticeNode(LanguageModel *model,
+                                        boost::string_view word, WordIndex idx,
+                                        const SegmentGraphNode *from,
+                                        const SegmentGraphNode *to, float cost,
+                                        State state) const {
+    return createLatticeNodeImpl(model, word, idx, from, to, cost, state);
+}
+
+LatticeNode *Decoder::createLatticeNodeImpl(LanguageModel *model,
+                                            boost::string_view word,
+                                            WordIndex idx,
+                                            const SegmentGraphNode *from,
+                                            const SegmentGraphNode *to,
+                                            float cost, State state) const {
+    return new LatticeNode(model, word, idx, from, to, cost, state);
 }
 }

@@ -1,3 +1,4 @@
+#include "lattice.h"
 /*
  * Copyright (C) 2017~2017 by CSSlayer
  * wengxt@gmail.com
@@ -23,10 +24,12 @@
 #include "libime_export.h"
 #include <fcitx-utils/macros.h>
 #include <memory>
+#include <vector>
 
 namespace libime {
 class PinyinIME;
 class PinyinContextPrivate;
+class LatticeNode;
 
 class LIBIME_EXPORT PinyinContext : public InputBuffer {
 public:
@@ -36,7 +39,27 @@ public:
     void type(boost::string_view s) override;
     void erase(size_t from, size_t to) override;
 
+    const std::vector<SentenceResult> &candidates() const;
+    void select(size_t idx);
+    void cancel();
+    void cancelTill(size_t pos);
+
+    bool selected() const;
+    std::string sentence() const {
+        auto &c = candidates();
+        if (c.size()) {
+            return selectedSentence() + c[0].toString();
+        } else {
+            return selectedSentence();
+        }
+    }
+
+    std::string preedit() const;
+    std::string selectedSentence() const;
+    size_t selectedLength() const;
+
 private:
+    void update();
     std::unique_ptr<PinyinContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinContext);
 };

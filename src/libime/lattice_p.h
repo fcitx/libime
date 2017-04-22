@@ -16,27 +16,26 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
+#ifndef _FCITX_LIBIME_LATTICE_P_H_
+#define _FCITX_LIBIME_LATTICE_P_H_
 
-#include "libime/languagemodel.h"
-#include <iostream>
+#include "lattice.h"
+#include "segmentgraph.h"
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <unordered_map>
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        return 1;
-    }
-    using namespace libime;
-    LanguageModel model(argv[1]);
-    State state(model.nullState()), out_state = model.nullState();
-    std::string word;
-    float sum = 0.0f;
-    while (std::cin >> word) {
-        float s;
-        std::cout << (s = model.score(state, model.index(word), out_state))
-                  << '\n';
-        state = out_state;
-        sum += s;
-    }
-    std::cout << sum << std::endl;
+namespace libime {
 
-    return 0;
+typedef std::unordered_map<const SegmentGraphNode *,
+                           boost::ptr_vector<LatticeNode>>
+    LatticeMap;
+
+class LatticePrivate {
+public:
+    LatticeMap lattice;
+
+    std::vector<SentenceResult> nbests;
+};
 }
+
+#endif // _FCITX_LIBIME_LATTICE_P_H_

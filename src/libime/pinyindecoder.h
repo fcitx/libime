@@ -16,27 +16,27 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
+#ifndef _FCITX_LIBIME_PINYINDECODER_H_
+#define _FCITX_LIBIME_PINYINDECODER_H_
 
-#include "libime/languagemodel.h"
-#include <iostream>
+#include "decoder.h"
+#include "libime_export.h"
+#include "pinyindictionary.h"
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        return 1;
-    }
-    using namespace libime;
-    LanguageModel model(argv[1]);
-    State state(model.nullState()), out_state = model.nullState();
-    std::string word;
-    float sum = 0.0f;
-    while (std::cin >> word) {
-        float s;
-        std::cout << (s = model.score(state, model.index(word), out_state))
-                  << '\n';
-        state = out_state;
-        sum += s;
-    }
-    std::cout << sum << std::endl;
+namespace libime {
 
-    return 0;
+class LIBIME_EXPORT PinyinDecoder : public Decoder {
+public:
+    PinyinDecoder(PinyinDictionary *dict, LanguageModel *model)
+        : Decoder(dict, model) {}
+
+protected:
+    LatticeNode *createLatticeNodeImpl(LanguageModel *model,
+                                       boost::string_view word, WordIndex idx,
+                                       const SegmentGraphNode *from,
+                                       const SegmentGraphNode *to, float cost,
+                                       State state) const override;
+};
 }
+
+#endif // _FCITX_LIBIME_PINYINDECODER_H_

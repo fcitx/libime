@@ -17,26 +17,21 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/languagemodel.h"
-#include <iostream>
+#include "pinyindecoder.h"
+#include <cmath>
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        return 1;
-    }
-    using namespace libime;
-    LanguageModel model(argv[1]);
-    State state(model.nullState()), out_state = model.nullState();
-    std::string word;
-    float sum = 0.0f;
-    while (std::cin >> word) {
-        float s;
-        std::cout << (s = model.score(state, model.index(word), out_state))
-                  << '\n';
-        state = out_state;
-        sum += s;
-    }
-    std::cout << sum << std::endl;
+namespace libime {
 
-    return 0;
+static const auto unknown = std::log10(1.0f / 150000);
+
+LatticeNode *PinyinDecoder::createLatticeNodeImpl(
+    LanguageModel *model, boost::string_view word, WordIndex idx,
+    const SegmentGraphNode *from, const SegmentGraphNode *to, float cost,
+    State state) const {
+    if (idx == model->unknown()) {
+        cost += unknown;
+    }
+
+    return new LatticeNode(model, word, idx, from, to, cost, state);
+}
 }

@@ -54,6 +54,8 @@ set(LIBIME_HDRS
     pinyincontext.h
     inputbuffer.h
     segmentgraph.h
+    lattice.h
+    pinyindecoder.h
     )
 
 set(LIBIME_SRCS
@@ -67,16 +69,18 @@ set(LIBIME_SRCS
     pinyinime.cpp
     pinyincontext.cpp
     inputbuffer.cpp
+    lattice.cpp
+    pinyindecoder.cpp
     )
 
-add_library(libime SHARED ${LIBIME_SRCS})
-generate_export_header(libime BASE_NAME LIBIME)
-add_library(LibIME::LibIME ALIAS libime)
+add_library(ime SHARED ${LIBIME_SRCS})
+generate_export_header(ime BASE_NAME LIBIME)
+add_library(LibIME::LibIME ALIAS ime)
 
-target_include_directories(libime PUBLIC "$<BUILD_INTERFACE:${libime_INCLUDE_DIRS}>")
-target_include_directories(libime INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDE_DIR}/libime>")
+target_include_directories(ime PUBLIC "$<BUILD_INTERFACE:${libime_INCLUDE_DIRS}>")
+target_include_directories(ime INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDE_DIR}/libime>")
 
-set_target_properties(libime
+set_target_properties(ime
                       PROPERTIES VERSION 0.1
                       SOVERSION 0
                       COMPILE_FLAGS "-fvisibility=hidden"
@@ -84,14 +88,14 @@ set_target_properties(libime
                       EXPORT_NAME LibIME
 )
 
-target_link_libraries(libime PRIVATE kenlm
+target_link_libraries(ime PRIVATE kenlm
                              PUBLIC ICU::ICU Fcitx5::Utils)
 
 add_executable(libime_slm_build_binary kenlm/lm/build_binary_main.cc)
 target_link_libraries(libime_slm_build_binary kenlm ICU::ICU)
 
 
-install(TARGETS libime EXPORT LibIMETargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+install(TARGETS ime EXPORT LibIMETargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 install(FILES ${LIBIME_HDRS}
               ${CMAKE_CURRENT_BINARY_DIR}/libime_export.h

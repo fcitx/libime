@@ -21,6 +21,7 @@
 
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/ptr_container/ptr_list.hpp>
+#include <boost/range/adaptor/type_erased.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/utility/string_view.hpp>
 #include <fcitx-utils/element.h>
@@ -35,32 +36,36 @@ class SegmentGraph;
 typedef std::function<bool(const SegmentGraph &, const std::vector<size_t> &)>
     SegmentGraphDFSCallback;
 
-class SegmentGraphNode;
-
 class SegmentGraphNode : public fcitx::Element {
 public:
     SegmentGraphNode(size_t start) : fcitx::Element(), start_(start) {}
     SegmentGraphNode(const SegmentGraphNode &node) = delete;
     virtual ~SegmentGraphNode() {}
 
-    auto next() const {
-        auto &nexts = childs();
-        auto func = [](fcitx::Element *ele) -> SegmentGraphNode & {
-            return *static_cast<SegmentGraphNode *>(ele);
-        };
-        return boost::make_iterator_range(
-            boost::make_transform_iterator(nexts.begin(), func),
-            boost::make_transform_iterator(nexts.end(), func));
+    static auto cast(fcitx::Element *ele) -> SegmentGraphNode & {
+        return *static_cast<SegmentGraphNode *>(ele);
     }
 
-    auto prev() const {
-        auto &nexts = parents();
-        auto func = [](fcitx::Element *ele) -> SegmentGraphNode & {
-            return *static_cast<SegmentGraphNode *>(ele);
-        };
+    typedef boost::any_range<SegmentGraphNode,
+                             boost::bidirectional_traversal_tag>
+        NodeRange;
+
+    NodeRange next() const {
+        auto &nexts = childs();
         return boost::make_iterator_range(
-            boost::make_transform_iterator(nexts.begin(), func),
-            boost::make_transform_iterator(nexts.end(), func));
+            boost::make_transform_iterator(nexts.begin(),
+                                           &SegmentGraphNode::cast),
+            boost::make_transform_iterator(nexts.end(),
+                                           &SegmentGraphNode::cast));
+    }
+
+    NodeRange prev() const {
+        auto &nexts = parents();
+        return boost::make_iterator_range(
+            boost::make_transform_iterator(nexts.begin(),
+                                           &SegmentGraphNode::cast),
+            boost::make_transform_iterator(nexts.end(),
+                                           &SegmentGraphNode::cast));
     }
     void addEdge(SegmentGraphNode &ref) {
         assert(ref.start_ > start_);

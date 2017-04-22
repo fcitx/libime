@@ -16,12 +16,11 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#include "decoder.h"
 #include "languagemodel.h"
+#include "pinyindecoder.h"
 #include "pinyindictionary.h"
 #include "pinyinencoder.h"
 #include <chrono>
-#include <cmath>
 #include <iostream>
 
 struct ScopedNanoTimer {
@@ -49,7 +48,14 @@ void testTime(Decoder &decoder, const char *pinyin, PinyinFuzzyFlags flags,
     };
     ScopedNanoTimer timer(printTime);
     auto graph = PinyinEncoder::parseUserPinyin(pinyin, flags);
-    decoder.decode(graph, nbest);
+    auto lattice = decoder.decode(graph, nbest);
+    for (size_t i = 0, e = lattice.sentenceSize(); i < e; i++) {
+        auto &sentence = lattice.sentence(i);
+        for (auto &p : sentence.sentence()) {
+            std::cout << p.second << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -58,23 +64,7 @@ int main(int argc, char *argv[]) {
     }
     PinyinDictionary dict(argv[1], PinyinDictFormat::Binary);
     LanguageModel model(argv[2]);
-    Decoder decoder(&dict, &model);
-    decoder.setUnknownHandler(
-        [](const SegmentGraph &graph,
-           const std::vector<const SegmentGraphNode *> &path,
-           boost::string_view entry, float &adjust) -> bool {
-#if 0
-        do {
-            if (path.front() == &graph.start()) {
-                break;
-            }
-            return false;
-        } while(0);
-#endif
-            static const auto unknown = std::log10(1.0f / 150000);
-            adjust += unknown;
-            return true;
-        });
+    PinyinDecoder decoder(&dict, &model);
     testTime(decoder, "wojiushixiangceshi", PinyinFuzzyFlag::None);
     testTime(decoder, "xian", PinyinFuzzyFlag::Inner);
     testTime(decoder, "xiian", PinyinFuzzyFlag::Inner);
@@ -95,5 +85,6 @@ int main(int argc, char *argv[]) {
     testTime(decoder, "tashiyigehaoren", PinyinFuzzyFlag::Inner, 3);
     testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 20);
     testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 1);
+    testTime(decoder, "'xianshi", PinyinFuzzyFlag::Inner, 1);
     return 0;
 }

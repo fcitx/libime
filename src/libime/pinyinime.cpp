@@ -23,18 +23,23 @@ namespace libime {
 
 class PinyinIMEPrivate {
 public:
-    PinyinIMEPrivate(PinyinDictionary *dict, LanguageModelBase *model)
-        : decoder_(std::make_unique<PinyinDecoder>(dict, model)),
-          model_(model) {}
+    PinyinIMEPrivate(std::unique_ptr<PinyinDictionary> dict,
+                     std::unique_ptr<LanguageModelBase> model)
+        : dict_(std::move(dict)), model_(std::move(model)),
+          decoder_(std::make_unique<PinyinDecoder>(dict_.get(), model_.get())) {
+    }
 
     PinyinFuzzyFlags flags_;
+    std::unique_ptr<PinyinDictionary> dict_;
+    std::unique_ptr<LanguageModelBase> model_;
     std::unique_ptr<PinyinDecoder> decoder_;
-    LanguageModelBase *model_;
     size_t nbest_ = 1;
 };
 
-PinyinIME::PinyinIME(PinyinDictionary *dict, LanguageModelBase *model)
-    : d_ptr(std::make_unique<PinyinIMEPrivate>(dict, model)) {}
+PinyinIME::PinyinIME(std::unique_ptr<PinyinDictionary> dict,
+                     std::unique_ptr<LanguageModelBase> model)
+    : d_ptr(std::make_unique<PinyinIMEPrivate>(std::move(dict),
+                                               std::move(model))) {}
 
 PinyinIME::~PinyinIME() {}
 
@@ -46,16 +51,27 @@ PinyinFuzzyFlags PinyinIME::fuzzyFlags() const {
 void PinyinIME::setFuzzyFlags(PinyinFuzzyFlags flags) {
     FCITX_D();
     d->flags_ = flags;
+    d->dict_->setFuzzyFlags(flags);
 }
 
-PinyinDecoder *PinyinIME::decoder() const {
+PinyinDictionary *PinyinIME::dict() {
+    FCITX_D();
+    return d->dict_.get();
+}
+
+const PinyinDictionary *PinyinIME::dict() const {
+    FCITX_D();
+    return d->dict_.get();
+}
+
+const PinyinDecoder *PinyinIME::decoder() const {
     FCITX_D();
     return d->decoder_.get();
 }
 
-LanguageModelBase *PinyinIME::model() const {
+const LanguageModelBase *PinyinIME::model() const {
     FCITX_D();
-    return d->model_;
+    return d->model_.get();
 }
 
 size_t PinyinIME::nbest() const {

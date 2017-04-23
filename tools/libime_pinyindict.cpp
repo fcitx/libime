@@ -64,9 +64,9 @@ int main(int argc, char *argv[]) {
         out = &fout;
     }
     if (dump) {
-        dict.dump(*out);
+        dict.dump(0, *out);
     } else {
-        dict.save(*out);
+        dict.save(0, *out);
     }
     return 0;
 }

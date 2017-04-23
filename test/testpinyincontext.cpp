@@ -26,6 +26,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/stringutils.h>
 #include <iostream>
+#include <sstream>
 
 using namespace libime;
 
@@ -33,9 +34,14 @@ int main(int argc, char *argv[]) {
     if (argc < 3) {
         return 1;
     }
-    PinyinDictionary dict(argv[1], PinyinDictFormat::Binary);
-    UserLanguageModel model(argv[2], argv[3]);
-    PinyinIME ime(&dict, &model);
+    PinyinIME ime(
+        std::make_unique<PinyinDictionary>(argv[1], PinyinDictFormat::Binary),
+        std::make_unique<UserLanguageModel>(argv[2], argv[3]));
+    // add a manual dict
+    std::stringstream ss;
+    ss << "献世 xian'shi 0.0\n";
+    ime.dict()->open(ss, PinyinDictFormat::Text);
+    ime.dict()->addWord(1, "zi'ji'ge'zi", "自机各自");
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
     PinyinContext c(&ime);
     c.type("xianshi");

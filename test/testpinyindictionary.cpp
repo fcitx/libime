@@ -20,6 +20,7 @@
 #include "libime/pinyindictionary.h"
 #include "libime/pinyinencoder.h"
 #include <iostream>
+#include <sstream>
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -27,6 +28,11 @@ int main(int argc, char *argv[]) {
     }
     using namespace libime;
     PinyinDictionary dict(argv[1], PinyinDictFormat::Text);
+
+    // add a manual dict
+    std::stringstream ss;
+    ss << "倪辉 ni'hui 0.0";
+    dict.open(ss, PinyinDictFormat::Text);
     // dict.dump(std::cout);
     char c[] = {static_cast<char>(PinyinInitial::N),
                 static_cast<char>(PinyinInitial::H),
@@ -38,6 +44,6 @@ int main(int argc, char *argv[]) {
         return true;
     });
 
-    dict.save(argv[2]);
+    dict.save(0, argv[2]);
     return 0;
 }

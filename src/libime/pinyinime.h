@@ -33,7 +33,8 @@ class LanguageModelBase;
 
 class LIBIME_EXPORT PinyinIME {
 public:
-    PinyinIME(PinyinDictionary *dict, LanguageModelBase *model);
+    PinyinIME(std::unique_ptr<PinyinDictionary> dict,
+              std::unique_ptr<LanguageModelBase> model);
     virtual ~PinyinIME();
 
     PinyinFuzzyFlags fuzzyFlags() const;
@@ -41,8 +42,10 @@ public:
     size_t nbest() const;
     void setNBest(size_t n);
 
-    PinyinDecoder *decoder() const;
-    LanguageModelBase *model() const;
+    PinyinDictionary *dict();
+    const PinyinDictionary *dict() const;
+    const PinyinDecoder *decoder() const;
+    const LanguageModelBase *model() const;
 
 private:
     std::unique_ptr<PinyinIMEPrivate> d_ptr;

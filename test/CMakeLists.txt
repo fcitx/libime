@@ -14,7 +14,6 @@ endforeach()
 
 add_executable(testmodel testmodel.cpp)
 target_link_libraries(testmodel LibIME::LibIME)
-target_compile_definitions(testmodel PRIVATE -DKENLM_MAX_ORDER=3 -DHAVE_ICU)
 
 add_executable(testpinyindictionary testpinyindictionary.cpp)
 target_link_libraries(testpinyindictionary LibIME::LibIME)

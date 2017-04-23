@@ -34,11 +34,11 @@ namespace libime {
 class Decoder;
 class LatticePrivate;
 class SegmentGraphNode;
+class LatticeNode;
 
 class SentenceResult {
 public:
-    typedef std::vector<std::pair<SegmentGraphPath, boost::string_view>>
-        Sentence;
+    typedef std::vector<const LatticeNode *> Sentence;
     SentenceResult(Sentence sentence = {}, float score = 0.0f)
         : sentence_(std::move(sentence)), score_(score) {}
 
@@ -54,12 +54,7 @@ public:
         return score_ > rhs.score_;
     }
 
-    std::string toString() const {
-        return fcitx::stringutils::join(
-            sentence_ | boost::adaptors::transformed(
-                            [](const auto &item) { return item.second; }),
-            "");
-    }
+    std::string toString() const;
 
 private:
     Sentence sentence_;
@@ -70,7 +65,12 @@ class WordNode {
 public:
     WordNode(boost::string_view word, WordIndex idx)
         : word_(word.to_string()), idx_(idx) {}
+    WordNode(const WordNode &) = default;
+    WordNode(WordNode &&) = default;
     virtual ~WordNode() {}
+
+    WordNode &operator=(const WordNode &) = default;
+    WordNode &operator=(WordNode &&) = default;
 
     const std::string &word() const { return word_; }
     WordIndex idx() const { return idx_; }
@@ -83,7 +83,8 @@ protected:
 class LatticeNode : public WordNode {
 public:
     LatticeNode(LanguageModel *model, boost::string_view word, WordIndex idx,
-                SegmentGraphPath path, float cost = 0, State state = {})
+                SegmentGraphPath path, float cost = 0, State state = {},
+                boost::string_view = "")
         : WordNode(word, idx), path_(std::move(path)), cost_(cost),
           state_(std::move(state)) {
         if (state_.empty()) {
@@ -129,7 +130,7 @@ public:
         // to skip bos
         while (pivot->prev() != nullptr) {
             if (pivot->to()) {
-                result.emplace_back(pivot->path(), pivot->word());
+                result.emplace_back(pivot);
             }
             pivot = pivot->prev();
         }
@@ -147,6 +148,13 @@ protected:
     State state_;
     LatticeNode *prev_ = nullptr;
 };
+
+inline std::string SentenceResult::toString() const {
+    return fcitx::stringutils::join(
+        sentence_ | boost::adaptors::transformed(
+                        [](const auto &item) { return item->word(); }),
+        "");
+}
 
 class LIBIME_EXPORT Lattice {
     friend class Decoder;

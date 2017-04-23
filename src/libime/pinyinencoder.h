@@ -151,6 +151,9 @@ public:
     static std::string decodeFullPinyin(const std::vector<char> &v) {
         return decodeFullPinyin(v.data(), v.size());
     }
+    static std::string decodeFullPinyin(boost::string_view s) {
+        return decodeFullPinyin(s.data(), s.size());
+    }
     static std::string decodeFullPinyin(const char *data, size_t size);
 
     static const std::string &initialToString(PinyinInitial initial);

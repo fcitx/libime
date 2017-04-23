@@ -19,6 +19,7 @@
 
 #include "libime/lattice.h"
 #include "libime/pinyincontext.h"
+#include "libime/pinyindecoder.h"
 #include "libime/pinyindictionary.h"
 #include "libime/pinyinime.h"
 #include "libime/userlanguagemodel.h"
@@ -132,8 +133,18 @@ int main(int argc, char *argv[]) {
     assert(c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
+    c.clear();
+    c.type("nh");
     for (auto &candidate : c.candidates()) {
-        std::cout << candidate.toString() << std::endl;
+        for (auto node : candidate.sentence()) {
+            auto &pinyin =
+                static_cast<const PinyinLatticeNode *>(node)->encodedPinyin();
+            std::cout << node->word();
+            if (!pinyin.empty()) {
+                std::cout << " " << PinyinEncoder::decodeFullPinyin(pinyin);
+            }
+        }
+        std::cout << std::endl;
     }
 
     return 0;

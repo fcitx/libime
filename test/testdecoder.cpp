@@ -52,7 +52,7 @@ void testTime(Decoder &decoder, const char *pinyin, PinyinFuzzyFlags flags,
     for (size_t i = 0, e = lattice.sentenceSize(); i < e; i++) {
         auto &sentence = lattice.sentence(i);
         for (auto &p : sentence.sentence()) {
-            std::cout << p.second << " ";
+            std::cout << p->word() << " ";
         }
         std::cout << std::endl;
     }

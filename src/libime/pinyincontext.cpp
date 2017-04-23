@@ -25,11 +25,20 @@
 
 namespace libime {
 
+struct SelectedPinyin {
+    SelectedPinyin(size_t s, WordNode word, std::string encodedPinyin)
+        : offset_(s), word_(std::move(word)),
+          encodedPinyin_(std::move(encodedPinyin)) {}
+    size_t offset_;
+    WordNode word_;
+    std::string encodedPinyin_;
+};
+
 class PinyinContextPrivate {
 public:
     PinyinContextPrivate(PinyinIME *ime) : ime_(ime) {}
 
-    std::vector<std::vector<std::pair<size_t, WordNode>>> selected;
+    std::vector<std::vector<SelectedPinyin>> selected;
 
     PinyinIME *ime_;
     SegmentGraph segs_;
@@ -78,19 +87,16 @@ void PinyinContext::select(size_t idx) {
     auto &selection = d->selected.back();
     for (auto &p : d->candidates_[idx].sentence()) {
         selection.emplace_back(
-            std::piecewise_construct,
-            std::forward_as_tuple(offset + p.first.back()->index()),
-            std::forward_as_tuple(p.second.to_string(),
-                                  d->ime_->model()->index(p.second)));
+            offset + p->to()->index(),
+            WordNode{p->word(), d->ime_->model()->index(p->word())},
+            static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
     }
     // add some special code for handling separator at the end
     auto remain = boost::string_view(userInput()).substr(selectedLength());
     if (!remain.empty()) {
         if (std::all_of(remain.begin(), remain.end(),
                         [](char c) { return c == '\''; })) {
-            selection.emplace_back(std::piecewise_construct,
-                                   std::forward_as_tuple(size()),
-                                   std::forward_as_tuple("", 0));
+            selection.emplace_back(size(), WordNode("", 0), "");
         }
     }
 
@@ -119,18 +125,18 @@ void PinyinContext::update() {
     size_t start = 0;
     State state;
     if (d->selected.size()) {
-        start = d->selected.back().back().first;
+        start = d->selected.back().back().offset_;
 
         auto model = d->ime_->model();
         state = model->nullState();
 
         for (auto &s : d->selected) {
             for (auto &item : s) {
-                if (item.second.word().empty()) {
+                if (item.word_.word().empty()) {
                     continue;
                 }
                 State temp = model->nullState();
-                model->score(state, &item.second, temp);
+                model->score(state, &item.word_, temp);
                 state = std::move(temp);
             }
         }
@@ -197,7 +203,7 @@ bool PinyinContext::selected() const {
     }
 
     if (d->selected.size()) {
-        if (d->selected.back().back().first == size()) {
+        if (d->selected.back().back().offset_ == size()) {
             return true;
         }
     }
@@ -210,7 +216,7 @@ std::string PinyinContext::selectedSentence() const {
     std::stringstream ss;
     for (auto &s : d->selected) {
         for (auto &item : s) {
-            ss << item.second.word();
+            ss << item.word_.word();
         }
     }
     return ss.str();
@@ -219,7 +225,7 @@ std::string PinyinContext::selectedSentence() const {
 size_t PinyinContext::selectedLength() const {
     FCITX_D();
     if (d->selected.size()) {
-        return d->selected.back().back().first;
+        return d->selected.back().back().offset_;
     }
     return 0;
 }
@@ -232,7 +238,8 @@ std::string PinyinContext::preedit() const {
     if (d->candidates_.size()) {
         bool first = true;
         for (auto &s : d->candidates_[0].sentence()) {
-            for (auto iter = s.first.begin(), end = std::prev(s.first.end());
+            for (auto iter = s->path().begin(),
+                      end = std::prev(s->path().end());
                  iter < end; iter++) {
                 if (!first) {
                     ss << " ";

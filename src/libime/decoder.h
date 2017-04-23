@@ -49,16 +49,15 @@ protected:
     inline LatticeNode *createLatticeNode(LanguageModel *model,
                                           boost::string_view word,
                                           WordIndex idx, SegmentGraphPath path,
-                                          float cost = 0,
-                                          State state = {}) const {
+                                          float cost = 0, State state = {},
+                                          boost::string_view aux = "") const {
         return createLatticeNodeImpl(model, word, idx, std::move(path), cost,
-                                     std::move(state));
+                                     std::move(state), aux);
     }
-    virtual LatticeNode *createLatticeNodeImpl(LanguageModel *model,
-                                               boost::string_view word,
-                                               WordIndex idx,
-                                               SegmentGraphPath path,
-                                               float cost, State state) const;
+    virtual LatticeNode *
+    createLatticeNodeImpl(LanguageModel *model, boost::string_view word,
+                          WordIndex idx, SegmentGraphPath path, float cost,
+                          State state, boost::string_view aux) const;
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;

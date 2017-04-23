@@ -26,12 +26,13 @@ static const auto unknown = std::log10(1.0f / 150000);
 
 LatticeNode *PinyinDecoder::createLatticeNodeImpl(
     LanguageModel *model, boost::string_view word, WordIndex idx,
-    SegmentGraphPath path, float cost, State state) const {
+    SegmentGraphPath path, float cost, State state,
+    boost::string_view aux) const {
     if (idx == model->unknown()) {
         cost += unknown;
     }
 
-    return new LatticeNode(model, word, idx, std::move(path), cost,
-                           std::move(state));
+    return new PinyinLatticeNode(model, word, idx, std::move(path), cost,
+                                 std::move(state), aux);
 }
 }

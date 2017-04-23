@@ -144,7 +144,7 @@ void PinyinDictionary::matchPrefix(const SegmentGraph &graph,
                     }
                     currentNodes.splice(currentNodes.end(), newNodes);
                     if (current == &graph.end()) {
-                        callback({&prevNode, current}, "", 0);
+                        callback({&prevNode, current}, "", 0, "");
                     }
                 } else {
                     bool matched = false;
@@ -222,12 +222,14 @@ void PinyinDictionary::matchPrefix(const SegmentGraph &graph,
                                     auto size = node.remain_.size();
                                     std::string s;
                                     d->trie_.suffix(s, len + size * 2 + 1, pos);
-                                    size_t fuzzy =
-                                        numOfFuzzy(graph, node.path_,
-                                                   boost::string_view(s).substr(
-                                                       0, size * 2 + 1));
+                                    auto encodedPinyin =
+                                        boost::string_view(s).substr(
+                                            0, size * 2 + 1);
+                                    size_t fuzzy = numOfFuzzy(graph, node.path_,
+                                                              encodedPinyin);
                                     callback(node.path_, s.substr(size * 2 + 1),
-                                             value + fuzzy * fuzzyCost);
+                                             value + fuzzy * fuzzyCost,
+                                             encodedPinyin);
                                     if (node.remain_.size() == 1 &&
                                         node.path_[node.path_.size() - 2] ==
                                             &prevNode) {
@@ -247,7 +249,7 @@ void PinyinDictionary::matchPrefix(const SegmentGraph &graph,
                         }
                         vec.push_back(&prevNode);
                         vec.push_back(current);
-                        callback(vec, pinyin, invalidPinyinCost);
+                        callback(vec, pinyin, invalidPinyinCost, "");
                     }
 
                     currentNodes.splice(currentNodes.end(), newNodes);

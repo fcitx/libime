@@ -26,7 +26,8 @@
 
 namespace libime {
 
-typedef std::function<void(const SegmentGraphPath &, boost::string_view, float)>
+typedef std::function<void(const SegmentGraphPath &, boost::string_view, float,
+                           boost::string_view)>
     GraphMatchCallback;
 
 class LIBIME_EXPORT Dictionary {

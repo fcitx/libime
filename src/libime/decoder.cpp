@@ -53,11 +53,13 @@ public:
                                  {nullptr, &graph.start()}, 0, state));
         dict_->matchPrefix(graph, [this, &graph, &lattice](
                                       const SegmentGraphPath &path,
-                                      boost::string_view entry, float adjust) {
+                                      boost::string_view entry, float adjust,
+                                      boost::string_view aux) {
             FCITX_Q();
             WordIndex idx = model_->index(entry);
             assert(path.front());
-            auto node = q->createLatticeNode(model_, entry, idx, path, adjust);
+            auto node =
+                q->createLatticeNode(model_, entry, idx, path, adjust, {}, aux);
             if (node) {
                 lattice[path.back()].push_back(node);
             }
@@ -238,7 +240,7 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
             result.reserve(count);
             pivot = node->next_;
             while (pivot != nullptr) {
-                result.emplace_back(pivot->node_->path(), pivot->node_->word());
+                result.emplace_back(pivot->node_);
                 pivot = pivot->next_;
             }
             p->nbests.emplace_back(std::move(result), node->fn_);
@@ -249,12 +251,11 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
     return {p.release()};
 }
 
-LatticeNode *Decoder::createLatticeNodeImpl(LanguageModel *model,
-                                            boost::string_view word,
-                                            WordIndex idx,
-                                            SegmentGraphPath path, float cost,
-                                            State state) const {
+LatticeNode *
+Decoder::createLatticeNodeImpl(LanguageModel *model, boost::string_view word,
+                               WordIndex idx, SegmentGraphPath path, float cost,
+                               State state, boost::string_view aux) const {
     return new LatticeNode(model, word, idx, std::move(path), cost,
-                           std::move(state));
+                           std::move(state), aux);
 }
 }

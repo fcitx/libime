@@ -11,8 +11,9 @@ endforeach()
 
 add_library(kenlm STATIC ${KENLM_SRCS})
 target_include_directories(kenlm PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/kenlm>")
-target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=3 -DHAVE_ICU)
-set_target_properties(kenlm PROPERTIES COMPILE_FLAGS "-fPIC")
+target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=3 PRIVATE -DNDEBUG)
+set_target_properties(kenlm PROPERTIES
+                      COMPILE_FLAGS "-fPIC")
 
 set(LIBIME_HDRS
     datrie.h
@@ -60,7 +61,7 @@ target_include_directories(ime PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..;${CMAKE_CURRENT_BINARY_DIR}>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_INCLUDEDIR}/LibIME>")
 
-target_link_libraries(ime PRIVATE kenlm ICU::ICU
+target_link_libraries(ime PRIVATE kenlm
                           PUBLIC Fcitx5::Utils)
 
 install(TARGETS ime EXPORT LibIMETargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")

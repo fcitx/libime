@@ -37,7 +37,7 @@ static inline const lm::ngram::State &lmState(const State &state) {
 
 class LanguageModelPrivate {
 public:
-    LanguageModelPrivate(const char *file, lm::ngram::Config config)
+    LanguageModelPrivate(const char *file, const lm::ngram::Config &config)
         : model_(file, config) {}
 
     lm::ngram::QuantArrayTrieModel model_;
@@ -45,7 +45,7 @@ public:
     State nullState_;
 };
 
-LanguageModel::LanguageModel(const char *file) {
+LanguageModel::LanguageModel(const char *file) : LanguageModelBase() {
     lm::ngram::Config config;
     config.sentence_marker_missing = lm::SILENT;
     d_ptr = std::make_unique<LanguageModelPrivate>(file, config);

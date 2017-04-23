@@ -23,17 +23,17 @@ namespace libime {
 
 class PinyinIMEPrivate {
 public:
-    PinyinIMEPrivate(PinyinDictionary *dict, LanguageModel *model)
+    PinyinIMEPrivate(PinyinDictionary *dict, LanguageModelBase *model)
         : decoder_(std::make_unique<PinyinDecoder>(dict, model)),
           model_(model) {}
 
     PinyinFuzzyFlags flags_;
     std::unique_ptr<PinyinDecoder> decoder_;
-    LanguageModel *model_;
+    LanguageModelBase *model_;
     size_t nbest_ = 1;
 };
 
-PinyinIME::PinyinIME(PinyinDictionary *dict, LanguageModel *model)
+PinyinIME::PinyinIME(PinyinDictionary *dict, LanguageModelBase *model)
     : d_ptr(std::make_unique<PinyinIMEPrivate>(dict, model)) {}
 
 PinyinIME::~PinyinIME() {}
@@ -53,7 +53,7 @@ PinyinDecoder *PinyinIME::decoder() const {
     return d->decoder_.get();
 }
 
-LanguageModel *PinyinIME::model() const {
+LanguageModelBase *PinyinIME::model() const {
     FCITX_D();
     return d->model_;
 }

@@ -82,9 +82,9 @@ protected:
 
 class LatticeNode : public WordNode {
 public:
-    LatticeNode(LanguageModel *model, boost::string_view word, WordIndex idx,
-                SegmentGraphPath path, float cost = 0, State state = {},
-                boost::string_view = "")
+    LatticeNode(LanguageModelBase *model, boost::string_view word,
+                WordIndex idx, SegmentGraphPath path, float cost = 0,
+                State state = {}, boost::string_view = "")
         : WordNode(word, idx), path_(std::move(path)), cost_(cost),
           state_(std::move(state)) {
         if (state_.empty()) {

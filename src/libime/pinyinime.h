@@ -29,11 +29,11 @@ namespace libime {
 class PinyinIMEPrivate;
 class PinyinDecoder;
 class PinyinDictionary;
-class LanguageModel;
+class LanguageModelBase;
 
 class LIBIME_EXPORT PinyinIME {
 public:
-    PinyinIME(PinyinDictionary *dict, LanguageModel *model);
+    PinyinIME(PinyinDictionary *dict, LanguageModelBase *model);
     virtual ~PinyinIME();
 
     PinyinFuzzyFlags fuzzyFlags() const;
@@ -42,7 +42,7 @@ public:
     void setNBest(size_t n);
 
     PinyinDecoder *decoder() const;
-    LanguageModel *model() const;
+    LanguageModelBase *model() const;
 
 private:
     std::unique_ptr<PinyinIMEPrivate> d_ptr;

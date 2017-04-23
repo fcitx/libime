@@ -37,7 +37,7 @@ class LIBIME_EXPORT Decoder {
     friend class DecoderPrivate;
 
 public:
-    Decoder(Dictionary *dict, LanguageModel *model);
+    Decoder(Dictionary *dict, LanguageModelBase *model);
     virtual ~Decoder();
 
     Lattice decode(const SegmentGraph &graph, size_t nbest = 1,
@@ -46,7 +46,7 @@ public:
                    State state = {}) const;
 
 protected:
-    inline LatticeNode *createLatticeNode(LanguageModel *model,
+    inline LatticeNode *createLatticeNode(LanguageModelBase *model,
                                           boost::string_view word,
                                           WordIndex idx, SegmentGraphPath path,
                                           float cost = 0, State state = {},
@@ -55,7 +55,7 @@ protected:
                                      std::move(state), aux);
     }
     virtual LatticeNode *
-    createLatticeNodeImpl(LanguageModel *model, boost::string_view word,
+    createLatticeNodeImpl(LanguageModelBase *model, boost::string_view word,
                           WordIndex idx, SegmentGraphPath path, float cost,
                           State state, boost::string_view aux) const;
 

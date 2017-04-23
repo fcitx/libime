@@ -41,7 +41,7 @@ struct NBestNode {
 
 class DecoderPrivate {
 public:
-    DecoderPrivate(Decoder *q, Dictionary *dict, LanguageModel *model)
+    DecoderPrivate(Decoder *q, Dictionary *dict, LanguageModelBase *model)
         : q_ptr(q), dict_(dict), model_(model) {}
 
     LatticeMap buildLattice(State state, const SegmentGraph &graph) const {
@@ -73,10 +73,10 @@ public:
     Decoder *q_ptr;
     FCITX_DECLARE_PUBLIC(Decoder);
     Dictionary *dict_;
-    LanguageModel *model_;
+    LanguageModelBase *model_;
 };
 
-Decoder::Decoder(Dictionary *dict, LanguageModel *model)
+Decoder::Decoder(Dictionary *dict, LanguageModelBase *model)
     : d_ptr(std::make_unique<DecoderPrivate>(this, dict, model)) {}
 
 Decoder::~Decoder() {}
@@ -251,10 +251,12 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
     return {p.release()};
 }
 
-LatticeNode *
-Decoder::createLatticeNodeImpl(LanguageModel *model, boost::string_view word,
-                               WordIndex idx, SegmentGraphPath path, float cost,
-                               State state, boost::string_view aux) const {
+LatticeNode *Decoder::createLatticeNodeImpl(LanguageModelBase *model,
+                                            boost::string_view word,
+                                            WordIndex idx,
+                                            SegmentGraphPath path, float cost,
+                                            State state,
+                                            boost::string_view aux) const {
     return new LatticeNode(model, word, idx, std::move(path), cost,
                            std::move(state), aux);
 }

@@ -27,7 +27,7 @@ namespace libime {
 
 class PinyinLatticeNode : public LatticeNode {
 public:
-    PinyinLatticeNode(LanguageModel *model, boost::string_view word,
+    PinyinLatticeNode(LanguageModelBase *model, boost::string_view word,
                       WordIndex idx, SegmentGraphPath path, float cost,
                       State state, boost::string_view aux)
         : LatticeNode(model, word, idx, path, cost, state, aux),
@@ -41,11 +41,11 @@ private:
 
 class LIBIME_EXPORT PinyinDecoder : public Decoder {
 public:
-    PinyinDecoder(PinyinDictionary *dict, LanguageModel *model)
+    PinyinDecoder(PinyinDictionary *dict, LanguageModelBase *model)
         : Decoder(dict, model) {}
 
 protected:
-    LatticeNode *createLatticeNodeImpl(LanguageModel *model,
+    LatticeNode *createLatticeNodeImpl(LanguageModelBase *model,
                                        boost::string_view word, WordIndex idx,
                                        SegmentGraphPath path, float cost,
                                        State state,

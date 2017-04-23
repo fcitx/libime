@@ -33,7 +33,22 @@ using State = std::vector<char>;
 class WordNode;
 
 class LanguageModelPrivate;
-class LIBIME_EXPORT LanguageModel {
+
+class LIBIME_EXPORT LanguageModelBase {
+public:
+    virtual ~LanguageModelBase() {}
+
+    virtual WordIndex beginSentence() const = 0;
+    virtual WordIndex endSentence() const = 0;
+    virtual WordIndex unknown() const = 0;
+    virtual const State &beginState() const = 0;
+    virtual const State &nullState() const = 0;
+    virtual WordIndex index(boost::string_view view) const = 0;
+    virtual float score(const State &state, const WordNode *word,
+                        State &out) const = 0;
+};
+
+class LIBIME_EXPORT LanguageModel : public LanguageModelBase {
 public:
     LanguageModel(const char *file);
     virtual ~LanguageModel();

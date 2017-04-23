@@ -46,8 +46,6 @@ find_package(ICU REQUIRED)
 find_package(Boost 1.61 REQUIRED)
 find_package(Fcitx5Utils REQUIRED)
 
-include_directories(src)
-
 if(ENABLE_TEST)
     enable_testing()
     add_subdirectory(test)
@@ -63,3 +61,5 @@ if(ENABLE_TEST)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(tools)
+add_subdirectory(data)

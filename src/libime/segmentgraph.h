@@ -86,6 +86,8 @@ private:
     size_t start_;
 };
 
+typedef std::vector<const SegmentGraphNode *> SegmentGraphPath;
+
 class SegmentGraph {
 public:
     SegmentGraph(const std::string &data = {}) : data_(data) {

@@ -3,3 +3,4 @@
 build
 test/bench.cpp
 test/cedarpp.h
+*.tar.*

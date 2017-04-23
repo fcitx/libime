@@ -31,11 +31,10 @@ public:
         : Decoder(dict, model) {}
 
 protected:
-    LatticeNode *
-    createLatticeNodeImpl(LanguageModel *model, boost::string_view word,
-                          WordIndex idx,
-                          std::vector<const SegmentGraphNode *> path,
-                          float cost, State state) const override;
+    LatticeNode *createLatticeNodeImpl(LanguageModel *model,
+                                       boost::string_view word, WordIndex idx,
+                                       SegmentGraphPath path, float cost,
+                                       State state) const override;
 };
 }
 

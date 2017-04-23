@@ -30,19 +30,22 @@ namespace libime {
 using WordIndex = unsigned int;
 using State = std::vector<char>;
 
+class WordNode;
+
 class LanguageModelPrivate;
 class LIBIME_EXPORT LanguageModel {
 public:
     LanguageModel(const char *file);
     virtual ~LanguageModel();
 
-    WordIndex beginSentence() const;
-    WordIndex endSentence() const;
-    WordIndex unknown() const;
-    State beginState() const;
-    State nullState() const;
-    WordIndex index(boost::string_view view) const;
-    float score(const State &state, WordIndex word, State &out) const;
+    virtual WordIndex beginSentence() const;
+    virtual WordIndex endSentence() const;
+    virtual WordIndex unknown() const;
+    virtual const State &beginState() const;
+    virtual const State &nullState() const;
+    virtual WordIndex index(boost::string_view view) const;
+    virtual float score(const State &state, const WordNode *word,
+                        State &out) const;
 
 private:
     std::unique_ptr<LanguageModelPrivate> d_ptr;

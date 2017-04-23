@@ -16,7 +16,7 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#include "inputbuffer.h"
+#include "libime/inputbuffer.h"
 #include <cassert>
 
 void test_basic(bool ascii) {

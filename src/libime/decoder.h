@@ -33,11 +33,6 @@ class DecoderPrivate;
 class Dictionary;
 class LanguageModel;
 
-typedef std::function<bool(const SegmentGraph &,
-                           const std::vector<const SegmentGraphNode *> &,
-                           boost::string_view, float &)>
-    UnknownHandler;
-
 class LIBIME_EXPORT Decoder {
     friend class DecoderPrivate;
 
@@ -51,15 +46,19 @@ public:
                    State state = {}) const;
 
 protected:
-    LatticeNode *createLatticeNode(LanguageModel *model,
-                                   boost::string_view word, WordIndex idx,
-                                   std::vector<const SegmentGraphNode *> path,
-                                   float cost = 0, State state = {}) const;
-    virtual LatticeNode *
-    createLatticeNodeImpl(LanguageModel *model, boost::string_view word,
-                          WordIndex idx,
-                          std::vector<const SegmentGraphNode *> path,
-                          float cost, State state) const;
+    inline LatticeNode *createLatticeNode(LanguageModel *model,
+                                          boost::string_view word,
+                                          WordIndex idx, SegmentGraphPath path,
+                                          float cost = 0,
+                                          State state = {}) const {
+        return createLatticeNodeImpl(model, word, idx, std::move(path), cost,
+                                     std::move(state));
+    }
+    virtual LatticeNode *createLatticeNodeImpl(LanguageModel *model,
+                                               boost::string_view word,
+                                               WordIndex idx,
+                                               SegmentGraphPath path,
+                                               float cost, State state) const;
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;

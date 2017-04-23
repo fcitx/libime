@@ -21,6 +21,7 @@
 
 #include "languagemodel.h"
 #include "libime_export.h"
+#include "segmentgraph.h"
 #include <algorithm>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/type_erased.hpp>
@@ -36,8 +37,7 @@ class SegmentGraphNode;
 
 class SentenceResult {
 public:
-    typedef std::vector<
-        std::pair<std::vector<const SegmentGraphNode *>, boost::string_view>>
+    typedef std::vector<std::pair<SegmentGraphPath, boost::string_view>>
         Sentence;
     SentenceResult(Sentence sentence = {}, float score = 0.0f)
         : sentence_(std::move(sentence)), score_(score) {}
@@ -66,15 +66,30 @@ private:
     float score_;
 };
 
-class LatticeNode {
+class WordNode {
 public:
-    LatticeNode(LanguageModel *model, boost::string_view word, WordIndex idx,
-                std::vector<const SegmentGraphNode *> path, float cost = 0,
-                State state = {})
-        : word_(word.to_string()), idx_(idx), path_(std::move(path)),
-          cost_(cost), state_(state.empty() ? model->nullState() : state) {}
+    WordNode(boost::string_view word, WordIndex idx)
+        : word_(word.to_string()), idx_(idx) {}
+    virtual ~WordNode() {}
 
     const std::string &word() const { return word_; }
+    WordIndex idx() const { return idx_; }
+
+protected:
+    std::string word_;
+    WordIndex idx_;
+};
+
+class LatticeNode : public WordNode {
+public:
+    LatticeNode(LanguageModel *model, boost::string_view word, WordIndex idx,
+                SegmentGraphPath path, float cost = 0, State state = {})
+        : WordNode(word, idx), path_(std::move(path)), cost_(cost),
+          state_(std::move(state)) {
+        if (state_.empty()) {
+            state_ = model->nullState();
+        }
+    }
     float cost() const { return cost_; }
 
     float score() const { return score_; }
@@ -82,7 +97,7 @@ public:
 
     const SegmentGraphNode *from() const { return path_.front(); }
     const SegmentGraphNode *to() const { return path_.back(); }
-    const std::vector<const SegmentGraphNode *> &path() const { return path_; }
+    const SegmentGraphPath &path() const { return path_; }
 
     LatticeNode *prev() const { return prev_; }
     void setPrev(LatticeNode *prev) { prev_ = prev; }
@@ -124,12 +139,9 @@ public:
     }
 
     State &state() { return state_; }
-    WordIndex idx() const { return idx_; }
 
 protected:
-    std::string word_;
-    WordIndex idx_;
-    std::vector<const SegmentGraphNode *> path_;
+    SegmentGraphPath path_;
     float cost_;
     float score_ = 0.0f;
     State state_;

@@ -51,24 +51,17 @@ public:
         lattice[&graph.start()].push_back(
             q->createLatticeNode(model_, "", model_->beginSentence(),
                                  {nullptr, &graph.start()}, 0, state));
-        dict_->matchPrefix(
-            graph, [this, &graph,
-                    &lattice](const std::vector<const SegmentGraphNode *> &path,
-                              boost::string_view entry, float adjust) {
-                FCITX_Q();
-                WordIndex idx;
-                if (entry.empty()) {
-                    idx = model_->endSentence();
-                } else {
-                    idx = model_->index(entry);
-                }
-                assert(path.front());
-                auto node =
-                    q->createLatticeNode(model_, entry, idx, path, adjust);
-                if (node) {
-                    lattice[path.back()].push_back(node);
-                }
-            });
+        dict_->matchPrefix(graph, [this, &graph, &lattice](
+                                      const SegmentGraphPath &path,
+                                      boost::string_view entry, float adjust) {
+            FCITX_Q();
+            WordIndex idx = model_->index(entry);
+            assert(path.front());
+            auto node = q->createLatticeNode(model_, entry, idx, path, adjust);
+            if (node) {
+                lattice[path.back()].push_back(node);
+            }
+        });
         assert(lattice.count(&graph.end()));
         lattice[nullptr].push_back(q->createLatticeNode(
             model_, "", model_->endSentence(), {&graph.end(), nullptr}));
@@ -79,7 +72,6 @@ public:
     FCITX_DECLARE_PUBLIC(Decoder);
     Dictionary *dict_;
     LanguageModel *model_;
-    UnknownHandler unknownHandler_;
 };
 
 Decoder::Decoder(Dictionary *dict, LanguageModel *model)
@@ -130,9 +122,8 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
 
             if (!maxNode) {
                 for (auto &parent : lattice[from]) {
-                    auto score =
-                        parent.score() +
-                        d->model_->score(parent.state(), node.idx(), state);
+                    auto score = parent.score() +
+                                 d->model_->score(parent.state(), &node, state);
                     if (score > maxScore) {
                         maxScore = score;
                         maxNode = &parent;
@@ -217,9 +208,9 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
                 dup.insert(sentence);
             } else {
                 for (auto &from : lattice[node->node_->from()]) {
-                    auto score = d->model_->score(from.state(),
-                                                  node->node_->idx(), state) +
-                                 node->node_->cost();
+                    auto score =
+                        d->model_->score(from.state(), node->node_, state) +
+                        node->node_->cost();
                     if (&from != bos && score < min)
                         continue;
                     auto parent = newNBestNode(&from);
@@ -258,16 +249,12 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest, float max,
     return {p.release()};
 }
 
-LatticeNode *Decoder::createLatticeNode(
-    LanguageModel *model, boost::string_view word, WordIndex idx,
-    std::vector<const SegmentGraphNode *> path, float cost, State state) const {
-    return createLatticeNodeImpl(model, word, idx, std::move(path), cost,
-                                 state);
-}
-
-LatticeNode *Decoder::createLatticeNodeImpl(
-    LanguageModel *model, boost::string_view word, WordIndex idx,
-    std::vector<const SegmentGraphNode *> path, float cost, State state) const {
-    return new LatticeNode(model, word, idx, std::move(path), cost, state);
+LatticeNode *Decoder::createLatticeNodeImpl(LanguageModel *model,
+                                            boost::string_view word,
+                                            WordIndex idx,
+                                            SegmentGraphPath path, float cost,
+                                            State state) const {
+    return new LatticeNode(model, word, idx, std::move(path), cost,
+                           std::move(state));
 }
 }

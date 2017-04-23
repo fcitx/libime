@@ -1,31 +1,3 @@
-ecm_setup_version(${LibIME_VERSION} VARIABLE_PREFIX LIBIME
-                                    VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/libime_version.h"
-                                    PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfigVersion.cmake"
-                                    SOVERSION 0)
-
-# create a Config.cmake and a ConfigVersion.cmake file and install them
-set(CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/cmake/LibIME")
-
-configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/LibIMEConfig.cmake.in"
-                              "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfig.cmake"
-                              INSTALL_DESTINATION  ${CMAKECONFIG_INSTALL_DIR})
-
-install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfig.cmake"
-               "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfigVersion.cmake"
-        DESTINATION "${CMAKECONFIG_INSTALL_DIR}"
-        COMPONENT Devel )
-
-install(EXPORT LibIMETargets DESTINATION "${CMAKECONFIG_INSTALL_DIR}" FILE LibIMETargets.cmake NAMESPACE LibIME:: )
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libime_version.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Devel )
-
-set(libime_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/kenlm
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    )
-
 # logic from setup.py
 file(GLOB __KENLM_SRCS kenlm/lm/*.cc kenlm/util/*.cc kenlm/util/double-conversion/*.cc)
 set(KENLM_SRCS)
@@ -36,10 +8,10 @@ foreach(f ${__KENLM_SRCS})
         set(KENLM_SRCS ${KENLM_SRCS} ${f})
     endif()
 endforeach()
-add_definitions(-DKENLM_MAX_ORDER=3 -DHAVE_ICU)
 
 add_library(kenlm STATIC ${KENLM_SRCS})
 target_include_directories(kenlm PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/kenlm>")
+target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=3 -DHAVE_ICU)
 set_target_properties(kenlm PROPERTIES COMPILE_FLAGS "-fPIC")
 
 set(LIBIME_HDRS
@@ -56,6 +28,8 @@ set(LIBIME_HDRS
     segmentgraph.h
     lattice.h
     pinyindecoder.h
+    languagemodel.h
+    ${CMAKE_CURRENT_BINARY_DIR}/libime_export.h
     )
 
 set(LIBIME_SRCS
@@ -71,15 +45,10 @@ set(LIBIME_SRCS
     inputbuffer.cpp
     lattice.cpp
     pinyindecoder.cpp
+    userlanguagemodel.cpp
     )
 
 add_library(ime SHARED ${LIBIME_SRCS})
-generate_export_header(ime BASE_NAME LIBIME)
-add_library(LibIME::LibIME ALIAS ime)
-
-target_include_directories(ime PUBLIC "$<BUILD_INTERFACE:${libime_INCLUDE_DIRS}>")
-target_include_directories(ime INTERFACE "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDE_DIR}/libime>")
-
 set_target_properties(ime
                       PROPERTIES VERSION 0.1
                       SOVERSION 0
@@ -87,17 +56,29 @@ set_target_properties(ime
                       LINK_FLAGS "-Wl,--no-undefined"
                       EXPORT_NAME LibIME
 )
+target_include_directories(ime PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..;${CMAKE_CURRENT_BINARY_DIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_INCLUDEDIR}/LibIME>")
 
-target_link_libraries(ime PRIVATE kenlm
-                             PUBLIC ICU::ICU Fcitx5::Utils)
-
-add_executable(libime_slm_build_binary kenlm/lm/build_binary_main.cc)
-target_link_libraries(libime_slm_build_binary kenlm ICU::ICU)
-
+target_link_libraries(ime PRIVATE kenlm ICU::ICU
+                          PUBLIC Fcitx5::Utils)
 
 install(TARGETS ime EXPORT LibIMETargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+install(FILES ${LIBIME_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME")
 
-install(FILES ${LIBIME_HDRS}
-              ${CMAKE_CURRENT_BINARY_DIR}/libime_export.h
-              DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/libime")
+add_library(LibIME::LibIME ALIAS ime)
+generate_export_header(ime BASE_NAME LIBIME)
+ecm_setup_version(PROJECT
+                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfigVersion.cmake"
+                  SOVERSION 0)
 
+configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/LibIMEConfig.cmake.in"
+                              "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfig.cmake"
+                              INSTALL_DESTINATION  "${CMAKE_INSTALL_LIBDIR}/cmake/LibIME")
+
+install(EXPORT LibIMETargets DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/LibIME" FILE LibIMETargets.cmake NAMESPACE LibIME:: )
+
+install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfig.cmake"
+               "${CMAKE_CURRENT_BINARY_DIR}/LibIMEConfigVersion.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/LibIME"
+        COMPONENT Devel )

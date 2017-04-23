@@ -18,6 +18,7 @@
  */
 
 #include "languagemodel.h"
+#include "lattice.h"
 #include "lm/model.hh"
 #include <type_traits>
 
@@ -40,12 +41,20 @@ public:
         : model_(file, config) {}
 
     lm::ngram::QuantArrayTrieModel model_;
+    State beginState_;
+    State nullState_;
 };
 
 LanguageModel::LanguageModel(const char *file) {
     lm::ngram::Config config;
     config.sentence_marker_missing = lm::SILENT;
     d_ptr = std::make_unique<LanguageModelPrivate>(file, config);
+
+    FCITX_D();
+    d->beginState_.resize(sizeof(lm::ngram::State));
+    d->nullState_.resize(sizeof(lm::ngram::State));
+    lmState(d->beginState_) = d->model_.BeginSentenceState();
+    lmState(d->nullState_) = d->model_.NullContextState();
 }
 
 LanguageModel::~LanguageModel() {}
@@ -74,26 +83,20 @@ WordIndex LanguageModel::index(boost::string_view word) const {
     return v.Index(StringPiece{word.data(), static_cast<int32_t>(word.size())});
 }
 
-State LanguageModel::beginState() const {
+const State &LanguageModel::beginState() const {
     FCITX_D();
-    State state;
-    state.resize(sizeof(lm::ngram::State));
-    lmState(state) = d->model_.NullContextState();
-    return state;
+    return d->beginState_;
 }
 
-State LanguageModel::nullState() const {
+const State &LanguageModel::nullState() const {
     FCITX_D();
-    State state;
-    state.resize(sizeof(lm::ngram::State));
-    lmState(state) = d->model_.NullContextState();
-    return state;
+    return d->nullState_;
 }
 
-float LanguageModel::score(const State &state, WordIndex word,
+float LanguageModel::score(const State &state, const WordNode *node,
                            State &out) const {
     FCITX_D();
     assert(&state != &out);
-    return d->model_.Score(lmState(state), word, lmState(out));
+    return d->model_.Score(lmState(state), node->idx(), lmState(out));
 }
 }

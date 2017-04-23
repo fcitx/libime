@@ -16,10 +16,10 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#include "languagemodel.h"
-#include "pinyindecoder.h"
-#include "pinyindictionary.h"
-#include "pinyinencoder.h"
+#include "libime/languagemodel.h"
+#include "libime/pinyindecoder.h"
+#include "libime/pinyindictionary.h"
+#include "libime/pinyinencoder.h"
 #include <chrono>
 #include <iostream>
 

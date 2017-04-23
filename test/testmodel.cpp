@@ -18,6 +18,7 @@
  */
 
 #include "libime/languagemodel.h"
+#include "libime/lattice.h"
 #include <iostream>
 
 int main(int argc, char *argv[]) {
@@ -31,8 +32,8 @@ int main(int argc, char *argv[]) {
     float sum = 0.0f;
     while (std::cin >> word) {
         float s;
-        std::cout << (s = model.score(state, model.index(word), out_state))
-                  << '\n';
+        WordNode w(word, model.index(word));
+        std::cout << (s = model.score(state, &w, out_state)) << '\n';
         state = out_state;
         sum += s;
     }

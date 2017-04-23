@@ -21,7 +21,6 @@
 #include "pinyinencoder.h"
 #include "pinyinime.h"
 #include <algorithm>
-#include <boost/range/adaptor/transformed.hpp>
 #include <iostream>
 
 namespace libime {
@@ -30,7 +29,7 @@ class PinyinContextPrivate {
 public:
     PinyinContextPrivate(PinyinIME *ime) : ime_(ime) {}
 
-    std::vector<std::vector<std::pair<size_t, std::string>>> selected;
+    std::vector<std::vector<std::pair<size_t, WordNode>>> selected;
 
     PinyinIME *ime_;
     SegmentGraph segs_;
@@ -78,15 +77,20 @@ void PinyinContext::select(size_t idx) {
 
     auto &selection = d->selected.back();
     for (auto &p : d->candidates_[idx].sentence()) {
-        selection.emplace_back(offset + p.first.back()->index(),
-                               p.second.to_string());
+        selection.emplace_back(
+            std::piecewise_construct,
+            std::forward_as_tuple(offset + p.first.back()->index()),
+            std::forward_as_tuple(p.second.to_string(),
+                                  d->ime_->model()->index(p.second)));
     }
     // add some special code for handling separator at the end
     auto remain = boost::string_view(userInput()).substr(selectedLength());
     if (!remain.empty()) {
         if (std::all_of(remain.begin(), remain.end(),
                         [](char c) { return c == '\''; })) {
-            selection.emplace_back(size(), "");
+            selection.emplace_back(std::piecewise_construct,
+                                   std::forward_as_tuple(size()),
+                                   std::forward_as_tuple("", 0));
         }
     }
 
@@ -122,12 +126,11 @@ void PinyinContext::update() {
 
         for (auto &s : d->selected) {
             for (auto &item : s) {
-                if (item.second.empty()) {
+                if (item.second.word().empty()) {
                     continue;
                 }
-                auto idx = model->index(item.second);
                 State temp = model->nullState();
-                model->score(state, idx, temp);
+                model->score(state, &item.second, temp);
                 state = std::move(temp);
             }
         }
@@ -207,7 +210,7 @@ std::string PinyinContext::selectedSentence() const {
     std::stringstream ss;
     for (auto &s : d->selected) {
         for (auto &item : s) {
-            ss << item.second;
+            ss << item.second.word();
         }
     }
     return ss.str();

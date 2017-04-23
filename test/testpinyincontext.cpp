@@ -17,11 +17,11 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "languagemodel.h"
-#include "lattice.h"
-#include "pinyincontext.h"
-#include "pinyindictionary.h"
-#include "pinyinime.h"
+#include "libime/lattice.h"
+#include "libime/pinyincontext.h"
+#include "libime/pinyindictionary.h"
+#include "libime/pinyinime.h"
+#include "libime/userlanguagemodel.h"
 #include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/stringutils.h>
 #include <iostream>
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     PinyinDictionary dict(argv[1], PinyinDictFormat::Binary);
-    LanguageModel model(argv[2]);
+    UserLanguageModel model(argv[2], argv[3]);
     PinyinIME ime(&dict, &model);
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
     PinyinContext c(&ime);

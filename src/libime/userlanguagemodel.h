@@ -16,22 +16,30 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
+#ifndef _FCITX_LIBIME_USERLANGUAGEMODEL_H_
+#define _FCITX_LIBIME_USERLANGUAGEMODEL_H_
 
-#include "pinyindecoder.h"
-#include <cmath>
+#include "languagemodel.h"
+#include "libime_export.h"
 
 namespace libime {
 
-static const auto unknown = std::log10(1.0f / 150000);
+class UserLanguageModelPrivate;
 
-LatticeNode *PinyinDecoder::createLatticeNodeImpl(
-    LanguageModel *model, boost::string_view word, WordIndex idx,
-    SegmentGraphPath path, float cost, State state) const {
-    if (idx == model->unknown()) {
-        cost += unknown;
-    }
+class LIBIME_EXPORT UserLanguageModel : public LanguageModel {
+public:
+    UserLanguageModel(const char *sysfile, const char *userFile);
+    virtual ~UserLanguageModel();
 
-    return new LatticeNode(model, word, idx, std::move(path), cost,
-                           std::move(state));
+    const State &beginState() const override;
+    const State &nullState() const override;
+    float score(const State &state, const WordNode *word,
+                State &out) const override;
+
+private:
+    std::unique_ptr<UserLanguageModelPrivate> d_ptr;
+    FCITX_DECLARE_PRIVATE(UserLanguageModel);
+};
 }
-}
+
+#endif // _FCITX_LIBIME_USERLANGUAGEMODEL_H_

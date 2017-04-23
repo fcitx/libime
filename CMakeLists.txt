@@ -42,7 +42,6 @@ include(ECMSetupVersion)
 include(ECMGenerateHeaders)
 include(ECMGeneratePkgConfigFile)
 
-find_package(ICU REQUIRED)
 find_package(Boost 1.61 REQUIRED)
 find_package(Fcitx5Utils REQUIRED)
 

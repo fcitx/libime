@@ -24,6 +24,12 @@
 
 namespace libime {
 
+static_assert(sizeof(void *) + sizeof(lm::ngram::State) <= StateSize, "Size");
+
+bool LanguageModelBase::isNodeUnknown(const LatticeNode &node) const {
+    return isUnknown(node.idx(), node.word());
+}
+
 static_assert(std::is_pod<lm::ngram::State>::value, "State should be pod");
 static_assert(std::is_same<WordIndex, lm::WordIndex>::value,
               "word index should be same type");
@@ -51,8 +57,6 @@ LanguageModel::LanguageModel(const char *file) : LanguageModelBase() {
     d_ptr = std::make_unique<LanguageModelPrivate>(file, config);
 
     FCITX_D();
-    d->beginState_.resize(sizeof(lm::ngram::State));
-    d->nullState_.resize(sizeof(lm::ngram::State));
     lmState(d->beginState_) = d->model_.BeginSentenceState();
     lmState(d->nullState_) = d->model_.NullContextState();
 }
@@ -80,7 +84,7 @@ WordIndex LanguageModel::unknown() const {
 WordIndex LanguageModel::index(boost::string_view word) const {
     FCITX_D();
     auto &v = d->model_.GetVocabulary();
-    return v.Index(StringPiece{word.data(), static_cast<int32_t>(word.size())});
+    return v.Index(StringPiece{word.data(), word.size()});
 }
 
 const State &LanguageModel::beginState() const {
@@ -93,10 +97,14 @@ const State &LanguageModel::nullState() const {
     return d->nullState_;
 }
 
-float LanguageModel::score(const State &state, const WordNode *node,
+float LanguageModel::score(const State &state, const WordNode &node,
                            State &out) const {
     FCITX_D();
     assert(&state != &out);
-    return d->model_.Score(lmState(state), node->idx(), lmState(out));
+    return d->model_.Score(lmState(state), node.idx(), lmState(out));
+}
+
+bool LanguageModel::isUnknown(WordIndex idx, boost::string_view) const {
+    return idx == unknown();
 }
 }

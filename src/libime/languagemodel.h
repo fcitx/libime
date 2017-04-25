@@ -28,10 +28,11 @@
 namespace libime {
 
 using WordIndex = unsigned int;
-using State = std::vector<char>;
+constexpr size_t StateSize = 20 + sizeof(void *);
+using State = std::array<char, StateSize>;
 
 class WordNode;
-
+class LatticeNode;
 class LanguageModelPrivate;
 
 class LIBIME_EXPORT LanguageModelBase {
@@ -44,8 +45,10 @@ public:
     virtual const State &beginState() const = 0;
     virtual const State &nullState() const = 0;
     virtual WordIndex index(boost::string_view view) const = 0;
-    virtual float score(const State &state, const WordNode *word,
+    virtual float score(const State &state, const WordNode &word,
                         State &out) const = 0;
+    bool isNodeUnknown(const LatticeNode &node) const;
+    virtual bool isUnknown(WordIndex idx, boost::string_view view) const = 0;
 };
 
 class LIBIME_EXPORT LanguageModel : public LanguageModelBase {
@@ -53,14 +56,15 @@ public:
     LanguageModel(const char *file);
     virtual ~LanguageModel();
 
-    virtual WordIndex beginSentence() const;
-    virtual WordIndex endSentence() const;
-    virtual WordIndex unknown() const;
-    virtual const State &beginState() const;
-    virtual const State &nullState() const;
-    virtual WordIndex index(boost::string_view view) const;
-    virtual float score(const State &state, const WordNode *word,
-                        State &out) const;
+    WordIndex beginSentence() const override;
+    WordIndex endSentence() const override;
+    WordIndex unknown() const override;
+    const State &beginState() const override;
+    const State &nullState() const override;
+    WordIndex index(boost::string_view view) const override;
+    float score(const State &state, const WordNode &word,
+                State &out) const override;
+    bool isUnknown(WordIndex idx, boost::string_view view) const override;
 
 private:
     std::unique_ptr<LanguageModelPrivate> d_ptr;

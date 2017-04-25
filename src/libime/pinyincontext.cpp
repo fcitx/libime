@@ -17,9 +17,11 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "pinyincontext.h"
+#include "historybigram.h"
 #include "pinyindecoder.h"
 #include "pinyinencoder.h"
 #include "pinyinime.h"
+#include "userlanguagemodel.h"
 #include <algorithm>
 #include <iostream>
 
@@ -38,7 +40,7 @@ class PinyinContextPrivate {
 public:
     PinyinContextPrivate(PinyinIME *ime) : ime_(ime) {}
 
-    std::vector<std::vector<SelectedPinyin>> selected;
+    std::vector<std::pair<bool, std::vector<SelectedPinyin>>> selected;
 
     PinyinIME *ime_;
     SegmentGraph segs_;
@@ -85,8 +87,11 @@ void PinyinContext::select(size_t idx) {
     d->selected.emplace_back();
 
     auto &selection = d->selected.back();
+    if (idx != 0) {
+        selection.first = true;
+    }
     for (auto &p : d->candidates_[idx].sentence()) {
-        selection.emplace_back(
+        selection.second.emplace_back(
             offset + p->to()->index(),
             WordNode{p->word(), d->ime_->model()->index(p->word())},
             static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
@@ -96,7 +101,7 @@ void PinyinContext::select(size_t idx) {
     if (!remain.empty()) {
         if (std::all_of(remain.begin(), remain.end(),
                         [](char c) { return c == '\''; })) {
-            selection.emplace_back(size(), WordNode("", 0), "");
+            selection.second.emplace_back(size(), WordNode("", 0), "");
         }
     }
 
@@ -123,20 +128,18 @@ void PinyinContext::cancel() {
 void PinyinContext::update() {
     FCITX_D();
     size_t start = 0;
-    State state;
+    auto model = d->ime_->model();
+    State state = model->nullState();
     if (d->selected.size()) {
-        start = d->selected.back().back().offset_;
-
-        auto model = d->ime_->model();
-        state = model->nullState();
+        start = d->selected.back().second.back().offset_;
 
         for (auto &s : d->selected) {
-            for (auto &item : s) {
+            for (auto &item : s.second) {
                 if (item.word_.word().empty()) {
                     continue;
                 }
-                State temp = model->nullState();
-                model->score(state, &item.word_, temp);
+                State temp;
+                model->score(state, item.word_, temp);
                 state = std::move(temp);
             }
         }
@@ -145,9 +148,9 @@ void PinyinContext::update() {
         boost::string_view(userInput()).substr(start), d->ime_->fuzzyFlags());
     auto &graph = d->segs_;
 
-    d->lattice_ = d->ime_->decoder()->decode(
-        d->segs_, d->ime_->nbest(), std::numeric_limits<float>::max(),
-        -std::numeric_limits<float>::max(), std::move(state));
+    d->lattice_ =
+        d->ime_->decoder()->decode(d->segs_, d->ime_->nbest(), state,
+                                   d->ime_->maxDistance(), d->ime_->minPath());
 
     d->candidates_.clear();
     std::unordered_set<std::string> dup;
@@ -164,7 +167,7 @@ void PinyinContext::update() {
         for (auto &graphNode : graph.nodes(i)) {
             for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                 if (latticeNode.from() == bos) {
-                    if (latticeNode.idx() != d->ime_->model()->unknown() &&
+                    if (!d->ime_->model()->isNodeUnknown(latticeNode) &&
                         latticeNode.score() < min) {
                         min = latticeNode.score();
                     }
@@ -203,7 +206,7 @@ bool PinyinContext::selected() const {
     }
 
     if (d->selected.size()) {
-        if (d->selected.back().back().offset_ == size()) {
+        if (d->selected.back().second.back().offset_ == size()) {
             return true;
         }
     }
@@ -215,7 +218,7 @@ std::string PinyinContext::selectedSentence() const {
     FCITX_D();
     std::stringstream ss;
     for (auto &s : d->selected) {
-        for (auto &item : s) {
+        for (auto &item : s.second) {
             ss << item.word_.word();
         }
     }
@@ -225,7 +228,7 @@ std::string PinyinContext::selectedSentence() const {
 size_t PinyinContext::selectedLength() const {
     FCITX_D();
     if (d->selected.size()) {
-        return d->selected.back().back().offset_;
+        return d->selected.back().second.back().offset_;
     }
     return 0;
 }
@@ -253,4 +256,59 @@ std::string PinyinContext::preedit() const {
     }
     return ss.str();
 }
+
+void PinyinContext::learn() {
+    FCITX_D();
+    if (!selected()) {
+        return;
+    }
+
+    if (learnWord()) {
+        std::vector<std::string> newSentence{sentence()};
+        d->ime_->model()->history().add(newSentence);
+    } else {
+        std::vector<std::string> newSentence;
+        for (auto &s : d->selected) {
+            for (auto &item : s.second) {
+                if (!item.word_.word().empty()) {
+                    newSentence.push_back(item.word_.word());
+                }
+            }
+        }
+        d->ime_->model()->history().add(newSentence);
+    }
+}
+
+bool PinyinContext::learnWord() {
+    FCITX_D();
+    std::stringstream ss;
+    std::string pinyin;
+    for (auto &s : d->selected) {
+        bool first = true;
+        for (auto &item : s.second) {
+            if (!item.word_.word().empty()) {
+                if (item.encodedPinyin_.size() != 3) {
+                    return false;
+                }
+                if (first) {
+                    first = false;
+                    ss << item.word_.word();
+                    if (!pinyin.empty()) {
+                        pinyin.push_back('\'');
+                    }
+                    pinyin +=
+                        PinyinEncoder::decodeFullPinyin(item.encodedPinyin_);
+                } else {
+                    return false;
+                }
+            }
+        }
+    }
+
+    d->ime_->dict()->addWord(PinyinDictionary::UserDict, pinyin, ss.str());
+
+    return true;
+}
+
+void PinyinContext::learnSentence() {}
 }

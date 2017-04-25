@@ -17,6 +17,7 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
+#include "libime/historybigram.h"
 #include "libime/lattice.h"
 #include "libime/pinyincontext.h"
 #include "libime/pinyindecoder.h"
@@ -34,13 +35,15 @@ int main(int argc, char *argv[]) {
     if (argc < 3) {
         return 1;
     }
-    PinyinIME ime(
-        std::make_unique<PinyinDictionary>(argv[1], PinyinDictFormat::Binary),
-        std::make_unique<UserLanguageModel>(argv[2], argv[3]));
+    PinyinIME ime(std::make_unique<PinyinDictionary>(),
+                  std::make_unique<UserLanguageModel>(argv[2]));
+    ime.model()->history().add({"字迹", "格子"});
     // add a manual dict
     std::stringstream ss;
     ss << "献世 xian'shi 0.0\n";
-    ime.dict()->open(ss, PinyinDictFormat::Text);
+    ime.dict()->load(PinyinDictionary::SystemDict, argv[1],
+                     PinyinDictFormat::Binary);
+    ime.dict()->load(PinyinDictionary::UserDict, ss, PinyinDictFormat::Text);
     ime.dict()->addWord(1, "zi'ji'ge'zi", "自机各自");
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
     PinyinContext c(&ime);
@@ -140,7 +143,7 @@ int main(int argc, char *argv[]) {
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     c.clear();
-    c.type("nh");
+    c.type("n");
     for (auto &candidate : c.candidates()) {
         for (auto node : candidate.sentence()) {
             auto &pinyin =

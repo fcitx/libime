@@ -22,6 +22,7 @@
 #include "lattice.h"
 #include "segmentgraph.h"
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <map>
 #include <unordered_map>
 
 namespace libime {

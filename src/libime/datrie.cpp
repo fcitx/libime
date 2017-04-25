@@ -503,7 +503,7 @@ public:
         return 0;
     }
 
-    void foreach (callback_type callback, npos_t root = npos_t()) {
+    void foreach (callback_type callback, npos_t root = npos_t()) const {
         decorder_type b;
         size_t p(0);
         npos_t from = root;
@@ -517,7 +517,7 @@ public:
     }
 
     template <typename T>
-    void dump(T *result, const size_t result_len) {
+    void dump(T *result, const size_t result_len) const {
         size_t num(0);
         foreach ([result, result_len, &num](value_type value, size_t len,
                                             position_type pos) {
@@ -559,7 +559,7 @@ public:
     }
 
     // return the first child for a tree rooted by a given node
-    int32_t begin(npos_t &npos, size_t &len) {
+    int32_t begin(npos_t &npos, size_t &len) const {
         auto &from = npos.index;
         int base =
             npos.offset ? -static_cast<int>(npos.offset) : m_array[from].base;
@@ -583,7 +583,8 @@ public:
         return load_data<int32_t>(&m_tail[-base] + len_ + 1);
     }
     // return the next child if any
-    int32_t next(npos_t &npos, size_t &len, const npos_t root = npos_t()) {
+    int32_t next(npos_t &npos, size_t &len,
+                 const npos_t root = npos_t()) const {
         uchar c = 0;
         auto &from = npos.index;
         if (const int offset = npos.offset) { // on tail
@@ -970,6 +971,12 @@ DATrie<T> &DATrie<T>::operator=(DATrie<T> other) {
 }
 
 template <typename T>
+void DATrie<T>::load(std::istream &in) {
+    clear();
+    d->open(in);
+}
+
+template <typename T>
 void DATrie<T>::save(const char *filename) {
     std::ofstream fout(filename, std::ios::out | std::ios::binary);
     throw_if_io_fail(fout);
@@ -999,7 +1006,7 @@ size_t DATrie<T>::size() const {
 
 template <typename T>
 void DATrie<T>::foreach (const char *key, size_t size, callback_type func,
-                         position_type _pos) {
+                         position_type _pos) const {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t from(_pos);
     if (d->_find(key, from, pos, size) == NO_PATH) {
@@ -1010,7 +1017,7 @@ void DATrie<T>::foreach (const char *key, size_t size, callback_type func,
 }
 
 template <typename T>
-void DATrie<T>::foreach (callback_type func, position_type pos) {
+void DATrie<T>::foreach (callback_type func, position_type pos) const {
     typename DATriePrivate<value_type>::npos_t from(pos);
     d->foreach (func, from);
 }
@@ -1021,12 +1028,12 @@ void DATrie<T>::suffix(std::string &s, size_t len, position_type pos) {
 }
 
 template <typename T>
-void DATrie<T>::dump(value_type *data, std::size_t size) {
+void DATrie<T>::dump(value_type *data, std::size_t size) const {
     d->dump(data, size);
 }
 
 template <typename T>
-void DATrie<T>::dump(std::vector<typename DATrie<T>::value_type> &data) {
+void DATrie<T>::dump(std::vector<typename DATrie<T>::value_type> &data) const {
     data.resize(size());
     d->dump(data.data(), data.size());
 }
@@ -1034,7 +1041,7 @@ void DATrie<T>::dump(std::vector<typename DATrie<T>::value_type> &data) {
 template <typename T>
 void DATrie<T>::dump(
     std::vector<std::tuple<typename DATrie<T>::value_type, size_t,
-                           typename DATrie<T>::position_type>> &data) {
+                           typename DATrie<T>::position_type>> &data) const {
     data.resize(size());
     d->dump(data.data(), data.size());
 }
@@ -1051,7 +1058,7 @@ bool DATrie<T>::erase(position_type from) {
 
 template <typename T>
 typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key,
-                                                           size_t len) {
+                                                           size_t len) const {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t npos;
     typename DATriePrivate<T>::decorder_type decoder;
@@ -1064,7 +1071,7 @@ typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key,
 
 template <typename T>
 typename DATrie<T>::value_type DATrie<T>::traverse(const char *key, size_t len,
-                                                   position_type &from) {
+                                                   position_type &from) const {
     size_t pos = 0;
     typename DATriePrivate<T>::npos_t npos(from);
     auto result = d->traverse(key, npos, pos, len);

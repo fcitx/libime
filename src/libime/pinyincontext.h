@@ -59,8 +59,12 @@ public:
     std::string selectedSentence() const;
     size_t selectedLength() const;
 
+    void learn();
+
 private:
     void update();
+    bool learnWord();
+    void learnSentence();
     std::unique_ptr<PinyinContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinContext);
 };

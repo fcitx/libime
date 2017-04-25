@@ -52,6 +52,7 @@ public:
     friend void swap(TableBasedDictionary &lhs,
                      TableBasedDictionary &rhs) noexcept;
 
+    void load(std::istream &in, TableFormat format = TableFormat::Binary);
     void dump(const char *filename);
     void dump(std::ostream &out);
     void save(const char *filename);
@@ -67,8 +68,8 @@ public:
     void statistic();
 
 private:
-    void build(std::istream &in);
-    void open(std::istream &in);
+    void loadText(std::istream &in);
+    void loadBinary(std::istream &in);
 
     std::unique_ptr<TableBasedDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableBasedDictionary);

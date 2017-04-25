@@ -27,12 +27,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     using namespace libime;
-    PinyinDictionary dict(argv[1], PinyinDictFormat::Text);
+    PinyinDictionary dict;
+    dict.load(PinyinDictionary::SystemDict, argv[1], PinyinDictFormat::Text);
 
     // add a manual dict
     std::stringstream ss;
     ss << "倪辉 ni'hui 0.0";
-    dict.open(ss, PinyinDictFormat::Text);
+    dict.load(PinyinDictionary::UserDict, ss, PinyinDictFormat::Text);
     // dict.dump(std::cout);
     char c[] = {static_cast<char>(PinyinInitial::N),
                 static_cast<char>(PinyinInitial::H),

@@ -25,14 +25,20 @@ namespace libime {
 static const auto unknown = std::log10(1.0f / 150000);
 
 LatticeNode *PinyinDecoder::createLatticeNodeImpl(
-    LanguageModelBase *model, boost::string_view word, WordIndex idx,
-    SegmentGraphPath path, float cost, State state,
-    boost::string_view aux) const {
-    if (idx == model->unknown()) {
+    const SegmentGraph &graph, LanguageModelBase *model,
+    boost::string_view word, WordIndex idx, SegmentGraphPath path,
+    const State &state, float cost, boost::string_view aux,
+    bool onlyPath) const {
+    if (model->isUnknown(idx, word)) {
+        // we don't really care about a lot of unknown single character
+        // which is not used for candidates
+        if (aux.size() == 3 && path.front() != &graph.start() && !onlyPath) {
+            return nullptr;
+        }
         cost += unknown;
     }
 
-    return new PinyinLatticeNode(model, word, idx, std::move(path), cost,
-                                 std::move(state), aux);
+    return new PinyinLatticeNode(word, idx, std::move(path), std::move(state),
+                                 cost, aux);
 }
 }

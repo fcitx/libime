@@ -25,16 +25,22 @@
 namespace libime {
 
 class UserLanguageModelPrivate;
+class HistoryBigram;
 
 class LIBIME_EXPORT UserLanguageModel : public LanguageModel {
 public:
-    UserLanguageModel(const char *sysfile, const char *userFile);
+    UserLanguageModel(const char *sysfile);
     virtual ~UserLanguageModel();
+
+    HistoryBigram &history();
+
+    void setHistoryWeight(float w);
 
     const State &beginState() const override;
     const State &nullState() const override;
-    float score(const State &state, const WordNode *word,
+    float score(const State &state, const WordNode &word,
                 State &out) const override;
+    bool isUnknown(WordIndex idx, boost::string_view view) const override;
 
 private:
     std::unique_ptr<UserLanguageModelPrivate> d_ptr;

@@ -165,32 +165,13 @@ TableBasedDictionary::TableBasedDictionary(
     : TableBasedDictionary() {
     std::ifstream in(filename, std::ios::in | std::ios::binary);
     throw_if_io_fail(in);
-
-    switch (format) {
-    case TableFormat::Binary:
-        open(in);
-        break;
-    case TableFormat::Text:
-        build(in);
-        break;
-    default:
-        throw std::invalid_argument("unknown format type");
-    }
+    load(in, format);
 }
 
 TableBasedDictionary::TableBasedDictionary(
     std::istream &in, TableBasedDictionary::TableFormat format)
     : TableBasedDictionary() {
-    switch (format) {
-    case TableFormat::Binary:
-        open(in);
-        break;
-    case TableFormat::Text:
-        build(in);
-        break;
-    default:
-        throw std::invalid_argument("unknown format type");
-    }
+    load(in, format);
 }
 
 TableBasedDictionary &TableBasedDictionary::
@@ -199,7 +180,20 @@ operator=(TableBasedDictionary other) {
     return *this;
 }
 
-void TableBasedDictionary::build(std::istream &in) {
+void TableBasedDictionary::load(std::istream &in, TableFormat format) {
+    switch (format) {
+    case TableFormat::Binary:
+        loadBinary(in);
+        break;
+    case TableFormat::Text:
+        loadText(in);
+        break;
+    default:
+        throw std::invalid_argument("unknown format type");
+    }
+}
+
+void TableBasedDictionary::loadText(std::istream &in) {
     FCITX_D();
     d->reset();
 
@@ -397,7 +391,7 @@ void TableBasedDictionary::dump(std::ostream &out) {
     });
 }
 
-void TableBasedDictionary::open(std::istream &in) {
+void TableBasedDictionary::loadBinary(std::istream &in) {
     FCITX_D();
     throw_if_io_fail(unmarshall(in, d->pinyinKey));
     throw_if_io_fail(unmarshall(in, d->promptKey));

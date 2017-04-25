@@ -18,26 +18,29 @@
  */
 #include "pinyinime.h"
 #include "pinyindecoder.h"
+#include "userlanguagemodel.h"
 
 namespace libime {
 
 class PinyinIMEPrivate {
 public:
     PinyinIMEPrivate(std::unique_ptr<PinyinDictionary> dict,
-                     std::unique_ptr<LanguageModelBase> model)
+                     std::unique_ptr<UserLanguageModel> model)
         : dict_(std::move(dict)), model_(std::move(model)),
           decoder_(std::make_unique<PinyinDecoder>(dict_.get(), model_.get())) {
     }
 
     PinyinFuzzyFlags flags_;
     std::unique_ptr<PinyinDictionary> dict_;
-    std::unique_ptr<LanguageModelBase> model_;
+    std::unique_ptr<UserLanguageModel> model_;
     std::unique_ptr<PinyinDecoder> decoder_;
     size_t nbest_ = 1;
+    float maxDistance_ = std::numeric_limits<float>::max();
+    float minPath_ = -std::numeric_limits<float>::max();
 };
 
 PinyinIME::PinyinIME(std::unique_ptr<PinyinDictionary> dict,
-                     std::unique_ptr<LanguageModelBase> model)
+                     std::unique_ptr<UserLanguageModel> model)
     : d_ptr(std::make_unique<PinyinIMEPrivate>(std::move(dict),
                                                std::move(model))) {}
 
@@ -69,7 +72,12 @@ const PinyinDecoder *PinyinIME::decoder() const {
     return d->decoder_.get();
 }
 
-const LanguageModelBase *PinyinIME::model() const {
+UserLanguageModel *PinyinIME::model() {
+    FCITX_D();
+    return d->model_.get();
+}
+
+const UserLanguageModel *PinyinIME::model() const {
     FCITX_D();
     return d->model_.get();
 }
@@ -82,5 +90,21 @@ size_t PinyinIME::nbest() const {
 void PinyinIME::setNBest(size_t n) {
     FCITX_D();
     d->nbest_ = n;
+}
+
+void PinyinIME::setScoreFilter(float maxDistance, float minPath) {
+    FCITX_D();
+    d->maxDistance_ = maxDistance;
+    d->minPath_ = minPath;
+}
+
+float PinyinIME::maxDistance() const {
+    FCITX_D();
+    return d->maxDistance_;
+}
+
+float PinyinIME::minPath() const {
+    FCITX_D();
+    return d->minPath_;
 }
 }

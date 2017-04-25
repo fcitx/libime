@@ -3,6 +3,7 @@ set(LIBIME_SINGLE_FILE_TEST
     testpinyindata
     testpinyinencoder
     testinputbuffer
+    testhistorybigram
     )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
@@ -14,6 +15,9 @@ endforeach()
 
 add_executable(testmodel testmodel.cpp)
 target_link_libraries(testmodel LibIME::LibIME)
+
+add_executable(testpinyinime testpinyinime.cpp)
+target_link_libraries(testpinyinime LibIME::LibIME)
 
 add_executable(testpinyindictionary testpinyindictionary.cpp)
 target_link_libraries(testpinyindictionary LibIME::LibIME)

@@ -22,6 +22,7 @@
 #include "libime_export.h"
 #include "pinyinencoder.h"
 #include <fcitx-utils/macros.h>
+#include <limits>
 #include <memory>
 
 namespace libime {
@@ -29,23 +30,29 @@ namespace libime {
 class PinyinIMEPrivate;
 class PinyinDecoder;
 class PinyinDictionary;
-class LanguageModelBase;
+class UserLanguageModel;
 
 class LIBIME_EXPORT PinyinIME {
 public:
     PinyinIME(std::unique_ptr<PinyinDictionary> dict,
-              std::unique_ptr<LanguageModelBase> model);
+              std::unique_ptr<UserLanguageModel> model);
     virtual ~PinyinIME();
 
     PinyinFuzzyFlags fuzzyFlags() const;
     void setFuzzyFlags(PinyinFuzzyFlags flags);
     size_t nbest() const;
     void setNBest(size_t n);
+    void setScoreFilter(float maxDistance = std::numeric_limits<float>::max(),
+                        float minPath = -std::numeric_limits<float>::max());
+
+    float maxDistance() const;
+    float minPath() const;
 
     PinyinDictionary *dict();
     const PinyinDictionary *dict() const;
     const PinyinDecoder *decoder() const;
-    const LanguageModelBase *model() const;
+    UserLanguageModel *model();
+    const UserLanguageModel *model() const;
 
 private:
     std::unique_ptr<PinyinIMEPrivate> d_ptr;

@@ -37,11 +37,13 @@ typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi,
 
 class LIBIME_EXPORT PinyinDictionary : public Dictionary {
 public:
-    explicit PinyinDictionary(const char *filename, PinyinDictFormat format);
+    static const size_t SystemDict = 0;
+    static const size_t UserDict = 1;
     explicit PinyinDictionary();
     ~PinyinDictionary();
 
-    void open(std::istream &in, PinyinDictFormat format);
+    void load(size_t idx, std::istream &in, PinyinDictFormat format);
+    void load(size_t idx, const char *filename, PinyinDictFormat format);
     void addEmptyDict();
 
     void matchPrefix(const SegmentGraph &graph,
@@ -62,8 +64,8 @@ public:
                  boost::string_view hanzi, float cost = 0.0f);
 
 private:
-    void build(std::istream &in);
-    void open(std::istream &in);
+    void loadText(size_t idx, std::istream &in);
+    void loadBinary(size_t idx, std::istream &in);
 
     std::unique_ptr<PinyinDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinDictionary);

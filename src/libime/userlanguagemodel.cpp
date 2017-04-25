@@ -18,40 +18,55 @@
  */
 
 #include "userlanguagemodel.h"
+#include "historybigram.h"
+#include "lm/model.hh"
 #include "utils.h"
 
 namespace libime {
 
 class UserLanguageModelPrivate {
 public:
-    size_t stateSize = 0;
     State beginState_;
     State nullState_;
 
-    WordNode *wordFromState(const State &state) {
-        return load_data<WordNode *>(
-            reinterpret_cast<const char *>(state.data() + stateSize));
+    HistoryBigram history_;
+    float weight_ = 0.5;
+
+    const WordNode *wordFromState(const State &state) const {
+        return load_data<const WordNode *>(reinterpret_cast<const char *>(
+            state.data() + sizeof(lm::ngram::State)));
     }
 
-    void setWordToState(State &state, WordNode *node) {
-        return store_data<WordNode *>(
-            reinterpret_cast<char *>(state.data() + stateSize), node);
+    void setWordToState(State &state, const WordNode *node) const {
+        return store_data<const WordNode *>(
+            reinterpret_cast<char *>(state.data() + sizeof(lm::ngram::State)),
+            node);
     }
 };
 
-UserLanguageModel::UserLanguageModel(const char *sysFile, const char *userFile)
+UserLanguageModel::UserLanguageModel(const char *sysFile)
     : LanguageModel(sysFile),
       d_ptr(std::make_unique<UserLanguageModelPrivate>()) {
     FCITX_D();
     // resize will fill remaining with zero
     d->beginState_ = LanguageModel::beginState();
-    d->stateSize = d->beginState_.size();
-    d->beginState_.resize(d->beginState_.size() + sizeof(void *));
+    d->setWordToState(d->beginState_, nullptr);
     d->nullState_ = LanguageModel::nullState();
-    d->nullState_.resize(d->nullState_.size() + sizeof(void *));
+    d->setWordToState(d->nullState_, nullptr);
 }
 
 UserLanguageModel::~UserLanguageModel() {}
+
+HistoryBigram &UserLanguageModel::history() {
+    FCITX_D();
+    return d->history_;
+}
+
+void UserLanguageModel::setHistoryWeight(float w) {
+    FCITX_D();
+    assert(w >= 0.0 && w <= 1.0);
+    d->weight_ = w;
+}
 
 const State &UserLanguageModel::beginState() const {
     FCITX_D();
@@ -63,9 +78,19 @@ const State &UserLanguageModel::nullState() const {
     return d->nullState_;
 }
 
-float UserLanguageModel::score(const State &state, const WordNode *word,
+float UserLanguageModel::score(const State &state, const WordNode &word,
                                State &out) const {
+    FCITX_D();
     float score = LanguageModel::score(state, word, out);
-    return score / 2;
+    auto prev = d->wordFromState(state);
+    float userScore = d->history_.score(prev, &word);
+    d->setWordToState(out, &word);
+    return score * (1 - d->weight_) + userScore * d->weight_;
+}
+
+bool UserLanguageModel::isUnknown(WordIndex idx,
+                                  boost::string_view view) const {
+    FCITX_D();
+    return idx == unknown() && d->history_.isUnknown(view);
 }
 }

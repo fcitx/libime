@@ -52,8 +52,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     using namespace libime;
-    PinyinDictionary dict(argv[optind], dump ? PinyinDictFormat::Binary
-                                             : PinyinDictFormat::Text);
+    PinyinDictionary dict;
+
+    dict.load(PinyinDictionary::SystemDict, argv[optind],
+              dump ? PinyinDictFormat::Binary : PinyinDictFormat::Text);
 
     std::ofstream fout;
     std::ostream *out;
@@ -64,9 +66,9 @@ int main(int argc, char *argv[]) {
         out = &fout;
     }
     if (dump) {
-        dict.dump(0, *out);
+        dict.dump(PinyinDictionary::SystemDict, *out);
     } else {
-        dict.save(0, *out);
+        dict.save(PinyinDictionary::SystemDict, *out);
     }
     return 0;
 }

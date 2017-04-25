@@ -41,6 +41,11 @@ public:
     typedef std::vector<const LatticeNode *> Sentence;
     SentenceResult(Sentence sentence = {}, float score = 0.0f)
         : sentence_(std::move(sentence)), score_(score) {}
+    SentenceResult(const SentenceResult &) = default;
+    SentenceResult(SentenceResult &&) = default;
+
+    SentenceResult &operator=(const SentenceResult &) = default;
+    SentenceResult &operator=(SentenceResult &&) = default;
 
     Sentence sentence() const { return sentence_; }
 
@@ -82,14 +87,11 @@ protected:
 
 class LatticeNode : public WordNode {
 public:
-    LatticeNode(LanguageModelBase *model, boost::string_view word,
-                WordIndex idx, SegmentGraphPath path, float cost = 0,
-                State state = {}, boost::string_view = "")
+    LatticeNode(boost::string_view word, WordIndex idx, SegmentGraphPath path,
+                const State &state, float cost = 0, boost::string_view = "")
         : WordNode(word, idx), path_(std::move(path)), cost_(cost),
-          state_(std::move(state)) {
-        if (state_.empty()) {
-            state_ = model->nullState();
-        }
+          state_(state) {
+        assert(path_.size() >= 2);
     }
     float cost() const { return cost_; }
 

@@ -40,24 +40,28 @@ public:
     Decoder(Dictionary *dict, LanguageModelBase *model);
     virtual ~Decoder();
 
-    Lattice decode(const SegmentGraph &graph, size_t nbest = 1,
+    const LanguageModelBase *model() const;
+
+    Lattice decode(const SegmentGraph &graph, size_t nbest, const State &state,
                    float max = std::numeric_limits<float>::max(),
-                   float min = -std::numeric_limits<float>::max(),
-                   State state = {}) const;
+                   float min = -std::numeric_limits<float>::max()) const;
 
 protected:
-    inline LatticeNode *createLatticeNode(LanguageModelBase *model,
+    inline LatticeNode *createLatticeNode(const SegmentGraph &graph,
+                                          LanguageModelBase *model,
                                           boost::string_view word,
                                           WordIndex idx, SegmentGraphPath path,
-                                          float cost = 0, State state = {},
-                                          boost::string_view aux = "") const {
-        return createLatticeNodeImpl(model, word, idx, std::move(path), cost,
-                                     std::move(state), aux);
+                                          const State &state, float cost = 0,
+                                          boost::string_view aux = "",
+                                          bool onlyPath = false) const {
+        return createLatticeNodeImpl(graph, model, word, idx, std::move(path),
+                                     state, cost, aux, onlyPath);
     }
     virtual LatticeNode *
-    createLatticeNodeImpl(LanguageModelBase *model, boost::string_view word,
-                          WordIndex idx, SegmentGraphPath path, float cost,
-                          State state, boost::string_view aux) const;
+    createLatticeNodeImpl(const SegmentGraph &graph, LanguageModelBase *model,
+                          boost::string_view word, WordIndex idx,
+                          SegmentGraphPath path, const State &state, float cost,
+                          boost::string_view aux, bool onlyPath = false) const;
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;

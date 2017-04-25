@@ -27,10 +27,10 @@ namespace libime {
 
 class PinyinLatticeNode : public LatticeNode {
 public:
-    PinyinLatticeNode(LanguageModelBase *model, boost::string_view word,
-                      WordIndex idx, SegmentGraphPath path, float cost,
-                      State state, boost::string_view aux)
-        : LatticeNode(model, word, idx, path, cost, state, aux),
+    PinyinLatticeNode(boost::string_view word, WordIndex idx,
+                      SegmentGraphPath path, const State &state, float cost,
+                      boost::string_view aux)
+        : LatticeNode(word, idx, path, state, cost, aux),
           encodedPinyin_(aux.to_string()) {}
 
     const std::string &encodedPinyin() const { return encodedPinyin_; }
@@ -45,11 +45,11 @@ public:
         : Decoder(dict, model) {}
 
 protected:
-    LatticeNode *createLatticeNodeImpl(LanguageModelBase *model,
-                                       boost::string_view word, WordIndex idx,
-                                       SegmentGraphPath path, float cost,
-                                       State state,
-                                       boost::string_view aux) const override;
+    LatticeNode *
+    createLatticeNodeImpl(const SegmentGraph &graph, LanguageModelBase *model,
+                          boost::string_view word, WordIndex idx,
+                          SegmentGraphPath path, const State &state, float cost,
+                          boost::string_view aux, bool onlyPath) const override;
 };
 }
 

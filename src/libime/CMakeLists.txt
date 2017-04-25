@@ -30,6 +30,7 @@ set(LIBIME_HDRS
     lattice.h
     pinyindecoder.h
     languagemodel.h
+    historybigram.h
     ${CMAKE_CURRENT_BINARY_DIR}/libime_export.h
     )
 
@@ -47,6 +48,7 @@ set(LIBIME_SRCS
     lattice.cpp
     pinyindecoder.cpp
     userlanguagemodel.cpp
+    historybigram.cpp
     )
 
 add_library(ime SHARED ${LIBIME_SRCS})

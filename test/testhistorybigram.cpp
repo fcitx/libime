@@ -17,27 +17,19 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/languagemodel.h"
-#include "libime/lattice.h"
+#include "libime/historybigram.h"
 #include <iostream>
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        return 1;
-    }
+int main() {
     using namespace libime;
-    LanguageModel model(argv[1]);
-    State state(model.nullState()), out_state = model.nullState();
-    std::string word;
-    float sum = 0.0f;
-    while (std::cin >> word) {
-        float s;
-        WordNode w(word, model.index(word));
-        std::cout << (s = model.score(state, w, out_state)) << '\n';
-        state = out_state;
-        sum += s;
-    }
-    std::cout << sum << std::endl;
+    HistoryBigram history;
+    history.setUnknown(std::log10(1.0f / 150000));
+    history.add({"你", "是", "一个", "好人"});
+    history.add({"我", "是", "一个", "坏人"});
+    history.add({"他"});
+    std::cout << history.score("你", "是") << std::endl;
+    std::cout << history.score("他", "是") << std::endl;
+    std::cout << history.score("他", "不是") << std::endl;
 
     return 0;
 }

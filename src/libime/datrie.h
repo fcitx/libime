@@ -78,6 +78,7 @@ public:
 
     friend void swap<>(DATrie &first, DATrie &second) noexcept;
 
+    void load(std::istream &in);
     void save(const char *filename);
     void save(std::ostream &stream);
 
@@ -87,17 +88,17 @@ public:
     void suffix(std::string &s, size_t len, position_type pos);
 
     // result will be NO_VALUE
-    value_type exactMatchSearch(const char *key, size_t len);
-    value_type exactMatchSearch(const std::string &key) {
+    value_type exactMatchSearch(const char *key, size_t len) const;
+    value_type exactMatchSearch(const std::string &key) const {
         return exactMatchSearch(key.c_str(), key.size());
     }
 
     DATrie<T>::value_type traverse(const std::string &key,
-                                   position_type &from) {
+                                   position_type &from) const {
         return traverse(key.c_str(), key.size(), from);
     }
     DATrie<T>::value_type traverse(const char *key, size_t len,
-                                   position_type &from);
+                                   position_type &from) const;
 
     // set value
     void set(const std::string &key, value_type val) {
@@ -110,9 +111,10 @@ public:
     }
     void update(const char *key, size_t len, updater_type updater);
 
-    void dump(value_type *data, std::size_t size);
-    void dump(std::vector<value_type> &data);
-    void dump(std::vector<std::tuple<value_type, size_t, position_type>> &data);
+    void dump(value_type *data, std::size_t size) const;
+    void dump(std::vector<value_type> &data) const;
+    void dump(
+        std::vector<std::tuple<value_type, size_t, position_type>> &data) const;
 
     // remove key
     bool erase(const std::string &key, position_type from = 0) {
@@ -122,12 +124,12 @@ public:
     bool erase(position_type from = 0);
 
     // call callback on each key
-    void foreach (callback_type func, position_type pos = 0);
+    void foreach (callback_type func, position_type pos = 0) const;
     // search by prefix
     void foreach (const char *prefix, size_t size, callback_type func,
-                  position_type pos = 0);
+                  position_type pos = 0) const;
     void foreach (const std::string &prefix, callback_type func,
-                  position_type pos = 0) {
+                  position_type pos = 0) const {
         return foreach (prefix.c_str(), prefix.size(), func, pos);
     }
     void clear();

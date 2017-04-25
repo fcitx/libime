@@ -48,7 +48,7 @@ void testTime(Decoder &decoder, const char *pinyin, PinyinFuzzyFlags flags,
     };
     ScopedNanoTimer timer(printTime);
     auto graph = PinyinEncoder::parseUserPinyin(pinyin, flags);
-    auto lattice = decoder.decode(graph, nbest);
+    auto lattice = decoder.decode(graph, nbest, decoder.model()->nullState());
     for (size_t i = 0, e = lattice.sentenceSize(); i < e; i++) {
         auto &sentence = lattice.sentence(i);
         for (auto &p : sentence.sentence()) {
@@ -62,7 +62,8 @@ int main(int argc, char *argv[]) {
     if (argc < 3) {
         return 1;
     }
-    PinyinDictionary dict(argv[1], PinyinDictFormat::Binary);
+    PinyinDictionary dict;
+    dict.load(PinyinDictionary::SystemDict, argv[1], PinyinDictFormat::Binary);
     LanguageModel model(argv[2]);
     PinyinDecoder decoder(&dict, &model);
     testTime(decoder, "wojiushixiangceshi", PinyinFuzzyFlag::None);
@@ -86,5 +87,6 @@ int main(int argc, char *argv[]) {
     testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 20);
     testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 1);
     testTime(decoder, "'xianshi", PinyinFuzzyFlag::Inner, 1);
+    // testTime(decoder, "n", PinyinFuzzyFlag::Inner);
     return 0;
 }

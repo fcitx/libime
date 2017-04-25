@@ -42,6 +42,8 @@ public:
     void setFuzzyFlags(PinyinFuzzyFlags flags);
     size_t nbest() const;
     void setNBest(size_t n);
+    size_t beamSize() const;
+    void setBeamSize(size_t n);
     void setScoreFilter(float maxDistance = std::numeric_limits<float>::max(),
                         float minPath = -std::numeric_limits<float>::max());
 

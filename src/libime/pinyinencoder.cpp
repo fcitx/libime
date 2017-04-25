@@ -89,7 +89,9 @@ std::pair<boost::string_view, bool> longestMatch(Iter iter, Iter end,
             for (auto &item :
                  boost::make_iterator_range(iterPair.first, iterPair.second)) {
                 if (flags.test(item.flags())) {
-                    return std::make_pair(range, true);
+                    // do not consider m/n as complete pinyin
+                    return std::make_pair(range,
+                                          (range != "m" && range != "n"));
                 }
             }
         }

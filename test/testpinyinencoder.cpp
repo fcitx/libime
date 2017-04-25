@@ -117,6 +117,10 @@ int main() {
         // xiang o n
         PinyinEncoder::parseUserPinyin("xiangon", PinyinFuzzyFlag::None)
             .dfs(callback);
+
+        // xiang o n
+        PinyinEncoder::parseUserPinyin("yand", PinyinFuzzyFlag::None)
+            .dfs(callback);
     }
     return 0;
 }

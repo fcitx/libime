@@ -148,9 +148,9 @@ void PinyinContext::update() {
         boost::string_view(userInput()).substr(start), d->ime_->fuzzyFlags());
     auto &graph = d->segs_;
 
-    d->lattice_ =
-        d->ime_->decoder()->decode(d->segs_, d->ime_->nbest(), state,
-                                   d->ime_->maxDistance(), d->ime_->minPath());
+    d->lattice_ = d->ime_->decoder()->decode(
+        d->segs_, d->ime_->nbest(), state, d->ime_->maxDistance(),
+        d->ime_->minPath(), d->ime_->beamSize());
 
     d->candidates_.clear();
     std::unordered_set<std::string> dup;
@@ -283,6 +283,9 @@ bool PinyinContext::learnWord() {
     FCITX_D();
     std::stringstream ss;
     std::string pinyin;
+    if (d->selected.size() <= 1) {
+        return false;
+    }
     for (auto &s : d->selected) {
         bool first = true;
         for (auto &item : s.second) {

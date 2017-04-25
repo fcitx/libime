@@ -87,6 +87,8 @@ int main(int argc, char *argv[]) {
     testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 20);
     testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 1);
     testTime(decoder, "'xianshi", PinyinFuzzyFlag::Inner, 1);
+    testTime(decoder, "zhuoyand", PinyinFuzzyFlag::Inner, 1);
+    testTime(decoder, "nd", PinyinFuzzyFlag::Inner, 1);
     // testTime(decoder, "n", PinyinFuzzyFlag::Inner);
     return 0;
 }

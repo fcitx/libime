@@ -35,6 +35,7 @@ public:
     std::unique_ptr<UserLanguageModel> model_;
     std::unique_ptr<PinyinDecoder> decoder_;
     size_t nbest_ = 1;
+    size_t beamSize_ = 20;
     float maxDistance_ = std::numeric_limits<float>::max();
     float minPath_ = -std::numeric_limits<float>::max();
 };
@@ -90,6 +91,16 @@ size_t PinyinIME::nbest() const {
 void PinyinIME::setNBest(size_t n) {
     FCITX_D();
     d->nbest_ = n;
+}
+
+size_t PinyinIME::beamSize() const {
+    FCITX_D();
+    return d->beamSize_;
+}
+
+void PinyinIME::setBeamSize(size_t n) {
+    FCITX_D();
+    d->beamSize_ = n;
 }
 
 void PinyinIME::setScoreFilter(float maxDistance, float minPath) {

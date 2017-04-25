@@ -38,6 +38,7 @@ int main(int argc, char *argv[]) {
     PinyinIME ime(std::make_unique<PinyinDictionary>(),
                   std::make_unique<UserLanguageModel>(argv[2]));
     ime.setNBest(2);
+    ime.setBeamSize(30);
     ime.dict()->load(PinyinDictionary::SystemDict, argv[1],
                      PinyinDictFormat::Binary);
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);

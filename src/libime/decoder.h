@@ -44,7 +44,8 @@ public:
 
     Lattice decode(const SegmentGraph &graph, size_t nbest, const State &state,
                    float max = std::numeric_limits<float>::max(),
-                   float min = -std::numeric_limits<float>::max()) const;
+                   float min = -std::numeric_limits<float>::max(),
+                   size_t beamSize = 20) const;
 
 protected:
     inline LatticeNode *createLatticeNode(const SegmentGraph &graph,

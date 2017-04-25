@@ -23,6 +23,7 @@
 #include "lattice_p.h"
 #include <boost/functional/hash.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/range/adaptor/sliced.hpp>
 #include <limits>
 #include <memory>
 #include <queue>
@@ -108,7 +109,8 @@ const LanguageModelBase *Decoder::model() const {
 }
 
 Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest,
-                        const State &beginState, float max, float min) const {
+                        const State &beginState, float max, float min,
+                        size_t beamSize) const {
     FCITX_D();
     auto lattice = d->buildLattice(beginState, graph);
     // std::cout << "Lattice Size: " << lattice.size() << std::endl;
@@ -137,7 +139,15 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest,
             }
 
             if (!maxNode) {
-                for (auto &parent : lattice[from]) {
+                auto &searchFrom = lattice[from];
+                auto searchSize = beamSize;
+                if (searchSize) {
+                    searchSize = std::min(searchSize, lattice[from].size());
+                } else {
+                    searchSize = lattice[from].size();
+                }
+                for (auto &parent :
+                     searchFrom | boost::adaptors::sliced(0, searchSize)) {
                     auto score = parent.score() +
                                  d->model_->score(parent.state(), node, state);
                     if (score > maxScore) {
@@ -171,6 +181,9 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest,
             }
 #endif
         }
+        latticeNodes.sort([](const LatticeNode &lhs, const LatticeNode &rhs) {
+            return lhs.score() > rhs.score();
+        });
     };
     for (size_t i = 1; i <= graph.size(); i++) {
         for (auto &graphNode : graph.nodes(i)) {

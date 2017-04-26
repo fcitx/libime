@@ -24,6 +24,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptor/sliced.hpp>
+#include <chrono>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -66,13 +67,11 @@ public:
                                           const SegmentGraphNode *>>>
             dupPath;
         dict_->matchPrefix(
-            graph, [this, &ignore, &graph, &lattice, &dupPath, frameSize](
-                       const SegmentGraphPath &path, boost::string_view entry,
-                       float adjust, boost::string_view aux) {
+            graph,
+            [this, &graph, &lattice, &dupPath,
+             frameSize](const SegmentGraphPath &path, boost::string_view entry,
+                        float adjust, boost::string_view aux) {
                 FCITX_Q();
-                if (ignore.count(path.back())) {
-                    return;
-                }
                 WordIndex idx = model_->index(entry);
                 assert(path.front());
                 size_t &dupSize =
@@ -87,7 +86,8 @@ public:
                     lattice[path.back()].push_back(node);
                     dupSize++;
                 }
-            });
+            },
+            ignore);
         assert(lattice.count(&graph.end()));
         lattice[nullptr].push_back(
             q->createLatticeNode(graph, model_, "", model_->endSentence(),
@@ -119,11 +119,16 @@ const LanguageModelBase *Decoder::model() const {
     return d->model_;
 }
 
+// #define DEBUG_TIME
+
 void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                      const State &beginState, float max, float min,
                      size_t beamSize, size_t frameSize) const {
     FCITX_D();
     LatticeMap &lattice = l.d_ptr->lattice_;
+#ifdef DEBUG_TIME
+    auto t0 = std::chrono::high_resolution_clock::now();
+#endif
 
     l.d_ptr->nbests.clear();
     l.d_ptr->lattice_.erase(nullptr);
@@ -132,7 +137,20 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
         ignore.insert(p.first);
     }
 
+    std::unordered_map<const SegmentGraphNode *,
+                       std::tuple<float, LatticeNode *, State>>
+        unknownIdCache;
+
     d->buildLattice(l, ignore, beginState, graph, frameSize);
+#ifdef DEBUG_TIME
+    {
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                         std::chrono::high_resolution_clock::now() -
+                         t0).count() /
+                         1000000
+                  << std::endl;
+    }
+#endif
     // std::cout << "Lattice Size: " << lattice.size() << std::endl;
     // avoid repeated allocation
     State state;
@@ -146,9 +164,6 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             return;
         }
         auto &latticeNodes = lattice[graphNode];
-        std::unordered_map<const SegmentGraphNode *,
-                           std::tuple<float, LatticeNode *, State>>
-            unknownIdCache;
 #if 0
         if (graphNode) {
             std::cout << "Frame idx: " << graphNode->index() << "Lattice nodes size : " << latticeNodes.size() <<
@@ -160,7 +175,8 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             float maxScore = -std::numeric_limits<float>::max();
             LatticeNode *maxNode = nullptr;
             State maxState;
-            if (d->model_->isNodeUnknown(node)) {
+            bool isUnknown = d->model_->isNodeUnknown(node);
+            if (isUnknown) {
                 auto iter = unknownIdCache.find(from);
                 if (iter != unknownIdCache.end()) {
                     std::tie(maxScore, maxNode, maxState) = iter->second;
@@ -186,7 +202,7 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                     }
                 }
 
-                if (d->model_->isNodeUnknown(node)) {
+                if (isUnknown) {
                     unknownIdCache.emplace(
                         std::piecewise_construct, std::forward_as_tuple(from),
                         std::forward_as_tuple(maxScore, maxNode, maxState));
@@ -196,7 +212,7 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             assert(maxNode);
             node.setScore(maxScore + node.cost());
             node.setPrev(maxNode);
-            node.state() = std::move(maxState);
+            node.state() = maxState;
 #if 0
             {
                 auto pos = &node;
@@ -221,6 +237,15 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     }
     updateForNode(nullptr);
 
+#ifdef DEBUG_TIME
+    {
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                         std::chrono::high_resolution_clock::now() -
+                         t0).count() /
+                         1000000
+                  << std::endl;
+    }
+#endif
     // backward search
     if (nbest == 1) {
         assert(lattice[&graph.start()].size() == 1);
@@ -303,6 +328,15 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             l.d_ptr->nbests.emplace_back(std::move(result), node->fn_);
         }
     }
+#ifdef DEBUG_TIME
+    {
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(
+                         std::chrono::high_resolution_clock::now() -
+                         t0).count() /
+                         1000000
+                  << std::endl;
+    }
+#endif
 }
 
 LatticeNode *

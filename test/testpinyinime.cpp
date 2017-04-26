@@ -25,20 +25,39 @@
 #include "libime/pinyinime.h"
 #include "libime/userlanguagemodel.h"
 #include <boost/range/adaptor/transformed.hpp>
+#include <chrono>
 #include <fcitx-utils/stringutils.h>
+#include <functional>
 #include <iostream>
 #include <sstream>
 
 using namespace libime;
+struct ScopedNanoTimer {
+    std::chrono::high_resolution_clock::time_point t0;
+    std::function<void(int)> cb;
+
+    ScopedNanoTimer(std::function<void(int)> callback)
+        : t0(std::chrono::high_resolution_clock::now()), cb(callback) {}
+    ~ScopedNanoTimer(void) {
+        auto t1 = std::chrono::high_resolution_clock::now();
+        auto nanos =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0)
+                .count();
+
+        cb(nanos);
+    }
+};
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         return 1;
     }
+    auto printTime = [](int t) {
+        std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
+    };
     PinyinIME ime(std::make_unique<PinyinDictionary>(),
                   std::make_unique<UserLanguageModel>(argv[2]));
     ime.setNBest(2);
-    ime.setBeamSize(30);
     ime.dict()->load(PinyinDictionary::SystemDict, argv[1],
                      PinyinDictFormat::Binary);
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
@@ -47,6 +66,7 @@ int main(int argc, char *argv[]) {
 
     std::string word;
     while (std::cin >> word) {
+        ScopedNanoTimer t(printTime);
         if (word == "back") {
             c.backspace();
         } else if (word == "reset") {

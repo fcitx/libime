@@ -107,8 +107,9 @@ const SegmentGraphNode *prevIsSeparator(const SegmentGraph &graph,
     return nullptr;
 }
 
-void PinyinDictionary::matchPrefix(const SegmentGraph &graph,
-                                   GraphMatchCallback callback) {
+void PinyinDictionary::matchPrefixImpl(
+    const SegmentGraph &graph, GraphMatchCallback callback,
+    const std::unordered_set<const SegmentGraphNode *> &ignore) {
     FCITX_D();
 
     std::unordered_map<const SegmentGraphNode *, std::list<TrieEdge>> search;
@@ -183,82 +184,86 @@ void PinyinDictionary::matchPrefix(const SegmentGraph &graph,
                 }
             }
 
-            // after we match initial, we first try to match final for
-            // current word.
-            for (const auto &node : newNodes) {
-                char sep = PinyinEncoder::initialFinalSepartor;
-                auto pos = node.pos_;
-                auto result = node.trie_->traverse(&sep, 1, pos);
-                if (PinyinTrie::isNoPath(result)) {
-                    continue;
-                }
+            if (!ignore.count(current)) {
+                // after we match initial, we first try to match final for
+                // current word.
+                for (const auto &node : newNodes) {
+                    char sep = PinyinEncoder::initialFinalSepartor;
+                    auto pos = node.pos_;
+                    auto result = node.trie_->traverse(&sep, 1, pos);
+                    if (PinyinTrie::isNoPath(result)) {
+                        continue;
+                    }
 
-                std::list<PinyinTrie::position_type> finalNodes = {pos};
-                for (auto finals : node.remain_) {
-                    decltype(finalNodes) nextNodes;
+                    std::list<PinyinTrie::position_type> finalNodes = {pos};
+                    for (auto finals : node.remain_) {
+                        decltype(finalNodes) nextNodes;
 
-                    for (auto pos : finalNodes) {
-                        auto updateNext = [&node, &nextNodes](char current,
-                                                              auto pos) {
-                            auto result =
-                                node.trie_->traverse(&current, 1, pos);
+                        for (auto pos : finalNodes) {
+                            auto updateNext = [&node, &nextNodes](char current,
+                                                                  auto pos) {
+                                auto result =
+                                    node.trie_->traverse(&current, 1, pos);
 
-                            if (!PinyinTrie::isNoPath(result)) {
-                                nextNodes.push_back(pos);
-                            }
-                        };
-                        if (finals.size() > 1 ||
-                            finals[0] != PinyinFinal::Invalid) {
-                            for (auto final : finals) {
-                                updateNext(static_cast<char>(final), pos);
-                            }
-                        } else {
-                            for (char test = PinyinEncoder::firstFinal;
-                                 test <= PinyinEncoder::lastFinal; test++) {
-                                updateNext(test, pos);
+                                if (!PinyinTrie::isNoPath(result)) {
+                                    nextNodes.push_back(pos);
+                                }
+                            };
+                            if (finals.size() > 1 ||
+                                finals[0] != PinyinFinal::Invalid) {
+                                for (auto final : finals) {
+                                    updateNext(static_cast<char>(final), pos);
+                                }
+                            } else {
+                                for (char test = PinyinEncoder::firstFinal;
+                                     test <= PinyinEncoder::lastFinal; test++) {
+                                    updateNext(test, pos);
+                                }
                             }
                         }
+                        finalNodes = std::move(nextNodes);
+                        if (finalNodes.empty()) {
+                            break;
+                        }
                     }
-                    finalNodes = std::move(nextNodes);
-                    if (finalNodes.empty()) {
-                        break;
+
+                    for (auto finalNode : finalNodes) {
+                        node.trie_->foreach (
+                            [d, &callback, &node, &graph, &matched,
+                             &prevNode](PinyinTrie::value_type value,
+                                        size_t len, uint64_t pos) {
+                                auto size = node.remain_.size();
+                                std::string s;
+                                node.trie_->suffix(s, len + size * 2 + 1, pos);
+                                auto view = boost::string_view(s);
+                                auto encodedPinyin =
+                                    view.substr(0, size * 2 + 1);
+                                size_t fuzzy = numOfFuzzy(graph, node.path_,
+                                                          encodedPinyin);
+                                callback(node.path_, view.substr(size * 2 + 1),
+                                         value + fuzzy * fuzzyCost,
+                                         encodedPinyin);
+                                if (node.remain_.size() == 1 &&
+                                    node.path_[node.path_.size() - 2] ==
+                                        &prevNode) {
+                                    matched = true;
+                                }
+                                return true;
+                            },
+                            finalNode);
                     }
                 }
 
-                for (auto finalNode : finalNodes) {
-                    node.trie_->foreach (
-                        [d, &callback, &node, &graph, &matched,
-                         &prevNode](PinyinTrie::value_type value, size_t len,
-                                    uint64_t pos) {
-                            auto size = node.remain_.size();
-                            std::string s;
-                            node.trie_->suffix(s, len + size * 2 + 1, pos);
-                            auto view = boost::string_view(s);
-                            auto encodedPinyin = view.substr(0, size * 2 + 1);
-                            size_t fuzzy =
-                                numOfFuzzy(graph, node.path_, encodedPinyin);
-                            callback(node.path_, view.substr(size * 2 + 1),
-                                     value + fuzzy * fuzzyCost, encodedPinyin);
-                            if (node.remain_.size() == 1 &&
-                                node.path_[node.path_.size() - 2] ==
-                                    &prevNode) {
-                                matched = true;
-                            }
-                            return true;
-                        },
-                        finalNode);
+                if (!matched) {
+                    SegmentGraphPath vec;
+                    vec.reserve(3);
+                    if (auto prevPrev = prevIsSeparator(graph, &prevNode)) {
+                        vec.push_back(prevPrev);
+                    }
+                    vec.push_back(&prevNode);
+                    vec.push_back(current);
+                    callback(vec, pinyin, invalidPinyinCost, "");
                 }
-            }
-
-            if (!matched) {
-                SegmentGraphPath vec;
-                vec.reserve(3);
-                if (auto prevPrev = prevIsSeparator(graph, &prevNode)) {
-                    vec.push_back(prevPrev);
-                }
-                vec.push_back(&prevNode);
-                vec.push_back(current);
-                callback(vec, pinyin, invalidPinyinCost, "");
             }
 
             currentNodes.splice(currentNodes.end(), newNodes);

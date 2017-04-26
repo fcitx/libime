@@ -73,6 +73,15 @@ void PinyinContext::setCursor(size_t pos) {
     }
 }
 
+void PinyinContext::clear() {
+    FCITX_D();
+    d->candidates_.clear();
+    d->selected.clear();
+    d->lattice_.clear();
+    d->segs_ = SegmentGraph();
+    InputBuffer::clear();
+}
+
 const std::vector<SentenceResult> &PinyinContext::candidates() const {
     FCITX_D();
     return d->candidates_;

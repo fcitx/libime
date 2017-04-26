@@ -32,8 +32,16 @@ typedef std::function<void(const SegmentGraphPath &, boost::string_view, float,
 
 class LIBIME_EXPORT Dictionary {
 public:
-    virtual void matchPrefix(const SegmentGraph &graph,
-                             GraphMatchCallback callback) = 0;
+    void matchPrefix(
+        const SegmentGraph &graph, GraphMatchCallback callback,
+        const std::unordered_set<const SegmentGraphNode *> &ignore = {}) {
+        matchPrefixImpl(graph, callback, ignore);
+    }
+
+protected:
+    virtual void matchPrefixImpl(
+        const SegmentGraph &graph, GraphMatchCallback callback,
+        const std::unordered_set<const SegmentGraphNode *> &ignore) = 0;
 };
 }
 

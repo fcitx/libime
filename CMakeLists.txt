@@ -41,6 +41,7 @@ include(CMakePackageConfigHelpers)
 include(ECMSetupVersion)
 include(ECMGenerateHeaders)
 include(ECMGeneratePkgConfigFile)
+include(ECMUninstallTarget)
 
 find_package(Boost 1.61 REQUIRED)
 find_package(Fcitx5Utils REQUIRED)

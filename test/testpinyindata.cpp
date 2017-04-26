@@ -156,9 +156,9 @@ int main() {
 
             int16_t encode =
                 ((static_cast<int16_t>(initial) - PinyinEncoder::firstInitial) *
-                 (PinyinEncoder::lastInitial - PinyinEncoder::firstInitial +
-                  1)) +
+                 (PinyinEncoder::lastFinal - PinyinEncoder::firstFinal + 1)) +
                 (static_cast<int16_t>(final) - PinyinEncoder::firstFinal);
+            assert(PinyinEncoder::isValidInitialFinal(initial, final));
             std::cout << encode << "," << std::endl;
         }
     }

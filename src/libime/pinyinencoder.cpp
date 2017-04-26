@@ -89,9 +89,9 @@ std::pair<boost::string_view, bool> longestMatch(Iter iter, Iter end,
             for (auto &item :
                  boost::make_iterator_range(iterPair.first, iterPair.second)) {
                 if (flags.test(item.flags())) {
-                    // do not consider m/n as complete pinyin
-                    return std::make_pair(range,
-                                          (range != "m" && range != "n"));
+                    // do not consider m/n/r as complete pinyin
+                    return std::make_pair(
+                        range, (range != "m" && range != "n" && range != "r"));
                 }
             }
         }
@@ -293,9 +293,10 @@ bool PinyinEncoder::isValidInitialFinal(PinyinInitial initial,
     if (initial != PinyinInitial::Invalid && final != PinyinFinal::Invalid) {
         int16_t encode =
             ((static_cast<int16_t>(initial) - PinyinEncoder::firstInitial) *
-             (PinyinEncoder::lastInitial - PinyinEncoder::firstInitial + 1)) +
+             (PinyinEncoder::lastFinal - PinyinEncoder::firstFinal + 1)) +
             (static_cast<int16_t>(final) - PinyinEncoder::firstFinal);
-        return getEncodedInitialFinal().count(encode) != 0;
+        const auto &a = getEncodedInitialFinal();
+        return encode < static_cast<int>(a.size()) && a[encode];
     }
     return false;
 }
@@ -310,10 +311,16 @@ getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> &syls,
     int finalSize = 1;
 
     // for {s,z,c} we also want them to match {sh,zh,ch}
-    if (syl.final() == PinyinFinal::Zero) {
-        flags |= PinyinFuzzyFlag::C_CH;
-        flags |= PinyinFuzzyFlag::Z_ZH;
-        flags |= PinyinFuzzyFlag::S_SH;
+    if (syl.final() == PinyinFinal::Invalid) {
+        if (syl.initial() == PinyinInitial::C) {
+            flags |= PinyinFuzzyFlag::C_CH;
+        }
+        if (syl.initial() == PinyinInitial::Z) {
+            flags |= PinyinFuzzyFlag::Z_ZH;
+        }
+        if (syl.initial() == PinyinInitial::S) {
+            flags |= PinyinFuzzyFlag::S_SH;
+        }
     }
 
     const static std::vector<
@@ -321,7 +328,7 @@ getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> &syls,
         initialFuzzies = {
             {PinyinInitial::C, PinyinInitial::CH, PinyinFuzzyFlag::C_CH},
             {PinyinInitial::S, PinyinInitial::SH, PinyinFuzzyFlag::S_SH},
-            {PinyinInitial::Z, PinyinInitial::Z, PinyinFuzzyFlag::Z_ZH},
+            {PinyinInitial::Z, PinyinInitial::ZH, PinyinFuzzyFlag::Z_ZH},
             {PinyinInitial::F, PinyinInitial::H, PinyinFuzzyFlag::F_H},
             {PinyinInitial::L, PinyinInitial::N, PinyinFuzzyFlag::L_N},
         };
@@ -415,6 +422,24 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin,
                             std::forward_as_tuple(PinyinInitial::Invalid),
                             std::forward_as_tuple(1, PinyinFinal::Invalid));
     }
+
+#if 0
+    else {
+        // replace invalid
+        for (auto &p : result) {
+            if (p.second.size() == 1 && p.second[0] == PinyinFinal::Invalid) {
+                p.second.clear();
+                for (char test = PinyinEncoder::firstFinal;
+                     test <= PinyinEncoder::lastFinal; test++) {
+                    auto final = static_cast<PinyinFinal>(test);
+                    if (PinyinEncoder::isValidInitialFinal(p.first, final)) {
+                        p.second.push_back(final);
+                    }
+                }
+            }
+        }
+    }
+#endif
 
     return result;
 }

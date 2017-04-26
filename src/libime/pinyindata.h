@@ -27,6 +27,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace libime {
 struct PinyinHash : std::unary_function<boost::string_view, std::size_t> {
@@ -62,7 +63,7 @@ using PinyinMap = boost::multi_index_container<
 
 LIBIME_EXPORT
 const PinyinMap &getPinyinMap();
-LIBIME_EXPORT const std::unordered_set<int16_t> &getEncodedInitialFinal();
+LIBIME_EXPORT const std::vector<bool> &getEncodedInitialFinal();
 
 LIBIME_EXPORT const
     std::unordered_map<std::string, std::pair<std::string, std::string>> &

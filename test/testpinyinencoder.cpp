@@ -151,5 +151,15 @@ int main() {
         }
         graph.dfs(callback);
     }
+    {
+        auto result =
+            PinyinEncoder::stringToSyllables("z", PinyinFuzzyFlag::None);
+        for (auto p : result) {
+            for (auto f : p.second) {
+                std::cout << PinyinEncoder::initialToString(p.first)
+                          << PinyinEncoder::finalToString(f) << std::endl;
+            }
+        }
+    }
     return 0;
 }

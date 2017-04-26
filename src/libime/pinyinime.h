@@ -44,6 +44,8 @@ public:
     void setNBest(size_t n);
     size_t beamSize() const;
     void setBeamSize(size_t n);
+    size_t frameSize() const;
+    void setFrameSize(size_t n);
     void setScoreFilter(float maxDistance = std::numeric_limits<float>::max(),
                         float minPath = -std::numeric_limits<float>::max());
 

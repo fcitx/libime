@@ -40,12 +40,17 @@ public:
     Decoder(Dictionary *dict, LanguageModelBase *model);
     virtual ~Decoder();
 
+    constexpr static const size_t beamSizeDefault = 20;
+    constexpr static const size_t frameSizeDefault = 100;
+
     const LanguageModelBase *model() const;
 
-    Lattice decode(const SegmentGraph &graph, size_t nbest, const State &state,
-                   float max = std::numeric_limits<float>::max(),
-                   float min = -std::numeric_limits<float>::max(),
-                   size_t beamSize = 20) const;
+    void decode(Lattice &lattice, const SegmentGraph &graph, size_t nbest,
+                const State &state,
+                float max = std::numeric_limits<float>::max(),
+                float min = -std::numeric_limits<float>::max(),
+                size_t beamSize = beamSizeDefault,
+                size_t frameSize = frameSizeDefault) const;
 
 protected:
     inline LatticeNode *createLatticeNode(const SegmentGraph &graph,

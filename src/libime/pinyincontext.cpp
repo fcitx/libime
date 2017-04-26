@@ -144,13 +144,15 @@ void PinyinContext::update() {
             }
         }
     }
-    d->segs_ = PinyinEncoder::parseUserPinyin(
+    auto newGraph = PinyinEncoder::parseUserPinyin(
         boost::string_view(userInput()).substr(start), d->ime_->fuzzyFlags());
+    auto recalucate = d->segs_.check(newGraph);
+    d->segs_.merge(newGraph, recalucate, d->lattice_);
     auto &graph = d->segs_;
 
-    d->lattice_ = d->ime_->decoder()->decode(
-        d->segs_, d->ime_->nbest(), state, d->ime_->maxDistance(),
-        d->ime_->minPath(), d->ime_->beamSize());
+    d->ime_->decoder()->decode(d->lattice_, d->segs_, d->ime_->nbest(), state,
+                               d->ime_->maxDistance(), d->ime_->minPath(),
+                               d->ime_->beamSize(), d->ime_->frameSize());
 
     d->candidates_.clear();
     std::unordered_set<std::string> dup;

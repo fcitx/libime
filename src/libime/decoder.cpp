@@ -24,6 +24,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptor/sliced.hpp>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <queue>
@@ -47,40 +48,50 @@ public:
     DecoderPrivate(Decoder *q, Dictionary *dict, LanguageModelBase *model)
         : q_ptr(q), dict_(dict), model_(model) {}
 
-    LatticeMap buildLattice(const State &state,
-                            const SegmentGraph &graph) const {
+    void buildLattice(
+        Lattice &l, const std::unordered_set<const SegmentGraphNode *> &ignore,
+        const State &state, const SegmentGraph &graph, size_t frameSize) const {
         FCITX_Q();
-        LatticeMap lattice;
+        LatticeMap &lattice = l.d_ptr->lattice_;
 
-        lattice[&graph.start()].push_back(
-            q->createLatticeNode(graph, model_, "", model_->beginSentence(),
-                                 {nullptr, &graph.start()}, state, 0));
+        if (!lattice.count(&graph.start())) {
+            lattice[&graph.start()].push_back(
+                q->createLatticeNode(graph, model_, "", model_->beginSentence(),
+                                     {nullptr, &graph.start()}, state, 0));
+        }
 
-        std::unordered_set<
+        std::unordered_map<
             std::pair<const SegmentGraphNode *, const SegmentGraphNode *>,
-            boost::hash<
-                std::pair<const SegmentGraphNode *, const SegmentGraphNode *>>>
+            size_t, boost::hash<std::pair<const SegmentGraphNode *,
+                                          const SegmentGraphNode *>>>
             dupPath;
-        dict_->matchPrefix(graph, [this, &graph, &lattice, &dupPath](
-                                      const SegmentGraphPath &path,
-                                      boost::string_view entry, float adjust,
-                                      boost::string_view aux) {
-            FCITX_Q();
-            WordIndex idx = model_->index(entry);
-            assert(path.front());
-            auto node = q->createLatticeNode(
-                graph, model_, entry, idx, path, model_->nullState(), adjust,
-                aux, dupPath.count(std::make_pair(path.front(), path.back())));
-            if (node) {
-                lattice[path.back()].push_back(node);
-                dupPath.emplace(path.front(), path.back());
-            }
-        });
+        dict_->matchPrefix(
+            graph, [this, &ignore, &graph, &lattice, &dupPath, frameSize](
+                       const SegmentGraphPath &path, boost::string_view entry,
+                       float adjust, boost::string_view aux) {
+                FCITX_Q();
+                if (ignore.count(path.back())) {
+                    return;
+                }
+                WordIndex idx = model_->index(entry);
+                assert(path.front());
+                size_t &dupSize =
+                    dupPath[std::make_pair(path.front(), path.back())];
+                if (dupSize > frameSize && path.front() != &graph.start()) {
+                    return;
+                }
+                auto node = q->createLatticeNode(graph, model_, entry, idx,
+                                                 path, model_->nullState(),
+                                                 adjust, aux, dupSize);
+                if (node) {
+                    lattice[path.back()].push_back(node);
+                    dupSize++;
+                }
+            });
         assert(lattice.count(&graph.end()));
         lattice[nullptr].push_back(
             q->createLatticeNode(graph, model_, "", model_->endSentence(),
                                  {&graph.end(), nullptr}, model_->nullState()));
-        return lattice;
     }
 
     Decoder *q_ptr;
@@ -108,11 +119,20 @@ const LanguageModelBase *Decoder::model() const {
     return d->model_;
 }
 
-Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest,
-                        const State &beginState, float max, float min,
-                        size_t beamSize) const {
+void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
+                     const State &beginState, float max, float min,
+                     size_t beamSize, size_t frameSize) const {
     FCITX_D();
-    auto lattice = d->buildLattice(beginState, graph);
+    LatticeMap &lattice = l.d_ptr->lattice_;
+
+    l.d_ptr->nbests.clear();
+    l.d_ptr->lattice_.erase(nullptr);
+    std::unordered_set<const SegmentGraphNode *> ignore;
+    for (auto &p : lattice) {
+        ignore.insert(p.first);
+    }
+
+    d->buildLattice(l, ignore, beginState, graph, frameSize);
     // std::cout << "Lattice Size: " << lattice.size() << std::endl;
     // avoid repeated allocation
     State state;
@@ -122,10 +142,19 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest,
         if (!lattice.count(graphNode)) {
             return;
         }
+        if (ignore.count(graphNode)) {
+            return;
+        }
         auto &latticeNodes = lattice[graphNode];
         std::unordered_map<const SegmentGraphNode *,
                            std::tuple<float, LatticeNode *, State>>
             unknownIdCache;
+#if 0
+        if (graphNode) {
+            std::cout << "Frame idx: " << graphNode->index() << "Lattice nodes size : " << latticeNodes.size() <<
+            std::endl;
+        }
+#endif
         for (auto &node : latticeNodes) {
             auto from = node.from();
             float maxScore = -std::numeric_limits<float>::max();
@@ -192,13 +221,12 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest,
     }
     updateForNode(nullptr);
 
-    auto p = std::make_unique<LatticePrivate>();
     // backward search
     if (nbest == 1) {
         assert(lattice[&graph.start()].size() == 1);
         assert(lattice[nullptr].size() == 1);
         auto pos = &lattice[nullptr][0];
-        p->nbests.push_back(pos->toSentenceResult());
+        l.d_ptr->nbests.push_back(pos->toSentenceResult());
     } else {
         struct NBestNodeLess {
             bool operator()(const NBestNode *lhs, const NBestNode *rhs) const {
@@ -272,12 +300,9 @@ Lattice Decoder::decode(const SegmentGraph &graph, size_t nbest,
                 }
                 pivot = pivot->next_;
             }
-            p->nbests.emplace_back(std::move(result), node->fn_);
+            l.d_ptr->nbests.emplace_back(std::move(result), node->fn_);
         }
     }
-
-    p->lattice = std::move(lattice);
-    return {p.release()};
 }
 
 LatticeNode *

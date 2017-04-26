@@ -33,7 +33,7 @@ typedef std::unordered_map<const SegmentGraphNode *,
 
 class LatticePrivate {
 public:
-    LatticeMap lattice;
+    LatticeMap lattice_;
 
     std::vector<SentenceResult> nbests;
 };

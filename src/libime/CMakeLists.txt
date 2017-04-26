@@ -49,6 +49,7 @@ set(LIBIME_SRCS
     pinyindecoder.cpp
     userlanguagemodel.cpp
     historybigram.cpp
+    segmentgraph.cpp
     )
 
 add_library(ime SHARED ${LIBIME_SRCS})

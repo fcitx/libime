@@ -17,6 +17,7 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
+#include "libime/lattice.h"
 #include "libime/pinyinencoder.h"
 #include <iostream>
 
@@ -121,6 +122,34 @@ int main() {
         // xiang o n
         PinyinEncoder::parseUserPinyin("yand", PinyinFuzzyFlag::None)
             .dfs(callback);
+    }
+
+    {
+        auto graph = PinyinEncoder::parseUserPinyin("", PinyinFuzzyFlag::None);
+        {
+            auto graph2 =
+                PinyinEncoder::parseUserPinyin("z", PinyinFuzzyFlag::None);
+            auto s = graph.check(graph2);
+            Lattice l;
+            graph.merge(graph2, s, l);
+        }
+        graph.dfs(callback);
+        {
+            auto graph2 =
+                PinyinEncoder::parseUserPinyin("zn", PinyinFuzzyFlag::None);
+            auto s = graph.check(graph2);
+            Lattice l;
+            graph.merge(graph2, s, l);
+        }
+        graph.dfs(callback);
+        {
+            auto graph2 =
+                PinyinEncoder::parseUserPinyin("z", PinyinFuzzyFlag::None);
+            auto s = graph.check(graph2);
+            Lattice l;
+            graph.merge(graph2, s, l);
+        }
+        graph.dfs(callback);
     }
     return 0;
 }

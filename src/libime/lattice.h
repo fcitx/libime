@@ -34,6 +34,7 @@ namespace libime {
 class Decoder;
 class LatticePrivate;
 class SegmentGraphNode;
+class SegmentGraph;
 class LatticeNode;
 
 class SentenceResult {
@@ -160,27 +161,24 @@ inline std::string SentenceResult::toString() const {
 
 class LIBIME_EXPORT Lattice {
     friend class Decoder;
+    friend class DecoderPrivate;
+    friend class SegmentGraph;
 
 public:
     Lattice();
     Lattice(Lattice &&other);
     virtual ~Lattice();
-
-    bool isValid() const { return d_ptr != nullptr; }
-
     Lattice &operator=(Lattice &&other);
 
     size_t sentenceSize() const;
     const SentenceResult &sentence(size_t idx) const;
+    void clear();
 
     typedef boost::any_range<LatticeNode, boost::bidirectional_traversal_tag,
                              const LatticeNode &>
         NodeRange;
 
     NodeRange nodes(const SegmentGraphNode *node) const;
-
-protected:
-    Lattice(LatticePrivate *d);
 
 private:
     std::unique_ptr<LatticePrivate> d_ptr;

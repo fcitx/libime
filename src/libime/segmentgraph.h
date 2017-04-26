@@ -19,6 +19,7 @@
 #ifndef _FCITX_LIBIME_SEGMENTGRAPH_H_
 #define _FCITX_LIBIME_SEGMENTGRAPH_H_
 
+#include "libime_export.h"
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/ptr_container/ptr_list.hpp>
 #include <boost/range/adaptor/type_erased.hpp>
@@ -32,11 +33,12 @@
 
 namespace libime {
 
+class Lattice;
 class SegmentGraph;
 typedef std::function<bool(const SegmentGraph &, const std::vector<size_t> &)>
     SegmentGraphDFSCallback;
 
-class SegmentGraphNode : public fcitx::Element {
+class LIBIME_EXPORT SegmentGraphNode : public fcitx::Element {
 public:
     SegmentGraphNode(size_t start) : fcitx::Element(), start_(start) {}
     SegmentGraphNode(const SegmentGraphNode &node) = delete;
@@ -59,6 +61,8 @@ public:
                                            &SegmentGraphNode::cast));
     }
 
+    size_t nextSize() const { return childs().size(); }
+
     NodeRange prev() const {
         auto &nexts = parents();
         return boost::make_iterator_range(
@@ -67,6 +71,9 @@ public:
             boost::make_transform_iterator(nexts.end(),
                                            &SegmentGraphNode::cast));
     }
+
+    size_t prevSize() const { return parents().size(); }
+
     void addEdge(SegmentGraphNode &ref) {
         assert(ref.start_ > start_);
         addChild(&ref);
@@ -88,7 +95,7 @@ private:
 
 typedef std::vector<const SegmentGraphNode *> SegmentGraphPath;
 
-class SegmentGraph {
+class LIBIME_EXPORT SegmentGraph {
 public:
     SegmentGraph(const std::string &data = {}) : data_(data) {
         resize(data.size() + 1);
@@ -110,6 +117,8 @@ public:
     const SegmentGraphNode &end() const {
         return graph_[data_.size()]->front();
     }
+    size_t check(const SegmentGraph &graph) const;
+    void merge(SegmentGraph &graph, size_t since, Lattice &lattice);
 
     template <typename NodeType = SegmentGraphNode, typename... Args>
     NodeType &newNode(Args &&... args) {
@@ -118,6 +127,7 @@ public:
         return *node;
     }
 
+    auto &nodes(size_t idx) { return *graph_[idx]; }
     const auto &nodes(size_t idx) const { return *graph_[idx]; }
 
     auto &node(size_t idx) { return graph_[idx]->front(); }

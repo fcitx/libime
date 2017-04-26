@@ -22,11 +22,9 @@
 
 namespace libime {
 
-Lattice::Lattice() {}
+Lattice::Lattice() : d_ptr(std::make_unique<LatticePrivate>()) {}
 
 Lattice::Lattice(Lattice &&other) : d_ptr(std::move(other.d_ptr)) {}
-
-Lattice::Lattice(LatticePrivate *d) : d_ptr(d) {}
 
 Lattice::~Lattice() {}
 
@@ -47,10 +45,16 @@ const SentenceResult &Lattice::sentence(size_t idx) const {
 
 Lattice::NodeRange Lattice::nodes(const SegmentGraphNode *node) const {
     FCITX_D();
-    auto iter = d->lattice.find(node);
-    if (iter == d->lattice.end()) {
+    auto iter = d->lattice_.find(node);
+    if (iter == d->lattice_.end()) {
         return {};
     }
     return {iter->second.begin(), iter->second.end()};
+}
+
+void Lattice::clear() {
+    FCITX_D();
+    d->lattice_.clear();
+    d->nbests.clear();
 }
 }

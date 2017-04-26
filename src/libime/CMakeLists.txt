@@ -68,7 +68,7 @@ target_link_libraries(ime PRIVATE kenlm
                           PUBLIC Fcitx5::Utils)
 
 install(TARGETS ime EXPORT LibIMETargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(FILES ${LIBIME_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME")
+install(FILES ${LIBIME_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime")
 
 add_library(LibIME::LibIME ALIAS ime)
 generate_export_header(ime BASE_NAME LIBIME)

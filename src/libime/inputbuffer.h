@@ -61,6 +61,9 @@ public:
     virtual void erase(size_t from, size_t to);
     virtual void setCursor(size_t cursor);
 
+    size_t maxSize() const;
+    void setMaxSize(size_t s);
+
     const std::string &userInput() const;
     void type(uint32_t unicode);
     size_t cursor() const;

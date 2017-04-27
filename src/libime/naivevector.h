@@ -99,6 +99,8 @@ struct naivevector {
         return size_type(-1) / sizeof(value_type);
     }
 
+    void clear() { resize(0); }
+
     void resize(size_type new_size) {
         if (new_size > size()) {
             auto old_size = size();

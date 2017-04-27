@@ -19,6 +19,7 @@
 
 #include "libime/historybigram.h"
 #include <iostream>
+#include <sstream>
 
 int main() {
     using namespace libime;
@@ -27,6 +28,29 @@ int main() {
     history.add({"你", "是", "一个", "好人"});
     history.add({"我", "是", "一个", "坏人"});
     history.add({"他"});
+    std::cout << history.score("你", "是") << std::endl;
+    std::cout << history.score("他", "是") << std::endl;
+    std::cout << history.score("他", "不是") << std::endl;
+    {
+        std::stringstream ss;
+        history.save(ss);
+        history.clear();
+        std::cout << history.score("你", "是") << std::endl;
+        std::cout << history.score("他", "是") << std::endl;
+        std::cout << history.score("他", "不是") << std::endl;
+        history.load(ss);
+    }
+    std::cout << history.score("你", "是") << std::endl;
+    std::cout << history.score("他", "是") << std::endl;
+    std::cout << history.score("他", "不是") << std::endl;
+    {
+        std::stringstream ss;
+        try {
+            history.load(ss);
+        } catch (const std::exception &e) {
+            history.clear();
+        }
+    }
     std::cout << history.score("你", "是") << std::endl;
     std::cout << history.score("他", "是") << std::endl;
     std::cout << history.score("他", "不是") << std::endl;

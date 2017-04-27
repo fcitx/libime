@@ -18,6 +18,8 @@
  */
 #include "historybigram.h"
 #include "datrie.h"
+#include "utils.h"
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <cmath>
 
@@ -32,6 +34,60 @@ public:
         } else {
             assert(!next);
         }
+    }
+
+    void load(std::istream &in) {
+        clear();
+        if (maxSize_) {
+            uint32_t count;
+            throw_if_io_fail(unmarshall(in, count));
+            while (count--) {
+                uint32_t size;
+                throw_if_io_fail(unmarshall(in, size));
+                std::vector<std::string> sentence;
+                while (size--) {
+                    uint32_t length;
+                    throw_if_io_fail(unmarshall(in, length));
+                    std::vector<char> buffer;
+                    buffer.resize(length);
+                    throw_if_io_fail(
+                        in.read(buffer.data(), sizeof(char) * length));
+                    sentence.emplace_back(buffer.begin(), buffer.end());
+                }
+                add(sentence);
+            }
+            next_->load(in);
+        } else {
+            unigram_.load(in);
+            bigram_.load(in);
+        }
+    }
+
+    void save(std::ostream &out) {
+        if (maxSize_) {
+            uint32_t count = recent_.size();
+            throw_if_io_fail(marshall(out, count));
+            for (auto &sentence : recent_ | boost::adaptors::reversed) {
+                uint32_t size = sentence.size();
+                throw_if_io_fail(marshall(out, size));
+                for (auto &s : sentence) {
+                    uint32_t length = s.size();
+                    throw_if_io_fail(marshall(out, length));
+                    throw_if_io_fail(out.write(s.data(), s.size()));
+                }
+            }
+            next_->save(out);
+        } else {
+            unigram_.save(out);
+            bigram_.save(out);
+        }
+    }
+
+    void clear() {
+        recent_.clear();
+        unigram_.clear();
+        bigram_.clear();
+        size_ = 0;
     }
 
     template <typename R>
@@ -98,8 +154,7 @@ private:
         size_--;
     }
 
-    static void decFreq(boost::string_view s, DATrie<int32_t> &trie,
-                        size_t &totalSize) {
+    static void decFreq(boost::string_view s, DATrie<int32_t> &trie) {
         auto v = trie.exactMatchSearch(s.data(), s.size());
         if (v == trie.NO_VALUE) {
             return;
@@ -110,44 +165,36 @@ private:
         } else {
             trie.set(s.data(), s.size(), v);
         }
-        totalSize -= 1;
     }
 
-    static void incFreq(boost::string_view s, DATrie<int32_t> &trie,
-                        size_t &totalSize) {
+    static void incFreq(boost::string_view s, DATrie<int32_t> &trie) {
         trie.update(s.data(), s.size(), [](int32_t v) { return v + 1; });
-        totalSize += 1;
     }
 
-    void decUnigram(boost::string_view s) {
-        decFreq(s, unigram_, unigramTotal_);
-    }
+    void decUnigram(boost::string_view s) { decFreq(s, unigram_); }
 
     void incUnigram(boost::string_view s) {
-        incFreq(s, unigram_, unigramTotal_);
+        incFreq(s, unigram_);
     }
 
     void decBigram(boost::string_view s1, boost::string_view s2) {
         std::stringstream ss;
         ss << s1 << "|" << s2;
-        decFreq(ss.str(), bigram_, bigramTotal_);
+        decFreq(ss.str(), bigram_);
     }
 
     void incBigram(boost::string_view s1, boost::string_view s2) {
         std::stringstream ss;
         ss << s1 << "|" << s2;
-        incFreq(ss.str(), bigram_, bigramTotal_);
+        incFreq(ss.str(), bigram_);
     }
-
-    DATrie<int32_t> unigram_;
-    size_t unigramTotal_ = 0;
-    DATrie<int32_t> bigram_;
-    size_t bigramTotal_ = 0;
 
     size_t maxSize_;
     size_t size_ = 0;
-    HistoryBigramPool *next_;
     std::list<std::vector<std::string>> recent_;
+    DATrie<int32_t> unigram_;
+    DATrie<int32_t> bigram_;
+    HistoryBigramPool *next_;
 };
 
 class HistoryBigramPrivate {
@@ -156,20 +203,22 @@ public:
 
     HistoryBigramPrivate() {}
 
-    HistoryBigramPool finalPool;
-    HistoryBigramPool recentPool{8192, &finalPool};
+    HistoryBigramPool finalPool_;
+    HistoryBigramPool recentPool_{8192, &finalPool_};
     float unknown_ = -5;
 
     float unigramFreq(boost::string_view s) const {
-        return recentPool.unigramFreq(s) + finalPool.unigramFreq(s) * decay;
+        return recentPool_.unigramFreq(s) + finalPool_.unigramFreq(s) * decay;
     }
 
     float bigramFreq(boost::string_view s1, boost::string_view s2) const {
-        return recentPool.bigramFreq(s1, s2) +
-               finalPool.bigramFreq(s1, s2) * decay;
+        return recentPool_.bigramFreq(s1, s2) +
+               finalPool_.bigramFreq(s1, s2) * decay;
     }
 
-    float size() const { return recentPool.size() + finalPool.size() * decay; }
+    float size() const {
+        return recentPool_.size() + finalPool_.size() * decay;
+    }
 };
 
 HistoryBigram::HistoryBigram()
@@ -184,14 +233,14 @@ void HistoryBigram::setUnknown(float unknown) {
 
 void HistoryBigram::add(const libime::SentenceResult &sentence) {
     FCITX_D();
-    d->recentPool.add(sentence.sentence() |
-                      boost::adaptors::transformed(
-                          [](const auto &item) { return item->word(); }));
+    d->recentPool_.add(sentence.sentence() |
+                       boost::adaptors::transformed(
+                           [](const auto &item) { return item->word(); }));
 }
 
 void HistoryBigram::add(const std::vector<std::string> &sentence) {
     FCITX_D();
-    d->recentPool.add(sentence);
+    d->recentPool_.add(sentence);
 }
 
 bool HistoryBigram::isUnknown(boost::string_view v) const {
@@ -220,7 +269,19 @@ float HistoryBigram::score(boost::string_view prev,
     return std::log10(pr);
 }
 
-void HistoryBigram::load(std::istream &) {}
+void HistoryBigram::load(std::istream &in) {
+    FCITX_D();
+    d->recentPool_.load(in);
+}
 
-void HistoryBigram::save(std::ostream &) {}
+void HistoryBigram::save(std::ostream &out) {
+    FCITX_D();
+    d->recentPool_.save(out);
+}
+
+void HistoryBigram::clear() {
+    FCITX_D();
+    d->recentPool_.clear();
+    d->finalPool_.clear();
+}
 }

@@ -51,6 +51,7 @@ public:
     std::string input_;
     size_t cursor_ = 0;
     std::vector<size_t> sz_; // utf8 lengthindex helper
+    size_t maxSize_ = 0;
     mutable std::vector<size_t> acc_ = {0};
     mutable size_t accDirty_ = 0;
 };
@@ -76,6 +77,9 @@ void InputBuffer::type(boost::string_view s) {
     if (d->asciiOnly_ && len != s.size()) {
         throw std::invalid_argument(
             "ascii only buffer only accept ascii only string");
+    }
+    if (d->maxSize_ && (len + size() > d->maxSize_)) {
+        return;
     }
     d->input_.insert(std::next(d->input_.begin(), cursorByChar()), s.begin(),
                      s.end());
@@ -125,6 +129,16 @@ void InputBuffer::setCursor(size_t cursor) {
         throw std::out_of_range("cursor position out of range");
     }
     d->cursor_ = cursor;
+}
+
+void InputBuffer::setMaxSize(size_t s) {
+    FCITX_D();
+    d->maxSize_ = s;
+}
+
+size_t InputBuffer::maxSize() const {
+    FCITX_D();
+    return d->maxSize_;
 }
 
 void InputBuffer::erase(size_t from, size_t to) {

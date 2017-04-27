@@ -76,7 +76,8 @@ public:
                 assert(path.front());
                 size_t &dupSize =
                     dupPath[std::make_pair(path.front(), path.back())];
-                if (dupSize > frameSize && path.front() != &graph.start()) {
+                if ((frameSize && (dupSize > frameSize)) &&
+                    path.front() != &graph.start()) {
                     return;
                 }
                 auto node = q->createLatticeNode(graph, model_, entry, idx,

@@ -31,6 +31,8 @@ set(LIBIME_HDRS
     pinyindecoder.h
     languagemodel.h
     historybigram.h
+    dictionary.h
+    userlanguagemodel.h
     ${CMAKE_CURRENT_BINARY_DIR}/libime_export.h
     )
 

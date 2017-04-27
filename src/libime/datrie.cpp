@@ -276,19 +276,24 @@ public:
 
     void init() {
         m_bheadF = m_bheadC = m_bheadO = 0;
+        m_array.clear();
         m_array.resize(256);
         m_array[0] = node(0, -1);
 
         for (int i = 1; i < 256; ++i)
             m_array[i] =
                 node(i == 1 ? -255 : -(i - 1), i == 255 ? -1 : -(i + 1));
+
+        m_ninfo.clear();
         m_ninfo.resize(256);
 
+        m_block.clear();
         m_block.reserve(1);
         m_block.resize(1);
         m_block[0].ehead = 1;
         // put a dummy entry
         m_tail0.resize(0);
+        m_tail.clear();
         m_tail.resize(sizeof(int32_t));
 
         for (auto i = 0; i <= 256; ++i) {

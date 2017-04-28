@@ -49,6 +49,7 @@ public:
     lm::ngram::QuantArrayTrieModel model_;
     State beginState_;
     State nullState_;
+    float unknown_ = std::log10(1 / 8192.0f);
 };
 
 LanguageModel::LanguageModel(const char *file) : LanguageModelBase() {
@@ -101,10 +102,16 @@ float LanguageModel::score(const State &state, const WordNode &node,
                            State &out) const {
     FCITX_D();
     assert(&state != &out);
-    return d->model_.Score(lmState(state), node.idx(), lmState(out));
+    return d->model_.Score(lmState(state), node.idx(), lmState(out)) +
+           (node.idx() == unknown() ? d->unknown_ : 0.0f);
 }
 
 bool LanguageModel::isUnknown(WordIndex idx, boost::string_view) const {
     return idx == unknown();
+}
+
+void LanguageModel::setUnknown(float unknown) {
+    FCITX_D();
+    d->unknown_ = unknown;
 }
 }

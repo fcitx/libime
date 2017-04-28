@@ -25,6 +25,7 @@
 
 namespace libime {
 
+constexpr const static float decay = 0.8f;
 class HistoryBigramPool {
 public:
     HistoryBigramPool(size_t maxSize = 0, HistoryBigramPool *next = nullptr)
@@ -33,6 +34,13 @@ public:
             assert(next);
         } else {
             assert(!next);
+        }
+    }
+
+    void setUnknown(float unknown) {
+        unknown_ = unknown;
+        if (next_) {
+            next_->setUnknown(unknown);
         }
     }
 
@@ -88,6 +96,9 @@ public:
         unigram_.clear();
         bigram_.clear();
         size_ = 0;
+        if (next_) {
+            next_->clear();
+        }
     }
 
     template <typename R>
@@ -115,19 +126,26 @@ public:
             ss << *iter;
             newSentence.push_back(ss.str());
         }
+        incUnigram("<s>");
+        incUnigram("</s>");
+        incBigram("<s>", sentence.front());
+        incBigram(sentence.back(), "</s>");
         recent_.push_front(std::move(newSentence));
         size_++;
     }
 
-    int unigramFreq(boost::string_view s) const {
+    float unigramFreq(boost::string_view s) const {
         auto v = unigram_.exactMatchSearch(s.data(), s.size());
         if (v == unigram_.NO_VALUE) {
             return 0;
         }
+        if (next_) {
+            return v + decay * next_->unigramFreq(s);
+        }
         return v;
     }
 
-    int bigramFreq(boost::string_view s1, boost::string_view s2) const {
+    float bigramFreq(boost::string_view s1, boost::string_view s2) const {
         std::stringstream ss;
         ss << s1 << "|" << s2;
         auto s = ss.str();
@@ -135,10 +153,41 @@ public:
         if (v == bigram_.NO_VALUE) {
             return 0;
         }
+        if (next_) {
+            return v + decay * next_->bigramFreq(s1, s2);
+        }
         return v;
     }
 
-    size_t size() const { return size_; }
+    bool isUnknown(boost::string_view word) const {
+        return unigramFreq(word) == 0 && (!next_ || next_->isUnknown(word));
+    }
+
+    float score(boost::string_view prev, boost::string_view cur) const {
+        int uf0 = unigramFreq(prev);
+        int bf = bigramFreq(prev, cur);
+        int uf1 = unigramFreq(cur);
+
+        // add 0.5 to avoid div 0
+        float pr = 0.0f;
+        pr += 0.68f * float(bf) / float(uf0 + 0.5f);
+        pr += 0.32f * float(uf1) / float(size() + 0.5f);
+
+        if (pr >= 1.0) {
+            pr = 1.0;
+        }
+        if (pr == 0) {
+            pr = unknown_;
+        }
+        if (next_) {
+            return pr + decay * next_->score(prev, cur) / (1 + decay);
+        }
+        return pr;
+    }
+
+    size_t size() const {
+        return maxSize_ ? (size_ + (maxSize_ - size_) / 10) : size_;
+    }
 
 private:
     template <typename R>
@@ -151,6 +200,8 @@ private:
                 decBigram(*iter, *next);
             }
         }
+        decBigram("<s>", sentence.front());
+        decBigram(sentence.back(), "</s>");
         size_--;
     }
 
@@ -173,9 +224,7 @@ private:
 
     void decUnigram(boost::string_view s) { decFreq(s, unigram_); }
 
-    void incUnigram(boost::string_view s) {
-        incFreq(s, unigram_);
-    }
+    void incUnigram(boost::string_view s) { incFreq(s, unigram_); }
 
     void decBigram(boost::string_view s1, boost::string_view s2) {
         std::stringstream ss;
@@ -190,6 +239,7 @@ private:
     }
 
     size_t maxSize_;
+    float unknown_ = 1 / 8192.0f;
     size_t size_ = 0;
     std::list<std::vector<std::string>> recent_;
     DATrie<int32_t> unigram_;
@@ -199,26 +249,11 @@ private:
 
 class HistoryBigramPrivate {
 public:
-    constexpr const static float decay = 0.05f;
-
     HistoryBigramPrivate() {}
 
     HistoryBigramPool finalPool_;
-    HistoryBigramPool recentPool_{8192, &finalPool_};
-    float unknown_ = -5;
-
-    float unigramFreq(boost::string_view s) const {
-        return recentPool_.unigramFreq(s) + finalPool_.unigramFreq(s) * decay;
-    }
-
-    float bigramFreq(boost::string_view s1, boost::string_view s2) const {
-        return recentPool_.bigramFreq(s1, s2) +
-               finalPool_.bigramFreq(s1, s2) * decay;
-    }
-
-    float size() const {
-        return recentPool_.size() + finalPool_.size() * decay;
-    }
+    HistoryBigramPool middlePool_{512, &finalPool_};
+    HistoryBigramPool recentPool_{128, &middlePool_};
 };
 
 HistoryBigram::HistoryBigram()
@@ -228,7 +263,7 @@ HistoryBigram::~HistoryBigram() {}
 
 void HistoryBigram::setUnknown(float unknown) {
     FCITX_D();
-    d->unknown_ = unknown;
+    d->recentPool_.setUnknown(std::pow(10, unknown));
 }
 
 void HistoryBigram::add(const libime::SentenceResult &sentence) {
@@ -245,27 +280,19 @@ void HistoryBigram::add(const std::vector<std::string> &sentence) {
 
 bool HistoryBigram::isUnknown(boost::string_view v) const {
     FCITX_D();
-    return v.empty() || d->unigramFreq(v) == 0;
+    return d->recentPool_.isUnknown(v);
 }
 
 float HistoryBigram::score(boost::string_view prev,
                            boost::string_view cur) const {
     FCITX_D();
-    int uf0 = d->unigramFreq(prev);
-    int bf = d->bigramFreq(prev, cur);
-    int uf1 = d->unigramFreq(cur);
-
-    // add 0.5 to avoid div 0
-    float pr = 0.0f;
-    pr += 0.68f * float(bf) / float(uf0 + 0.5f);
-    pr += 0.32f * float(uf1) / float(d->size() + 0.5f);
-
-    if (pr >= 1.0) {
-        return 0;
+    if (prev.empty()) {
+        prev = "<s>";
     }
-    if (pr == 0) {
-        return d->unknown_;
+    if (cur.empty()) {
+        cur = "</s>";
     }
+    auto pr = d->recentPool_.score(prev, cur);
     return std::log10(pr);
 }
 
@@ -282,6 +309,5 @@ void HistoryBigram::save(std::ostream &out) {
 void HistoryBigram::clear() {
     FCITX_D();
     d->recentPool_.clear();
-    d->finalPool_.clear();
 }
 }

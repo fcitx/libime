@@ -22,7 +22,7 @@
 
 namespace libime {
 
-static const auto unknown = std::log10(1.0f / 150000);
+static const auto unknown = std::log10(1.0f / 10000);
 
 LatticeNode *PinyinDecoder::createLatticeNodeImpl(
     const SegmentGraph &graph, LanguageModelBase *model,
@@ -35,7 +35,6 @@ LatticeNode *PinyinDecoder::createLatticeNodeImpl(
         if (aux.size() == 3 && path.front() != &graph.start() && !onlyPath) {
             return nullptr;
         }
-        cost += unknown;
     }
 
     return new PinyinLatticeNode(word, idx, std::move(path), std::move(state),

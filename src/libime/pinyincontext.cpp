@@ -60,6 +60,9 @@ void PinyinContext::type(boost::string_view s) {
 }
 
 void PinyinContext::erase(size_t from, size_t to) {
+    if (from == to) {
+        return;
+    }
     cancelTill(from);
     InputBuffer::erase(from, to);
     update();
@@ -136,73 +139,87 @@ void PinyinContext::cancel() {
 
 void PinyinContext::update() {
     FCITX_D();
-    size_t start = 0;
-    auto model = d->ime_->model();
-    State state = model->nullState();
-    if (d->selected.size()) {
-        start = d->selected.back().second.back().offset_;
-
-        for (auto &s : d->selected) {
-            for (auto &item : s.second) {
-                if (item.word_.word().empty()) {
-                    continue;
-                }
-                State temp;
-                model->score(state, item.word_, temp);
-                state = std::move(temp);
-            }
-        }
-    }
-    auto newGraph = PinyinEncoder::parseUserPinyin(
-        boost::string_view(userInput()).substr(start), d->ime_->fuzzyFlags());
-    auto recalucate = d->segs_.check(newGraph);
-    d->segs_.merge(newGraph, recalucate, d->lattice_);
-    auto &graph = d->segs_;
-
-    d->ime_->decoder()->decode(d->lattice_, d->segs_, d->ime_->nbest(), state,
-                               d->ime_->maxDistance(), d->ime_->minPath(),
-                               d->ime_->beamSize(), d->ime_->frameSize());
-
-    d->candidates_.clear();
-    std::unordered_set<std::string> dup;
-    for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
-        d->candidates_.push_back(d->lattice_.sentence(i));
-        dup.insert(d->candidates_.back().toString());
+    if (size() == 0) {
+        clear();
+        return;
     }
 
-    auto bos = &graph.start();
+    if (selected()) {
+        d->candidates_.clear();
+    } else {
+        size_t start = 0;
+        auto model = d->ime_->model();
+        State state = model->nullState();
+        if (d->selected.size()) {
+            start = d->selected.back().second.back().offset_;
 
-    for (size_t i = graph.size(); i > 0; i--) {
-        float min = 0;
-        auto beginSize = d->candidates_.size();
-        for (auto &graphNode : graph.nodes(i)) {
-            for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
-                if (latticeNode.from() == bos) {
-                    if (!d->ime_->model()->isNodeUnknown(latticeNode) &&
-                        latticeNode.score() < min) {
-                        min = latticeNode.score();
-                    }
-                    if (dup.count(latticeNode.word())) {
+            for (auto &s : d->selected) {
+                for (auto &item : s.second) {
+                    if (item.word_.word().empty()) {
                         continue;
                     }
-                    d->candidates_.push_back(latticeNode.toSentenceResult());
-                    dup.insert(latticeNode.word());
+                    State temp;
+                    model->score(state, item.word_, temp);
+                    state = std::move(temp);
                 }
             }
         }
-        for (auto &graphNode : graph.nodes(i)) {
-            for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
-                if (latticeNode.from() != bos && latticeNode.score() > min) {
-                    auto fullWord = latticeNode.fullWord();
-                    if (dup.count(fullWord)) {
-                        continue;
+        auto newGraph = PinyinEncoder::parseUserPinyin(
+            boost::string_view(userInput()).substr(start),
+            d->ime_->fuzzyFlags());
+        auto recalucate = d->segs_.check(newGraph);
+        d->segs_.merge(newGraph, recalucate, d->lattice_);
+        auto &graph = d->segs_;
+
+        d->ime_->decoder()->decode(d->lattice_, d->segs_, d->ime_->nbest(),
+                                   state, d->ime_->maxDistance(),
+                                   d->ime_->minPath(), d->ime_->beamSize(),
+                                   d->ime_->frameSize());
+
+        d->candidates_.clear();
+        std::unordered_set<std::string> dup;
+        for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
+            d->candidates_.push_back(d->lattice_.sentence(i));
+            dup.insert(d->candidates_.back().toString());
+        }
+
+        auto bos = &graph.start();
+
+        for (size_t i = graph.size(); i > 0; i--) {
+            float min = 0;
+            auto beginSize = d->candidates_.size();
+            for (auto &graphNode : graph.nodes(i)) {
+                for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
+                    if (latticeNode.from() == bos) {
+                        if (!d->ime_->model()->isNodeUnknown(latticeNode) &&
+                            latticeNode.score() < min) {
+                            min = latticeNode.score();
+                        }
+                        if (dup.count(latticeNode.word())) {
+                            continue;
+                        }
+                        d->candidates_.push_back(
+                            latticeNode.toSentenceResult());
+                        dup.insert(latticeNode.word());
                     }
-                    d->candidates_.push_back(latticeNode.toSentenceResult());
                 }
             }
+            for (auto &graphNode : graph.nodes(i)) {
+                for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
+                    if (latticeNode.from() != bos &&
+                        latticeNode.score() > min) {
+                        auto fullWord = latticeNode.fullWord();
+                        if (dup.count(fullWord)) {
+                            continue;
+                        }
+                        d->candidates_.push_back(
+                            latticeNode.toSentenceResult());
+                    }
+                }
+            }
+            std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
+                      std::greater<SentenceResult>());
         }
-        std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
-                  std::greater<SentenceResult>());
     }
 
     if (cursor() < selectedLength()) {
@@ -244,10 +261,22 @@ size_t PinyinContext::selectedLength() const {
     return 0;
 }
 
-std::string PinyinContext::preedit() const {
+std::string PinyinContext::preedit() const { return preeditWithCursor().first; }
+
+std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
     FCITX_D();
     std::stringstream ss;
-    ss << selectedSentence();
+    auto sentence = selectedSentence();
+    auto len = selectedLength();
+    ss << sentence;
+    auto c = cursor();
+    size_t actualCursor = sentence.size();
+    // should not happen
+    if (c < len) {
+        c = len;
+    }
+
+    auto resultSize = sentence.size();
 
     if (d->candidates_.size()) {
         bool first = true;
@@ -257,15 +286,24 @@ std::string PinyinContext::preedit() const {
                  iter < end; iter++) {
                 if (!first) {
                     ss << " ";
+                    resultSize += 1;
                 } else {
                     first = false;
                 }
-                ss << d->segs_.segment((*iter)->index(),
-                                       (*std::next(iter))->index());
+                auto from = (*iter)->index(), to = (*std::next(iter))->index();
+                if (c >= from + len && c < to + len) {
+                    actualCursor = resultSize + c - from - len;
+                }
+                auto pinyin = d->segs_.segment(from, to);
+                ss << pinyin;
+                resultSize += pinyin.size();
             }
         }
     }
-    return ss.str();
+    if (c == size()) {
+        actualCursor = resultSize;
+    }
+    return {ss.str(), actualCursor};
 }
 
 void PinyinContext::learn() {

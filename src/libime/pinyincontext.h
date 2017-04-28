@@ -57,6 +57,7 @@ public:
     }
 
     std::string preedit() const;
+    std::pair<std::string, size_t> preeditWithCursor() const;
     std::string selectedSentence() const;
     size_t selectedLength() const;
 

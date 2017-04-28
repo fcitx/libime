@@ -12,6 +12,7 @@ endforeach()
 add_library(kenlm STATIC ${KENLM_SRCS})
 target_include_directories(kenlm PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/kenlm>")
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=3 PRIVATE -DNDEBUG)
+target_link_libraries(kenlm PUBLIC Boost::boost)
 set_target_properties(kenlm PROPERTIES
                       COMPILE_FLAGS "-fPIC")
 
@@ -67,7 +68,7 @@ target_include_directories(ime PUBLIC
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_INCLUDEDIR}/LibIME>")
 
 target_link_libraries(ime PRIVATE kenlm
-                          PUBLIC Fcitx5::Utils)
+                          PUBLIC Fcitx5::Utils Boost::boost)
 
 install(TARGETS ime EXPORT LibIMETargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(FILES ${LIBIME_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime")

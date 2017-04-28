@@ -45,6 +45,7 @@ include(ECMUninstallTarget)
 
 find_package(Boost 1.61 REQUIRED)
 find_package(Fcitx5Utils REQUIRED)
+set(LIBIME_INSTALL_PKGDATADIR "${CMAKE_INSTALL_FULL_DATADIR}/libime")
 
 if(ENABLE_TEST)
     enable_testing()

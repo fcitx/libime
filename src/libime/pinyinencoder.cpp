@@ -184,14 +184,14 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
                     longestMatch(iter + str.size() - 1, end, flags);
                 auto matchSize = str.size() + nextMatch.first.size();
                 auto matchSizeAlt = str.size() - 1 + nextMatchAlt.first.size();
-                if (std::make_pair(nextMatch.second, matchSize) >=
-                    std::make_pair(nextMatchAlt.second, matchSizeAlt)) {
+                if (std::make_pair(matchSize, nextMatch.second) >=
+                    std::make_pair(matchSizeAlt, nextMatchAlt.second)) {
                     addNext(result, top, top + str.size());
                     q.push(top + str.size());
                     nextSize[nNextSize++] = str.size();
                 }
-                if (std::make_pair(nextMatch.second, matchSize) <=
-                    std::make_pair(nextMatchAlt.second, matchSizeAlt)) {
+                if (std::make_pair(matchSize, nextMatch.second) <=
+                    std::make_pair(matchSizeAlt, nextMatchAlt.second)) {
                     addNext(result, top, top + str.size() - 1);
                     q.push(top + str.size() - 1);
                     nextSize[nNextSize++] = str.size() - 1;

@@ -55,7 +55,7 @@ void testTime(Decoder &decoder, const char *pinyin, PinyinFuzzyFlags flags,
         for (auto &p : sentence.sentence()) {
             std::cout << p->word() << " ";
         }
-        std::cout << std::endl;
+        std::cout << sentence.score() << std::endl;
     }
 }
 
@@ -91,6 +91,8 @@ int main(int argc, char *argv[]) {
     testTime(decoder, "zhuoyand", PinyinFuzzyFlag::Inner, 1);
     testTime(decoder, "nd", PinyinFuzzyFlag::Inner, 1);
     testTime(decoder, "zhzxjbchlshshtzhdshq", PinyinFuzzyFlag::Inner, 1);
+    testTime(decoder, "tashini", PinyinFuzzyFlag::Inner, 2);
+    testTime(decoder, "'''", PinyinFuzzyFlag::Inner, 2);
     // testTime(decoder, "n", PinyinFuzzyFlag::Inner);
     return 0;
 }

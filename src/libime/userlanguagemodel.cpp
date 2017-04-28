@@ -30,7 +30,7 @@ public:
     State nullState_;
 
     HistoryBigram history_;
-    float weight_ = 0.5;
+    float weight_ = 0.7;
 
     const WordNode *wordFromState(const State &state) const {
         return load_data<const WordNode *>(reinterpret_cast<const char *>(

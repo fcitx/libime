@@ -24,7 +24,7 @@
 int main() {
     using namespace libime;
     HistoryBigram history;
-    history.setUnknown(std::log10(1.0f / 150000));
+    history.setUnknown(std::log10(1.0f / 8192));
     history.add({"你", "是", "一个", "好人"});
     history.add({"我", "是", "一个", "坏人"});
     history.add({"他"});
@@ -55,5 +55,30 @@ int main() {
     std::cout << history.score("他", "是") << std::endl;
     std::cout << history.score("他", "不是") << std::endl;
 
+    std::cout << "--------------------" << std::endl;
+    history.clear();
+    history.add({"泥浩"});
+    std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
+              << std::endl;
+    history.add({"你好"});
+    std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
+              << std::endl;
+    for (int i = 0; i < 40; i++) {
+        history.add({"泥浩"});
+        std::cout << history.score("", "泥浩") << " "
+                  << history.score("", "你好") << std::endl;
+    }
+    history.add({"你好"});
+    std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
+              << std::endl;
+    history.add({"你好"});
+    std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
+              << std::endl;
+    history.add({"泥浩"});
+    std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
+              << std::endl;
+    history.add({"泥浩"});
+    std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
+              << std::endl;
     return 0;
 }

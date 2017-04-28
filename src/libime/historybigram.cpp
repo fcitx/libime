@@ -239,7 +239,7 @@ private:
     }
 
     size_t maxSize_;
-    float unknown_ = 1 / 8192.0f;
+    float unknown_ = 1 / 20000.0f;
     size_t size_ = 0;
     std::list<std::vector<std::string>> recent_;
     DATrie<int32_t> unigram_;

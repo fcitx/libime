@@ -49,7 +49,7 @@ public:
     lm::ngram::QuantArrayTrieModel model_;
     State beginState_;
     State nullState_;
-    float unknown_ = std::log10(1 / 8192.0f);
+    float unknown_ = std::log10(1 / 20000.0f);
 };
 
 LanguageModel::LanguageModel(const char *file) : LanguageModelBase() {

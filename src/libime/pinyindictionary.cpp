@@ -385,8 +385,7 @@ void PinyinDictionary::load(size_t idx, std::istream &in,
 
 void PinyinDictionary::loadText(size_t idx, std::istream &in) {
     FCITX_D();
-    auto &trie = d->tries_[idx];
-    trie.clear();
+    DATrie<float> trie;
 
     std::string buf;
     auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
@@ -407,11 +406,14 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
             trie.set(result.data(), result.size(), prob);
         }
     }
+    d->tries_[idx] = std::move(trie);
 }
 
 void PinyinDictionary::loadBinary(size_t idx, std::istream &in) {
     FCITX_D();
-    d->tries_[idx].load(in);
+    DATrie<float> trie;
+    trie.load(in);
+    d->tries_[idx] = std::move(trie);
 }
 
 void PinyinDictionary::save(size_t idx, const char *filename) {

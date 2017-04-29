@@ -62,6 +62,19 @@ HistoryBigram &UserLanguageModel::history() {
     return d->history_;
 }
 
+void UserLanguageModel::load(std::istream &in) {
+    FCITX_D();
+    HistoryBigram history;
+    history.setUnknown(d->history_.unknown());
+    history.load(in);
+    using std::swap;
+    swap(d->history_, history);
+}
+void UserLanguageModel::save(std::ostream &out) {
+    FCITX_D();
+    return d->history_.save(out);
+}
+
 void UserLanguageModel::setHistoryWeight(float w) {
     FCITX_D();
     assert(w >= 0.0 && w <= 1.0);

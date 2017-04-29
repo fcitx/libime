@@ -251,19 +251,27 @@ class HistoryBigramPrivate {
 public:
     HistoryBigramPrivate() {}
 
+    float unknown_ = 0.0f;
     HistoryBigramPool finalPool_;
     HistoryBigramPool middlePool_{512, &finalPool_};
     HistoryBigramPool recentPool_{128, &middlePool_};
 };
 
 HistoryBigram::HistoryBigram()
-    : d_ptr(std::make_unique<HistoryBigramPrivate>()) {}
+    : d_ptr(std::make_unique<HistoryBigramPrivate>()) {
+    setUnknown(std::log10(1 / 20000.0f));
+}
 
 HistoryBigram::~HistoryBigram() {}
 
 void HistoryBigram::setUnknown(float unknown) {
     FCITX_D();
     d->recentPool_.setUnknown(std::pow(10, unknown));
+}
+
+float HistoryBigram::unknown() const {
+    FCITX_D();
+    return d->unknown_;
 }
 
 void HistoryBigram::add(const libime::SentenceResult &sentence) {

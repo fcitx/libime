@@ -33,6 +33,8 @@ public:
     virtual ~UserLanguageModel();
 
     HistoryBigram &history();
+    void load(std::istream &in);
+    void save(std::ostream &out);
 
     void setHistoryWeight(float w);
 

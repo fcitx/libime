@@ -30,6 +30,9 @@
 namespace libime {
 
 class HistoryBigramPrivate;
+class HistoryBigram;
+
+void swap(HistoryBigram &first, HistoryBigram &second) noexcept;
 
 class LIBIME_EXPORT HistoryBigram {
 public:
@@ -41,6 +44,7 @@ public:
     void clear();
 
     void setUnknown(float unknown);
+    float unknown() const;
 
     bool isUnknown(boost::string_view v) const;
     float score(const WordNode *prev, const WordNode *cur) const {
@@ -50,10 +54,17 @@ public:
     void add(const SentenceResult &sentence);
     void add(const std::vector<std::string> &sentence);
 
+    friend void swap(HistoryBigram &first, HistoryBigram &second) noexcept;
+
 private:
     std::unique_ptr<HistoryBigramPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(HistoryBigram);
 };
+
+inline void swap(HistoryBigram &first, HistoryBigram &second) noexcept {
+    using std::swap;
+    swap(first.d_ptr, second.d_ptr);
+}
 }
 
 #endif // _FCITX_LIBIME_HISTORYBIGRAM_H_

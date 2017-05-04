@@ -51,7 +51,7 @@ public:
 
     void buildLattice(
         Lattice &l, const std::unordered_set<const SegmentGraphNode *> &ignore,
-        const State &state, const SegmentGraph &graph, size_t frameSize) const {
+        const State &state, const SegmentGraph &graph, size_t frameSize, void *helper) const {
         FCITX_Q();
         LatticeMap &lattice = l.d_ptr->lattice_;
 
@@ -88,8 +88,13 @@ public:
                     dupSize++;
                 }
             },
-            ignore);
+            ignore, helper);
         assert(lattice.count(&graph.end()));
+#if 0
+        for (auto &p : dupPath) {
+            std::cout << "Lattice size From :" << p.first.first->index() << " to " << p.first.second->index() << " " << p.second << " " << frameSize << std::endl;
+        }
+#endif
         lattice[nullptr].push_back(
             q->createLatticeNode(graph, model_, "", model_->endSentence(),
                                  {&graph.end(), nullptr}, model_->nullState()));
@@ -124,7 +129,7 @@ const LanguageModelBase *Decoder::model() const {
 
 void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                      const State &beginState, float max, float min,
-                     size_t beamSize, size_t frameSize) const {
+                     size_t beamSize, size_t frameSize, void *helper) const {
     FCITX_D();
     LatticeMap &lattice = l.d_ptr->lattice_;
 #ifdef DEBUG_TIME
@@ -142,13 +147,13 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                        std::tuple<float, LatticeNode *, State>>
         unknownIdCache;
 
-    d->buildLattice(l, ignore, beginState, graph, frameSize);
+    d->buildLattice(l, ignore, beginState, graph, frameSize, helper);
 #ifdef DEBUG_TIME
     {
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::cout << "Build Lattice Time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
                          std::chrono::high_resolution_clock::now() -
                          t0).count() /
-                         1000000
+                         1000000.0
                   << std::endl;
     }
 #endif
@@ -156,8 +161,12 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     // avoid repeated allocation
     State state;
 
+    auto start = &graph.start();
     // forward search
     auto updateForNode = [&](const SegmentGraphNode *graphNode) {
+        if (graphNode == start) {
+            return;
+        }
         if (!lattice.count(graphNode)) {
             return;
         }
@@ -231,19 +240,16 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             return lhs.score() > rhs.score();
         });
     };
-    for (size_t i = 1; i <= graph.size(); i++) {
-        for (auto &graphNode : graph.nodes(i)) {
-            updateForNode(&graphNode);
-        }
-    }
+
+    graph.bfs(start, updateForNode);
     updateForNode(nullptr);
 
 #ifdef DEBUG_TIME
     {
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::cout << "Forward search Time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
                          std::chrono::high_resolution_clock::now() -
                          t0).count() /
-                         1000000
+                         1000000.0
                   << std::endl;
     }
 #endif
@@ -331,10 +337,10 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     }
 #ifdef DEBUG_TIME
     {
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::cout << "backward search Time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
                          std::chrono::high_resolution_clock::now() -
                          t0).count() /
-                         1000000
+                         1000000.0
                   << std::endl;
     }
 #endif

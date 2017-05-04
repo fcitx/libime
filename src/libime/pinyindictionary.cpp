@@ -37,39 +37,6 @@ using PinyinTrie = DATrie<float>;
 static const float fuzzyCost = std::log10(0.5f);
 static const float invalidPinyinCost = -100.0f;
 
-class PinyinDictionaryPrivate {
-public:
-    boost::ptr_vector<PinyinTrie> tries_;
-    PinyinFuzzyFlags flags_;
-};
-
-size_t numOfFuzzy(const SegmentGraph &seg, const SegmentGraphPath &path,
-                  boost::string_view encodedPinyin) {
-    size_t count = 0;
-    size_t j = 0;
-    auto finalOffset = encodedPinyin.size() / 2 + 1;
-    for (size_t i = 0; i < path.size() - 1; i++) {
-        auto pinyin = seg.segment(path[i]->index(), path[i + 1]->index());
-        if (boost::starts_with(pinyin, "\'")) {
-            continue;
-        }
-        auto initial = encodedPinyin[j];
-        auto final = encodedPinyin[j + finalOffset];
-        j++;
-        auto &initialString =
-            PinyinEncoder::initialToString(static_cast<PinyinInitial>(initial));
-        auto &finalString =
-            PinyinEncoder::finalToString(static_cast<PinyinFinal>(final));
-        if (initialString.size() + finalString.size() != pinyin.size() ||
-            !boost::starts_with(pinyin, initialString) ||
-            !boost::ends_with(pinyin, finalString)) {
-            assert(initialString + finalString != pinyin);
-            count++;
-        }
-    }
-    return count;
-}
-
 struct TrieEdge {
 
     TrieEdge(PinyinTrie *trie, uint64_t pos, SegmentGraphPath path,
@@ -82,6 +49,73 @@ struct TrieEdge {
     SegmentGraphPath path_;
     std::vector<std::vector<PinyinFinal>> remain_;
 };
+
+typedef std::unordered_map<const SegmentGraphNode *, std::list<TrieEdge>> MatchStateMap;
+
+class PinyinMatchStatePrivate {
+public:
+    MatchStateMap search_;
+
+};
+
+PinyinMatchState::PinyinMatchState() : d_ptr(std::make_unique<PinyinMatchStatePrivate>()) {}
+PinyinMatchState::~PinyinMatchState() {}
+
+void PinyinMatchState::clear() {
+    FCITX_D();
+    d->search_.clear();
+}
+
+void PinyinMatchState::discardNode(const std::unordered_set<const SegmentGraphNode *> &nodes) {
+    FCITX_D();
+    for (auto node : nodes) {
+        d->search_.erase(node);
+    }
+    for (auto &p : d->search_) {
+        auto &l = p.second;
+        auto iter = l.begin();
+        while (iter != l.end()) {
+            if (nodes.count(iter->path_.front())) {
+                iter = l.erase(iter);
+            } else {
+                iter++;
+            }
+        }
+    }
+}
+
+class PinyinDictionaryPrivate {
+public:
+    boost::ptr_vector<PinyinTrie> tries_;
+    PinyinFuzzyFlags flags_;
+};
+
+inline size_t numOfFuzzy(const SegmentGraph &seg, const SegmentGraphPath &path,
+                  boost::string_view encodedPinyin) {
+    size_t count = 0;
+    size_t j = 0;
+    auto finalOffset = encodedPinyin.size() / 2 + 1;
+    for (size_t i = 0, e = path.size() - 1; i < e; i++) {
+        auto pinyin = seg.segment(path[i]->index(), path[i + 1]->index());
+        if (pinyin.size() && pinyin[0] == '\'') {
+            continue;
+        }
+        auto initial = encodedPinyin[j];
+        auto final = encodedPinyin[j + finalOffset];
+        j++;
+        auto &initialString =
+            PinyinEncoder::initialToString(static_cast<PinyinInitial>(initial));
+        auto &finalString =
+            PinyinEncoder::finalToString(static_cast<PinyinFinal>(final));
+        if (initialString.size() + finalString.size() != pinyin.size() ||
+            pinyin.substr(0, initialString.size()) != initialString ||
+            pinyin.substr(initialString.size()) != finalString) {
+            // assert(initialString + finalString != pinyin);
+            count++;
+        }
+    }
+    return count;
+}
 
 struct SegmentGraphNodeGreater {
     bool operator()(const SegmentGraphNode *lhs,
@@ -109,10 +143,19 @@ const SegmentGraphNode *prevIsSeparator(const SegmentGraph &graph,
 
 void PinyinDictionary::matchPrefixImpl(
     const SegmentGraph &graph, GraphMatchCallback callback,
-    const std::unordered_set<const SegmentGraphNode *> &ignore) {
+    const std::unordered_set<const SegmentGraphNode *> &ignore, void *helper) {
     FCITX_D();
 
-    std::unordered_map<const SegmentGraphNode *, std::list<TrieEdge>> search;
+    MatchStateMap _search;
+    MatchStateMap *searchP;
+    if (helper) {
+        searchP = &static_cast<PinyinMatchState*>(helper)->d_func()->search_;
+    } else {
+        searchP = &_search;
+    }
+
+    MatchStateMap &search = *searchP;
+
     std::priority_queue<const SegmentGraphNode *,
                         std::vector<const SegmentGraphNode *>,
                         SegmentGraphNodeGreater>
@@ -166,8 +209,8 @@ void PinyinDictionary::matchPrefixImpl(
             bool matched = false;
             const auto syls =
                 PinyinEncoder::stringToSyllables(pinyin, d->flags_);
-            auto &nodes = search[&prevNode];
-            std::remove_reference_t<decltype(nodes)> newNodes;
+            const auto &nodes = search[&prevNode];
+            std::remove_cv_t<std::remove_reference_t<decltype(nodes)>> newNodes;
             for (auto &node : nodes) {
                 for (auto &syl : syls) {
                     char initial = static_cast<char>(syl.first);

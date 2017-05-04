@@ -257,9 +257,18 @@ std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
 }
 
 const std::string &PinyinEncoder::initialToString(PinyinInitial initial) {
-    auto iter = initialMap.left.find(initial);
-    if (iter != initialMap.left.end()) {
-        return iter->second;
+    const static std::vector<std::string> s = [] () {
+        std::vector<std::string> s;
+        s.resize(lastInitial - firstInitial + 1);
+        for (char c = firstInitial; c <= lastInitial; c++) {
+            auto iter = initialMap.left.find(static_cast<PinyinInitial>(c));
+            s[c - firstInitial] = iter->second;
+        }
+        return s;
+    }();
+    auto c = static_cast<char>(initial);
+    if (c >= firstInitial && c <= lastInitial) {
+        return s[c -firstInitial];
     }
     return emptyString;
 }
@@ -273,9 +282,18 @@ PinyinInitial PinyinEncoder::stringToInitial(const std::string &str) {
 }
 
 const std::string &PinyinEncoder::finalToString(PinyinFinal final) {
-    auto iter = finalMap.left.find(final);
-    if (iter != finalMap.left.end()) {
-        return iter->second;
+    const static std::vector<std::string> s = [] () {
+        std::vector<std::string> s;
+        s.resize(lastFinal - firstFinal + 1);
+        for (char c = firstFinal; c <= lastFinal; c++) {
+            auto iter = finalMap.left.find(static_cast<PinyinFinal>(c));
+            s[c - firstFinal] = iter->second;
+        }
+        return s;
+    }();
+    auto c = static_cast<char>(final);
+    if (c >= firstFinal && c <= lastFinal) {
+        return s[c -firstFinal];
     }
     return emptyString;
 }

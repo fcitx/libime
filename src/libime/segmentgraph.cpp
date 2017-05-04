@@ -20,7 +20,9 @@
 #include "segmentgraph.h"
 #include "lattice_p.h"
 #include <boost/range/combine.hpp>
+#include <boost/algorithm/string.hpp>
 #include <queue>
+#include <iostream>
 
 namespace libime {
 
@@ -32,6 +34,35 @@ struct SegmentGraphNodePairGreater {
         return lhs.first->index() > rhs.first->index();
     }
 };
+struct SegmentGraphNodeGreater {
+    bool operator()(const SegmentGraphNode *lhs,
+                    const SegmentGraphNode *rhs) const {
+        return lhs->index() > rhs->index();
+    }
+};
+
+void SegmentGraph::bfs(const SegmentGraphNode *from, SegmentGraphBFSCallback callback) const {
+    std::priority_queue<const SegmentGraphNode *,
+                        std::vector<const SegmentGraphNode *>,
+                        SegmentGraphNodeGreater>
+        q;
+    q.push(from);
+    std::unordered_set<const SegmentGraphNode *> visited;
+    while (!q.empty()) {
+        auto node = q.top();
+        q.pop();
+        if (!visited.count(node)) {
+            visited.insert(node);
+        } else {
+            continue;
+        }
+
+        callback(node);
+        for (auto &next : node->next()) {
+            q.push(&next);
+        }
+    }
+}
 
 size_t SegmentGraph::check(const SegmentGraph &graph) const {
     for (size_t i = 0; i <= graph.size(); i++) {
@@ -40,6 +71,7 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
     for (size_t i = 0; i <= size(); i++) {
         assert(nodes(i).size() <= 1);
     }
+
     std::priority_queue<
         std::pair<const SegmentGraphNode *, const SegmentGraphNode *>,
         std::vector<
@@ -77,12 +109,15 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
         } while (0);
     }
 
-    return graph.end().index() + 1;
+    return end().index() + 1;
 }
 
-void SegmentGraph::merge(SegmentGraph &graph, size_t since, Lattice &lattice) {
+void SegmentGraph::merge(SegmentGraph &graph, DiscardCallback discardCallback) {
+    auto since = check(graph);
+    std::unordered_set<const SegmentGraphNode *> nodeToDiscard;
     for (size_t i = 0; i < since; i++) {
-        for (auto &node : nodes(i)) {
+        auto &ns = nodes(i);
+        for (auto &node : ns) {
             std::vector<SegmentGraphNode *> newNext;
             for (auto &next : node.next()) {
                 SegmentGraphNode *n;
@@ -107,10 +142,14 @@ void SegmentGraph::merge(SegmentGraph &graph, size_t since, Lattice &lattice) {
     resize(data_.size() + 1);
     for (size_t i = since; i <= size(); i++) {
         for (auto &node : nodes(i)) {
-            lattice.d_ptr->lattice_.erase(&node);
+            nodeToDiscard.insert(&node);
         }
         std::swap(graph_[i], graph.graph_[i]);
         graph.graph_[i]->clear();
+    }
+
+    if (discardCallback) {
+        discardCallback(nodeToDiscard);
     }
 }
 }

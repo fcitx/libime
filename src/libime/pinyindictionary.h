@@ -35,6 +35,23 @@ typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi,
                            float cost)>
     PinyinMatchCallback;
 
+class PinyinMatchStatePrivate;
+class PinyinDictionary;
+
+class PinyinMatchState {
+    friend class PinyinDictionary;
+public:
+    PinyinMatchState();
+    ~PinyinMatchState();
+
+    void clear();
+    void discardNode(const std::unordered_set<const SegmentGraphNode *> &node);
+
+private:
+    std::unique_ptr<PinyinMatchStatePrivate> d_ptr;
+    FCITX_DECLARE_PRIVATE(PinyinMatchState);
+};
+
 class LIBIME_EXPORT PinyinDictionary : public Dictionary {
 public:
     static const size_t SystemDict = 0;
@@ -64,7 +81,7 @@ public:
 protected:
     void matchPrefixImpl(
         const SegmentGraph &graph, GraphMatchCallback callback,
-        const std::unordered_set<const SegmentGraphNode *> &ignore) override;
+        const std::unordered_set<const SegmentGraphNode *> &ignore, void *helper) override;
 
 private:
     void loadText(size_t idx, std::istream &in);

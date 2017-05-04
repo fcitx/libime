@@ -50,7 +50,7 @@ public:
                 float max = std::numeric_limits<float>::max(),
                 float min = -std::numeric_limits<float>::max(),
                 size_t beamSize = beamSizeDefault,
-                size_t frameSize = frameSizeDefault) const;
+                size_t frameSize = frameSizeDefault, void *helper = nullptr) const;
 
 protected:
     inline LatticeNode *createLatticeNode(const SegmentGraph &graph,

@@ -20,24 +20,8 @@
 #include "libime/pinyindecoder.h"
 #include "libime/pinyindictionary.h"
 #include "libime/pinyinencoder.h"
-#include <chrono>
+#include "testutils.h"
 #include <iostream>
-
-struct ScopedNanoTimer {
-    std::chrono::high_resolution_clock::time_point t0;
-    std::function<void(int)> cb;
-
-    ScopedNanoTimer(std::function<void(int)> callback)
-        : t0(std::chrono::high_resolution_clock::now()), cb(callback) {}
-    ~ScopedNanoTimer(void) {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        auto nanos =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0)
-                .count();
-
-        cb(nanos);
-    }
-};
 
 using namespace libime;
 
@@ -94,5 +78,25 @@ int main(int argc, char *argv[]) {
     testTime(decoder, "tashini", PinyinFuzzyFlag::Inner, 2);
     testTime(decoder, "'''", PinyinFuzzyFlag::Inner, 2);
     // testTime(decoder, "n", PinyinFuzzyFlag::Inner);
+
+    auto printTime = [](int t) {
+        std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
+    };
+
+    SegmentGraph graph;
+    {
+        ScopedNanoTimer timer(printTime);
+        std::cout << "Parse Pinyin ";
+        graph = PinyinEncoder::parseUserPinyin("sdfsdfsdfsdfsdfsdfsdf", PinyinFuzzyFlag::None);
+    }
+    {
+        // try do nothing
+        ScopedNanoTimer timer(printTime);
+        std::cout << "Pure Match ";
+        dict.matchPrefix(graph, [] (const SegmentGraphPath &, boost::string_view, float,
+                           boost::string_view) {
+        });
+    }
+    testTime(decoder, "sdfsdfsdfsdfsdfsdfsdf", PinyinFuzzyFlag::None, 2);
     return 0;
 }

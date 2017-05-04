@@ -45,6 +45,7 @@ public:
     PinyinIME *ime_;
     SegmentGraph segs_;
     Lattice lattice_;
+    PinyinMatchState matchState_;
     std::vector<SentenceResult> candidates_;
 };
 
@@ -81,6 +82,7 @@ void PinyinContext::clear() {
     d->candidates_.clear();
     d->selected.clear();
     d->lattice_.clear();
+    d->matchState_.clear();
     d->segs_ = SegmentGraph();
     InputBuffer::clear();
 }
@@ -167,8 +169,10 @@ void PinyinContext::update() {
         auto newGraph = PinyinEncoder::parseUserPinyin(
             boost::string_view(userInput()).substr(start),
             d->ime_->fuzzyFlags());
-        auto recalucate = d->segs_.check(newGraph);
-        d->segs_.merge(newGraph, recalucate, d->lattice_);
+        d->segs_.merge(newGraph, [d] (const std::unordered_set<const SegmentGraphNode *> &nodes) {
+            d->lattice_.discardNode(nodes);
+            d->matchState_.discardNode(nodes);
+        });
         auto &graph = d->segs_;
 
         d->ime_->decoder()->decode(d->lattice_, d->segs_, d->ime_->nbest(),

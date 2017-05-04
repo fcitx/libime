@@ -25,28 +25,13 @@
 #include "libime/pinyinime.h"
 #include "libime/userlanguagemodel.h"
 #include <boost/range/adaptor/transformed.hpp>
-#include <chrono>
+#include "testutils.h"
 #include <fcitx-utils/stringutils.h>
 #include <functional>
 #include <iostream>
 #include <sstream>
 
 using namespace libime;
-struct ScopedNanoTimer {
-    std::chrono::high_resolution_clock::time_point t0;
-    std::function<void(int)> cb;
-
-    ScopedNanoTimer(std::function<void(int)> callback)
-        : t0(std::chrono::high_resolution_clock::now()), cb(callback) {}
-    ~ScopedNanoTimer(void) {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        auto nanos =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0)
-                .count();
-
-        cb(nanos);
-    }
-};
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {

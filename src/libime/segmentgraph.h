@@ -35,10 +35,14 @@ namespace libime {
 
 class Lattice;
 class SegmentGraph;
+class SegmentGraphNode;
 typedef std::function<bool(const SegmentGraph &, const std::vector<size_t> &)>
     SegmentGraphDFSCallback;
+typedef std::function<void(const SegmentGraphNode *)>
+    SegmentGraphBFSCallback;
 
 class LIBIME_EXPORT SegmentGraphNode : public fcitx::Element {
+    friend class SegmentGraph;
 public:
     SegmentGraphNode(size_t start) : fcitx::Element(), start_(start) {}
     SegmentGraphNode(const SegmentGraphNode &node) = delete;
@@ -80,7 +84,7 @@ public:
     }
     void removeEdge(SegmentGraphNode &ref) { removeChild(&ref); }
 
-    size_t index() const { return start_; }
+    inline size_t index() const { return start_; }
 
     bool operator==(const SegmentGraphNode &other) const {
         return this == &other;
@@ -94,6 +98,7 @@ private:
 };
 
 typedef std::vector<const SegmentGraphNode *> SegmentGraphPath;
+typedef std::function<void(const std::unordered_set<const SegmentGraphNode *> &node)> DiscardCallback;
 
 class LIBIME_EXPORT SegmentGraph {
 public:
@@ -117,8 +122,7 @@ public:
     const SegmentGraphNode &end() const {
         return graph_[data_.size()]->front();
     }
-    size_t check(const SegmentGraph &graph) const;
-    void merge(SegmentGraph &graph, size_t since, Lattice &lattice);
+    void merge(SegmentGraph &graph, DiscardCallback discardCallback = {});
 
     template <typename NodeType = SegmentGraphNode, typename... Args>
     NodeType &newNode(Args &&... args) {
@@ -144,14 +148,24 @@ public:
     const std::string &data() const { return data_; }
     size_t size() const { return data_.size(); }
 
-    boost::string_view segment(size_t start, size_t end) const {
-        assert(start < end);
+    inline boost::string_view segment(size_t start, size_t end) const {
         return boost::string_view(data_.data() + start, end - start);
     }
+
+    void bfs(const SegmentGraphNode *from, SegmentGraphBFSCallback callback) const;
 
     void dfs(SegmentGraphDFSCallback callback) const {
         std::vector<size_t> path;
         dfsHelper(path, start(), callback);
+    }
+
+    void setData(boost::string_view data) {
+        resize(data.size() + 1);
+        data_ = data.to_string();
+        if (data_.size()) {
+            graph_[data.size()]->clear();
+            newNode(data_.size());
+        }
     }
 
 private:
@@ -180,6 +194,8 @@ private:
                 std::make_unique<boost::ptr_list<SegmentGraphNode>>();
         }
     }
+
+    size_t check(const SegmentGraph &graph) const;
 
     std::string data_;
     // ptr_vector doesn't have move constructor, G-R-E-A-T

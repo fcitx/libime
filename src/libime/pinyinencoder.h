@@ -145,6 +145,8 @@ class LIBIME_EXPORT PinyinEncoder {
 public:
     static SegmentGraph parseUserPinyin(boost::string_view pinyin,
                                         PinyinFuzzyFlags flags);
+    static void parseMoreUserPinyin(SegmentGraph &graph, boost::string_view pinyin, size_t from,
+                                        PinyinFuzzyFlags flags);
 
     static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
 

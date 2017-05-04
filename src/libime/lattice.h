@@ -173,6 +173,7 @@ public:
     size_t sentenceSize() const;
     const SentenceResult &sentence(size_t idx) const;
     void clear();
+    void discardNode(const std::unordered_set<const SegmentGraphNode *> &node);
 
     typedef boost::any_range<LatticeNode, boost::bidirectional_traversal_tag,
                              const LatticeNode &>

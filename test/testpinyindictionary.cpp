@@ -21,6 +21,7 @@
 #include "libime/pinyinencoder.h"
 #include <iostream>
 #include <sstream>
+#include "testutils.h"
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {

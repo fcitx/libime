@@ -123,25 +123,19 @@ int main() {
         {
             auto graph2 =
                 PinyinEncoder::parseUserPinyin("z", PinyinFuzzyFlag::None);
-            auto s = graph.check(graph2);
-            Lattice l;
-            graph.merge(graph2, s, l);
+            graph.merge(graph2);
         }
         graph.dfs(callback);
         {
             auto graph2 =
                 PinyinEncoder::parseUserPinyin("zn", PinyinFuzzyFlag::None);
-            auto s = graph.check(graph2);
-            Lattice l;
-            graph.merge(graph2, s, l);
+            graph.merge(graph2);
         }
         graph.dfs(callback);
         {
             auto graph2 =
                 PinyinEncoder::parseUserPinyin("z", PinyinFuzzyFlag::None);
-            auto s = graph.check(graph2);
-            Lattice l;
-            graph.merge(graph2, s, l);
+            graph.merge(graph2);
         }
         graph.dfs(callback);
     }

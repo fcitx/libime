@@ -49,9 +49,11 @@ public:
     DecoderPrivate(Decoder *q, Dictionary *dict, LanguageModelBase *model)
         : q_ptr(q), dict_(dict), model_(model) {}
 
-    void buildLattice(
-        Lattice &l, const std::unordered_set<const SegmentGraphNode *> &ignore,
-        const State &state, const SegmentGraph &graph, size_t frameSize, void *helper) const {
+    void
+    buildLattice(Lattice &l,
+                 const std::unordered_set<const SegmentGraphNode *> &ignore,
+                 const State &state, const SegmentGraph &graph,
+                 size_t frameSize, void *helper) const {
         FCITX_Q();
         LatticeMap &lattice = l.d_ptr->lattice_;
 
@@ -150,7 +152,8 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     d->buildLattice(l, ignore, beginState, graph, frameSize, helper);
 #ifdef DEBUG_TIME
     {
-        std::cout << "Build Lattice Time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::cout << "Build Lattice Time: "
+                  << std::chrono::duration_cast<std::chrono::nanoseconds>(
                          std::chrono::high_resolution_clock::now() -
                          t0).count() /
                          1000000.0
@@ -246,7 +249,8 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
 
 #ifdef DEBUG_TIME
     {
-        std::cout << "Forward search Time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::cout << "Forward search Time: "
+                  << std::chrono::duration_cast<std::chrono::nanoseconds>(
                          std::chrono::high_resolution_clock::now() -
                          t0).count() /
                          1000000.0
@@ -337,7 +341,8 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     }
 #ifdef DEBUG_TIME
     {
-        std::cout << "backward search Time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::cout << "backward search Time: "
+                  << std::chrono::duration_cast<std::chrono::nanoseconds>(
                          std::chrono::high_resolution_clock::now() -
                          t0).count() /
                          1000000.0

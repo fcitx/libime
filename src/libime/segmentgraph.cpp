@@ -19,10 +19,10 @@
 
 #include "segmentgraph.h"
 #include "lattice_p.h"
-#include <boost/range/combine.hpp>
 #include <boost/algorithm/string.hpp>
-#include <queue>
+#include <boost/range/combine.hpp>
 #include <iostream>
+#include <queue>
 
 namespace libime {
 
@@ -41,7 +41,8 @@ struct SegmentGraphNodeGreater {
     }
 };
 
-void SegmentGraph::bfs(const SegmentGraphNode *from, SegmentGraphBFSCallback callback) const {
+void SegmentGraph::bfs(const SegmentGraphNode *from,
+                       SegmentGraphBFSCallback callback) const {
     std::priority_queue<const SegmentGraphNode *,
                         std::vector<const SegmentGraphNode *>,
                         SegmentGraphNodeGreater>

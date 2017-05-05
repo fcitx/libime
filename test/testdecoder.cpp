@@ -87,15 +87,15 @@ int main(int argc, char *argv[]) {
     {
         ScopedNanoTimer timer(printTime);
         std::cout << "Parse Pinyin ";
-        graph = PinyinEncoder::parseUserPinyin("sdfsdfsdfsdfsdfsdfsdf", PinyinFuzzyFlag::None);
+        graph = PinyinEncoder::parseUserPinyin("sdfsdfsdfsdfsdfsdfsdf",
+                                               PinyinFuzzyFlag::None);
     }
     {
         // try do nothing
         ScopedNanoTimer timer(printTime);
         std::cout << "Pure Match ";
-        dict.matchPrefix(graph, [] (const SegmentGraphPath &, boost::string_view, float,
-                           boost::string_view) {
-        });
+        dict.matchPrefix(graph, [](const SegmentGraphPath &, boost::string_view,
+                                   float, boost::string_view) {});
     }
     testTime(decoder, "sdfsdfsdfsdfsdfsdfsdf", PinyinFuzzyFlag::None, 2);
     return 0;

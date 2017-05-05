@@ -19,9 +19,9 @@
 
 #include "libime/pinyindictionary.h"
 #include "libime/pinyinencoder.h"
+#include "testutils.h"
 #include <iostream>
 #include <sstream>
-#include "testutils.h"
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -36,9 +36,8 @@ int main(int argc, char *argv[]) {
     ss << "倪辉 ni'hui 0.0";
     dict.load(PinyinDictionary::UserDict, ss, PinyinDictFormat::Text);
     // dict.dump(std::cout);
-    char c[] = {static_cast<char>(PinyinInitial::N),
-                static_cast<char>(PinyinInitial::H),
-                PinyinEncoder::initialFinalSepartor, 0, 0};
+    char c[] = {static_cast<char>(PinyinInitial::N), 0,
+                static_cast<char>(PinyinInitial::H), 0};
     dict.matchWords(c, sizeof(c), [c](const char *encodedPinyin,
                                       const std::string &hanzi, float cost) {
         std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin, sizeof(c))

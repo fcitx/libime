@@ -40,6 +40,7 @@ class PinyinDictionary;
 
 class PinyinMatchState {
     friend class PinyinDictionary;
+
 public:
     PinyinMatchState();
     ~PinyinMatchState();
@@ -65,8 +66,6 @@ public:
 
     void matchWords(const char *data, size_t size,
                     PinyinMatchCallback callback);
-    void matchWords(const char *initials, const char *finals, size_t size,
-                    PinyinMatchCallback callback);
 
     void save(size_t idx, const char *filename);
     void save(size_t idx, std::ostream &out);
@@ -79,9 +78,10 @@ public:
                  boost::string_view hanzi, float cost = 0.0f);
 
 protected:
-    void matchPrefixImpl(
-        const SegmentGraph &graph, GraphMatchCallback callback,
-        const std::unordered_set<const SegmentGraphNode *> &ignore, void *helper) override;
+    void
+    matchPrefixImpl(const SegmentGraph &graph, GraphMatchCallback callback,
+                    const std::unordered_set<const SegmentGraphNode *> &ignore,
+                    void *helper) override;
 
 private:
     void loadText(size_t idx, std::istream &in);

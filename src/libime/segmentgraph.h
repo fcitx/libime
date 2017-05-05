@@ -38,11 +38,11 @@ class SegmentGraph;
 class SegmentGraphNode;
 typedef std::function<bool(const SegmentGraph &, const std::vector<size_t> &)>
     SegmentGraphDFSCallback;
-typedef std::function<void(const SegmentGraphNode *)>
-    SegmentGraphBFSCallback;
+typedef std::function<void(const SegmentGraphNode *)> SegmentGraphBFSCallback;
 
 class LIBIME_EXPORT SegmentGraphNode : public fcitx::Element {
     friend class SegmentGraph;
+
 public:
     SegmentGraphNode(size_t start) : fcitx::Element(), start_(start) {}
     SegmentGraphNode(const SegmentGraphNode &node) = delete;
@@ -98,7 +98,9 @@ private:
 };
 
 typedef std::vector<const SegmentGraphNode *> SegmentGraphPath;
-typedef std::function<void(const std::unordered_set<const SegmentGraphNode *> &node)> DiscardCallback;
+typedef std::function<void(
+    const std::unordered_set<const SegmentGraphNode *> &node)>
+    DiscardCallback;
 
 class LIBIME_EXPORT SegmentGraph {
 public:
@@ -152,7 +154,8 @@ public:
         return boost::string_view(data_.data() + start, end - start);
     }
 
-    void bfs(const SegmentGraphNode *from, SegmentGraphBFSCallback callback) const;
+    void bfs(const SegmentGraphNode *from,
+             SegmentGraphBFSCallback callback) const;
 
     void dfs(SegmentGraphDFSCallback callback) const {
         std::vector<size_t> path;

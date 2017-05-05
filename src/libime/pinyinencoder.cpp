@@ -223,7 +223,7 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(boost::string_view pinyin) {
     std::vector<std::string> pinyins;
     boost::split(pinyins, pinyin, boost::is_any_of("'"));
     std::vector<char> result;
-    result.resize(pinyins.size() * 2 + 1);
+    result.resize(pinyins.size() * 2);
     int idx = 0;
     for (const auto &singlePinyin : pinyins) {
         auto &map = getPinyinMap();
@@ -232,17 +232,15 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(boost::string_view pinyin) {
             throw std::invalid_argument("invalid full pinyin: " +
                                         pinyin.to_string());
         }
-        result[idx] = static_cast<char>(iter->initial());
-        result[pinyins.size() + idx + 1] = static_cast<char>(iter->final());
-        idx++;
+        result[idx++] = static_cast<char>(iter->initial());
+        result[idx++] = static_cast<char>(iter->final());
     }
-    result[pinyins.size()] = initialFinalSepartor;
 
     return result;
 }
 
 std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
-    if (size % 2 != 1 || data[size / 2] != initialFinalSepartor) {
+    if (size % 2 != 0) {
         throw std::invalid_argument("invalid pinyin key");
     }
     std::stringstream result;
@@ -250,14 +248,14 @@ std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
         if (i) {
             result << '\'';
         }
-        result << initialToString(static_cast<PinyinInitial>(data[i]));
-        result << finalToString(static_cast<PinyinFinal>(data[i + e + 1]));
+        result << initialToString(static_cast<PinyinInitial>(data[i * 2]));
+        result << finalToString(static_cast<PinyinFinal>(data[i * 2 + 1]));
     }
     return result.str();
 }
 
 const std::string &PinyinEncoder::initialToString(PinyinInitial initial) {
-    const static std::vector<std::string> s = [] () {
+    const static std::vector<std::string> s = []() {
         std::vector<std::string> s;
         s.resize(lastInitial - firstInitial + 1);
         for (char c = firstInitial; c <= lastInitial; c++) {
@@ -268,7 +266,7 @@ const std::string &PinyinEncoder::initialToString(PinyinInitial initial) {
     }();
     auto c = static_cast<char>(initial);
     if (c >= firstInitial && c <= lastInitial) {
-        return s[c -firstInitial];
+        return s[c - firstInitial];
     }
     return emptyString;
 }
@@ -282,7 +280,7 @@ PinyinInitial PinyinEncoder::stringToInitial(const std::string &str) {
 }
 
 const std::string &PinyinEncoder::finalToString(PinyinFinal final) {
-    const static std::vector<std::string> s = [] () {
+    const static std::vector<std::string> s = []() {
         std::vector<std::string> s;
         s.resize(lastFinal - firstFinal + 1);
         for (char c = firstFinal; c <= lastFinal; c++) {
@@ -293,7 +291,7 @@ const std::string &PinyinEncoder::finalToString(PinyinFinal final) {
     }();
     auto c = static_cast<char>(final);
     if (c >= firstFinal && c <= lastFinal) {
-        return s[c -firstFinal];
+        return s[c - firstFinal];
     }
     return emptyString;
 }
@@ -319,9 +317,10 @@ bool PinyinEncoder::isValidInitialFinal(PinyinInitial initial,
     return false;
 }
 
-static void
-getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> &syls,
-         PinyinSyllable syl, PinyinFuzzyFlags flags) {
+static void getFuzzy(
+    std::vector<std::pair<PinyinInitial,
+                          std::vector<std::pair<PinyinFinal, bool>>>> &syls,
+    PinyinSyllable syl, PinyinFuzzyFlags flags) {
     // ng/gn is already handled by table
     PinyinInitial initials[2] = {syl.initial(), PinyinInitial::Invalid};
     PinyinFinal finals[2] = {syl.final(), PinyinFinal::Invalid};
@@ -404,19 +403,24 @@ getFuzzy(std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> &syls,
                     iter = std::prev(syls.end());
                 }
                 auto &finals = iter->second;
-                if (std::find(finals.begin(), finals.end(), final) ==
-                    finals.end()) {
-                    finals.push_back(final);
+                if (std::find_if(finals.begin(), finals.end(),
+                                 [final](auto &p) {
+                                     return p.first == final;
+                                 }) == finals.end()) {
+                    finals.emplace_back(final,
+                                        initialSize > 0 || finalSize > 0);
                 }
             }
         }
     }
 }
 
-std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>>
+std::vector<std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
 PinyinEncoder::stringToSyllables(boost::string_view pinyin,
                                  PinyinFuzzyFlags flags) {
-    std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>> result;
+    std::vector<
+        std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
+        result;
     auto &map = getPinyinMap();
     // we only want {M,N,R}/Invalid instead of {M,N,R}/Zero, so we could get
     // match for everything.
@@ -436,9 +440,11 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin,
     }
 
     if (result.size() == 0) {
-        result.emplace_back(std::piecewise_construct,
-                            std::forward_as_tuple(PinyinInitial::Invalid),
-                            std::forward_as_tuple(1, PinyinFinal::Invalid));
+        result.emplace_back(
+            std::piecewise_construct,
+            std::forward_as_tuple(PinyinInitial::Invalid),
+            std::forward_as_tuple(1,
+                                  std::make_pair(PinyinFinal::Invalid, false)));
     }
 
 #if 0

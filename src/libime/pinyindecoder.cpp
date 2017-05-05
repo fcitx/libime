@@ -32,7 +32,7 @@ LatticeNode *PinyinDecoder::createLatticeNodeImpl(
     if (model->isUnknown(idx, word)) {
         // we don't really care about a lot of unknown single character
         // which is not used for candidates
-        if (aux.size() == 3 && path.front() != &graph.start() && !onlyPath) {
+        if (aux.size() == 2 && path.front() != &graph.start() && !onlyPath) {
             return nullptr;
         }
     }

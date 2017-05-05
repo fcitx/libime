@@ -169,10 +169,12 @@ void PinyinContext::update() {
         auto newGraph = PinyinEncoder::parseUserPinyin(
             boost::string_view(userInput()).substr(start),
             d->ime_->fuzzyFlags());
-        d->segs_.merge(newGraph, [d] (const std::unordered_set<const SegmentGraphNode *> &nodes) {
-            d->lattice_.discardNode(nodes);
-            d->matchState_.discardNode(nodes);
-        });
+        d->segs_.merge(
+            newGraph,
+            [d](const std::unordered_set<const SegmentGraphNode *> &nodes) {
+                d->lattice_.discardNode(nodes);
+                d->matchState_.discardNode(nodes);
+            });
         auto &graph = d->segs_;
 
         d->ime_->decoder()->decode(d->lattice_, d->segs_, d->ime_->nbest(),

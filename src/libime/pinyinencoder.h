@@ -145,8 +145,9 @@ class LIBIME_EXPORT PinyinEncoder {
 public:
     static SegmentGraph parseUserPinyin(boost::string_view pinyin,
                                         PinyinFuzzyFlags flags);
-    static void parseMoreUserPinyin(SegmentGraph &graph, boost::string_view pinyin, size_t from,
-                                        PinyinFuzzyFlags flags);
+    static void parseMoreUserPinyin(SegmentGraph &graph,
+                                    boost::string_view pinyin, size_t from,
+                                    PinyinFuzzyFlags flags);
 
     static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
 
@@ -172,10 +173,10 @@ public:
 
     static bool isValidInitialFinal(PinyinInitial initial, PinyinFinal final);
 
-    static std::vector<std::pair<PinyinInitial, std::vector<PinyinFinal>>>
+    static std::vector<
+        std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
     stringToSyllables(boost::string_view pinyin, PinyinFuzzyFlags flags);
 
-    static const char initialFinalSepartor = '!';
     static const char firstInitial = static_cast<char>(PinyinInitial::B);
     static const char lastInitial = static_cast<char>(PinyinInitial::Zero);
     static const char firstFinal = static_cast<char>(PinyinFinal::A);

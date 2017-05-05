@@ -58,13 +58,14 @@ void Lattice::clear() {
     d->nbests.clear();
 }
 
-void Lattice::discardNode(const std::unordered_set<const SegmentGraphNode *> &nodes) {
+void Lattice::discardNode(
+    const std::unordered_set<const SegmentGraphNode *> &nodes) {
     FCITX_D();
     for (auto node : nodes) {
         d->lattice_.erase(node);
     }
     for (auto &p : d->lattice_) {
-        p.second.erase_if([&nodes] (const LatticeNode &node) {
+        p.second.erase_if([&nodes](const LatticeNode &node) {
             return nodes.count(node.from());
         });
     }

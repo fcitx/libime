@@ -24,8 +24,8 @@
 #include "libime/pinyindictionary.h"
 #include "libime/pinyinime.h"
 #include "libime/userlanguagemodel.h"
-#include <boost/range/adaptor/transformed.hpp>
 #include "testutils.h"
+#include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/stringutils.h>
 #include <functional>
 #include <iostream>

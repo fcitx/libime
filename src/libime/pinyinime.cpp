@@ -60,6 +60,7 @@ void PinyinIME::setFuzzyFlags(PinyinFuzzyFlags flags) {
     FCITX_D();
     d->flags_ = flags;
     d->dict_->setFuzzyFlags(flags);
+    emit<PinyinIME::optionChanged>();
 }
 
 PinyinDictionary *PinyinIME::dict() {
@@ -94,7 +95,10 @@ size_t PinyinIME::nbest() const {
 
 void PinyinIME::setNBest(size_t n) {
     FCITX_D();
-    d->nbest_ = n;
+    if (d->nbest_ != n) {
+        d->nbest_ = n;
+        emit<PinyinIME::optionChanged>();
+    }
 }
 
 size_t PinyinIME::beamSize() const {
@@ -104,7 +108,10 @@ size_t PinyinIME::beamSize() const {
 
 void PinyinIME::setBeamSize(size_t n) {
     FCITX_D();
-    d->beamSize_ = n;
+    if (d->beamSize_ != n) {
+        d->beamSize_ = n;
+        emit<PinyinIME::optionChanged>();
+    }
 }
 
 size_t PinyinIME::frameSize() const {
@@ -114,13 +121,19 @@ size_t PinyinIME::frameSize() const {
 
 void PinyinIME::setFrameSize(size_t n) {
     FCITX_D();
-    d->frameSize_ = n;
+    if (d->frameSize_ == n) {
+        d->frameSize_ = n;
+        emit<PinyinIME::optionChanged>();
+    }
 }
 
 void PinyinIME::setScoreFilter(float maxDistance, float minPath) {
     FCITX_D();
-    d->maxDistance_ = maxDistance;
-    d->minPath_ = minPath;
+    if (d->maxDistance_ == maxDistance && d->minPath_ == minPath) {
+        d->maxDistance_ = maxDistance;
+        d->minPath_ = minPath;
+        emit<PinyinIME::optionChanged>();
+    }
 }
 
 float PinyinIME::maxDistance() const {

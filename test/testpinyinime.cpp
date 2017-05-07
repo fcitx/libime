@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
     }
 
     ime.dict()->dump(PinyinDictionary::UserDict, std::cout);
-    ime.model()->history().save(std::cout);
+    ime.model()->history().dump(std::cout);
 
     return 0;
 }

@@ -38,7 +38,8 @@ struct SelectedPinyin {
 
 class PinyinContextPrivate {
 public:
-    PinyinContextPrivate(PinyinIME *ime) : ime_(ime) {}
+    PinyinContextPrivate(PinyinIME *ime)
+        : ime_(ime), matchState_(ime->dict()) {}
 
     std::vector<std::pair<bool, std::vector<SelectedPinyin>>> selected;
 
@@ -47,10 +48,22 @@ public:
     Lattice lattice_;
     PinyinMatchState matchState_;
     std::vector<SentenceResult> candidates_;
+    std::vector<fcitx::ScopedConnection> conn_;
 };
 
 PinyinContext::PinyinContext(PinyinIME *ime)
-    : InputBuffer(true), d_ptr(std::make_unique<PinyinContextPrivate>(ime)) {}
+    : InputBuffer(true), d_ptr(std::make_unique<PinyinContextPrivate>(ime)) {
+    FCITX_D();
+    d->conn_.emplace_back(
+        ime->connect<PinyinIME::optionChanged>([this]() { clear(); }));
+    d->conn_.emplace_back(
+        ime->dict()->connect<PinyinDictionary::dictionaryChanged>(
+            [this](size_t idx) {
+                FCITX_D();
+                d->matchState_.clear();
+                d->matchState_.discardDictionary(idx);
+            }));
+}
 
 PinyinContext::~PinyinContext() {}
 
@@ -179,8 +192,8 @@ void PinyinContext::update() {
 
         d->ime_->decoder()->decode(d->lattice_, d->segs_, d->ime_->nbest(),
                                    state, d->ime_->maxDistance(),
-                                   d->ime_->minPath(), d->ime_->beamSize(),
-                                   d->ime_->frameSize());
+                                   d->ime_->minPath(), d->ime_->beamSize(), 100,
+                                   &d->matchState_);
 
         d->candidates_.clear();
         std::unordered_set<std::string> dup;
@@ -345,7 +358,7 @@ bool PinyinContext::learnWord() {
         bool first = true;
         for (auto &item : s.second) {
             if (!item.word_.word().empty()) {
-                if (item.encodedPinyin_.size() != 3) {
+                if (item.encodedPinyin_.size() != 2) {
                     return false;
                 }
                 if (first) {

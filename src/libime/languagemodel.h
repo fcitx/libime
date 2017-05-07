@@ -28,6 +28,8 @@
 namespace libime {
 
 using WordIndex = unsigned int;
+constexpr const unsigned int InvalidWordIndex =
+    std::numeric_limits<WordIndex>::max();
 constexpr size_t StateSize = 20 + sizeof(void *);
 using State = std::array<char, StateSize>;
 

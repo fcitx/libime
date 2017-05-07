@@ -19,9 +19,11 @@
 #ifndef _FCITX_LIBIME_UTF8_PINYINDICTIONARY_H_
 #define _FCITX_LIBIME_UTF8_PINYINDICTIONARY_H_
 
+#include "datrie.h"
 #include "dictionary.h"
 #include "libime_export.h"
 #include "pinyinencoder.h"
+#include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <memory>
 
@@ -38,22 +40,26 @@ typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi,
 class PinyinMatchStatePrivate;
 class PinyinDictionary;
 
-class PinyinMatchState {
+using PinyinTrie = DATrie<float>;
+
+class LIBIME_EXPORT PinyinMatchState {
     friend class PinyinDictionary;
 
 public:
-    PinyinMatchState();
+    PinyinMatchState(PinyinDictionary *dict);
     ~PinyinMatchState();
 
     void clear();
     void discardNode(const std::unordered_set<const SegmentGraphNode *> &node);
+    void discardDictionary(size_t idx);
 
 private:
     std::unique_ptr<PinyinMatchStatePrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinMatchState);
 };
 
-class LIBIME_EXPORT PinyinDictionary : public Dictionary {
+class LIBIME_EXPORT PinyinDictionary : public Dictionary,
+                                       public fcitx::ConnectableObject {
 public:
     static const size_t SystemDict = 0;
     static const size_t UserDict = 1;
@@ -71,11 +77,14 @@ public:
     void save(size_t idx, std::ostream &out);
     void dump(size_t idx, std::ostream &out);
     void remove(size_t idx);
+    const PinyinTrie *trie(size_t idx) const;
     size_t dictSize() const;
 
     void setFuzzyFlags(PinyinFuzzyFlags flags);
     void addWord(size_t idx, boost::string_view fullPinyin,
                  boost::string_view hanzi, float cost = 0.0f);
+
+    FCITX_DECLARE_SIGNAL(PinyinDictionary, dictionaryChanged, void(size_t));
 
 protected:
     void

@@ -301,7 +301,7 @@ public:
         }
     }
 
-    void suffix(std::string &key, size_t len, npos_t pos) {
+    void suffix(std::string &key, size_t len, npos_t pos) const {
         key.clear();
         key.resize(len);
 
@@ -1028,7 +1028,7 @@ void DATrie<T>::foreach (callback_type func, position_type pos) const {
 }
 
 template <typename T>
-void DATrie<T>::suffix(std::string &s, size_t len, position_type pos) {
+void DATrie<T>::suffix(std::string &s, size_t len, position_type pos) const {
     d->suffix(s, len, typename DATriePrivate<T>::npos_t(pos));
 }
 

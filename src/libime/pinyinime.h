@@ -21,6 +21,7 @@
 
 #include "libime_export.h"
 #include "pinyinencoder.h"
+#include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <limits>
 #include <memory>
@@ -32,7 +33,7 @@ class PinyinDecoder;
 class PinyinDictionary;
 class UserLanguageModel;
 
-class LIBIME_EXPORT PinyinIME {
+class LIBIME_EXPORT PinyinIME : public fcitx::ConnectableObject {
 public:
     PinyinIME(std::unique_ptr<PinyinDictionary> dict,
               std::unique_ptr<UserLanguageModel> model);
@@ -57,6 +58,8 @@ public:
     const PinyinDecoder *decoder() const;
     UserLanguageModel *model();
     const UserLanguageModel *model() const;
+
+    FCITX_DECLARE_SIGNAL(PinyinIME, optionChanged, void());
 
 private:
     std::unique_ptr<PinyinIMEPrivate> d_ptr;

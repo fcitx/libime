@@ -25,15 +25,19 @@
 
 using namespace libime;
 
-void testTime(Decoder &decoder, const char *pinyin, PinyinFuzzyFlags flags,
-              int nbest = 1) {
+void testTime(PinyinDictionary &dict, Decoder &decoder, const char *pinyin,
+              PinyinFuzzyFlags flags, int nbest = 1) {
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
     };
     ScopedNanoTimer timer(printTime);
     auto graph = PinyinEncoder::parseUserPinyin(pinyin, flags);
     Lattice lattice;
-    decoder.decode(lattice, graph, nbest, decoder.model()->nullState());
+    PinyinMatchState state(&dict);
+    decoder.decode(lattice, graph, nbest, decoder.model()->nullState(),
+                   std::numeric_limits<float>::max(),
+                   -std::numeric_limits<float>::max(), Decoder::beamSizeDefault,
+                   Decoder::frameSizeDefault, &state);
     for (size_t i = 0, e = lattice.sentenceSize(); i < e; i++) {
         auto &sentence = lattice.sentence(i);
         for (auto &p : sentence.sentence()) {
@@ -51,33 +55,37 @@ int main(int argc, char *argv[]) {
     dict.load(PinyinDictionary::SystemDict, argv[1], PinyinDictFormat::Binary);
     LanguageModel model(argv[2]);
     PinyinDecoder decoder(&dict, &model);
-    testTime(decoder, "wojiushixiangceshi", PinyinFuzzyFlag::None);
-    testTime(decoder, "xian", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "xiian", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "tanan", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "jin'an", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "sh'a", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "xiian", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "anqilaibufangbian", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "zhizuoxujibianchengleshunshuituizhoudeshiqing",
+    testTime(dict, decoder, "wojiushixiangceshi", PinyinFuzzyFlag::None);
+    testTime(dict, decoder, "xian", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "xiian", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "tanan", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "jin'an", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "sh'a", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "xiian", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "anqilaibufangbian", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "zhizuoxujibianchengleshunshuituizhoudeshiqing",
              PinyinFuzzyFlag::Inner, 2);
-    testTime(decoder, "xi'ian", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "zuishengmengsi'''", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "yongtiechuichuidanchuibupo", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "feibenkerenyuanbunengrunei", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "feibenkerenyuanbuderunei", PinyinFuzzyFlag::Inner);
-    testTime(decoder, "yongtiechuichuidanchuibupo", PinyinFuzzyFlag::Inner, 2);
-    testTime(decoder, "feibenkerenyuanbuderunei", PinyinFuzzyFlag::Inner, 2);
-    testTime(decoder, "tashiyigehaoren", PinyinFuzzyFlag::Inner, 3);
-    testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 20);
-    testTime(decoder, "xianshi", PinyinFuzzyFlag::Inner, 1);
-    testTime(decoder, "'xianshi", PinyinFuzzyFlag::Inner, 1);
-    testTime(decoder, "zhuoyand", PinyinFuzzyFlag::Inner, 1);
-    testTime(decoder, "nd", PinyinFuzzyFlag::Inner, 1);
-    testTime(decoder, "zhzxjbchlshshtzhdshq", PinyinFuzzyFlag::Inner, 1);
-    testTime(decoder, "tashini", PinyinFuzzyFlag::Inner, 2);
-    testTime(decoder, "'''", PinyinFuzzyFlag::Inner, 2);
-    // testTime(decoder, "n", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "xi'ian", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "zuishengmengsi'''", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "yongtiechuichuidanchuibupo",
+             PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "feibenkerenyuanbunengrunei",
+             PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "feibenkerenyuanbuderunei", PinyinFuzzyFlag::Inner);
+    testTime(dict, decoder, "yongtiechuichuidanchuibupo",
+             PinyinFuzzyFlag::Inner, 2);
+    testTime(dict, decoder, "feibenkerenyuanbuderunei", PinyinFuzzyFlag::Inner,
+             2);
+    testTime(dict, decoder, "tashiyigehaoren", PinyinFuzzyFlag::Inner, 3);
+    testTime(dict, decoder, "xianshi", PinyinFuzzyFlag::Inner, 20);
+    testTime(dict, decoder, "xianshi", PinyinFuzzyFlag::Inner, 1);
+    testTime(dict, decoder, "'xianshi", PinyinFuzzyFlag::Inner, 1);
+    testTime(dict, decoder, "zhuoyand", PinyinFuzzyFlag::Inner, 1);
+    testTime(dict, decoder, "nd", PinyinFuzzyFlag::Inner, 1);
+    testTime(dict, decoder, "zhzxjbchlshshtzhdshq", PinyinFuzzyFlag::Inner, 1);
+    testTime(dict, decoder, "tashini", PinyinFuzzyFlag::Inner, 2);
+    testTime(dict, decoder, "'''", PinyinFuzzyFlag::Inner, 2);
+    // testTime(dict, decoder, "n", PinyinFuzzyFlag::Inner);
 
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
@@ -94,9 +102,9 @@ int main(int argc, char *argv[]) {
         // try do nothing
         ScopedNanoTimer timer(printTime);
         std::cout << "Pure Match ";
-        dict.matchPrefix(graph, [](const SegmentGraphPath &, boost::string_view,
-                                   float, boost::string_view) {});
+        dict.matchPrefix(graph, [](const SegmentGraphPath &, WordNode &, float,
+                                   boost::string_view) {});
     }
-    testTime(decoder, "sdfsdfsdfsdfsdfsdfsdf", PinyinFuzzyFlag::None, 2);
+    testTime(dict, decoder, "sdfsdfsdfsdfsdfsdfsdf", PinyinFuzzyFlag::None, 2);
     return 0;
 }

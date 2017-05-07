@@ -43,6 +43,7 @@ public:
     constexpr static const size_t beamSizeDefault = 20;
     constexpr static const size_t frameSizeDefault = 80;
 
+    const Dictionary *dict() const;
     const LanguageModelBase *model() const;
 
     void decode(Lattice &lattice, const SegmentGraph &graph, size_t nbest,

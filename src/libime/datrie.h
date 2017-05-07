@@ -85,7 +85,7 @@ public:
     size_t size() const;
 
     // retrive the string via len and pos
-    void suffix(std::string &s, size_t len, position_type pos);
+    void suffix(std::string &s, size_t len, position_type pos) const;
 
     // result will be NO_VALUE
     value_type exactMatchSearch(const char *key, size_t len) const;

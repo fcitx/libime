@@ -75,7 +75,7 @@ public:
         if (maxSize_) {
             uint32_t count = recent_.size();
             throw_if_io_fail(marshall(out, count));
-            for (auto &sentence : recent_ | boost::adaptors::reversed) {
+            for (auto &sentence : recent_) {
                 uint32_t size = sentence.size();
                 throw_if_io_fail(marshall(out, size));
                 for (auto &s : sentence) {
@@ -88,6 +88,39 @@ public:
         } else {
             unigram_.save(out);
             bigram_.save(out);
+        }
+    }
+
+    void dump(std::ostream &out) {
+        if (maxSize_) {
+            for (auto &sentence : recent_ | boost::adaptors::reversed) {
+                bool first = true;
+                for (auto &s : sentence) {
+                    if (!first) {
+                        first = false;
+                    } else {
+                        std::cout << " ";
+                    }
+                    std::cout << s;
+                }
+                std::cout << std::endl;
+            }
+            next_->dump(out);
+        } else {
+            unigram_.foreach ([this, &out](int32_t value, size_t _len,
+                                           DATrie<int32_t>::position_type pos) {
+                std::string buf;
+                unigram_.suffix(buf, _len, pos);
+                out << buf << " " << value << std::endl;
+                return true;
+            });
+            bigram_.foreach ([this, &out](int32_t value, size_t _len,
+                                          DATrie<int32_t>::position_type pos) {
+                std::string buf;
+                bigram_.suffix(buf, _len, pos);
+                out << buf << " " << value << std::endl;
+                return true;
+            });
         }
     }
 
@@ -312,6 +345,11 @@ void HistoryBigram::load(std::istream &in) {
 void HistoryBigram::save(std::ostream &out) {
     FCITX_D();
     d->recentPool_.save(out);
+}
+
+void HistoryBigram::dump(std::ostream &out) {
+    FCITX_D();
+    d->recentPool_.dump(out);
 }
 
 void HistoryBigram::clear() {

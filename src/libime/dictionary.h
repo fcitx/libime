@@ -26,7 +26,9 @@
 
 namespace libime {
 
-typedef std::function<void(const SegmentGraphPath &, boost::string_view, float,
+class WordNode;
+
+typedef std::function<void(const SegmentGraphPath &, WordNode &, float,
                            boost::string_view)>
     GraphMatchCallback;
 

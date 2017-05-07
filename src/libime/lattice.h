@@ -80,6 +80,7 @@ public:
 
     const std::string &word() const { return word_; }
     WordIndex idx() const { return idx_; }
+    void setIdx(WordIndex idx) { idx_ = idx; }
 
 protected:
     std::string word_;

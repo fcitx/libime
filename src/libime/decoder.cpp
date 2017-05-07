@@ -71,10 +71,13 @@ public:
         dict_->matchPrefix(
             graph,
             [this, &graph, &lattice, &dupPath,
-             frameSize](const SegmentGraphPath &path, boost::string_view entry,
+             frameSize](const SegmentGraphPath &path, WordNode &word,
                         float adjust, boost::string_view aux) {
                 FCITX_Q();
-                WordIndex idx = model_->index(entry);
+                if (InvalidWordIndex == word.idx()) {
+                    auto idx = model_->index(word.word());
+                    word.setIdx(idx);
+                }
                 assert(path.front());
                 size_t &dupSize =
                     dupPath[std::make_pair(path.front(), path.back())];
@@ -82,9 +85,9 @@ public:
                     path.front() != &graph.start()) {
                     return;
                 }
-                auto node = q->createLatticeNode(graph, model_, entry, idx,
-                                                 path, model_->nullState(),
-                                                 adjust, aux, dupSize);
+                auto node = q->createLatticeNode(
+                    graph, model_, word.word(), word.idx(), path,
+                    model_->nullState(), adjust, aux, dupSize);
                 if (node) {
                     lattice[path.back()].push_back(node);
                     dupSize++;
@@ -120,6 +123,11 @@ std::string concatNBest(NBestNode *node, boost::string_view sep = "") {
         node = node->next_;
     }
     return ss.str();
+}
+
+const Dictionary *Decoder::dict() const {
+    FCITX_D();
+    return d->dict_;
 }
 
 const LanguageModelBase *Decoder::model() const {

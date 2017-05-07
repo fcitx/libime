@@ -22,13 +22,16 @@
 
 namespace libime {
 
-class PinyinIMEPrivate {
+class PinyinIMEPrivate : fcitx::QPtrHolder<PinyinIME> {
 public:
-    PinyinIMEPrivate(std::unique_ptr<PinyinDictionary> dict,
+    PinyinIMEPrivate(PinyinIME *q, std::unique_ptr<PinyinDictionary> dict,
                      std::unique_ptr<UserLanguageModel> model)
-        : dict_(std::move(dict)), model_(std::move(model)),
+        : fcitx::QPtrHolder<PinyinIME>(q), dict_(std::move(dict)),
+          model_(std::move(model)),
           decoder_(std::make_unique<PinyinDecoder>(dict_.get(), model_.get())) {
     }
+
+    FCITX_DEFINE_SIGNAL_PRIVATE(PinyinIME, optionChanged);
 
     PinyinFuzzyFlags flags_;
     std::unique_ptr<PinyinDictionary> dict_;
@@ -43,7 +46,7 @@ public:
 
 PinyinIME::PinyinIME(std::unique_ptr<PinyinDictionary> dict,
                      std::unique_ptr<UserLanguageModel> model)
-    : d_ptr(std::make_unique<PinyinIMEPrivate>(std::move(dict),
+    : d_ptr(std::make_unique<PinyinIMEPrivate>(this, std::move(dict),
                                                std::move(model))) {}
 
 PinyinIME::~PinyinIME() {}

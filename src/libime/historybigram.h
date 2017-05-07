@@ -41,6 +41,7 @@ public:
 
     void load(std::istream &in);
     void save(std::ostream &out);
+    void dump(std::ostream &out);
     void clear();
 
     void setUnknown(float unknown);

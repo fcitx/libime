@@ -8,3 +8,8 @@ add_executable(libime_pinyindict libime_pinyindict.cpp)
 target_link_libraries(libime_pinyindict LibIME::LibIME)
 install(TARGETS libime_pinyindict DESTINATION ${CMAKE_INSTALL_BINDIR})
 add_executable(LibIME::pinyindict ALIAS libime_pinyindict)
+
+add_executable(libime_history libime_history.cpp)
+target_link_libraries(libime_history LibIME::LibIME)
+install(TARGETS libime_history DESTINATION ${CMAKE_INSTALL_BINDIR})
+add_executable(LibIME::history ALIAS libime_history)

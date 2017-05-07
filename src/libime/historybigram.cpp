@@ -37,10 +37,10 @@ public:
         }
     }
 
-    void setUnknown(float unknown) {
+    void setUnknownPenalty(float unknown) {
         unknown_ = unknown;
         if (next_) {
-            next_->setUnknown(unknown);
+            next_->setUnknownPenalty(unknown);
         }
     }
 
@@ -292,14 +292,14 @@ public:
 
 HistoryBigram::HistoryBigram()
     : d_ptr(std::make_unique<HistoryBigramPrivate>()) {
-    setUnknown(std::log10(1 / 20000.0f));
+    setUnknownPenalty(std::log10(1 / 20000.0f));
 }
 
 HistoryBigram::~HistoryBigram() {}
 
-void HistoryBigram::setUnknown(float unknown) {
+void HistoryBigram::setUnknownPenalty(float unknown) {
     FCITX_D();
-    d->recentPool_.setUnknown(std::pow(10, unknown));
+    d->recentPool_.setUnknownPenalty(std::pow(10, unknown));
 }
 
 float HistoryBigram::unknown() const {

@@ -24,7 +24,7 @@
 int main() {
     using namespace libime;
     HistoryBigram history;
-    history.setUnknown(std::log10(1.0f / 8192));
+    history.setUnknownPenalty(std::log10(1.0f / 8192));
     history.add({"你", "是", "一个", "好人"});
     history.add({"我", "是", "一个", "坏人"});
     history.add({"他"});

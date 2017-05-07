@@ -110,8 +110,13 @@ bool LanguageModel::isUnknown(WordIndex idx, boost::string_view) const {
     return idx == unknown();
 }
 
-void LanguageModel::setUnknown(float unknown) {
+void LanguageModel::setUnknownPenalty(float unknown) {
     FCITX_D();
     d->unknown_ = unknown;
+}
+
+float LanguageModel::unknownPenalty() const {
+    FCITX_D();
+    return d->unknown_;
 }
 }

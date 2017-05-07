@@ -44,7 +44,7 @@ public:
     void dump(std::ostream &out);
     void clear();
 
-    void setUnknown(float unknown);
+    void setUnknownPenalty(float unknown);
     float unknown() const;
 
     bool isUnknown(boost::string_view v) const;

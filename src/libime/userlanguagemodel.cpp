@@ -65,7 +65,7 @@ HistoryBigram &UserLanguageModel::history() {
 void UserLanguageModel::load(std::istream &in) {
     FCITX_D();
     HistoryBigram history;
-    history.setUnknown(d->history_.unknown());
+    history.setUnknownPenalty(d->history_.unknown());
     history.load(in);
     using std::swap;
     swap(d->history_, history);

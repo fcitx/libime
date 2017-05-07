@@ -67,7 +67,8 @@ public:
     float score(const State &state, const WordNode &word,
                 State &out) const override;
     bool isUnknown(WordIndex idx, boost::string_view view) const override;
-    void setUnknown(float unknown);
+    void setUnknownPenalty(float unknown);
+    float unknownPenalty() const;
 
 private:
     std::unique_ptr<LanguageModelPrivate> d_ptr;

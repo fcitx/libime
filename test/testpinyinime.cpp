@@ -47,10 +47,11 @@ int main(int argc, char *argv[]) {
                      PinyinDictFormat::Binary);
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
     PinyinContext c(&ime);
-    ime.setScoreFilter(3.0f);
+    ime.setScoreFilter(1.0f);
 
     std::string word;
     while (std::cin >> word) {
+        bool printAll = false;
         ScopedNanoTimer t(printTime);
         if (word == "back") {
             c.backspace();
@@ -70,6 +71,8 @@ int main(int argc, char *argv[]) {
             if (c.candidates().size() >= idx) {
                 c.select(idx);
             }
+        } else if (word == "all") {
+            printAll = true;
         }
         if (c.selected()) {
             std::cout << "COMMIT:   " << c.preedit() << std::endl;
@@ -92,7 +95,7 @@ int main(int argc, char *argv[]) {
             }
             std::cout << " " << candidate.score() << std::endl;
             count++;
-            if (count > 10) {
+            if (!printAll && count > 10) {
                 break;
             }
         }

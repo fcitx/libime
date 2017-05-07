@@ -208,21 +208,28 @@ void PinyinContext::update() {
 
         auto bos = &graph.start();
 
+        auto beginSize = d->candidates_.size();
         for (size_t i = graph.size(); i > 0; i--) {
             float min = 0;
-            auto beginSize = d->candidates_.size();
+            float max = -std::numeric_limits<float>::max();
+            //
+            auto adjust = static_cast<float>(graph.size() - i) * d->ime_->model()->unknownPenalty() / 40;
             for (auto &graphNode : graph.nodes(i)) {
                 for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() == bos) {
-                        if (!d->ime_->model()->isNodeUnknown(latticeNode) &&
-                            latticeNode.score() < min) {
-                            min = latticeNode.score();
+                        if (!d->ime_->model()->isNodeUnknown(latticeNode)) {
+                            if (latticeNode.score() < min) {
+                                min = latticeNode.score();
+                            }
+                            if (latticeNode.score() > max) {
+                                max = latticeNode.score();
+                            }
                         }
                         if (dup.count(latticeNode.word())) {
                             continue;
                         }
                         d->candidates_.push_back(
-                            latticeNode.toSentenceResult());
+                            latticeNode.toSentenceResult(adjust));
                         dup.insert(latticeNode.word());
                     }
                 }
@@ -230,19 +237,20 @@ void PinyinContext::update() {
             for (auto &graphNode : graph.nodes(i)) {
                 for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() != bos &&
-                        latticeNode.score() > min) {
+                        latticeNode.score() > min &&
+                        latticeNode.score() + d->ime_->maxDistance() > max) {
                         auto fullWord = latticeNode.fullWord();
                         if (dup.count(fullWord)) {
                             continue;
                         }
                         d->candidates_.push_back(
-                            latticeNode.toSentenceResult());
+                            latticeNode.toSentenceResult(adjust));
                     }
                 }
             }
-            std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
-                      std::greater<SentenceResult>());
         }
+        std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
+                    std::greater<SentenceResult>());
     }
 
     if (cursor() < selectedLength()) {

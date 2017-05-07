@@ -128,7 +128,7 @@ public:
         return result;
     }
 
-    SentenceResult toSentenceResult() const {
+    SentenceResult toSentenceResult(float adjust = 0.0f) const {
         SentenceResult::Sentence result;
         auto pivot = this;
         // to skip bos
@@ -140,7 +140,7 @@ public:
         }
 
         std::reverse(result.begin(), result.end());
-        return {std::move(result), score()};
+        return {std::move(result), score() + adjust};
     }
 
     State &state() { return state_; }

@@ -121,7 +121,7 @@ size_t PinyinIME::frameSize() const {
 
 void PinyinIME::setFrameSize(size_t n) {
     FCITX_D();
-    if (d->frameSize_ == n) {
+    if (d->frameSize_ != n) {
         d->frameSize_ = n;
         emit<PinyinIME::optionChanged>();
     }
@@ -129,7 +129,7 @@ void PinyinIME::setFrameSize(size_t n) {
 
 void PinyinIME::setScoreFilter(float maxDistance, float minPath) {
     FCITX_D();
-    if (d->maxDistance_ == maxDistance && d->minPath_ == minPath) {
+    if (d->maxDistance_ != maxDistance || d->minPath_ != minPath) {
         d->maxDistance_ = maxDistance;
         d->minPath_ = minPath;
         emit<PinyinIME::optionChanged>();

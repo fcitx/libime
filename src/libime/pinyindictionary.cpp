@@ -198,6 +198,8 @@ PinyinMatchState::~PinyinMatchState() {}
 void PinyinMatchState::clear() {
     FCITX_D();
     d->search_.clear();
+    d->nodeCache_.clear();
+    d->matchCache_.clear();
 }
 
 void PinyinMatchState::discardNode(

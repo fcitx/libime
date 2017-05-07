@@ -41,7 +41,7 @@ public:
     PinyinContextPrivate(PinyinIME *ime)
         : ime_(ime), matchState_(ime->dict()) {}
 
-    std::vector<std::pair<bool, std::vector<SelectedPinyin>>> selected;
+    std::vector<std::pair<bool, std::vector<SelectedPinyin>>> selected_;
 
     PinyinIME *ime_;
     SegmentGraph segs_;
@@ -93,7 +93,7 @@ void PinyinContext::setCursor(size_t pos) {
 void PinyinContext::clear() {
     FCITX_D();
     d->candidates_.clear();
-    d->selected.clear();
+    d->selected_.clear();
     d->lattice_.clear();
     d->matchState_.clear();
     d->segs_ = SegmentGraph();
@@ -111,9 +111,9 @@ void PinyinContext::select(size_t idx) {
 
     auto offset = selectedLength();
 
-    d->selected.emplace_back();
+    d->selected_.emplace_back();
 
-    auto &selection = d->selected.back();
+    auto &selection = d->selected_.back();
     if (idx != 0) {
         selection.first = true;
     }
@@ -146,8 +146,8 @@ bool PinyinContext::cancelTill(size_t pos) {
 
 void PinyinContext::cancel() {
     FCITX_D();
-    if (d->selected.size()) {
-        d->selected.pop_back();
+    if (d->selected_.size()) {
+        d->selected_.pop_back();
     }
     update();
 }
@@ -165,10 +165,10 @@ void PinyinContext::update() {
         size_t start = 0;
         auto model = d->ime_->model();
         State state = model->nullState();
-        if (d->selected.size()) {
-            start = d->selected.back().second.back().offset_;
+        if (d->selected_.size()) {
+            start = d->selected_.back().second.back().offset_;
 
-            for (auto &s : d->selected) {
+            for (auto &s : d->selected_) {
                 for (auto &item : s.second) {
                     if (item.word_.word().empty()) {
                         continue;
@@ -252,8 +252,8 @@ bool PinyinContext::selected() const {
         return false;
     }
 
-    if (d->selected.size()) {
-        if (d->selected.back().second.back().offset_ == size()) {
+    if (d->selected_.size()) {
+        if (d->selected_.back().second.back().offset_ == size()) {
             return true;
         }
     }
@@ -264,7 +264,7 @@ bool PinyinContext::selected() const {
 std::string PinyinContext::selectedSentence() const {
     FCITX_D();
     std::stringstream ss;
-    for (auto &s : d->selected) {
+    for (auto &s : d->selected_) {
         for (auto &item : s.second) {
             ss << item.word_.word();
         }
@@ -274,8 +274,8 @@ std::string PinyinContext::selectedSentence() const {
 
 size_t PinyinContext::selectedLength() const {
     FCITX_D();
-    if (d->selected.size()) {
-        return d->selected.back().second.back().offset_;
+    if (d->selected_.size()) {
+        return d->selected_.back().second.back().offset_;
     }
     return 0;
 }
@@ -336,7 +336,7 @@ void PinyinContext::learn() {
         d->ime_->model()->history().add(newSentence);
     } else {
         std::vector<std::string> newSentence;
-        for (auto &s : d->selected) {
+        for (auto &s : d->selected_) {
             for (auto &item : s.second) {
                 if (!item.word_.word().empty()) {
                     newSentence.push_back(item.word_.word());
@@ -351,10 +351,10 @@ bool PinyinContext::learnWord() {
     FCITX_D();
     std::stringstream ss;
     std::string pinyin;
-    if (d->selected.size() <= 1) {
+    if (d->selected_.size() <= 1) {
         return false;
     }
-    for (auto &s : d->selected) {
+    for (auto &s : d->selected_) {
         bool first = true;
         for (auto &item : s.second) {
             if (!item.word_.word().empty()) {

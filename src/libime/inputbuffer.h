@@ -83,7 +83,8 @@ public:
             erase(c - 1, c);
         }
     }
-    virtual void clear() { erase(0, size()); }
+
+    void clear() { erase(0, size()); }
 
     boost::string_view operator[](size_t i) const { return at(i); }
 

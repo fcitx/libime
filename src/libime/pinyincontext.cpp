@@ -77,9 +77,23 @@ void PinyinContext::erase(size_t from, size_t to) {
     if (from == to) {
         return;
     }
-    cancelTill(from);
+
+    // check if erase everything
+    if (from == 0 && to >= size()) {
+        FCITX_D();
+        d->candidates_.clear();
+        d->selected_.clear();
+        d->lattice_.clear();
+        d->matchState_.clear();
+        d->segs_ = SegmentGraph();
+    } else {
+        cancelTill(from);
+    }
     InputBuffer::erase(from, to);
-    update();
+
+    if (size()) {
+        update();
+    }
 }
 
 void PinyinContext::setCursor(size_t pos) {
@@ -88,16 +102,6 @@ void PinyinContext::setCursor(size_t pos) {
     if (cancelled) {
         update();
     }
-}
-
-void PinyinContext::clear() {
-    FCITX_D();
-    d->candidates_.clear();
-    d->selected_.clear();
-    d->lattice_.clear();
-    d->matchState_.clear();
-    d->segs_ = SegmentGraph();
-    InputBuffer::clear();
 }
 
 const std::vector<SentenceResult> &PinyinContext::candidates() const {

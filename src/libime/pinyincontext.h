@@ -39,7 +39,6 @@ public:
     void type(boost::string_view s) override;
     void erase(size_t from, size_t to) override;
     void setCursor(size_t pos) override;
-    void clear() override;
 
     const std::vector<SentenceResult> &candidates() const;
     void select(size_t idx);

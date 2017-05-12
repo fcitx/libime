@@ -299,10 +299,11 @@ HistoryBigram::~HistoryBigram() {}
 
 void HistoryBigram::setUnknownPenalty(float unknown) {
     FCITX_D();
+    d->unknown_ = unknown;
     d->recentPool_.setUnknownPenalty(std::pow(10, unknown));
 }
 
-float HistoryBigram::unknown() const {
+float HistoryBigram::unknownPenalty() const {
     FCITX_D();
     return d->unknown_;
 }

@@ -45,7 +45,7 @@ public:
     void clear();
 
     void setUnknownPenalty(float unknown);
-    float unknown() const;
+    float unknownPenalty() const;
 
     bool isUnknown(boost::string_view v) const;
     float score(const WordNode *prev, const WordNode *cur) const {

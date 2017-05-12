@@ -213,7 +213,7 @@ void PinyinContext::update() {
             float min = 0;
             float max = -std::numeric_limits<float>::max();
             //
-            auto adjust = static_cast<float>(graph.size() - i) * d->ime_->model()->unknownPenalty() / 40;
+            auto adjust = static_cast<float>(graph.size() - i) * d->ime_->model()->unknownPenalty() / 10;
             for (auto &graphNode : graph.nodes(i)) {
                 for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() == bos) {

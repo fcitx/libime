@@ -23,12 +23,13 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/utility/string_view.hpp>
 #include <fcitx-utils/macros.h>
+#include <fcitx-utils/inputbuffer.h>
 #include <memory>
 
 namespace libime {
 class InputBufferPrivate;
 
-class LIBIME_EXPORT InputBuffer {
+class LIBIME_EXPORT InputBuffer : public fcitx::InputBuffer {
 public:
     class iterator
         : public boost::iterator_facade<iterator, boost::string_view,
@@ -54,47 +55,20 @@ public:
         size_t idx_ = 0;
     };
 
-    InputBuffer(bool asciiOnly = false);
-    virtual ~InputBuffer();
+    using fcitx::InputBuffer::InputBuffer;
 
-    virtual void type(boost::string_view s);
-    virtual void erase(size_t from, size_t to);
-    virtual void setCursor(size_t cursor);
-
-    size_t maxSize() const;
-    void setMaxSize(size_t s);
-
-    const std::string &userInput() const;
-    void type(uint32_t unicode);
-    size_t cursor() const;
-    size_t cursorByChar() const;
-    size_t size() const;
+    using fcitx::InputBuffer::type;
+    // add one overload for string_view
+    void type(boost::string_view s) {
+        return type(s.data(), s.length());
+    }
     boost::string_view at(size_t i) const;
-    size_t sizeAt(size_t i) const;
-    inline void del() {
-        auto c = cursor();
-        if (c < size()) {
-            erase(c, c + 1);
-        }
-    }
-    inline void backspace() {
-        auto c = cursor();
-        if (c > 0) {
-            erase(c - 1, c);
-        }
-    }
-
-    void clear() { erase(0, size()); }
 
     boost::string_view operator[](size_t i) const { return at(i); }
 
     iterator begin() { return iterator(this, 0); }
 
     iterator end() { return iterator(this, size()); }
-
-private:
-    std::unique_ptr<InputBufferPrivate> d_ptr;
-    FCITX_DECLARE_PRIVATE(InputBuffer);
 };
 }
 

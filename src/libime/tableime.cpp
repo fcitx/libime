@@ -16,20 +16,4 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#include "inputbuffer.h"
-#include <boost/iterator/function_input_iterator.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <exception>
-#include <fcitx-utils/utf8.h>
-#include <numeric>
-#include <vector>
-
-namespace libime {
-
-boost::string_view InputBuffer::at(size_t i) const {
-    size_t start, end;
-    std::tie(start, end) = rangeAt(i);
-    return boost::string_view(userInput()).substr(start, end - start);
-}
-
-}
+#include "tableime.h"

@@ -36,7 +36,6 @@ public:
     PinyinContext(PinyinIME *ime);
     virtual ~PinyinContext();
 
-    void type(boost::string_view s) override;
     void erase(size_t from, size_t to) override;
     void setCursor(size_t pos) override;
 
@@ -61,6 +60,8 @@ public:
     size_t selectedLength() const;
 
     void learn();
+protected:
+    void typeImpl(const char *s, size_t length) override;
 
 private:
     void update();

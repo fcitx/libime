@@ -26,6 +26,7 @@ set(LIBIME_HDRS
     languagemodel.h
     pinyinime.h
     pinyincontext.h
+    shuangpincontext.h
     inputbuffer.h
     segmentgraph.h
     lattice.h
@@ -34,6 +35,8 @@ set(LIBIME_HDRS
     historybigram.h
     dictionary.h
     userlanguagemodel.h
+    tableime.h
+    tablecontext.h
     ${CMAKE_CURRENT_BINARY_DIR}/libime_export.h
     )
 
@@ -47,12 +50,15 @@ set(LIBIME_SRCS
     languagemodel.cpp
     pinyinime.cpp
     pinyincontext.cpp
+    shuangpincontext.cpp
     inputbuffer.cpp
     lattice.cpp
     pinyindecoder.cpp
     userlanguagemodel.cpp
     historybigram.cpp
     segmentgraph.cpp
+    tableime.cpp
+    tablecontext.cpp
     )
 
 add_library(ime SHARED ${LIBIME_SRCS})

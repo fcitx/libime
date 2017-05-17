@@ -67,9 +67,9 @@ PinyinContext::PinyinContext(PinyinIME *ime)
 
 PinyinContext::~PinyinContext() {}
 
-void PinyinContext::type(boost::string_view s) {
+void PinyinContext::typeImpl(const char *s, size_t length) {
     cancelTill(cursor());
-    InputBuffer::type(s);
+    InputBuffer::type(s, length);
     update();
 }
 

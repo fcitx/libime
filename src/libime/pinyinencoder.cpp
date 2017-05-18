@@ -243,15 +243,15 @@ std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
     if (size % 2 != 0) {
         throw std::invalid_argument("invalid pinyin key");
     }
-    std::stringstream result;
+    std::string result;
     for (size_t i = 0, e = size / 2; i < e; i++) {
         if (i) {
-            result << '\'';
+            result += '\'';
         }
-        result << initialToString(static_cast<PinyinInitial>(data[i * 2]));
-        result << finalToString(static_cast<PinyinFinal>(data[i * 2 + 1]));
+        result += initialToString(static_cast<PinyinInitial>(data[i * 2]));
+        result += finalToString(static_cast<PinyinFinal>(data[i * 2 + 1]));
     }
-    return result.str();
+    return result;
 }
 
 const std::string &PinyinEncoder::initialToString(PinyinInitial initial) {

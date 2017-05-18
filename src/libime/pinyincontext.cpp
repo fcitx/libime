@@ -276,13 +276,13 @@ bool PinyinContext::selected() const {
 
 std::string PinyinContext::selectedSentence() const {
     FCITX_D();
-    std::stringstream ss;
+    std::string ss;
     for (auto &s : d->selected_) {
         for (auto &item : s.second) {
-            ss << item.word_.word();
+            ss += item.word_.word();
         }
     }
-    return ss.str();
+    return ss;
 }
 
 size_t PinyinContext::selectedLength() const {
@@ -297,10 +297,10 @@ std::string PinyinContext::preedit() const { return preeditWithCursor().first; }
 
 std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
     FCITX_D();
-    std::stringstream ss;
+    std::string ss;
     auto sentence = selectedSentence();
     auto len = selectedLength();
-    ss << sentence;
+    ss += sentence;
     auto c = cursor();
     size_t actualCursor = sentence.size();
     // should not happen
@@ -317,7 +317,7 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
                       end = std::prev(s->path().end());
                  iter < end; iter++) {
                 if (!first) {
-                    ss << " ";
+                    ss += " ";
                     resultSize += 1;
                 } else {
                     first = false;
@@ -327,7 +327,7 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
                     actualCursor = resultSize + c - from - len;
                 }
                 auto pinyin = d->segs_.segment(from, to);
-                ss << pinyin;
+                ss.append(pinyin.data(), pinyin.size());
                 resultSize += pinyin.size();
             }
         }
@@ -335,7 +335,7 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
     if (c == size()) {
         actualCursor = resultSize;
     }
-    return {ss.str(), actualCursor};
+    return {ss, actualCursor};
 }
 
 void PinyinContext::learn() {
@@ -362,7 +362,7 @@ void PinyinContext::learn() {
 
 bool PinyinContext::learnWord() {
     FCITX_D();
-    std::stringstream ss;
+    std::string ss;
     std::string pinyin;
     if (d->selected_.size() <= 1) {
         return false;
@@ -376,7 +376,7 @@ bool PinyinContext::learnWord() {
                 }
                 if (first) {
                     first = false;
-                    ss << item.word_.word();
+                    ss += item.word_.word();
                     if (!pinyin.empty()) {
                         pinyin.push_back('\'');
                     }
@@ -389,7 +389,7 @@ bool PinyinContext::learnWord() {
         }
     }
 
-    d->ime_->dict()->addWord(PinyinDictionary::UserDict, pinyin, ss.str());
+    d->ime_->dict()->addWord(PinyinDictionary::UserDict, pinyin, ss);
 
     return true;
 }

@@ -155,9 +155,9 @@ public:
             if (next != end) {
                 incBigram(*iter, *next);
             }
-            std::stringstream ss;
-            ss << *iter;
-            newSentence.push_back(ss.str());
+            std::string ss;
+            ss += *iter;
+            newSentence.push_back(ss);
         }
         incUnigram("<s>");
         incUnigram("</s>");
@@ -179,9 +179,10 @@ public:
     }
 
     float bigramFreq(boost::string_view s1, boost::string_view s2) const {
-        std::stringstream ss;
-        ss << s1 << "|" << s2;
-        auto s = ss.str();
+        std::string s;
+        s.append(s1.data(), s1.size());
+        s += '|';
+        s.append(s2.data(), s2.size());
         auto v = bigram_.exactMatchSearch(s.c_str(), s.size());
         if (v == bigram_.NO_VALUE) {
             return 0;
@@ -260,15 +261,19 @@ private:
     void incUnigram(boost::string_view s) { incFreq(s, unigram_); }
 
     void decBigram(boost::string_view s1, boost::string_view s2) {
-        std::stringstream ss;
-        ss << s1 << "|" << s2;
-        decFreq(ss.str(), bigram_);
+        std::string ss;
+        ss.append(s1.data(), s1.size());
+        ss += '|';
+        ss.append(s2.data(), s2.size());
+        decFreq(ss, bigram_);
     }
 
     void incBigram(boost::string_view s1, boost::string_view s2) {
-        std::stringstream ss;
-        ss << s1 << "|" << s2;
-        incFreq(ss.str(), bigram_);
+        std::string ss;
+        ss.append(s1.data(), s1.size());
+        ss += '|';
+        ss.append(s2.data(), s2.size());
+        incFreq(ss, bigram_);
     }
 
     size_t maxSize_;

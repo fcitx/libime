@@ -194,22 +194,23 @@ struct TableRule {
     }
 
     std::string toString() const {
-        std::stringstream ss;
+        std::string result;
 
-        ss << ((flag == TableRuleFlag::LengthEqual) ? 'e' : 'a')
-           << static_cast<char>('0' + phraseLength) << '=';
+        result += ((flag == TableRuleFlag::LengthEqual) ? 'e' : 'a');
+        result += static_cast<char>('0' + phraseLength);
+        result += '=';
         bool first = true;
         for (const auto &entry : entries) {
             if (first) {
                 first = false;
             } else {
-                ss << '+';
+                result +=  '+';
             }
-            ss << ((entry.flag == TableRuleEntryFlag::FromFront) ? 'p' : 'n')
-               << static_cast<char>('0' + entry.character)
-               << static_cast<char>('0' + entry.encodingIndex);
+            result += ((entry.flag == TableRuleEntryFlag::FromFront) ? 'p' : 'n');
+            result += static_cast<char>('0' + entry.character);
+            result += static_cast<char>('0' + entry.encodingIndex);
         }
-        return ss.str();
+        return result;
     }
 
     TableRuleFlag flag = TableRuleFlag::LengthLongerThan;

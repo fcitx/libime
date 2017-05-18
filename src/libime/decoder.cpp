@@ -25,11 +25,9 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptor/sliced.hpp>
 #include <chrono>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <queue>
-#include <sstream>
 #include <unordered_set>
 
 namespace libime {
@@ -117,12 +115,13 @@ Decoder::Decoder(Dictionary *dict, LanguageModelBase *model)
 Decoder::~Decoder() {}
 
 std::string concatNBest(NBestNode *node, boost::string_view sep = "") {
-    std::stringstream ss;
+    std::string result;
     while (node != nullptr) {
-        ss << node->node_->word() << sep;
+        result.append(node->node_->word());
+        result.append(sep.data(), sep.size());
         node = node->next_;
     }
-    return ss.str();
+    return result;
 }
 
 const Dictionary *Decoder::dict() const {

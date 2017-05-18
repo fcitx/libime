@@ -23,7 +23,7 @@
 #include <iostream>
 
 void usage(const char *argv0) {
-    std::cout << "Usage: " << argv0 << " [-d] <source> <dest>" << std::endl
+    std::cout << "Usage: " << argv0 << " <source> <dest>" << std::endl
               << "-h: Show this help" << std::endl;
 }
 

@@ -96,7 +96,7 @@ public:
             for (auto &sentence : recent_ | boost::adaptors::reversed) {
                 bool first = true;
                 for (auto &s : sentence) {
-                    if (!first) {
+                    if (first) {
                         first = false;
                     } else {
                         std::cout << " ";

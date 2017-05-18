@@ -688,6 +688,9 @@ void PinyinDictionary::dump(size_t idx, std::ostream &out) {
                                             PinyinTrie::position_type pos) {
         trie.suffix(buf, _len, pos);
         auto sep = buf.find(pinyinHanziSep);
+        if (sep == std::string::npos) {
+            return true;
+        }
         boost::string_view ref(buf);
         auto fullPinyin = PinyinEncoder::decodeFullPinyin(ref.data(), sep);
         out << ref.substr(sep + 1) << " " << fullPinyin << " "

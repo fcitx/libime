@@ -407,8 +407,7 @@ static void getFuzzy(
                                  [final](auto &p) {
                                      return p.first == final;
                                  }) == finals.end()) {
-                    finals.emplace_back(final,
-                                        initialSize > 0 || finalSize > 0);
+                    finals.emplace_back(final, i > 0 || j > 0);
                 }
             }
         }

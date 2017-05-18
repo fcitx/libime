@@ -62,4 +62,3 @@ int main(int argc, char *argv[]) {
     history.dump(*out);
     return 0;
 }
-

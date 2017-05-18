@@ -22,8 +22,8 @@
 #include "libime_export.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/utility/string_view.hpp>
-#include <fcitx-utils/macros.h>
 #include <fcitx-utils/inputbuffer.h>
+#include <fcitx-utils/macros.h>
 #include <memory>
 
 namespace libime {
@@ -59,9 +59,7 @@ public:
 
     using fcitx::InputBuffer::type;
     // add one overload for string_view
-    void type(boost::string_view s) {
-        return type(s.data(), s.length());
-    }
+    void type(boost::string_view s) { return type(s.data(), s.length()); }
     boost::string_view at(size_t i) const;
 
     boost::string_view operator[](size_t i) const { return at(i); }

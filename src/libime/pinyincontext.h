@@ -60,6 +60,7 @@ public:
     size_t selectedLength() const;
 
     void learn();
+
 protected:
     void typeImpl(const char *s, size_t length) override;
 

@@ -31,5 +31,4 @@ boost::string_view InputBuffer::at(size_t i) const {
     std::tie(start, end) = rangeAt(i);
     return boost::string_view(userInput()).substr(start, end - start);
 }
-
 }

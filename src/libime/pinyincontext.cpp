@@ -69,7 +69,7 @@ PinyinContext::~PinyinContext() {}
 
 void PinyinContext::typeImpl(const char *s, size_t length) {
     cancelTill(cursor());
-    InputBuffer::type(s, length);
+    InputBuffer::typeImpl(s, length);
     update();
 }
 
@@ -213,7 +213,8 @@ void PinyinContext::update() {
             float min = 0;
             float max = -std::numeric_limits<float>::max();
             //
-            auto adjust = static_cast<float>(graph.size() - i) * d->ime_->model()->unknownPenalty() / 10;
+            auto adjust = static_cast<float>(graph.size() - i) *
+                          d->ime_->model()->unknownPenalty() / 10;
             for (auto &graphNode : graph.nodes(i)) {
                 for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() == bos) {
@@ -250,7 +251,7 @@ void PinyinContext::update() {
             }
         }
         std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
-                    std::greater<SentenceResult>());
+                  std::greater<SentenceResult>());
     }
 
     if (cursor() < selectedLength()) {

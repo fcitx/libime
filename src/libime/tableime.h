@@ -21,10 +21,7 @@
 
 namespace libime {
 
-class TableIME {
-};
-
-
+class TableIME {};
 }
 
 #endif // _FCITX_LIBIME_TABLEIME_H_

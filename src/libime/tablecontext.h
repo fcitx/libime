@@ -26,8 +26,6 @@ namespace libime {
 class TableContext {
 public:
 };
-
-
 }
 
 #endif // _FCITX_LIBIME_TABLECONTEXT_H_

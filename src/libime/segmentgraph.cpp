@@ -140,6 +140,16 @@ void SegmentGraph::merge(SegmentGraph &graph, DiscardCallback discardCallback) {
     }
 
     data_ = graph.data_;
+
+    // these nodes will be discarded by resize()
+    if (data_.size() + 1 < graph_.size()) {
+        for (size_t i = data_.size() + 1; i < graph_.size(); i++) {
+            for (auto &node : nodes(i)) {
+                nodeToDiscard.insert(&node);
+            }
+        }
+    }
+
     resize(data_.size() + 1);
     for (size_t i = since; i <= size(); i++) {
         for (auto &node : nodes(i)) {

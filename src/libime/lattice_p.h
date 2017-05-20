@@ -35,7 +35,7 @@ class LatticePrivate {
 public:
     LatticeMap lattice_;
 
-    std::vector<SentenceResult> nbests;
+    std::vector<SentenceResult> nbests_;
 };
 }
 

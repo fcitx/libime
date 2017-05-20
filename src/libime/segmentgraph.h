@@ -171,6 +171,38 @@ public:
         }
     }
 
+    bool checkGraph() const {
+        if (graph_[data_.size()]->size() != 1) {
+            return false;
+        }
+        std::unordered_set<const SegmentGraphNode *> nodes;
+        for (const auto &p : graph_) {
+            for (const auto &n : *p) {
+                if (n.next().empty() && n != end()) {
+                    return false;
+                }
+                nodes.insert(&n);
+            }
+        }
+
+        bfs(&start(), [&nodes] (const SegmentGraphNode *node) {
+            nodes.erase(node);
+        });
+
+        return nodes.empty();
+    }
+
+    bool checkNodeInGraph(const SegmentGraphNode *node) const {
+        for (const auto &p : graph_) {
+            for (const auto &n : *p) {
+                if (&n == node) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 private:
     bool dfsHelper(std::vector<size_t> &path, const SegmentGraphNode &start,
                    SegmentGraphDFSCallback callback) const {

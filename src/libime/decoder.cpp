@@ -135,6 +135,7 @@ const LanguageModelBase *Decoder::model() const {
 }
 
 // #define DEBUG_TIME
+// #define CONSISTENCY_CHECK
 
 void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                      const State &beginState, float max, float min,
@@ -145,11 +146,15 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     auto t0 = std::chrono::high_resolution_clock::now();
 #endif
 
-    l.d_ptr->nbests.clear();
+    l.d_ptr->nbests_.clear();
     l.d_ptr->lattice_.erase(nullptr);
     std::unordered_set<const SegmentGraphNode *> ignore;
     for (auto &p : lattice) {
         ignore.insert(p.first);
+#ifdef CONSISTENCY_CHECK
+        std::cout << "Ignore size: " << p.first << " " << p.second.size() << std::endl;
+        assert(graph.checkNodeInGraph(p.first));
+#endif
     }
 
     std::unordered_map<const SegmentGraphNode *,
@@ -170,6 +175,10 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     // std::cout << "Lattice Size: " << lattice.size() << std::endl;
     // avoid repeated allocation
     State state;
+
+#ifdef CONSISTENCY_CHECK
+    assert(graph.checkGraph());
+#endif
 
     auto start = &graph.start();
     // forward search
@@ -192,6 +201,7 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
 #endif
         for (auto &node : latticeNodes) {
             auto from = node.from();
+            assert(graph.checkNodeInGraph(from));
             float maxScore = -std::numeric_limits<float>::max();
             LatticeNode *maxNode = nullptr;
             State maxState;
@@ -204,7 +214,20 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             }
 
             if (!maxNode) {
-                auto &searchFrom = lattice[from];
+                auto iter = lattice.find(from);
+                assert(iter != lattice.end());
+                auto &searchFrom = iter->second;
+#ifdef CONSISTENCY_CHECK
+                if (searchFrom.size() == 0 ){
+                    std::cout << "from in ignore" << ignore.count(from) << " " << from->index() << " " << graph.nodes(from->index()).size() << std::endl;
+                    if (graph.nodes(from->index()).size()) {
+                        assert(&graph.node(from->index()) == from);
+                    }
+                }
+                assert(searchFrom.size() > 0);
+                std::cout << "Search from size: " << from << " " << searchFrom.size() <<
+                std::endl;
+#endif
                 auto searchSize = beamSize;
                 if (searchSize) {
                     searchSize = std::min(searchSize, lattice[from].size());
@@ -269,7 +292,7 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
         assert(lattice[&graph.start()].size() == 1);
         assert(lattice[nullptr].size() == 1);
         auto pos = &lattice[nullptr][0];
-        l.d_ptr->nbests.push_back(pos->toSentenceResult());
+        l.d_ptr->nbests_.push_back(pos->toSentenceResult());
     } else {
         struct NBestNodeLess {
             bool operator()(const NBestNode *lhs, const NBestNode *rhs) const {
@@ -343,7 +366,7 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                 }
                 pivot = pivot->next_;
             }
-            l.d_ptr->nbests.emplace_back(std::move(result), node->fn_);
+            l.d_ptr->nbests_.emplace_back(std::move(result), node->fn_);
         }
     }
 #ifdef DEBUG_TIME

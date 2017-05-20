@@ -35,12 +35,12 @@ Lattice &Lattice::operator=(Lattice &&other) {
 
 size_t Lattice::sentenceSize() const {
     FCITX_D();
-    return d->nbests.size();
+    return d->nbests_.size();
 }
 
 const SentenceResult &Lattice::sentence(size_t idx) const {
     FCITX_D();
-    return d->nbests[idx];
+    return d->nbests_[idx];
 }
 
 Lattice::NodeRange Lattice::nodes(const SegmentGraphNode *node) const {
@@ -55,7 +55,7 @@ Lattice::NodeRange Lattice::nodes(const SegmentGraphNode *node) const {
 void Lattice::clear() {
     FCITX_D();
     d->lattice_.clear();
-    d->nbests.clear();
+    d->nbests_.clear();
 }
 
 void Lattice::discardNode(

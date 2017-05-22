@@ -17,3 +17,12 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "tableime.h"
+
+namespace libime {
+
+class TableIMEPrivate {};
+
+TableIME::TableIME() {}
+
+TableIME::~TableIME() {}
+}

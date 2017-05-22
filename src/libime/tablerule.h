@@ -204,9 +204,10 @@ struct TableRule {
             if (first) {
                 first = false;
             } else {
-                result +=  '+';
+                result += '+';
             }
-            result += ((entry.flag == TableRuleEntryFlag::FromFront) ? 'p' : 'n');
+            result +=
+                ((entry.flag == TableRuleEntryFlag::FromFront) ? 'p' : 'n');
             result += static_cast<char>('0' + entry.character);
             result += static_cast<char>('0' + entry.encodingIndex);
         }

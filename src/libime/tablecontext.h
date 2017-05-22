@@ -20,11 +20,44 @@
 #define _FCITX_LIBIME_TABLECONTEXT_H_
 
 #include "inputbuffer.h"
+#include "libime_export.h"
+#include "tableime.h"
+#include <fcitx-utils/macros.h>
 
 namespace libime {
 
-class TableContext {
+class TableContextPrivate;
+
+class LIBIME_EXPORT TableContext : public InputBuffer {
 public:
+    TableContext(TableIME *ime);
+    virtual ~TableContext();
+
+    void erase(size_t from, size_t to) override;
+    void setCursor(size_t pos) override;
+
+    void select(size_t idx);
+    void cancel();
+    bool cancelTill(size_t pos);
+
+    bool selected() const;
+#if 0
+    std::string preedit() const;
+    std::pair<std::string, size_t> preeditWithCursor() const;
+    std::string selectedSentence() const;
+    size_t selectedLength() const;
+#endif
+
+    void learn();
+
+protected:
+    void typeImpl(const char *s, size_t length) override;
+
+private:
+    void update();
+
+    std::unique_ptr<TableContextPrivate> d_ptr;
+    FCITX_DECLARE_PRIVATE(TableContext);
 };
 }
 

@@ -301,7 +301,7 @@ PinyinFinal PinyinEncoder::stringToFinal(const std::string &str) {
     if (iter != finalMap.right.end()) {
         return iter->second;
     }
-    return {};
+    return PinyinFinal::Invalid;
 }
 
 bool PinyinEncoder::isValidInitialFinal(PinyinInitial initial,

@@ -19,9 +19,22 @@
 #ifndef _FCITX_LIBIME_TABLEIME_H_
 #define _FCITX_LIBIME_TABLEIME_H_
 
+#include "libime_export.h"
+#include <fcitx-utils/macros.h>
+#include <memory>
+
 namespace libime {
 
-class TableIME {};
+class TableIMEPrivate;
+
+class LIBIME_EXPORT TableIME {
+public:
+    TableIME();
+    virtual ~TableIME();
+
+private:
+    std::unique_ptr<TableIMEPrivate> d_ptr;
+};
 }
 
 #endif // _FCITX_LIBIME_TABLEIME_H_

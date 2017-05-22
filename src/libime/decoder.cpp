@@ -152,7 +152,8 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     for (auto &p : lattice) {
         ignore.insert(p.first);
 #ifdef CONSISTENCY_CHECK
-        std::cout << "Ignore size: " << p.first << " " << p.second.size() << std::endl;
+        std::cout << "Ignore size: " << p.first << " " << p.second.size()
+                  << std::endl;
         assert(graph.checkNodeInGraph(p.first));
 #endif
     }
@@ -218,15 +219,17 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                 assert(iter != lattice.end());
                 auto &searchFrom = iter->second;
 #ifdef CONSISTENCY_CHECK
-                if (searchFrom.size() == 0 ){
-                    std::cout << "from in ignore" << ignore.count(from) << " " << from->index() << " " << graph.nodes(from->index()).size() << std::endl;
+                if (searchFrom.size() == 0) {
+                    std::cout << "from in ignore" << ignore.count(from) << " "
+                              << from->index() << " "
+                              << graph.nodes(from->index()).size() << std::endl;
                     if (graph.nodes(from->index()).size()) {
                         assert(&graph.node(from->index()) == from);
                     }
                 }
                 assert(searchFrom.size() > 0);
-                std::cout << "Search from size: " << from << " " << searchFrom.size() <<
-                std::endl;
+                std::cout << "Search from size: " << from << " "
+                          << searchFrom.size() << std::endl;
 #endif
                 auto searchSize = beamSize;
                 if (searchSize) {

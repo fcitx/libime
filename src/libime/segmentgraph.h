@@ -185,9 +185,8 @@ public:
             }
         }
 
-        bfs(&start(), [&nodes] (const SegmentGraphNode *node) {
-            nodes.erase(node);
-        });
+        bfs(&start(),
+            [&nodes](const SegmentGraphNode *node) { nodes.erase(node); });
 
         return nodes.empty();
     }

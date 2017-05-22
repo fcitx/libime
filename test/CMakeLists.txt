@@ -28,3 +28,6 @@ add_executable(testtrie testtrie.cpp)
 target_link_libraries(testtrie LibIME::LibIME)
 add_executable(testdecoder testdecoder.cpp)
 target_link_libraries(testdecoder LibIME::LibIME)
+
+add_executable(testtableime testtableime.cpp)
+target_link_libraries(testtableime LibIME::LibIME)

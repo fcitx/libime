@@ -24,6 +24,22 @@
 
 namespace libime {
 
+class StaticLanguageModelFilePrivate {
+public:
+    StaticLanguageModelFilePrivate(const char *file,
+                                   const lm::ngram::Config &config)
+        : model_(file, config) {}
+    lm::ngram::QuantArrayTrieModel model_;
+};
+
+StaticLanguageModelFile::StaticLanguageModelFile(const char *file) {
+    lm::ngram::Config config;
+    config.sentence_marker_missing = lm::SILENT;
+    d_ptr = std::make_unique<StaticLanguageModelFilePrivate>(file, config);
+}
+
+StaticLanguageModelFile::~StaticLanguageModelFile() {}
+
 static_assert(sizeof(void *) + sizeof(lm::ngram::State) <= StateSize, "Size");
 
 bool LanguageModelBase::isNodeUnknown(const LatticeNode &node) const {
@@ -43,48 +59,50 @@ static inline const lm::ngram::State &lmState(const State &state) {
 
 class LanguageModelPrivate {
 public:
-    LanguageModelPrivate(const char *file, const lm::ngram::Config &config)
-        : model_(file, config) {}
+    LanguageModelPrivate(std::shared_ptr<StaticLanguageModelFile> file)
+        : file_(file) {}
 
-    lm::ngram::QuantArrayTrieModel model_;
+    auto &model() { return file_->d_func()->model_; }
+    const auto &model() const { return file_->d_func()->model_; }
+
+    std::shared_ptr<StaticLanguageModelFile> file_;
     State beginState_;
     State nullState_;
     float unknown_ = std::log10(1 / 20000.0f);
 };
 
 LanguageModel::LanguageModel(const char *file) : LanguageModelBase() {
-    lm::ngram::Config config;
-    config.sentence_marker_missing = lm::SILENT;
-    d_ptr = std::make_unique<LanguageModelPrivate>(file, config);
+    auto lmfile = std::make_shared<StaticLanguageModelFile>(file);
+    d_ptr = std::make_unique<LanguageModelPrivate>(lmfile);
 
     FCITX_D();
-    lmState(d->beginState_) = d->model_.BeginSentenceState();
-    lmState(d->nullState_) = d->model_.NullContextState();
+    lmState(d->beginState_) = d->model().BeginSentenceState();
+    lmState(d->nullState_) = d->model().NullContextState();
 }
 
 LanguageModel::~LanguageModel() {}
 
 WordIndex LanguageModel::beginSentence() const {
     FCITX_D();
-    auto &v = d->model_.GetVocabulary();
+    auto &v = d->model().GetVocabulary();
     return v.BeginSentence();
 }
 
 WordIndex LanguageModel::endSentence() const {
     FCITX_D();
-    auto &v = d->model_.GetVocabulary();
+    auto &v = d->model().GetVocabulary();
     return v.EndSentence();
 }
 
 WordIndex LanguageModel::unknown() const {
     FCITX_D();
-    auto &v = d->model_.GetVocabulary();
+    auto &v = d->model().GetVocabulary();
     return v.NotFound();
 }
 
 WordIndex LanguageModel::index(boost::string_view word) const {
     FCITX_D();
-    auto &v = d->model_.GetVocabulary();
+    auto &v = d->model().GetVocabulary();
     return v.Index(StringPiece{word.data(), word.size()});
 }
 
@@ -102,7 +120,7 @@ float LanguageModel::score(const State &state, const WordNode &node,
                            State &out) const {
     FCITX_D();
     assert(&state != &out);
-    return d->model_.Score(lmState(state), node.idx(), lmState(out)) +
+    return d->model().Score(lmState(state), node.idx(), lmState(out)) +
            (node.idx() == unknown() ? d->unknown_ : 0.0f);
 }
 

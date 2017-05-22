@@ -16,4 +16,36 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#include "shuangpincontext.h"
+#ifndef _FCITX_LIBIME_SHUANGPINPROFILE_H_
+#define _FCITX_LIBIME_SHUANGPINPROFILE_H_
+
+#include <fcitx-utils/macros.h>
+#include <istream>
+#include <memory>
+
+namespace libime {
+
+enum class ShuangpinBultiInProfile {
+    Ziranma,
+    MS,
+    Ziguang,
+    ABC,
+    Zhongwenzhixing,
+    PinyinJiajia,
+    Xiaohe,
+};
+
+class ShuangpinProfilePrivate;
+
+class ShuangpinProfile {
+public:
+    ShuangpinProfile(ShuangpinBultiInProfile profile);
+    ShuangpinProfile(std::istream &in);
+
+private:
+    std::unique_ptr<ShuangpinProfilePrivate> d_ptr;
+    FCITX_DECLARE_PRIVATE(ShuangpinProfile);
+};
+}
+
+#endif // _FCITX_LIBIME_SHUANGPINPROFILE_H_

@@ -59,6 +59,8 @@ public:
     std::string selectedSentence() const;
     size_t selectedLength() const;
 
+    std::vector<std::string> selectedWords() const;
+
     void learn();
 
 protected:

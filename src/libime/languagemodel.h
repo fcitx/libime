@@ -53,9 +53,24 @@ public:
     virtual bool isUnknown(WordIndex idx, boost::string_view view) const = 0;
 };
 
+class StaticLanguageModelFilePrivate;
+
+class LIBIME_EXPORT StaticLanguageModelFile {
+    friend class LanguageModelPrivate;
+
+public:
+    explicit StaticLanguageModelFile(const char *file);
+    virtual ~StaticLanguageModelFile();
+
+private:
+    std::unique_ptr<StaticLanguageModelFilePrivate> d_ptr;
+    FCITX_DECLARE_PRIVATE(StaticLanguageModelFile);
+};
+
 class LIBIME_EXPORT LanguageModel : public LanguageModelBase {
 public:
     LanguageModel(const char *file);
+    LanguageModel(std::shared_ptr<StaticLanguageModelFile> file);
     virtual ~LanguageModel();
 
     WordIndex beginSentence() const override;

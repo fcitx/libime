@@ -17,3 +17,55 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "tablecontext.h"
+#include "tablebaseddictionary.h"
+#include "userlanguagemodel.h"
+
+namespace libime {
+
+class TableContextPrivate {
+public:
+    std::shared_ptr<TableBasedDictionary> dict_;
+    std::shared_ptr<UserLanguageModel> model_;
+};
+
+TableContext::TableContext(TableIME *ime) {}
+
+TableContext::~TableContext() {}
+
+bool TableContext::cancelTill(size_t pos) { return false; }
+
+void TableContext::typeImpl(const char *s, size_t length) {
+    cancelTill(cursor());
+    InputBuffer::typeImpl(s, length);
+    update();
+}
+
+void TableContext::setCursor(size_t pos) {
+    auto cancelled = cancelTill(pos);
+    InputBuffer::setCursor(pos);
+    if (cancelled) {
+        update();
+    }
+}
+
+void TableContext::erase(size_t from, size_t to) {
+    if (from == to) {
+        return;
+    }
+
+    // check if erase everything
+    if (from == 0 && to >= size()) {
+        FCITX_D();
+        // FIXME
+    } else {
+        cancelTill(from);
+    }
+    InputBuffer::erase(from, to);
+
+    if (size()) {
+        update();
+    }
+}
+
+void TableContext::update() {}
+}

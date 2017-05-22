@@ -297,18 +297,16 @@ std::string PinyinContext::preedit() const { return preeditWithCursor().first; }
 
 std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
     FCITX_D();
-    std::string ss;
-    auto sentence = selectedSentence();
+    std::string ss = selectedSentence();
     auto len = selectedLength();
-    ss += sentence;
     auto c = cursor();
-    size_t actualCursor = sentence.size();
+    size_t actualCursor = ss.size();
     // should not happen
     if (c < len) {
         c = len;
     }
 
-    auto resultSize = sentence.size();
+    auto resultSize = ss.size();
 
     if (d->candidates_.size()) {
         bool first = true;
@@ -336,6 +334,19 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
         actualCursor = resultSize;
     }
     return {ss, actualCursor};
+}
+
+std::vector<std::string> PinyinContext::selectedWords() const {
+    FCITX_D();
+    std::vector<std::string> newSentence;
+    for (auto &s : d->selected_) {
+        for (auto &item : s.second) {
+            if (!item.word_.word().empty()) {
+                newSentence.push_back(item.word_.word());
+            }
+        }
+    }
+    return newSentence;
 }
 
 void PinyinContext::learn() {

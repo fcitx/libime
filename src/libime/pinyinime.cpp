@@ -37,6 +37,7 @@ public:
     std::unique_ptr<PinyinDictionary> dict_;
     std::unique_ptr<UserLanguageModel> model_;
     std::unique_ptr<PinyinDecoder> decoder_;
+    std::shared_ptr<const ShuangpinProfile> spProfile_;
     size_t nbest_ = 1;
     size_t beamSize_ = Decoder::beamSizeDefault;
     size_t frameSize_ = Decoder::frameSizeDefault;
@@ -59,7 +60,6 @@ PinyinFuzzyFlags PinyinIME::fuzzyFlags() const {
 void PinyinIME::setFuzzyFlags(PinyinFuzzyFlags flags) {
     FCITX_D();
     d->flags_ = flags;
-    d->dict_->setFuzzyFlags(flags);
     emit<PinyinIME::optionChanged>();
 }
 
@@ -144,5 +144,19 @@ float PinyinIME::maxDistance() const {
 float PinyinIME::minPath() const {
     FCITX_D();
     return d->minPath_;
+}
+
+void PinyinIME::setShuangpinProfile(
+    std::shared_ptr<const ShuangpinProfile> profile) {
+    FCITX_D();
+    if (d->spProfile_ != profile) {
+        d->spProfile_ = profile;
+        emit<PinyinIME::optionChanged>();
+    }
+}
+
+std::shared_ptr<const ShuangpinProfile> PinyinIME::shuangpinProfile() const {
+    FCITX_D();
+    return d->spProfile_;
 }
 }

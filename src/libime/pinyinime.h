@@ -49,6 +49,8 @@ public:
     void setFrameSize(size_t n);
     void setScoreFilter(float maxDistance = std::numeric_limits<float>::max(),
                         float minPath = -std::numeric_limits<float>::max());
+    void setShuangpinProfile(std::shared_ptr<const ShuangpinProfile> profile);
+    std::shared_ptr<const ShuangpinProfile> shuangpinProfile() const;
 
     float maxDistance() const;
     float minPath() const;

@@ -4,6 +4,7 @@ set(LIBIME_SINGLE_FILE_TEST
     testpinyinencoder
     testinputbuffer
     testhistorybigram
+    testshuangpinprofile
     )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})

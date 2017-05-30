@@ -36,27 +36,9 @@ class PinyinDictionaryPrivate;
 typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi,
                            float cost)>
     PinyinMatchCallback;
-
-class PinyinMatchStatePrivate;
 class PinyinDictionary;
 
 using PinyinTrie = DATrie<float>;
-
-class LIBIME_EXPORT PinyinMatchState {
-    friend class PinyinDictionary;
-
-public:
-    PinyinMatchState(PinyinDictionary *dict);
-    ~PinyinMatchState();
-
-    void clear();
-    void discardNode(const std::unordered_set<const SegmentGraphNode *> &node);
-    void discardDictionary(size_t idx);
-
-private:
-    std::unique_ptr<PinyinMatchStatePrivate> d_ptr;
-    FCITX_DECLARE_PRIVATE(PinyinMatchState);
-};
 
 class LIBIME_EXPORT PinyinDictionary : public Dictionary,
                                        public fcitx::ConnectableObject {
@@ -80,7 +62,6 @@ public:
     const PinyinTrie *trie(size_t idx) const;
     size_t dictSize() const;
 
-    void setFuzzyFlags(PinyinFuzzyFlags flags);
     void addWord(size_t idx, boost::string_view fullPinyin,
                  boost::string_view hanzi, float cost = 0.0f);
 

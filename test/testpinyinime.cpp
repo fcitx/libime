@@ -23,6 +23,7 @@
 #include "libime/pinyindecoder.h"
 #include "libime/pinyindictionary.h"
 #include "libime/pinyinime.h"
+#include "libime/shuangpinprofile.h"
 #include "libime/userlanguagemodel.h"
 #include "testutils.h"
 #include <boost/range/adaptor/transformed.hpp>
@@ -46,8 +47,13 @@ int main(int argc, char *argv[]) {
     ime.dict()->load(PinyinDictionary::SystemDict, argv[1],
                      PinyinDictFormat::Binary);
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
-    PinyinContext c(&ime);
     ime.setScoreFilter(1.0f);
+    ime.setShuangpinProfile(
+        std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::MS));
+    PinyinContext c(&ime);
+    if (argc == 4 && strcmp(argv[3], "sp") == 0) {
+        c.setUseShuangpin(true);
+    }
 
     std::string word;
     while (std::cin >> word) {

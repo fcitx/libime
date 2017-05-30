@@ -38,6 +38,7 @@ set(LIBIME_HDRS
     tableime.h
     tablecontext.h
     lrucache.h
+    pinyinmatchstate.h
     ${CMAKE_CURRENT_BINARY_DIR}/libime_export.h
     )
 
@@ -51,6 +52,7 @@ set(LIBIME_SRCS
     languagemodel.cpp
     pinyinime.cpp
     pinyincontext.cpp
+    pinyinmatchstate.cpp
     shuangpinprofile.cpp
     inputbuffer.cpp
     lattice.cpp

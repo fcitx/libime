@@ -36,6 +36,9 @@ public:
     PinyinContext(PinyinIME *ime);
     virtual ~PinyinContext();
 
+    void setUseShuangpin(bool sp);
+    bool useShuangpin() const;
+
     void erase(size_t from, size_t to) override;
     void setCursor(size_t pos) override;
 
@@ -63,13 +66,14 @@ public:
 
     void learn();
 
+    PinyinIME *ime() const;
+
 protected:
     void typeImpl(const char *s, size_t length) override;
 
 private:
     void update();
     bool learnWord();
-    void learnSentence();
     std::unique_ptr<PinyinContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinContext);
 };

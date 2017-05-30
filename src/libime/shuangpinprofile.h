@@ -20,12 +20,18 @@
 #define _FCITX_LIBIME_SHUANGPINPROFILE_H_
 
 #include <fcitx-utils/macros.h>
+
+#include "libime_export.h"
+#include "pinyinencoder.h"
 #include <istream>
+#include <map>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 namespace libime {
 
-enum class ShuangpinBultiInProfile {
+enum class ShuangpinBuiltinProfile {
     Ziranma,
     MS,
     Ziguang,
@@ -37,12 +43,19 @@ enum class ShuangpinBultiInProfile {
 
 class ShuangpinProfilePrivate;
 
-class ShuangpinProfile {
+class LIBIME_EXPORT ShuangpinProfile {
 public:
-    ShuangpinProfile(ShuangpinBultiInProfile profile);
-    ShuangpinProfile(std::istream &in);
+    typedef std::map<std::string,
+                     std::multimap<PinyinSyllable, PinyinFuzzyFlags>>
+        TableType;
+    explicit ShuangpinProfile(ShuangpinBuiltinProfile profile);
+    explicit ShuangpinProfile(std::istream &in);
+    ~ShuangpinProfile();
+
+    const TableType &table() const;
 
 private:
+    void buildShuangpinTable();
     std::unique_ptr<ShuangpinProfilePrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(ShuangpinProfile);
 };

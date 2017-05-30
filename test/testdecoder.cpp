@@ -25,7 +25,7 @@
 
 using namespace libime;
 
-void testTime(PinyinDictionary &dict, Decoder &decoder, const char *pinyin,
+void testTime(PinyinDictionary &, Decoder &decoder, const char *pinyin,
               PinyinFuzzyFlags flags, int nbest = 1) {
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
@@ -33,11 +33,10 @@ void testTime(PinyinDictionary &dict, Decoder &decoder, const char *pinyin,
     ScopedNanoTimer timer(printTime);
     auto graph = PinyinEncoder::parseUserPinyin(pinyin, flags);
     Lattice lattice;
-    PinyinMatchState state(&dict);
     decoder.decode(lattice, graph, nbest, decoder.model()->nullState(),
                    std::numeric_limits<float>::max(),
                    -std::numeric_limits<float>::max(), Decoder::beamSizeDefault,
-                   Decoder::frameSizeDefault, &state);
+                   Decoder::frameSizeDefault, nullptr);
     for (size_t i = 0, e = lattice.sentenceSize(); i < e; i++) {
         auto &sentence = lattice.sentence(i);
         for (auto &p : sentence.sentence()) {
@@ -106,5 +105,7 @@ int main(int argc, char *argv[]) {
                                    boost::string_view) {});
     }
     testTime(dict, decoder, "sdfsdfsdfsdfsdfsdfsdf", PinyinFuzzyFlag::None, 2);
+    testTime(dict, decoder, "ceshiyixiayebuhuichucuo", PinyinFuzzyFlag::None,
+             2);
     return 0;
 }

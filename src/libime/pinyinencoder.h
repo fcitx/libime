@@ -31,6 +31,8 @@
 
 namespace libime {
 
+class ShuangpinProfile;
+
 enum class PinyinFuzzyFlag {
     None = 0,
     NG_GN = 1 << 0,
@@ -80,6 +82,18 @@ enum class PinyinInitial : char {
     Zero
 };
 
+inline bool operator<(PinyinInitial l, PinyinInitial r) {
+    return static_cast<char>(l) < static_cast<char>(r);
+}
+
+inline bool operator<=(PinyinInitial l, PinyinInitial r) {
+    return l < r || l == r;
+}
+
+inline bool operator>(PinyinInitial l, PinyinInitial r) { return !(l <= r); }
+
+inline bool operator>=(PinyinInitial l, PinyinInitial r) { return !(l < r); }
+
 enum class PinyinFinal : char {
     Invalid = 0,
     A = 'A',
@@ -120,6 +134,16 @@ enum class PinyinFinal : char {
     Zero
 };
 
+inline bool operator<(PinyinFinal l, PinyinFinal r) {
+    return static_cast<char>(l) < static_cast<char>(r);
+}
+
+inline bool operator<=(PinyinFinal l, PinyinFinal r) { return l < r || l == r; }
+
+inline bool operator>(PinyinFinal l, PinyinFinal r) { return !(l <= r); }
+
+inline bool operator>=(PinyinFinal l, PinyinFinal r) { return !(l < r); }
+
 struct LIBIME_EXPORT PinyinSyllable {
 public:
     PinyinSyllable(PinyinInitial initial, PinyinFinal final)
@@ -132,8 +156,25 @@ public:
     std::string toString() const;
 
     PinyinSyllable &operator=(const PinyinSyllable &) = default;
-    bool operator==(const PinyinSyllable &other) {
+    bool operator==(const PinyinSyllable &other) const {
         return initial_ == other.initial_ && final_ == other.final_;
+    }
+
+    bool operator!=(const PinyinSyllable &other) const {
+        return !(*this == other);
+    }
+    bool operator<(const PinyinSyllable &other) const {
+        return std::make_pair(initial_, final_) <
+               std::make_pair(other.initial_, other.final_);
+    }
+    bool operator<=(const PinyinSyllable &other) const {
+        return *this < other || *this == other;
+    }
+    bool operator>(const PinyinSyllable &other) const {
+        return !(*this <= other);
+    }
+    bool operator>=(const PinyinSyllable &other) const {
+        return !(*this < other);
     }
 
 private:
@@ -145,6 +186,10 @@ class LIBIME_EXPORT PinyinEncoder {
 public:
     static SegmentGraph parseUserPinyin(boost::string_view pinyin,
                                         PinyinFuzzyFlags flags);
+    static SegmentGraph parseUserShuangpin(boost::string_view pinyin,
+                                           const ShuangpinProfile &sp,
+                                           PinyinFuzzyFlags flags);
+
     static void parseMoreUserPinyin(SegmentGraph &graph,
                                     boost::string_view pinyin, size_t from,
                                     PinyinFuzzyFlags flags);
@@ -176,6 +221,10 @@ public:
     static std::vector<
         std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
     stringToSyllables(boost::string_view pinyin, PinyinFuzzyFlags flags);
+    static std::vector<
+        std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
+    shuangpinToSyllables(boost::string_view pinyin, const ShuangpinProfile &sp,
+                         PinyinFuzzyFlags flags);
 
     static const char firstInitial = static_cast<char>(PinyinInitial::B);
     static const char lastInitial = static_cast<char>(PinyinInitial::Zero);

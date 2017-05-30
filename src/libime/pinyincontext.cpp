@@ -21,6 +21,7 @@
 #include "pinyindecoder.h"
 #include "pinyinencoder.h"
 #include "pinyinime.h"
+#include "pinyinmatchstate.h"
 #include "userlanguagemodel.h"
 #include <algorithm>
 #include <iostream>
@@ -38,11 +39,12 @@ struct SelectedPinyin {
 
 class PinyinContextPrivate {
 public:
-    PinyinContextPrivate(PinyinIME *ime)
-        : ime_(ime), matchState_(ime->dict()) {}
+    PinyinContextPrivate(PinyinContext *q, PinyinIME *ime)
+        : ime_(ime), matchState_(q) {}
 
     std::vector<std::pair<bool, std::vector<SelectedPinyin>>> selected_;
 
+    bool sp_ = false;
     PinyinIME *ime_;
     SegmentGraph segs_;
     Lattice lattice_;
@@ -52,20 +54,31 @@ public:
 };
 
 PinyinContext::PinyinContext(PinyinIME *ime)
-    : InputBuffer(true), d_ptr(std::make_unique<PinyinContextPrivate>(ime)) {
+    : InputBuffer(true),
+      d_ptr(std::make_unique<PinyinContextPrivate>(this, ime)) {
     FCITX_D();
     d->conn_.emplace_back(
         ime->connect<PinyinIME::optionChanged>([this]() { clear(); }));
     d->conn_.emplace_back(
         ime->dict()->connect<PinyinDictionary::dictionaryChanged>(
-            [this](size_t idx) {
+            [this](size_t) {
                 FCITX_D();
                 d->matchState_.clear();
-                d->matchState_.discardDictionary(idx);
             }));
 }
 
 PinyinContext::~PinyinContext() {}
+
+void PinyinContext::setUseShuangpin(bool sp) {
+    FCITX_D();
+    d->sp_ = sp;
+    d->matchState_.clear();
+}
+
+bool PinyinContext::useShuangpin() const {
+    FCITX_D();
+    return d->sp_;
+}
 
 void PinyinContext::typeImpl(const char *s, size_t length) {
     cancelTill(cursor());
@@ -183,9 +196,16 @@ void PinyinContext::update() {
                 }
             }
         }
-        auto newGraph = PinyinEncoder::parseUserPinyin(
-            boost::string_view(userInput()).substr(start),
-            d->ime_->fuzzyFlags());
+        SegmentGraph newGraph;
+        if (auto spProfile = d->matchState_.shuangpinProfile()) {
+            newGraph = PinyinEncoder::parseUserShuangpin(
+                boost::string_view(userInput()).substr(start), *spProfile,
+                d->ime_->fuzzyFlags());
+        } else {
+            newGraph = PinyinEncoder::parseUserPinyin(
+                boost::string_view(userInput()).substr(start),
+                d->ime_->fuzzyFlags());
+        }
         d->segs_.merge(
             newGraph,
             [d](const std::unordered_set<const SegmentGraphNode *> &nodes) {
@@ -196,8 +216,8 @@ void PinyinContext::update() {
 
         d->ime_->decoder()->decode(d->lattice_, d->segs_, d->ime_->nbest(),
                                    state, d->ime_->maxDistance(),
-                                   d->ime_->minPath(), d->ime_->beamSize(), 100,
-                                   &d->matchState_);
+                                   d->ime_->minPath(), d->ime_->beamSize(),
+                                   d->ime_->frameSize(), &d->matchState_);
 
         d->candidates_.clear();
         std::unordered_set<std::string> dup;
@@ -405,5 +425,8 @@ bool PinyinContext::learnWord() {
     return true;
 }
 
-void PinyinContext::learnSentence() {}
+PinyinIME *PinyinContext::ime() const {
+    FCITX_D();
+    return d->ime_;
+}
 }

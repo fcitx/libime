@@ -18,6 +18,7 @@
  */
 #include "pinyinencoder.h"
 #include "pinyindata.h"
+#include "shuangpinprofile.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
@@ -216,6 +217,65 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
             }
         }
     }
+    return result;
+}
+
+SegmentGraph PinyinEncoder::parseUserShuangpin(boost::string_view pinyin,
+                                               const ShuangpinProfile &sp,
+                                               PinyinFuzzyFlags flags) {
+    SegmentGraph result(pinyin.to_string());
+
+    // assume user always type valid shuangpin first, if not keep one.
+    size_t i = 0;
+
+    auto &table = sp.table();
+    while (i < pinyin.size()) {
+        auto start = i;
+        while (pinyin[i] == '\'' && i < pinyin.size()) {
+            i++;
+        }
+        if (start != i) {
+            addNext(result, start, i);
+            continue;
+        }
+        auto initial = pinyin[i];
+        char final = '\0';
+        if (i + 1 < pinyin.size() && pinyin[i + 1] != '\'') {
+            final = pinyin[i + 1];
+        }
+
+        std::string match{initial};
+        if (final) {
+            match.push_back(final);
+        }
+
+        auto longestMatchInTable = [flags](decltype(table) t,
+                                           const std::string &v) {
+            auto py = v;
+            while (py.size()) {
+                auto iter = t.find(py);
+                if (iter != t.end()) {
+                    for (auto &p : iter->second) {
+                        if (flags.test(p.second)) {
+                            return iter;
+                        }
+                    }
+                }
+                py.pop_back();
+            }
+            return t.end();
+        };
+
+        auto iter = longestMatchInTable(table, match);
+        if (iter != table.end()) {
+            addNext(result, i, i + iter->first.size());
+            i = i + iter->first.size();
+        } else {
+            addNext(result, i, i + 1);
+            i = i + 1;
+        }
+    }
+
     return result;
 }
 
@@ -463,6 +523,36 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin,
         }
     }
 #endif
+
+    return result;
+}
+
+std::vector<std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
+PinyinEncoder::shuangpinToSyllables(boost::string_view pinyin,
+                                    const ShuangpinProfile &sp,
+                                    PinyinFuzzyFlags flags) {
+    assert(pinyin.size() <= 2);
+    auto &table = sp.table();
+    auto iter = table.find(pinyin.to_string());
+
+    std::vector<
+        std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
+        result;
+    if (iter != table.end()) {
+        for (const auto &p : iter->second) {
+            if (flags.test(p.second)) {
+                getFuzzy(result, {p.first.initial(), p.first.final()}, flags);
+            }
+        }
+    }
+
+    if (result.size()) {
+        result.emplace_back(
+            std::piecewise_construct,
+            std::forward_as_tuple(PinyinInitial::Invalid),
+            std::forward_as_tuple(1,
+                                  std::make_pair(PinyinFinal::Invalid, false)));
+    }
 
     return result;
 }

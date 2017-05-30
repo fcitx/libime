@@ -93,7 +93,7 @@ ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
 }
 
 ShuangpinProfile::ShuangpinProfile(std::istream &in)
-    : d_ptr(std::unique_ptr<ShuangpinProfilePrivate>()) {
+    : d_ptr(std::make_unique<ShuangpinProfilePrivate>()) {
     FCITX_D();
     std::string line;
     auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
@@ -132,7 +132,7 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
             equal + 2 != line.size()) {
             continue;
         }
-        auto pinyin = lineView.substr(0, equal - 1);
+        auto pinyin = lineView.substr(0, equal);
         auto key = fcitx::charutils::tolower(lineView[equal + 1]);
         auto final = PinyinEncoder::stringToFinal(pinyin.to_string());
         if (final == PinyinFinal::Invalid) {

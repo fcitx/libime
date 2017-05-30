@@ -83,5 +83,55 @@ int main() {
         PinyinFuzzyFlag::None)
         .dfs(callback);
 
+    ShuangpinProfile zrm(ShuangpinBuiltinProfile::Ziranma);
+
+    std::string zrmText = "[方案]\n"
+                          "方案名称=自定义\n"
+                          "\n"
+                          "[零声母标识]\n"
+                          "=O\n"
+                          "\n"
+                          "[声母]\n"
+                          "# 双拼编码就是它本身的声母不必列出\n"
+                          "ch=I\n"
+                          "sh=U\n"
+                          "zh=V\n"
+                          "\n"
+                          "[韵母]\n"
+                          "# 双拼编码就是它本身的韵母不必列出\n"
+                          "ai=L\n"
+                          "an=J\n"
+                          "ang=H\n"
+                          "ao=K\n"
+                          "ei=Z\n"
+                          "en=F\n"
+                          "eng=G\n"
+                          "er=R\n"
+                          "ia=W\n"
+                          "ian=M\n"
+                          "iang=D\n"
+                          "iao=C\n"
+                          "ie=X\n"
+                          "in=N\n"
+                          "ing=Y\n"
+                          "iong=S\n"
+                          "iu=Q\n"
+                          "ng=G\n"
+                          "ong=S\n"
+                          "ou=B\n"
+                          "ua=W\n"
+                          "uai=Y\n"
+                          "uan=R\n"
+                          "uang=D\n"
+                          "ue=T\n"
+                          "ui=V\n"
+                          "un=P\n"
+                          "ve=T\n"
+                          "uo=O\n";
+    std::stringstream ss(zrmText);
+    ShuangpinProfile profile(ss);
+    assert(profile.table() == zrm.table());
+    assert(profile.validInput() == zrm.validInput());
+
     return 0;
 }

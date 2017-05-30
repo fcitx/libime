@@ -26,6 +26,7 @@
 #include <istream>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 
@@ -48,11 +49,13 @@ public:
     typedef std::map<std::string,
                      std::multimap<PinyinSyllable, PinyinFuzzyFlags>>
         TableType;
+    typedef std::set<char> ValidInputSetType;
     explicit ShuangpinProfile(ShuangpinBuiltinProfile profile);
     explicit ShuangpinProfile(std::istream &in);
     ~ShuangpinProfile();
 
     const TableType &table() const;
+    const ValidInputSetType &validInput() const;
 
 private:
     void buildShuangpinTable();

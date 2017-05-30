@@ -369,6 +369,37 @@ std::vector<std::string> PinyinContext::selectedWords() const {
     return newSentence;
 }
 
+std::string PinyinContext::selectedFullPinyin() const {
+    FCITX_D();
+    std::string pinyin;
+    for (auto &s : d->selected_) {
+        for (auto &item : s.second) {
+            if (!item.word_.word().empty()) {
+                if (!pinyin.empty()) {
+                    pinyin.push_back('\'');
+                }
+                pinyin += PinyinEncoder::decodeFullPinyin(item.encodedPinyin_);
+            }
+        }
+    }
+    return pinyin;
+}
+
+std::string PinyinContext::candidateFullPinyin(size_t idx) const {
+    FCITX_D();
+    std::string pinyin;
+    for (auto &p : d->candidates_[idx].sentence()) {
+        if (!p->word().empty()) {
+            if (!pinyin.empty()) {
+                pinyin.push_back('\'');
+            }
+            pinyin += PinyinEncoder::decodeFullPinyin(
+                static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
+        }
+    }
+    return pinyin;
+}
+
 void PinyinContext::learn() {
     FCITX_D();
     if (!selected()) {

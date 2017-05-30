@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
     ime.setScoreFilter(1.0f);
     ime.setShuangpinProfile(
-        std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::MS));
+        std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::Xiaohe));
     PinyinContext c(&ime);
     if (argc == 4 && strcmp(argv[3], "sp") == 0) {
         c.setUseShuangpin(true);

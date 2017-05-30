@@ -35,7 +35,7 @@ public:
     std::unordered_multimap<char, PinyinFinal> finalMap_;
     std::unordered_multimap<char, PinyinInitial> initialMap_;
     std::set<PinyinFinal> finalSet_;
-    std::set<char> validInputs_;
+    ShuangpinProfile::ValidInputSetType validInputs_;
     ShuangpinProfile::TableType spTable_;
 };
 
@@ -373,5 +373,11 @@ void ShuangpinProfile::buildShuangpinTable() {
 const ShuangpinProfile::TableType &ShuangpinProfile::table() const {
     FCITX_D();
     return d->spTable_;
+}
+
+const ShuangpinProfile::ValidInputSetType &
+ShuangpinProfile::validInput() const {
+    FCITX_D();
+    return d->validInputs_;
 }
 }

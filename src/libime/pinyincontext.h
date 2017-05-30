@@ -64,6 +64,9 @@ public:
 
     std::vector<std::string> selectedWords() const;
 
+    std::string selectedFullPinyin() const;
+    std::string candidateFullPinyin(size_t i) const;
+
     void learn();
 
     PinyinIME *ime() const;

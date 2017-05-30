@@ -31,6 +31,9 @@ public:
 
     HistoryBigram history_;
     float weight_ = 0.5;
+    // log(wa * exp(a) + wb * exp(b))
+    // log(exp(log(wa) + a) + exp(b + log(wb))
+    float wa_ = std::log10(1 - weight_), wb_ = std::log10(weight_);
 
     const WordNode *wordFromState(const State &state) const {
         return load_data<const WordNode *>(reinterpret_cast<const char *>(
@@ -79,6 +82,8 @@ void UserLanguageModel::setHistoryWeight(float w) {
     FCITX_D();
     assert(w >= 0.0 && w <= 1.0);
     d->weight_ = w;
+    d->wa_ = std::log10(1 - d->weight_);
+    d->wb_ = std::log10(d->weight_);
 }
 
 const State &UserLanguageModel::beginState() const {
@@ -91,6 +96,20 @@ const State &UserLanguageModel::nullState() const {
     return d->nullState_;
 }
 
+static const float log_10 = std::log(10);
+
+// log10(exp10(a) + exp10(b))
+//   = log10(exp10(b) * (1 + exp10(a - b)))
+//   = b + log10(1 + exp10(a - b))
+//   = b + log1p(exp10(a - b)) / log(10)
+// -38... is log10(2^-127)
+inline float log1p10exp(float x) {
+    return x < -38.23080944932561 ? 0. : std::log1p(std::pow(10, x)) / log_10;
+}
+inline float sum_log_prob(float a, float b) {
+    return a > b ? a + log1p10exp(b - a) : b + log1p10exp(a - b);
+}
+
 float UserLanguageModel::score(const State &state, const WordNode &word,
                                State &out) const {
     FCITX_D();
@@ -98,7 +117,7 @@ float UserLanguageModel::score(const State &state, const WordNode &word,
     auto prev = d->wordFromState(state);
     float userScore = d->history_.score(prev, &word);
     d->setWordToState(out, &word);
-    return score * (1 - d->weight_) + userScore * d->weight_;
+    return sum_log_prob(score + d->wa_, userScore + d->wb_);
 }
 
 bool UserLanguageModel::isUnknown(WordIndex idx,

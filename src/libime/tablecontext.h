@@ -22,13 +22,15 @@
 #include "inputbuffer.h"
 #include "libime_export.h"
 #include "tableime.h"
+#include <fcitx-utils/dynamictrackableobject.h>
 #include <fcitx-utils/macros.h>
 
 namespace libime {
 
 class TableContextPrivate;
 
-class LIBIME_EXPORT TableContext : public InputBuffer {
+class LIBIME_EXPORT TableContext : public InputBuffer,
+                                   public fcitx::DynamicTrackableObject {
 public:
     TableContext(TableIME *ime);
     virtual ~TableContext();

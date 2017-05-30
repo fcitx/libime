@@ -28,9 +28,9 @@ public:
     std::shared_ptr<UserLanguageModel> model_;
 };
 
-TableContext::TableContext(TableIME *ime) {}
+TableContext::TableContext(TableIME *ime) : InputBuffer(true) {}
 
-TableContext::~TableContext() {}
+TableContext::~TableContext() { destroy(); }
 
 bool TableContext::cancelTill(size_t pos) { return false; }
 

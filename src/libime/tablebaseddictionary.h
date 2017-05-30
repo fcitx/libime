@@ -65,6 +65,8 @@ public:
     bool insert(const std::string &value);
     bool generate(const std::string &value, std::string &key);
 
+    bool isValidInput(uint32_t c) const;
+
     void statistic();
 
 private:

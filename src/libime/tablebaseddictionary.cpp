@@ -635,6 +635,11 @@ bool TableBasedDictionary::generate(const std::string &value,
     return false;
 }
 
+bool TableBasedDictionary::isValidInput(uint32_t c) const {
+    FCITX_D();
+    return !!(d->inputCode.count(c));
+}
+
 void TableBasedDictionary::statistic() {
     FCITX_D();
     std::cout << "Phrase Trie: " << d->phraseTrie.mem_size() << std::endl

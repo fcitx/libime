@@ -13,7 +13,8 @@ for line in lines:
         for token in tokens[2:]:
             colon = token.find(':')
             if colon < 0:
-                prob = math.log10(1.0 / (len(tokens) - 2))
+                # for entry without prob, don't give them penalty.
+                prob = 0 # math.log10(1.0 / (len(tokens) - 2))
                 pinyin = token
             else:
                 prob = math.log10(float(token[colon+1:-1]) / 100.0)

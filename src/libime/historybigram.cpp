@@ -297,7 +297,7 @@ public:
 
 HistoryBigram::HistoryBigram()
     : d_ptr(std::make_unique<HistoryBigramPrivate>()) {
-    setUnknownPenalty(std::log10(1 / 20000.0f));
+    setUnknownPenalty(std::log10(1 / 60000000.0f));
 }
 
 HistoryBigram::~HistoryBigram() {}

@@ -24,15 +24,19 @@
 
 namespace libime {
 
+// A simple LRU cache.
 template <typename K, typename V>
 class LRUCache {
     typedef K key_type;
     typedef V value_type;
+    // we use boost's unordered_map is for the heterogeneous lookup
+    // functionality.
     typedef boost::unordered_map<K,
                                  std::pair<V, typename std::list<K>::iterator>>
         dict_type;
     dict_type dict_;
     std::list<K> order_;
+    // Maximum size of the cache.
     size_t sz_;
 
 public:
@@ -74,6 +78,7 @@ public:
         dict_.erase(i);
     }
 
+    // find will refresh the item, so it is not const.
     value_type *find(const key_type &key) {
         // lookup value in the cache
         auto i = dict_.find(key);
@@ -82,7 +87,6 @@ public:
 
     template <class CompatibleKey, class CompatibleHash,
               class CompatiblePredicate>
-
     value_type *find(CompatibleKey const &k, CompatibleHash const &h,
                      CompatiblePredicate const &p) {
         return find_helper(dict_.find(k, h, p));

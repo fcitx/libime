@@ -139,7 +139,7 @@ public:
     static bool isNoPath(value_type v);
     static bool isNoValue(value_type v);
 
-    size_t mem_size();
+    size_t mem_size() const;
 
 private:
     std::unique_ptr<DATriePrivate<value_type>> d;

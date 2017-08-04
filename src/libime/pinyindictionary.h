@@ -33,8 +33,8 @@ enum class PinyinDictFormat { Text, Binary };
 
 class PinyinDictionaryPrivate;
 
-typedef std::function<bool(const char *encodedPinyin, const std::string &hanzi,
-                           float cost)>
+typedef std::function<bool(boost::string_view encodedPinyin,
+                           boost::string_view hanzi, float cost)>
     PinyinMatchCallback;
 class PinyinDictionary;
 
@@ -48,18 +48,26 @@ public:
     explicit PinyinDictionary();
     ~PinyinDictionary();
 
+    // Load dicitonary for a specific dict.
     void load(size_t idx, std::istream &in, PinyinDictFormat format);
     void load(size_t idx, const char *filename, PinyinDictFormat format);
+
+    // Append a dictionary at the end.
     void addEmptyDict();
 
+    // Match the word by encoded pinyin.
     void matchWords(const char *data, size_t size,
-                    PinyinMatchCallback callback);
+                    PinyinMatchCallback callback) const;
 
-    void save(size_t idx, const char *filename);
-    void save(size_t idx, std::ostream &out);
-    void dump(size_t idx, std::ostream &out);
+    void save(size_t idx, const char *filename, PinyinDictFormat format);
+    void save(size_t idx, std::ostream &out, PinyinDictFormat format);
+
+    // Remove a dictionary by index. The idx after it will be invalided. But the
+    // pointer to PinyinTrie will not.
     void remove(size_t idx);
     const PinyinTrie *trie(size_t idx) const;
+
+    // Total number to dictionary.
     size_t dictSize() const;
 
     void addWord(size_t idx, boost::string_view fullPinyin,
@@ -71,11 +79,12 @@ protected:
     void
     matchPrefixImpl(const SegmentGraph &graph, GraphMatchCallback callback,
                     const std::unordered_set<const SegmentGraphNode *> &ignore,
-                    void *helper) override;
+                    void *helper) const override;
 
 private:
     void loadText(size_t idx, std::istream &in);
     void loadBinary(size_t idx, std::istream &in);
+    void saveText(size_t idx, std::ostream &out);
 
     std::unique_ptr<PinyinDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinDictionary);

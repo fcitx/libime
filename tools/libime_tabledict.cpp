@@ -17,8 +17,7 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/pinyindictionary.h"
-#include "libime/pinyinencoder.h"
+#include "libime/tablebaseddictionary.h"
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
@@ -52,10 +51,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     using namespace libime;
-    PinyinDictionary dict;
+    TableBasedDictionary dict;
 
-    dict.load(PinyinDictionary::SystemDict, argv[optind],
-              dump ? PinyinDictFormat::Binary : PinyinDictFormat::Text);
+    std::ifstream fin;
+    std::istream *in;
+    if (strcmp(argv[optind], "-") == 0) {
+        in = &std::cin;
+    } else {
+        fin.open(argv[optind], std::ios::in | std::ios::binary);
+        in = &fin;
+    }
+
+    dict.load(*in, dump ? TableFormat::Binary : TableFormat::Text);
 
     std::ofstream fout;
     std::ostream *out;
@@ -65,7 +72,6 @@ int main(int argc, char *argv[]) {
         fout.open(argv[optind + 1], std::ios::out | std::ios::binary);
         out = &fout;
     }
-    dict.save(PinyinDictionary::SystemDict, *out,
-              dump ? PinyinDictFormat::Text : PinyinDictFormat::Binary);
+    dict.save(*out, dump ? TableFormat::Text : TableFormat::Binary);
     return 0;
 }

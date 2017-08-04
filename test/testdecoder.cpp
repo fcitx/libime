@@ -21,7 +21,7 @@
 #include "libime/pinyindictionary.h"
 #include "libime/pinyinencoder.h"
 #include "testutils.h"
-#include <iostream>
+#include <fcitx-utils/log.h>
 
 using namespace libime;
 

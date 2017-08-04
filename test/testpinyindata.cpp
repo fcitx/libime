@@ -20,8 +20,7 @@
 #include "libime/pinyindata.h"
 #include "libime/pinyinencoder.h"
 #include <boost/algorithm/string.hpp>
-#include <cassert>
-#include <iostream>
+#include <fcitx-utils/log.h>
 #include <unordered_set>
 
 using namespace libime;

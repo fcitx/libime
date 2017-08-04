@@ -20,7 +20,7 @@
 #include "libime/pinyindictionary.h"
 #include "libime/pinyinencoder.h"
 #include "testutils.h"
-#include <iostream>
+#include <fcitx-utils/log.h>
 #include <sstream>
 
 int main(int argc, char *argv[]) {
@@ -38,13 +38,13 @@ int main(int argc, char *argv[]) {
     // dict.dump(std::cout);
     char c[] = {static_cast<char>(PinyinInitial::N), 0,
                 static_cast<char>(PinyinInitial::H), 0};
-    dict.matchWords(c, sizeof(c), [c](const char *encodedPinyin,
-                                      const std::string &hanzi, float cost) {
-        std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin, sizeof(c))
-                  << " " << hanzi << " " << cost << std::endl;
+    dict.matchWords(c, sizeof(c), [c](boost::string_view encodedPinyin,
+                                      boost::string_view hanzi, float cost) {
+        std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin) << " "
+                  << hanzi << " " << cost << std::endl;
         return true;
     });
 
-    dict.save(0, argv[2]);
+    dict.save(0, argv[2], PinyinDictFormat::Binary);
     return 0;
 }

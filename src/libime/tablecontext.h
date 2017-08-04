@@ -20,19 +20,21 @@
 #define _FCITX_LIBIME_TABLECONTEXT_H_
 
 #include "inputbuffer.h"
+#include "lattice.h"
 #include "libime_export.h"
-#include "tableime.h"
+#include <boost/utility/string_view.hpp>
 #include <fcitx-utils/dynamictrackableobject.h>
 #include <fcitx-utils/macros.h>
 
 namespace libime {
 
 class TableContextPrivate;
+class TableBasedDictionary;
+class UserLanguageModel;
 
-class LIBIME_EXPORT TableContext : public InputBuffer,
-                                   public fcitx::DynamicTrackableObject {
+class LIBIME_EXPORT TableContext : public InputBuffer {
 public:
-    TableContext(TableIME *ime);
+    TableContext(TableBasedDictionary &dict, UserLanguageModel &model);
     virtual ~TableContext();
 
     void erase(size_t from, size_t to) override;
@@ -42,7 +44,9 @@ public:
     void cancel();
     bool cancelTill(size_t pos);
 
-    bool selected() const;
+    bool isValidInput(char c) const;
+
+    const std::vector<SentenceResult> &candidates() const;
 #if 0
     std::string preedit() const;
     std::pair<std::string, size_t> preeditWithCursor() const;
@@ -50,13 +54,14 @@ public:
     size_t selectedLength() const;
 #endif
 
-    void learn();
+    const TableBasedDictionary &dict() const;
 
 protected:
     void typeImpl(const char *s, size_t length) override;
 
 private:
     void update();
+    void typeOneChar(const char *s, size_t length);
 
     std::unique_ptr<TableContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableContext);

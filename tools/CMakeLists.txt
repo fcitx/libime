@@ -13,3 +13,8 @@ add_executable(libime_history libime_history.cpp)
 target_link_libraries(libime_history LibIME::LibIME)
 install(TARGETS libime_history DESTINATION ${CMAKE_INSTALL_BINDIR})
 add_executable(LibIME::history ALIAS libime_history)
+
+add_executable(libime_tabledict libime_tabledict.cpp)
+target_link_libraries(libime_tabledict LibIME::LibIME)
+install(TARGETS libime_tabledict DESTINATION ${CMAKE_INSTALL_BINDIR})
+add_executable(LibIME::tabledict ALIAS libime_tabledict)

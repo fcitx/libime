@@ -19,12 +19,14 @@
 #ifndef LIBIME_TABLE_H
 #define LIBIME_TABLE_H
 
+#include "dictionary.h"
 #include "libime_export.h"
 #include <fcitx-utils/macros.h>
 #include <memory>
 
 namespace libime {
 class TableBasedDictionaryPrivate;
+class TableOptions;
 
 enum PhraseFlag {
     PhraseFlagNone = 1,
@@ -33,30 +35,37 @@ enum PhraseFlag {
     PhraseFlagConstructPhrase
 };
 
-class LIBIME_EXPORT TableBasedDictionary {
-public:
-    enum class TableFormat { Text, Binary };
+typedef std::function<bool(boost::string_view code, boost::string_view word,
+                           float cost)>
+    TableMatchCallback;
 
+enum class TableFormat { Text, Binary };
+enum class TableMatchMode { Exact, Prefix };
+
+class LIBIME_EXPORT TableBasedDictionary : public Dictionary {
+public:
     TableBasedDictionary();
     virtual ~TableBasedDictionary();
 
     TableBasedDictionary(const TableBasedDictionary &other);
     TableBasedDictionary(TableBasedDictionary &&other) noexcept;
-    explicit TableBasedDictionary(const char *filename,
-                                  TableFormat format = TableFormat::Binary);
-    explicit TableBasedDictionary(std::istream &in,
-                                  TableFormat format = TableFormat::Binary);
 
     TableBasedDictionary &operator=(TableBasedDictionary other);
 
     friend void swap(TableBasedDictionary &lhs,
                      TableBasedDictionary &rhs) noexcept;
 
+    void load(const char *filename, TableFormat format = TableFormat::Binary);
     void load(std::istream &in, TableFormat format = TableFormat::Binary);
-    void dump(const char *filename);
-    void dump(std::ostream &out);
-    void save(const char *filename);
-    void save(std::ostream &out);
+    void save(const char *filename, TableFormat format = TableFormat::Binary);
+    void save(std::ostream &out, TableFormat format = TableFormat::Binary);
+
+    void loadUser(const char *filename,
+                  TableFormat format = TableFormat::Binary);
+    void loadUser(std::istream &in, TableFormat format = TableFormat::Binary);
+    void saveUser(const char *filename,
+                  TableFormat format = TableFormat::Binary);
+    void saveUser(std::ostream &out, TableFormat format = TableFormat::Binary);
 
     bool hasRule() const noexcept;
     bool insert(const std::string &key, const std::string &value,
@@ -65,13 +74,31 @@ public:
     bool insert(const std::string &value);
     bool generate(const std::string &value, std::string &key);
 
-    bool isValidInput(uint32_t c) const;
+    bool isInputCode(uint32_t c) const;
 
-    void statistic();
+    bool hasPinyin() const;
+    int32_t inputLength() const;
+    int32_t pinyinLength() const;
+
+    void statistic() const;
+
+    void setTableOptions(TableOptions option);
+    const TableOptions &tableOptions() const;
+
+    void matchWords(boost::string_view code, TableMatchMode mode,
+                    TableMatchCallback callback) const;
 
 private:
     void loadText(std::istream &in);
     void loadBinary(std::istream &in);
+    void saveText(std::ostream &out);
+    void saveBinary(std::ostream &out);
+    void parseDataLine(const std::string &buf);
+
+    void
+    matchPrefixImpl(const SegmentGraph &graph, GraphMatchCallback callback,
+                    const std::unordered_set<const SegmentGraphNode *> &ignore,
+                    void *helper) const override;
 
     std::unique_ptr<TableBasedDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableBasedDictionary);

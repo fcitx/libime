@@ -62,6 +62,7 @@ set(LIBIME_SRCS
     segmentgraph.cpp
     tableime.cpp
     tablecontext.cpp
+    tableoptions.cpp
     )
 
 add_library(ime SHARED ${LIBIME_SRCS})

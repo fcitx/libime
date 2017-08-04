@@ -19,55 +19,50 @@
 
 #include "libime/lattice.h"
 #include "libime/pinyinencoder.h"
-#include <iostream>
+#include <fcitx-utils/log.h>
 
 using namespace libime;
 
-bool callback(const SegmentGraph &segs, const std::vector<size_t> &path) {
-    size_t s = 0;
-    for (auto e : path) {
-        std::cout << segs.segment(s, e) << " ";
-        s = e;
-    }
-    std::cout << std::endl;
-    return true;
+void dfs(const SegmentGraph &segs) {
+    FCITX_ASSERT(segs.checkGraph());
+
+    auto callback = [&segs](const std::vector<size_t> &path) {
+        size_t s = 0;
+        for (auto e : path) {
+            std::cout << segs.segment(s, e) << " ";
+            s = e;
+        }
+        std::cout << std::endl;
+        return true;
+    };
+
+    segs.dfs(callback);
+}
+
+void check(boost::string_view py, PinyinFuzzyFlags flags) {
+    dfs(PinyinEncoder::parseUserPinyin(py, flags));
 }
 
 int main() {
-    PinyinEncoder::parseUserPinyin("wa'nan'''", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("lvenu", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("woaizuguotiananmen", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("wanan", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("biiiiiilp", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("zhm", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("zzhzhhzhzh", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("shuou", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("tanan", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("lven", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("ananananana", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("wa'nan", PinyinFuzzyFlag::None)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::Inner)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("xi'an", PinyinFuzzyFlag::Inner)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::None).dfs(callback);
-    PinyinEncoder::parseUserPinyin("kuai", PinyinFuzzyFlag::Inner)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("jiaou", PinyinFuzzyFlag::Inner)
-        .dfs(callback);
-    PinyinEncoder::parseUserPinyin("jin'an", PinyinFuzzyFlag::Inner)
-        .dfs(callback);
+    check("wa'nan'''", PinyinFuzzyFlag::None);
+    check("lvenu", PinyinFuzzyFlag::None);
+    check("woaizuguotiananmen", PinyinFuzzyFlag::None);
+    check("wanan", PinyinFuzzyFlag::None);
+    check("biiiiiilp", PinyinFuzzyFlag::None);
+    check("zhm", PinyinFuzzyFlag::None);
+    check("zzhzhhzhzh", PinyinFuzzyFlag::None);
+    check("shuou", PinyinFuzzyFlag::None);
+    check("tanan", PinyinFuzzyFlag::None);
+    check("lven", PinyinFuzzyFlag::None);
+    check("ananananana", PinyinFuzzyFlag::None);
+    check("wa'nan", PinyinFuzzyFlag::None);
+    check("xian", PinyinFuzzyFlag::None);
+    check("xian", PinyinFuzzyFlag::Inner);
+    check("xi'an", PinyinFuzzyFlag::Inner);
+    check("kuai", PinyinFuzzyFlag::None);
+    check("kuai", PinyinFuzzyFlag::Inner);
+    check("jiaou", PinyinFuzzyFlag::Inner);
+    check("jin'an", PinyinFuzzyFlag::Inner);
 
     for (auto syl : PinyinEncoder::stringToSyllables(
              "niagn",
@@ -88,8 +83,9 @@ int main() {
         }
     }
     for (auto syl : PinyinEncoder::stringToSyllables(
-             "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
-                       PinyinFuzzyFlag::NG_GN})) {
+             "cuagn",
+             {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
+              PinyinFuzzyFlag::NG_GN})) {
         for (auto f : syl.second) {
             std::cout << PinyinSyllable(syl.first, f.first).toString()
                       << std::endl;
@@ -97,28 +93,21 @@ int main() {
     }
     {
         // xiang o n
-        PinyinEncoder::parseUserPinyin("xian", PinyinFuzzyFlag::None)
-            .dfs(callback);
+        check("xian", PinyinFuzzyFlag::None);
 
         // xian gong
-        PinyinEncoder::parseUserPinyin("xiangong", PinyinFuzzyFlag::None)
-            .dfs(callback);
+        check("xiangong", PinyinFuzzyFlag::None);
 
         // xiang o n
-        PinyinEncoder::parseUserPinyin("xiangon", PinyinFuzzyFlag::None)
-            .dfs(callback);
+        check("xiangon", PinyinFuzzyFlag::None);
 
         // yan d
-        PinyinEncoder::parseUserPinyin("yand", PinyinFuzzyFlag::None)
-            .dfs(callback);
+        check("yand", PinyinFuzzyFlag::None);
         // hua c o
-        PinyinEncoder::parseUserPinyin("huaco", PinyinFuzzyFlag::None)
-            .dfs(callback);
+        check("huaco", PinyinFuzzyFlag::None);
         // hua c o
-        PinyinEncoder::parseUserPinyin("xion", PinyinFuzzyFlag::None)
-            .dfs(callback);
-        PinyinEncoder::parseUserPinyin("xiana", PinyinFuzzyFlag::None)
-            .dfs(callback);
+        check("xion", PinyinFuzzyFlag::None);
+        check("xiana", PinyinFuzzyFlag::None);
     }
 
     {
@@ -128,19 +117,19 @@ int main() {
                 PinyinEncoder::parseUserPinyin("z", PinyinFuzzyFlag::None);
             graph.merge(graph2);
         }
-        graph.dfs(callback);
+        dfs(graph);
         {
             auto graph2 =
                 PinyinEncoder::parseUserPinyin("zn", PinyinFuzzyFlag::None);
             graph.merge(graph2);
         }
-        graph.dfs(callback);
+        dfs(graph);
         {
             auto graph2 =
                 PinyinEncoder::parseUserPinyin("z", PinyinFuzzyFlag::None);
             graph.merge(graph2);
         }
-        graph.dfs(callback);
+        dfs(graph);
     }
     {
         auto result =

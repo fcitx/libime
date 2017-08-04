@@ -37,7 +37,7 @@ public:
     void
     matchPrefix(const SegmentGraph &graph, GraphMatchCallback callback,
                 const std::unordered_set<const SegmentGraphNode *> &ignore = {},
-                void *helper = nullptr) {
+                void *helper = nullptr) const {
         matchPrefixImpl(graph, callback, ignore, helper);
     }
 
@@ -45,7 +45,7 @@ protected:
     virtual void
     matchPrefixImpl(const SegmentGraph &graph, GraphMatchCallback callback,
                     const std::unordered_set<const SegmentGraphNode *> &ignore,
-                    void *helper) = 0;
+                    void *helper) const = 0;
 };
 }
 

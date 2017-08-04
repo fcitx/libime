@@ -31,6 +31,7 @@ class SegmentGraphNode;
 class ShuangpinProfile;
 class PinyinContext;
 
+// Provides caching mechanism used by PinyinContext.
 class LIBIME_EXPORT PinyinMatchState {
     friend class PinyinDictionary;
 
@@ -38,8 +39,14 @@ public:
     PinyinMatchState(PinyinContext *context);
     ~PinyinMatchState();
 
+    // Invalidate everything in the state.
     void clear();
+
+    // Invalidate a set of node, usually caused by the change of user input.
     void discardNode(const std::unordered_set<const SegmentGraphNode *> &node);
+
+    // Invalidate a whole dictionary, usually caused by the change to the
+    // dictionary.
     void discardDictionary(size_t idx);
 
     PinyinFuzzyFlags fuzzyFlags() const;

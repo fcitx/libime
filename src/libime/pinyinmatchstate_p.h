@@ -28,6 +28,7 @@
 
 namespace libime {
 
+// Match result for a specific PinyinTrie.
 struct MatchResult {
     MatchResult(const PinyinTrie *trie, size_t size)
         : trie_(trie), size_(size) {}
@@ -53,6 +54,7 @@ struct MatchItem {
     std::string encodedPinyin_;
 };
 
+// class to store the search result on the trie.
 struct TrieEdge {
     TrieEdge(const PinyinTrie *trie, size_t size, SegmentGraphPath path)
         : result_(std::make_shared<MatchResult>(trie, size)),

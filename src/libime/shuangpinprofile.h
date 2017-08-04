@@ -52,7 +52,13 @@ public:
     typedef std::set<char> ValidInputSetType;
     explicit ShuangpinProfile(ShuangpinBuiltinProfile profile);
     explicit ShuangpinProfile(std::istream &in);
+
+    ShuangpinProfile(const ShuangpinProfile &other);
+    ShuangpinProfile(ShuangpinProfile && other) = default;
     ~ShuangpinProfile();
+
+    ShuangpinProfile& operator=(const ShuangpinProfile &other);
+    ShuangpinProfile& operator=(ShuangpinProfile &&other) = default;
 
     const TableType &table() const;
     const ValidInputSetType &validInput() const;

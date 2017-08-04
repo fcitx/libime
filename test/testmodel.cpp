@@ -19,7 +19,7 @@
 
 #include "libime/languagemodel.h"
 #include "libime/lattice.h"
-#include <iostream>
+#include <fcitx-utils/log.h>
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -33,7 +33,8 @@ int main(int argc, char *argv[]) {
     while (std::cin >> word) {
         float s;
         WordNode w(word, model.index(word));
-        std::cout << (s = model.score(state, w, out_state)) << '\n';
+        std::cout << w.idx() << " " << (s = model.score(state, w, out_state))
+                  << '\n';
         state = out_state;
         sum += s;
     }

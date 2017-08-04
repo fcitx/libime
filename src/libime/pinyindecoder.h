@@ -41,15 +41,17 @@ private:
 
 class LIBIME_EXPORT PinyinDecoder : public Decoder {
 public:
-    PinyinDecoder(PinyinDictionary *dict, LanguageModelBase *model)
+    PinyinDecoder(const PinyinDictionary *dict, const LanguageModelBase *model)
         : Decoder(dict, model) {}
 
 protected:
-    LatticeNode *
-    createLatticeNodeImpl(const SegmentGraph &graph, LanguageModelBase *model,
-                          boost::string_view word, WordIndex idx,
-                          SegmentGraphPath path, const State &state, float cost,
-                          boost::string_view aux, bool onlyPath) const override;
+    LatticeNode *createLatticeNodeImpl(const SegmentGraphBase &graph,
+                                       const LanguageModelBase *model,
+                                       boost::string_view word, WordIndex idx,
+                                       SegmentGraphPath path,
+                                       const State &state, float cost,
+                                       boost::string_view aux,
+                                       bool onlyPath) const override;
 };
 }
 

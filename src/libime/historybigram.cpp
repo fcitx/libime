@@ -159,10 +159,6 @@ public:
             ss += *iter;
             newSentence.push_back(ss);
         }
-        incUnigram("<s>");
-        incUnigram("</s>");
-        incBigram("<s>", sentence.front());
-        incBigram(sentence.back(), "</s>");
         recent_.push_front(std::move(newSentence));
         size_++;
     }
@@ -202,10 +198,11 @@ public:
         int bf = bigramFreq(prev, cur);
         int uf1 = unigramFreq(cur);
 
+        const float bigramWeight = 0.80f;
         // add 0.5 to avoid div 0
         float pr = 0.0f;
-        pr += 0.68f * float(bf) / float(uf0 + 0.5f);
-        pr += 0.32f * float(uf1) / float(size() + 0.5f);
+        pr += bigramWeight * float(bf) / float(uf0 + 0.5f);
+        pr += (1.0f - bigramWeight) * float(uf1) / float(size() + 0.5f);
 
         if (pr >= 1.0) {
             pr = 1.0;
@@ -234,8 +231,6 @@ private:
                 decBigram(*iter, *next);
             }
         }
-        decBigram("<s>", sentence.front());
-        decBigram(sentence.back(), "</s>");
         size_--;
     }
 
@@ -333,12 +328,6 @@ bool HistoryBigram::isUnknown(boost::string_view v) const {
 float HistoryBigram::score(boost::string_view prev,
                            boost::string_view cur) const {
     FCITX_D();
-    if (prev.empty()) {
-        prev = "<s>";
-    }
-    if (cur.empty()) {
-        cur = "</s>";
-    }
     auto pr = d->recentPool_.score(prev, cur);
     return std::log10(pr);
 }

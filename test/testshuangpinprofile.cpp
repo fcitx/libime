@@ -18,7 +18,7 @@
  */
 #include "libime/pinyindata.h"
 #include "libime/shuangpinprofile.h"
-#include <iostream>
+#include <fcitx-utils/log.h>
 using namespace libime;
 
 void checkProfile(const ShuangpinProfile &profile) {
@@ -58,16 +58,6 @@ void checkProfile(const ShuangpinProfile &profile) {
     assert(validSyls.size() == 0);
 }
 
-bool callback(const SegmentGraph &segs, const std::vector<size_t> &path) {
-    size_t s = 0;
-    for (auto e : path) {
-        std::cout << segs.segment(s, e) << " ";
-        s = e;
-    }
-    std::cout << std::endl;
-    return true;
-}
-
 int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma));
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS));
@@ -78,10 +68,18 @@ int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe));
 
     // wo jiu shi xiang ce shi yi xia
-    PinyinEncoder::parseUserShuangpin(
+    auto segs = PinyinEncoder::parseUserShuangpin(
         "wojquixdceuiyixw", ShuangpinProfile(ShuangpinBuiltinProfile::MS),
-        PinyinFuzzyFlag::None)
-        .dfs(callback);
+        PinyinFuzzyFlag::None);
+    segs.dfs([&segs](const std::vector<size_t> &path) {
+        size_t s = 0;
+        for (auto e : path) {
+            std::cout << segs.segment(s, e) << " ";
+            s = e;
+        }
+        std::cout << std::endl;
+        return true;
+    });
 
     ShuangpinProfile zrm(ShuangpinBuiltinProfile::Ziranma);
 

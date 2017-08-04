@@ -1,8 +1,7 @@
 #include "libime/datrie.h"
-#include <cassert>
+#include <fcitx-utils/log.h>
 #include <fcntl.h>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
@@ -31,12 +30,12 @@ int main(int argc, char *argv[]) {
                              TestTrie::value_type v) -> TestTrie::value_type {
             if (v != 0) {
                 // this is a key inserted twice
-                assert(map.find(key) != map.end());
+                FCITX_ASSERT(map.find(key) != map.end());
             }
             // std::cout << key << " " << v << " " << count << std::endl;
             return count;
         });
-        assert(tree.exactMatchSearch(key) == count);
+        FCITX_ASSERT(tree.exactMatchSearch(key) == count);
         count++;
     }
 
@@ -44,12 +43,12 @@ int main(int argc, char *argv[]) {
     d.resize(tree.size());
     tree.dump(d.data(), d.size());
 
-    assert(tree.size() == map.size());
+    FCITX_ASSERT(tree.size() == map.size());
     for (auto &p : map) {
         // std::cout << p.first << " " << tree.exactMatchSearch(p.first) << " "
         // << p.second <<
         // std::endl;
-        assert(tree.exactMatchSearch(p.first) == p.second);
+        FCITX_ASSERT(tree.exactMatchSearch(p.first) == p.second);
     }
 
     std::string tempKey;
@@ -58,23 +57,23 @@ int main(int argc, char *argv[]) {
         TestTrie::value_type value, size_t len, uint64_t pos) {
         (void)value;
         tree.suffix(tempKey, len, pos);
-        assert(map.find(tempKey) != map.end());
-        assert(tree.exactMatchSearch(tempKey) == value);
-        assert(map[tempKey] == value);
+        FCITX_ASSERT(map.find(tempKey) != map.end());
+        FCITX_ASSERT(tree.exactMatchSearch(tempKey) == value);
+        FCITX_ASSERT(map[tempKey] == value);
         tree.update(tempKey, [](int32_t v) { return v + 1; });
         foreach_count++;
         return true;
     });
 
     tree.erase(map.begin()->first);
-    assert(tree.size() == foreach_count - 1);
+    FCITX_ASSERT(tree.size() == foreach_count - 1);
 
     tree.save("trie_data");
 
     tree.clear();
 
-    assert(!tree.erase(map.begin()->first));
-    assert(tree.size() == 0);
+    FCITX_ASSERT(!tree.erase(map.begin()->first));
+    FCITX_ASSERT(tree.size() == 0);
     decltype(tree) trie2("trie_data");
     swap(tree, trie2);
 
@@ -83,14 +82,14 @@ int main(int argc, char *argv[]) {
                    &foreach_count](int32_t value, size_t len, uint64_t pos) {
         (void)value;
         tree.suffix(tempKey, len, pos);
-        assert(map.find(tempKey) != map.end());
-        assert(tree.exactMatchSearch(tempKey) == value);
-        assert(map[tempKey] + 1 == value);
+        FCITX_ASSERT(map.find(tempKey) != map.end());
+        FCITX_ASSERT(tree.exactMatchSearch(tempKey) == value);
+        FCITX_ASSERT(map[tempKey] + 1 == value);
         foreach_count++;
         return true;
     });
 
-    assert(tree.size() == foreach_count);
+    FCITX_ASSERT(tree.size() == foreach_count);
 
     return 0;
 }

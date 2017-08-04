@@ -27,9 +27,9 @@
 #include "libime/userlanguagemodel.h"
 #include "testutils.h"
 #include <boost/range/adaptor/transformed.hpp>
+#include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <functional>
-#include <iostream>
 #include <sstream>
 
 using namespace libime;
@@ -107,7 +107,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    ime.dict()->dump(PinyinDictionary::UserDict, std::cout);
+    ime.dict()->save(PinyinDictionary::UserDict, std::cout,
+                     PinyinDictFormat::Binary);
     ime.model()->history().dump(std::cout);
 
     return 0;

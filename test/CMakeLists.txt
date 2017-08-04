@@ -7,6 +7,9 @@ set(LIBIME_SINGLE_FILE_TEST
     testshuangpinprofile
     )
 
+# enable assert for tests
+add_definitions(-UNDEBUG)
+
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
     add_executable(${TESTCASE} ${TESTCASE}.cpp)
     target_link_libraries(${TESTCASE} LibIME::LibIME )

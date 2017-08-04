@@ -59,22 +59,23 @@ static inline const lm::ngram::State &lmState(const State &state) {
 
 class LanguageModelPrivate {
 public:
-    LanguageModelPrivate(std::shared_ptr<StaticLanguageModelFile> file)
+    LanguageModelPrivate(std::shared_ptr<const StaticLanguageModelFile> file)
         : file_(file) {}
 
     auto &model() { return file_->d_func()->model_; }
     const auto &model() const { return file_->d_func()->model_; }
 
-    std::shared_ptr<StaticLanguageModelFile> file_;
+    std::shared_ptr<const StaticLanguageModelFile> file_;
     State beginState_;
     State nullState_;
-    float unknown_ = std::log10(1 / 20000.0f);
+    float unknown_ = std::log10(1 / 60000000.0f);
 };
 
-LanguageModel::LanguageModel(const char *file) : LanguageModelBase() {
-    auto lmfile = std::make_shared<StaticLanguageModelFile>(file);
-    d_ptr = std::make_unique<LanguageModelPrivate>(lmfile);
+LanguageModel::LanguageModel(const char *file) : LanguageModel(std::make_shared<StaticLanguageModelFile>(file)) {
+}
 
+LanguageModel::LanguageModel(std::shared_ptr<const StaticLanguageModelFile> file) : LanguageModelBase(), d_ptr(std::make_unique<LanguageModelPrivate>(file))
+{
     FCITX_D();
     lmState(d->beginState_) = d->model().BeginSentenceState();
     lmState(d->nullState_) = d->model().NullContextState();

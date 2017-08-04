@@ -1114,7 +1114,7 @@ bool DATrie<T>::isValid(value_type v) {
 }
 
 template <typename T>
-size_t DATrie<T>::mem_size() {
+size_t DATrie<T>::mem_size() const {
     //     std::cout << "tail" << d->m_tail.size() << std::endl
     //               << "tail0" << d->m_tail0.size() * sizeof(int) << std::endl
     //               << "array" << sizeof(typename

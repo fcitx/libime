@@ -1,11 +1,23 @@
 #include "libime/tablebaseddictionary.h"
-#include <cassert>
-#include <iostream>
+#include <fcitx-utils/log.h>
+#include <set>
 #include <sstream>
 #include <string>
 #include <unistd.h>
 
 using namespace libime;
+
+void testMatch(const TableBasedDictionary &dict, boost::string_view code,
+               std::set<std::string> expect, bool exact) {
+    std::set<std::string> actual;
+    dict.matchWords(
+        code, exact ? TableMatchMode::Exact : TableMatchMode::Prefix,
+        [&actual](boost::string_view, boost::string_view word, float) {
+            actual.insert(word.to_string());
+            return true;
+        });
+    assert(expect == actual);
+}
 
 int main() {
 
@@ -24,8 +36,8 @@ int main() {
     std::stringstream ss(test);
 
     try {
-        libime::TableBasedDictionary table(
-            ss, libime::TableBasedDictionary::TableFormat::Text);
+        libime::TableBasedDictionary table;
+        table.load(ss, libime::TableFormat::Text);
         assert(table.hasRule());
         std::string key;
         assert(!table.generate("你好", key));
@@ -40,7 +52,8 @@ int main() {
         table.save("data");
         table.statistic();
 
-        table = libime::TableBasedDictionary("data");
+        table = libime::TableBasedDictionary();
+        table.load("data");
         table.statistic();
         // table.dump(std::cout);
 
@@ -51,8 +64,12 @@ int main() {
         std::cout << key2 << std::endl;
         assert(key2 == "wqvb");
         assert(table.insert("你好"));
+        testMatch(table, "wqvb", {"你好"}, false);
+        testMatch(table, "wqvb", {"你好"}, true);
+        testMatch(table, "w", {"你", "你好"}, false);
+        testMatch(table, "w", {}, true);
         table.statistic();
-        table.dump(std::cout);
+        table.save(std::cout, TableFormat::Text);
     } catch (std::ios_base::failure &e) {
         std::cout << e.what() << std::endl;
     }

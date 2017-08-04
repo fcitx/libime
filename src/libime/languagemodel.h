@@ -70,7 +70,7 @@ private:
 class LIBIME_EXPORT LanguageModel : public LanguageModelBase {
 public:
     LanguageModel(const char *file);
-    LanguageModel(std::shared_ptr<StaticLanguageModelFile> file);
+    LanguageModel(std::shared_ptr<const StaticLanguageModelFile> file);
     virtual ~LanguageModel();
 
     WordIndex beginSentence() const override;
@@ -88,6 +88,12 @@ public:
 private:
     std::unique_ptr<LanguageModelPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(LanguageModel);
+};
+
+class LIBIME_EXPORT LanguageModelResolver {
+public:
+    virtual std::string
+    languageModelFileForLanguage(boost::string_view language) = 0;
 };
 }
 

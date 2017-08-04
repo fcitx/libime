@@ -17,37 +17,37 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "libime/inputbuffer.h"
-#include <cassert>
+#include <fcitx-utils/log.h>
 
 void test_basic(bool ascii) {
     using namespace libime;
     InputBuffer buffer(ascii);
-    assert(buffer.size() == 0);
-    assert(buffer.cursor() == 0);
-    assert(buffer.cursorByChar() == 0);
+    FCITX_ASSERT(buffer.size() == 0);
+    FCITX_ASSERT(buffer.cursor() == 0);
+    FCITX_ASSERT(buffer.cursorByChar() == 0);
     buffer.type('a');
-    assert(buffer.size() == 1);
-    assert(buffer.cursor() == 1);
+    FCITX_ASSERT(buffer.size() == 1);
+    FCITX_ASSERT(buffer.cursor() == 1);
     buffer.type('b');
-    assert(buffer.size() == 2);
-    assert(buffer.cursor() == 2);
-    assert(buffer.userInput() == "ab");
+    FCITX_ASSERT(buffer.size() == 2);
+    FCITX_ASSERT(buffer.cursor() == 2);
+    FCITX_ASSERT(buffer.userInput() == "ab");
     buffer.setCursor(1);
     buffer.type("cdefg");
-    assert(buffer.size() == 7);
-    assert(buffer.cursor() == 6);
-    assert(buffer.userInput() == "acdefgb");
+    FCITX_ASSERT(buffer.size() == 7);
+    FCITX_ASSERT(buffer.cursor() == 6);
+    FCITX_ASSERT(buffer.userInput() == "acdefgb");
     buffer.erase(1, 3);
-    assert(buffer.size() == 5);
-    assert(buffer.cursor() == 4);
-    assert(buffer.userInput() == "aefgb");
-    assert(buffer[2] == "f");
+    FCITX_ASSERT(buffer.size() == 5);
+    FCITX_ASSERT(buffer.cursor() == 4);
+    FCITX_ASSERT(buffer.userInput() == "aefgb");
+    FCITX_ASSERT(buffer[2] == "f");
     buffer.erase(2, 5);
-    assert(buffer.size() == 2);
-    assert(buffer.cursor() == 2);
+    FCITX_ASSERT(buffer.size() == 2);
+    FCITX_ASSERT(buffer.cursor() == 2);
     int idx = 0;
     for (auto c : buffer) {
-        assert(c == buffer[idx]);
+        FCITX_ASSERT(c == buffer[idx]);
         idx++;
     }
 }
@@ -56,38 +56,38 @@ void test_utf8() {
     using namespace libime;
     InputBuffer buffer;
     buffer.type("\xe4\xbd\xa0\xe5\xa5\xbd");
-    assert(buffer.size() == 2);
-    assert(buffer.cursor() == 2);
+    FCITX_ASSERT(buffer.size() == 2);
+    FCITX_ASSERT(buffer.cursor() == 2);
     buffer.erase(1, 2);
-    assert(buffer.size() == 1);
-    assert(buffer.cursor() == 1);
-    assert(buffer.userInput() == "\xe4\xbd\xa0");
+    FCITX_ASSERT(buffer.size() == 1);
+    FCITX_ASSERT(buffer.cursor() == 1);
+    FCITX_ASSERT(buffer.userInput() == "\xe4\xbd\xa0");
     bool throwed = false;
     try {
         buffer.type("\xe4\xbd");
     } catch (const std::invalid_argument &e) {
         throwed = true;
     }
-    assert(throwed);
+    FCITX_ASSERT(throwed);
     int idx = 0;
     for (auto c : buffer) {
-        assert(c == buffer[idx]);
+        FCITX_ASSERT(c == buffer[idx]);
         idx++;
     }
     buffer.type("a\xe5\x95\x8a");
-    assert(buffer.size() == 3);
-    assert(buffer.cursor() == 3);
-    assert(buffer.cursorByChar() == 7);
+    FCITX_ASSERT(buffer.size() == 3);
+    FCITX_ASSERT(buffer.cursor() == 3);
+    FCITX_ASSERT(buffer.cursorByChar() == 7);
     buffer.setCursor(0);
-    assert(buffer.cursorByChar() == 0);
+    FCITX_ASSERT(buffer.cursorByChar() == 0);
     buffer.setCursor(1);
-    assert(buffer.cursorByChar() == 3);
+    FCITX_ASSERT(buffer.cursorByChar() == 3);
     buffer.setCursor(2);
-    assert(buffer.cursorByChar() == 4);
+    FCITX_ASSERT(buffer.cursorByChar() == 4);
     buffer.clear();
-    assert(buffer.cursorByChar() == 0);
-    assert(buffer.cursor() == 0);
-    assert(buffer.size() == 0);
+    FCITX_ASSERT(buffer.cursorByChar() == 0);
+    FCITX_ASSERT(buffer.cursor() == 0);
+    FCITX_ASSERT(buffer.size() == 0);
 }
 
 int main() {

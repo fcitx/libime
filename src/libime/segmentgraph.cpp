@@ -41,8 +41,8 @@ struct SegmentGraphNodeGreater {
     }
 };
 
-void SegmentGraph::bfs(const SegmentGraphNode *from,
-                       SegmentGraphBFSCallback callback) const {
+void SegmentGraphBase::bfs(const SegmentGraphNode *from,
+                           SegmentGraphBFSCallback callback) const {
     std::priority_queue<const SegmentGraphNode *,
                         std::vector<const SegmentGraphNode *>,
                         SegmentGraphNodeGreater>
@@ -59,20 +59,13 @@ void SegmentGraph::bfs(const SegmentGraphNode *from,
         }
 
         callback(node);
-        for (auto &next : node->next()) {
+        for (auto &next : node->nexts()) {
             q.push(&next);
         }
     }
 }
 
 size_t SegmentGraph::check(const SegmentGraph &graph) const {
-    for (size_t i = 0; i <= graph.size(); i++) {
-        assert(graph.nodes(i).size() <= 1);
-    }
-    for (size_t i = 0; i <= size(); i++) {
-        assert(nodes(i).size() <= 1);
-    }
-
     std::priority_queue<
         std::pair<const SegmentGraphNode *, const SegmentGraphNode *>,
         std::vector<
@@ -92,17 +85,17 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
             }
 
             const SegmentGraphNode *nold, *nnow;
-            for (auto t : boost::combine(old->next(), now->next())) {
+            for (auto t : boost::combine(old->nexts(), now->nexts())) {
                 nold = &boost::get<0>(t);
                 nnow = &boost::get<1>(t);
                 if (nold->index() != nnow->index() ||
-                    segment(old->index(), nold->index()) !=
-                        graph.segment(now->index(), nnow->index())) {
+                    segment(*old, *nold) !=
+                        graph.segment(*now, *nnow)) {
                     return old->index();
                 }
             }
 
-            for (auto t : boost::combine(old->next(), now->next())) {
+            for (auto t : boost::combine(old->nexts(), now->nexts())) {
                 nold = &boost::get<0>(t);
                 nnow = &boost::get<1>(t);
                 q.emplace(nold, nnow);
@@ -114,29 +107,31 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
 }
 
 void SegmentGraph::merge(SegmentGraph &graph, DiscardCallback discardCallback) {
+    if (&graph == this) {
+        return;
+    }
     auto since = check(graph);
     std::unordered_set<const SegmentGraphNode *> nodeToDiscard;
     for (size_t i = 0; i < since; i++) {
-        auto &ns = nodes(i);
-        for (auto &node : ns) {
+        for (auto &node : mutableNodes(i)) {
             std::vector<SegmentGraphNode *> newNext;
-            for (auto &next : node.next()) {
+            for (auto &next : node.mutableNexts()) {
                 SegmentGraphNode *n;
                 if (next.index() >= since) {
-                    n = &graph.node(next.index());
+                    n = graph.graph_[next.index()].get();
                 } else {
                     n = &next;
                 }
                 newNext.push_back(n);
             }
-            while (!node.next().empty()) {
-                node.removeEdge(node.next().front());
+            while (node.nextSize()) {
+                node.removeEdge(node.mutableNexts().front());
             }
             for (auto n : newNext) {
                 node.addEdge(*n);
             }
         }
-        graph.graph_[i]->clear();
+        graph.graph_[i].reset();
     }
 
     data_ = graph.data_;
@@ -156,7 +151,7 @@ void SegmentGraph::merge(SegmentGraph &graph, DiscardCallback discardCallback) {
             nodeToDiscard.insert(&node);
         }
         std::swap(graph_[i], graph.graph_[i]);
-        graph.graph_[i]->clear();
+        graph.graph_[i].reset();
     }
 
     if (discardCallback) {

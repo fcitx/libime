@@ -30,7 +30,7 @@ public:
     State nullState_;
 
     HistoryBigram history_;
-    float weight_ = 0.5;
+    float weight_ = 0.3;
     // log(wa * exp(a) + wb * exp(b))
     // log(exp(log(wa) + a) + exp(b + log(wb))
     float wa_ = std::log10(1 - weight_), wb_ = std::log10(weight_);

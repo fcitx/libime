@@ -18,7 +18,7 @@
  */
 
 #include "libime/historybigram.h"
-#include <iostream>
+#include <fcitx-utils/log.h>
 #include <sstream>
 
 int main() {

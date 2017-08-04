@@ -39,3 +39,24 @@ add_custom_command(
   COMMAND LibIME::pinyindict "${OPENGRAM_DICT_SRC}" "${OPENGRAM_DICT_OUTPUT}")
 add_custom_target(opengram-dict ALL DEPENDS "${OPENGRAM_DICT_OUTPUT}")
 install(FILES "${OPENGRAM_DICT_OUTPUT}" DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")
+
+set(TABLE_DICT_URL "https://download.fcitx-im.org/data/table.tar.gz")
+set(TABLE_DICT_TAR "table.tar.gz")
+set(TABLE_TXT_FILES db.txt erbi.txt qxm.txt wanfeng.txt
+                      wbpy.txt wbx.txt zrm.txt cj.txt)
+fcitx5_download(table-dict-download ${TABLE_DICT_URL} ${TABLE_DICT_TAR}
+                6196053c724125e3ae3d8bd6b2f9172d0c83b65b0d410d3cde63b7a8d6ab87b7)
+fcitx5_extract(table-dict-extract ${TABLE_DICT_TAR} DEPENDS table-dict-download
+               OUTPUT ${TABLE_TXT_FILES})
+
+set(TABLE_DICT_FILES)
+foreach(TABLE_TXT_FILE ${TABLE_TXT_FILES})
+  string(REPLACE .txt .main.dict TABLE_DICT_FILE ${TABLE_TXT_FILE})
+  add_custom_command(OUTPUT ${TABLE_DICT_FILE}
+                     DEPENDS ${TABLE_TXT_FILE} LibIME::tabledict
+                     COMMAND LibIME::tabledict ${TABLE_TXT_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${TABLE_DICT_FILE})
+  list(APPEND TABLE_DICT_FILES ${CMAKE_CURRENT_BINARY_DIR}/${TABLE_DICT_FILE})
+endforeach()
+
+add_custom_target(table-dict ALL DEPENDS ${TABLE_DICT_FILES})
+install(FILES ${TABLE_DICT_FILES} DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")

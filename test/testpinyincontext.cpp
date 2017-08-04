@@ -25,8 +25,8 @@
 #include "libime/pinyinime.h"
 #include "libime/userlanguagemodel.h"
 #include <boost/range/adaptor/transformed.hpp>
+#include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
-#include <iostream>
 #include <sstream>
 
 using namespace libime;

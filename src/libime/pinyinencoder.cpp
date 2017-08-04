@@ -116,16 +116,6 @@ std::string PinyinSyllable::toString() const {
            PinyinEncoder::finalToString(final_);
 }
 
-static void addNext(SegmentGraph &g, size_t from, size_t to) {
-    if (g.nodes(from).empty()) {
-        g.newNode(from);
-    }
-    if (g.nodes(to).empty()) {
-        g.newNode(to);
-    }
-    g.addNext(from, to);
-}
-
 SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
                                             PinyinFuzzyFlags flags) {
     SegmentGraph result(pinyin.to_string());
@@ -148,7 +138,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
                 iter++;
             }
             auto next = std::distance(pinyin.begin(), iter);
-            addNext(result, top, next);
+            result.addNext(top, next);
             if (static_cast<size_t>(next) < pinyin.size()) {
                 q.push(next);
             }
@@ -160,7 +150,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
 
         // it's not complete a pinyin, no need to try
         if (!isCompletePinyin) {
-            addNext(result, top, top + str.size());
+            result.addNext(top, top + str.size());
             q.push(top + str.size());
         } else {
             // check fuzzy seg
@@ -187,18 +177,18 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
                 auto matchSizeAlt = str.size() - 1 + nextMatchAlt.first.size();
                 if (std::make_pair(matchSize, nextMatch.second) >=
                     std::make_pair(matchSizeAlt, nextMatchAlt.second)) {
-                    addNext(result, top, top + str.size());
+                    result.addNext(top, top + str.size());
                     q.push(top + str.size());
                     nextSize[nNextSize++] = str.size();
                 }
                 if (std::make_pair(matchSize, nextMatch.second) <=
                     std::make_pair(matchSizeAlt, nextMatchAlt.second)) {
-                    addNext(result, top, top + str.size() - 1);
+                    result.addNext(top, top + str.size() - 1);
                     q.push(top + str.size() - 1);
                     nextSize[nNextSize++] = str.size() - 1;
                 }
             } else {
-                addNext(result, top, top + str.size());
+                result.addNext(top, top + str.size());
                 q.push(top + str.size());
                 nextSize[nNextSize++] = str.size();
             }
@@ -209,9 +199,9 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
                     auto iter = innerSegments.find(
                         str.substr(0, nextSize[i]).to_string());
                     if (iter != innerSegments.end()) {
-                        addNext(result, top, top + iter->second.first.size());
-                        addNext(result, top + iter->second.first.size(),
-                                top + nextSize[i]);
+                        result.addNext(top, top + iter->second.first.size());
+                        result.addNext(top + iter->second.first.size(),
+                                       top + nextSize[i]);
                     }
                 }
             }
@@ -235,7 +225,7 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(boost::string_view pinyin,
             i++;
         }
         if (start != i) {
-            addNext(result, start, i);
+            result.addNext(start, i);
             continue;
         }
         auto initial = pinyin[i];
@@ -268,10 +258,10 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(boost::string_view pinyin,
 
         auto iter = longestMatchInTable(table, match);
         if (iter != table.end()) {
-            addNext(result, i, i + iter->first.size());
+            result.addNext(i, i + iter->first.size());
             i = i + iter->first.size();
         } else {
-            addNext(result, i, i + 1);
+            result.addNext(i, i + 1);
             i = i + 1;
         }
     }

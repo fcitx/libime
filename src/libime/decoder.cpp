@@ -44,15 +44,15 @@ struct NBestNode {
 
 class DecoderPrivate {
 public:
-    DecoderPrivate(Decoder *q, Dictionary *dict, LanguageModelBase *model)
-        : q_ptr(q), dict_(dict), model_(model) {}
+    DecoderPrivate(const Dictionary *dict,
+                   const LanguageModelBase *model)
+        : dict_(dict), model_(model) {}
 
     void
-    buildLattice(Lattice &l,
+    buildLattice(const Decoder *q, Lattice &l,
                  const std::unordered_set<const SegmentGraphNode *> &ignore,
                  const State &state, const SegmentGraph &graph,
                  size_t frameSize, void *helper) const {
-        FCITX_Q();
         LatticeMap &lattice = l.d_ptr->lattice_;
 
         if (!lattice.count(&graph.start())) {
@@ -68,10 +68,9 @@ public:
             dupPath;
         dict_->matchPrefix(
             graph,
-            [this, &graph, &lattice, &dupPath,
+            [this, &graph, &lattice, &dupPath, q,
              frameSize](const SegmentGraphPath &path, WordNode &word,
                         float adjust, boost::string_view aux) {
-                FCITX_Q();
                 if (InvalidWordIndex == word.idx()) {
                     auto idx = model_->index(word.word());
                     word.setIdx(idx);
@@ -103,14 +102,12 @@ public:
                                  {&graph.end(), nullptr}, model_->nullState()));
     }
 
-    Decoder *q_ptr;
-    FCITX_DECLARE_PUBLIC(Decoder);
-    Dictionary *dict_;
-    LanguageModelBase *model_;
+    const Dictionary *dict_;
+    const LanguageModelBase *model_;
 };
 
-Decoder::Decoder(Dictionary *dict, LanguageModelBase *model)
-    : d_ptr(std::make_unique<DecoderPrivate>(this, dict, model)) {}
+Decoder::Decoder(const Dictionary *dict, const LanguageModelBase *model)
+    : d_ptr(std::make_unique<DecoderPrivate>(dict, model)) {}
 
 Decoder::~Decoder() {}
 
@@ -162,7 +159,7 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                        std::tuple<float, LatticeNode *, State>>
         unknownIdCache;
 
-    d->buildLattice(l, ignore, beginState, graph, frameSize, helper);
+    d->buildLattice(this, l, ignore, beginState, graph, frameSize, helper);
 #ifdef DEBUG_TIME
     {
         std::cout << "Build Lattice Time: "
@@ -384,11 +381,10 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
 #endif
 }
 
-LatticeNode *
-Decoder::createLatticeNodeImpl(const SegmentGraph &, LanguageModelBase *,
-                               boost::string_view word, WordIndex idx,
-                               SegmentGraphPath path, const State &state,
-                               float cost, boost::string_view aux, bool) const {
+LatticeNode *Decoder::createLatticeNodeImpl(
+    const SegmentGraphBase &, const LanguageModelBase *,
+    boost::string_view word, WordIndex idx, SegmentGraphPath path,
+    const State &state, float cost, boost::string_view aux, bool) const {
     return new LatticeNode(word, idx, std::move(path), state, cost, aux);
 }
 }

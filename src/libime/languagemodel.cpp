@@ -71,11 +71,12 @@ public:
     float unknown_ = std::log10(1 / 60000000.0f);
 };
 
-LanguageModel::LanguageModel(const char *file) : LanguageModel(std::make_shared<StaticLanguageModelFile>(file)) {
-}
+LanguageModel::LanguageModel(const char *file)
+    : LanguageModel(std::make_shared<StaticLanguageModelFile>(file)) {}
 
-LanguageModel::LanguageModel(std::shared_ptr<const StaticLanguageModelFile> file) : LanguageModelBase(), d_ptr(std::make_unique<LanguageModelPrivate>(file))
-{
+LanguageModel::LanguageModel(
+    std::shared_ptr<const StaticLanguageModelFile> file)
+    : LanguageModelBase(), d_ptr(std::make_unique<LanguageModelPrivate>(file)) {
     FCITX_D();
     lmState(d->beginState_) = d->model().BeginSentenceState();
     lmState(d->nullState_) = d->model().NullContextState();

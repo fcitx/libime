@@ -17,11 +17,11 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "tablecontext.h"
+#include "decoder.h"
 #include "segmentgraph.h"
 #include "tablebaseddictionary.h"
 #include "tableoptions.h"
 #include "userlanguagemodel.h"
-#include "decoder.h"
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
@@ -30,17 +30,19 @@ namespace libime {
 
 class TableContextPrivate {
 public:
-    TableContextPrivate(TableBasedDictionary &dict, UserLanguageModel& model) : dict_(dict), model_(model), decoder_(&dict, &model) {}
+    TableContextPrivate(TableBasedDictionary &dict, UserLanguageModel &model)
+        : dict_(dict), model_(model), decoder_(&dict, &model) {}
 
     TableBasedDictionary &dict_;
-    UserLanguageModel& model_;
+    UserLanguageModel &model_;
     Decoder decoder_;
     Lattice lattice_;
     SegmentGraph graph_;
 };
 
-TableContext::TableContext(TableBasedDictionary &dict, UserLanguageModel& model)
-    : InputBuffer(true), d_ptr(std::make_unique<TableContextPrivate>(dict, model)) {}
+TableContext::TableContext(TableBasedDictionary &dict, UserLanguageModel &model)
+    : InputBuffer(true),
+      d_ptr(std::make_unique<TableContextPrivate>(dict, model)) {}
 
 TableContext::~TableContext() {}
 
@@ -122,8 +124,7 @@ boost::string_view lastSegment(const SegmentGraph &graph) {
         return {};
     } else {
         assert(graph.end().prevSize());
-        return graph.segment(graph.end().prevs().front(),
-                             graph.end());
+        return graph.segment(graph.end().prevs().front(), graph.end());
     }
 }
 

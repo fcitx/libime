@@ -28,6 +28,7 @@ namespace libime {
 
 class WordNode;
 
+// The callback accepts the passed path that matches the word.
 typedef std::function<void(const SegmentGraphPath &, WordNode &, float,
                            boost::string_view)>
     GraphMatchCallback;

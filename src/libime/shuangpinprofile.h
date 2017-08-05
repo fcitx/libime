@@ -53,12 +53,7 @@ public:
     explicit ShuangpinProfile(ShuangpinBuiltinProfile profile);
     explicit ShuangpinProfile(std::istream &in);
 
-    ShuangpinProfile(const ShuangpinProfile &other);
-    ShuangpinProfile(ShuangpinProfile && other) = default;
-    ~ShuangpinProfile();
-
-    ShuangpinProfile& operator=(const ShuangpinProfile &other);
-    ShuangpinProfile& operator=(ShuangpinProfile &&other) = default;
+    FCITX_DECLARE_VIRTUAL_DTOR_COPY_AND_MOVE(ShuangpinProfile)
 
     const TableType &table() const;
     const ValidInputSetType &validInput() const;

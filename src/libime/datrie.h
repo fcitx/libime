@@ -22,13 +22,14 @@
 
 #include "libime_export.h"
 
+#include <fcitx-utils/macros.h>
 #include <functional>
 #include <memory>
 #include <vector>
 
 namespace libime {
 
-template <typename T>
+template <typename V, bool ORDERED = true, int MAX_TRIAL = 1>
 class DATriePrivate;
 
 template <typename T>
@@ -42,9 +43,6 @@ template <>
 struct NaN<float> {
     enum { N1 = 0x7f800001, N2 = 0x7f800002 };
 };
-
-template <typename T>
-void swap(DATrie<T> &first, DATrie<T> &second) noexcept;
 
 /**
  * This is a trie based on cedar<www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/>.
@@ -68,15 +66,10 @@ public:
 
     enum { NO_VALUE = NaN<value_type>::N1, NO_PATH = NaN<value_type>::N2 };
     DATrie();
-    DATrie(const DATrie<T> &other);
-    DATrie(DATrie<T> &&other);
     DATrie(const char *filename);
     DATrie(std::istream &in);
-    virtual ~DATrie();
 
-    DATrie &operator=(DATrie other);
-
-    friend void swap<>(DATrie &first, DATrie &second) noexcept;
+    FCITX_DECLARE_VIRTUAL_DTOR_COPY_AND_MOVE(DATrie)
 
     void load(std::istream &in);
     void save(const char *filename);
@@ -144,12 +137,6 @@ public:
 private:
     std::unique_ptr<DATriePrivate<value_type>> d;
 };
-
-template <typename T>
-void swap(DATrie<T> &first, DATrie<T> &second) noexcept {
-    using std::swap;
-    swap(first.d, second.d);
-}
 
 template class LIBIME_EXPORT DATrie<float>;
 template class LIBIME_EXPORT DATrie<int32_t>;

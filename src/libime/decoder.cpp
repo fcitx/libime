@@ -44,10 +44,10 @@ struct NBestNode {
 
 class DecoderPrivate {
 public:
-    DecoderPrivate(const Dictionary *dict,
-                   const LanguageModelBase *model)
+    DecoderPrivate(const Dictionary *dict, const LanguageModelBase *model)
         : dict_(dict), model_(model) {}
 
+    // Try to update lattice based on existing data.
     void
     buildLattice(const Decoder *q, Lattice &l,
                  const std::unordered_set<const SegmentGraphNode *> &ignore,
@@ -55,6 +55,7 @@ public:
                  size_t frameSize, void *helper) const {
         LatticeMap &lattice = l.d_ptr->lattice_;
 
+        // Create the root node.
         if (!lattice.count(&graph.start())) {
             lattice[&graph.start()].push_back(
                 q->createLatticeNode(graph, model_, "", model_->beginSentence(),
@@ -66,37 +67,40 @@ public:
             size_t, boost::hash<std::pair<const SegmentGraphNode *,
                                           const SegmentGraphNode *>>>
             dupPath;
-        dict_->matchPrefix(
-            graph,
-            [this, &graph, &lattice, &dupPath, q,
-             frameSize](const SegmentGraphPath &path, WordNode &word,
-                        float adjust, boost::string_view aux) {
-                if (InvalidWordIndex == word.idx()) {
-                    auto idx = model_->index(word.word());
-                    word.setIdx(idx);
-                }
-                assert(path.front());
-                size_t &dupSize =
-                    dupPath[std::make_pair(path.front(), path.back())];
-                if ((frameSize && (dupSize > frameSize)) &&
-                    path.front() != &graph.start()) {
-                    return;
-                }
-                auto node = q->createLatticeNode(
-                    graph, model_, word.word(), word.idx(), path,
-                    model_->nullState(), adjust, aux, dupSize);
-                if (node) {
-                    lattice[path.back()].push_back(node);
-                    dupSize++;
-                }
-            },
-            ignore, helper);
+
+        auto dictMatchCallback = [this, &graph, &lattice, &dupPath, q,
+                                  frameSize](const SegmentGraphPath &path,
+                                             WordNode &word, float adjust,
+                                             boost::string_view aux) {
+            if (InvalidWordIndex == word.idx()) {
+                auto idx = model_->index(word.word());
+                word.setIdx(idx);
+            }
+            assert(path.front());
+            size_t &dupSize =
+                dupPath[std::make_pair(path.front(), path.back())];
+            if ((frameSize && (dupSize > frameSize)) &&
+                path.front() != &graph.start()) {
+                return;
+            }
+            auto node = q->createLatticeNode(
+                graph, model_, word.word(), word.idx(), path,
+                model_->nullState(), adjust, aux, dupSize);
+            if (node) {
+                lattice[path.back()].push_back(node);
+                dupSize++;
+            }
+        };
+
+        dict_->matchPrefix(graph, dictMatchCallback, ignore, helper);
         assert(lattice.count(&graph.end()));
 #if 0
         for (auto &p : dupPath) {
             std::cout << "Lattice size From :" << p.first.first->index() << " to " << p.first.second->index() << " " << p.second << " " << frameSize << std::endl;
         }
 #endif
+
+        // Create the node for end.
         lattice[nullptr].push_back(
             q->createLatticeNode(graph, model_, "", model_->endSentence(),
                                  {&graph.end(), nullptr}, model_->nullState()));
@@ -143,7 +147,9 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     auto t0 = std::chrono::high_resolution_clock::now();
 #endif
 
+    // Clear the result.
     l.d_ptr->nbests_.clear();
+    // Remove end node.
     l.d_ptr->lattice_.erase(nullptr);
     std::unordered_set<const SegmentGraphNode *> ignore;
     for (auto &p : lattice) {

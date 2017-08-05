@@ -19,16 +19,16 @@
 
 #include "tablebaseddictionary.h"
 #include "datrie.h"
+#include "lattice.h"
 #include "tableoptions.h"
 #include "tablerule.h"
-#include "lattice.h"
 #include <boost/algorithm/string.hpp>
+#include <cassert>
 #include <cstring>
 #include <fcitx-utils/utf8.h>
 #include <fstream>
 #include <set>
 #include <string>
-#include <cassert>
 
 namespace libime {
 
@@ -787,13 +787,15 @@ void TableBasedDictionary::matchPrefixImpl(
     auto *node = &graph.start();
     auto *end = &graph.end();
 
-    TableMatchMode mode = tableOptions().exactMatch() ? TableMatchMode::Exact : TableMatchMode::Prefix;
+    TableMatchMode mode = tableOptions().exactMatch() ? TableMatchMode::Exact
+                                                      : TableMatchMode::Prefix;
     SegmentGraphPath path;
     while (node != end) {
         path.push_back(node);
-        auto& next = node->nexts().front();
+        auto &next = node->nexts().front();
         auto code = graph.segment(*node, next);
-        matchWords(code, mode, [&] (boost::string_view code, boost::string_view word, float score) {
+        matchWords(code, mode, [&](boost::string_view code,
+                                   boost::string_view word, float score) {
             WordNode wordNode(word, InvalidWordIndex);
             callback(path, wordNode, score, code);
             return true;

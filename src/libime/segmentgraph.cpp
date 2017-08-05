@@ -89,8 +89,7 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
                 nold = &boost::get<0>(t);
                 nnow = &boost::get<1>(t);
                 if (nold->index() != nnow->index() ||
-                    segment(*old, *nold) !=
-                        graph.segment(*now, *nnow)) {
+                    segment(*old, *nold) != graph.segment(*now, *nnow)) {
                     return old->index();
                 }
             }
@@ -134,18 +133,18 @@ void SegmentGraph::merge(SegmentGraph &graph, DiscardCallback discardCallback) {
         graph.graph_[i].reset();
     }
 
-    data_ = graph.data_;
+    mutableData() = graph.data();
 
     // these nodes will be discarded by resize()
-    if (data_.size() + 1 < graph_.size()) {
-        for (size_t i = data_.size() + 1; i < graph_.size(); i++) {
+    if (data().size() + 1 < graph_.size()) {
+        for (size_t i = data().size() + 1; i < graph_.size(); i++) {
             for (auto &node : nodes(i)) {
                 nodeToDiscard.insert(&node);
             }
         }
     }
 
-    resize(data_.size() + 1);
+    resize(data().size() + 1);
     for (size_t i = since; i <= size(); i++) {
         for (auto &node : nodes(i)) {
             nodeToDiscard.insert(&node);

@@ -33,7 +33,7 @@ class PinyinContext;
 
 // Provides caching mechanism used by PinyinContext.
 class LIBIME_EXPORT PinyinMatchState {
-    friend class PinyinDictionary;
+    friend class PinyinMatchContext;
 
 public:
     PinyinMatchState(PinyinContext *context);

@@ -127,7 +127,9 @@ typedef std::function<void(
 
 class LIBIME_EXPORT SegmentGraphBase {
 public:
-    SegmentGraphBase(boost::string_view data = {}) : data_(data.to_string()) {}
+    SegmentGraphBase(boost::string_view data = {})
+        : data_(std::make_unique<std::string>(data.to_string())) {}
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE(SegmentGraphBase)
 
     virtual const SegmentGraphNode &start() const = 0;
     virtual const SegmentGraphNode &end() const = 0;
@@ -138,16 +140,17 @@ public:
     }
 
     // Return the string.
-    const std::string &data() const { return data_; }
+    const std::string &data() const { return *data_; }
 
     // Return the size of string.
-    size_t size() const { return data_.size(); }
+    size_t size() const { return data().size(); }
 
     inline boost::string_view segment(size_t start, size_t end) const {
-        return boost::string_view(data_.data() + start, end - start);
+        return boost::string_view(data().data() + start, end - start);
     }
 
-    inline boost::string_view segment(const SegmentGraphNode &start, const SegmentGraphNode &end) const {
+    inline boost::string_view segment(const SegmentGraphNode &start,
+                                      const SegmentGraphNode &end) const {
         return segment(start.index(), end.index());
     }
 
@@ -160,8 +163,8 @@ public:
     }
 
     bool isList() const {
-        const SegmentGraphNode* node = &start();
-        const SegmentGraphNode* endNode = &end();
+        const SegmentGraphNode *node = &start();
+        const SegmentGraphNode *endNode = &end();
         while (node != endNode) {
             if (node->nextSize() != 1) {
                 return false;
@@ -201,7 +204,7 @@ public:
     }
 
 protected:
-    std::string data_;
+    std::string &mutableData() { return *data_; }
 
 private:
     bool dfsHelper(std::vector<size_t> &path, const SegmentGraphNode &start,
@@ -220,26 +223,26 @@ private:
         }
         return true;
     }
+
+    // Temporary workaround for string's move.
+    std::unique_ptr<std::string> data_;
 };
 
 class LIBIME_EXPORT SegmentGraph : public SegmentGraphBase {
 public:
-    SegmentGraph(boost::string_view data = {}) : SegmentGraphBase(data) {
-        resize(data_.size() + 1);
-        if (data_.size()) {
-            newNode(data_.size());
+    SegmentGraph(boost::string_view str = {}) : SegmentGraphBase(str) {
+        resize(data().size() + 1);
+        if (data().size()) {
+            newNode(data().size());
         }
         newNode(0);
     }
     SegmentGraph(const SegmentGraph &seg) = delete;
-    SegmentGraph(SegmentGraph &&seg) = default;
-    ~SegmentGraph() {}
-
-    SegmentGraph &operator=(SegmentGraph &&seg) = default;
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE(SegmentGraph)
 
     const SegmentGraphNode &start() const override { return *graph_[0]; }
     const SegmentGraphNode &end() const override {
-        return *graph_[data_.size()];
+        return *graph_[data().size()];
     }
     void merge(SegmentGraph &graph, DiscardCallback discardCallback = {});
 
@@ -262,7 +265,7 @@ public:
     // helper for dag style segments
     void addNext(size_t from, size_t to) {
         assert(from < to);
-        assert(to <= data_.size());
+        assert(to <= data().size());
         if (nodes(from).empty()) {
             newNode(from);
         }
@@ -272,19 +275,19 @@ public:
         graph_[from]->addEdge(*graph_[to]);
     }
 
-    void appendToLast(boost::string_view data) {
+    void appendToLast(boost::string_view str) {
         // append empty string is meaningless.
-        if (!data.size()) {
+        if (!str.size()) {
             return;
         }
 
-        size_t oldSize = data_.size();
-        data_.append(data.data(), data.size());
-        resize(data_.size() + 1);
+        size_t oldSize = data().size();
+        mutableData().append(str.data(), str.size());
+        resize(data().size() + 1);
 
-        newNode(data_.size());
+        newNode(data().size());
         auto &node = mutableNode(oldSize);
-        auto &newEnd = mutableNode(data_.size());
+        auto &newEnd = mutableNode(data().size());
         // If old size is 0, then just create an edge from begin to end.
         if (oldSize == 0) {
             node.addEdge(newEnd);

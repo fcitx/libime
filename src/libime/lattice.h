@@ -42,11 +42,7 @@ public:
     typedef std::vector<const LatticeNode *> Sentence;
     SentenceResult(Sentence sentence = {}, float score = 0.0f)
         : sentence_(std::move(sentence)), score_(score) {}
-    SentenceResult(const SentenceResult &) = default;
-    SentenceResult(SentenceResult &&) = default;
-
-    SentenceResult &operator=(const SentenceResult &) = default;
-    SentenceResult &operator=(SentenceResult &&) = default;
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(SentenceResult)
 
     Sentence sentence() const { return sentence_; }
 
@@ -71,12 +67,7 @@ class WordNode {
 public:
     WordNode(boost::string_view word, WordIndex idx)
         : word_(word.to_string()), idx_(idx) {}
-    WordNode(const WordNode &) = default;
-    WordNode(WordNode &&) = default;
-    virtual ~WordNode() {}
-
-    WordNode &operator=(const WordNode &) = default;
-    WordNode &operator=(WordNode &&) = default;
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(WordNode)
 
     const std::string &word() const { return word_; }
     WordIndex idx() const { return idx_; }
@@ -160,6 +151,18 @@ inline std::string SentenceResult::toString() const {
         "");
 }
 
+// Lattice graph is a overlay graph on the SegmentGraph.
+// Every node in SegmentGraph may have multiple corresponding LatticeNode.
+// If there is an edge between two lattice nodes, there is a path between their
+// corresponding SegmentGraphNode.
+//
+// For example, pinyin, "xian" has three SegmentGraphNodes.
+// [0] ---- xian ----- [4]
+//   \- xi -[2] - an -/
+//
+// while [0] has only one lattice node, the remaining nodes may has multiple
+// nodes.
+// So there is an extra "end" node that links every nodes from [4] to it.
 class LIBIME_EXPORT Lattice {
     friend class Decoder;
     friend class DecoderPrivate;
@@ -167,9 +170,7 @@ class LIBIME_EXPORT Lattice {
 
 public:
     Lattice();
-    Lattice(Lattice &&other);
-    virtual ~Lattice();
-    Lattice &operator=(Lattice &&other);
+    FCITX_DECLARE_VIRTUAL_DTOR_MOVE(Lattice)
 
     size_t sentenceSize() const;
     const SentenceResult &sentence(size_t idx) const;

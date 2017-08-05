@@ -32,11 +32,7 @@ namespace libime {
 class ShuangpinProfilePrivate {
 public:
     ShuangpinProfilePrivate() = default;
-    ShuangpinProfilePrivate(const ShuangpinProfilePrivate&) = default;
-    ShuangpinProfilePrivate(ShuangpinProfilePrivate&&) = default;
-
-    ShuangpinProfilePrivate& operator=(const ShuangpinProfilePrivate&) = default;
-    ShuangpinProfilePrivate& operator=(ShuangpinProfilePrivate&&) = default;
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(ShuangpinProfilePrivate)
 
     char zeroS_ = 'o';
     std::unordered_multimap<char, PinyinFinal> finalMap_;
@@ -156,14 +152,7 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
     buildShuangpinTable();
 }
 
-ShuangpinProfile::~ShuangpinProfile() {}
-
-ShuangpinProfile::ShuangpinProfile(const ShuangpinProfile &other) : d_ptr(std::make_unique<ShuangpinProfilePrivate>(*other.d_ptr)) {
-}
-
-ShuangpinProfile& ShuangpinProfile::operator=(const ShuangpinProfile & other) {
-    *d_ptr = *other.d_ptr;
-}
+FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 
 void ShuangpinProfile::buildShuangpinTable() {
     FCITX_D();

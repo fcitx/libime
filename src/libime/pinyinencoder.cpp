@@ -464,7 +464,7 @@ static void getFuzzy(
     }
 }
 
-std::vector<std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
+MatchedPinyinSyllables
 PinyinEncoder::stringToSyllables(boost::string_view pinyin,
                                  PinyinFuzzyFlags flags) {
     std::vector<
@@ -517,7 +517,7 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin,
     return result;
 }
 
-std::vector<std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
+MatchedPinyinSyllables
 PinyinEncoder::shuangpinToSyllables(boost::string_view pinyin,
                                     const ShuangpinProfile &sp,
                                     PinyinFuzzyFlags flags) {

@@ -24,14 +24,7 @@ namespace libime {
 
 Lattice::Lattice() : d_ptr(std::make_unique<LatticePrivate>()) {}
 
-Lattice::Lattice(Lattice &&other) : d_ptr(std::move(other.d_ptr)) {}
-
-Lattice::~Lattice() {}
-
-Lattice &Lattice::operator=(Lattice &&other) {
-    d_ptr = std::move(other.d_ptr);
-    return *this;
-}
+FCITX_DEFINE_DEFAULT_DTOR_AND_MOVE(Lattice)
 
 size_t Lattice::sentenceSize() const {
     FCITX_D();

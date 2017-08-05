@@ -148,14 +148,13 @@ struct LIBIME_EXPORT PinyinSyllable {
 public:
     PinyinSyllable(PinyinInitial initial, PinyinFinal final)
         : initial_(initial), final_(final) {}
-    PinyinSyllable(const PinyinSyllable &) = default;
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(PinyinSyllable)
 
     PinyinInitial initial() const { return initial_; }
     PinyinFinal final() const { return final_; }
 
     std::string toString() const;
 
-    PinyinSyllable &operator=(const PinyinSyllable &) = default;
     bool operator==(const PinyinSyllable &other) const {
         return initial_ == other.initial_ && final_ == other.final_;
     }
@@ -181,6 +180,9 @@ private:
     PinyinInitial initial_;
     PinyinFinal final_;
 };
+
+using MatchedPinyinSyllables = std::vector<
+    std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>;
 
 class LIBIME_EXPORT PinyinEncoder {
 public:
@@ -218,11 +220,9 @@ public:
 
     static bool isValidInitialFinal(PinyinInitial initial, PinyinFinal final);
 
-    static std::vector<
-        std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
-    stringToSyllables(boost::string_view pinyin, PinyinFuzzyFlags flags);
-    static std::vector<
-        std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
+    static MatchedPinyinSyllables stringToSyllables(boost::string_view pinyin,
+                                                    PinyinFuzzyFlags flags);
+    static MatchedPinyinSyllables
     shuangpinToSyllables(boost::string_view pinyin, const ShuangpinProfile &sp,
                          PinyinFuzzyFlags flags);
 

@@ -42,8 +42,7 @@ using vector_impl = std::vector<T>;
 template <typename T>
 using vector_impl = naivevector<T>;
 #endif
-
-template <typename V>
+template <typename V, bool ORDERED, int MAX_TRIAL>
 class DATriePrivate {
 public:
     typedef DATrie<V> base_type;
@@ -62,8 +61,6 @@ public:
         CEDAR_NO_PATH = base_type::NO_PATH
     };
     static const int MAX_ALLOC_SIZE = 1 << 16; // must be divisible by 256
-    const int MAX_TRIAL = 1;
-    const bool ORDERED = true;
     typedef value_type result_type;
     typedef uint8_t uchar;
     static_assert(sizeof(value_type) <= sizeof(int32_t),
@@ -172,12 +169,7 @@ public:
     std::array<int, 257> m_reject;
 
     DATriePrivate() { init(); }
-
-    DATriePrivate(const DATriePrivate &other)
-        : m_array(other.m_array), m_tail(other.m_tail), m_tail0(other.m_tail0),
-          m_block(other.m_block), m_ninfo(other.m_ninfo),
-          m_bheadF(other.m_bheadF), m_bheadC(other.m_bheadC),
-          m_bheadO(other.m_bheadO), m_reject(other.m_reject) {}
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(DATriePrivate)
 
     size_t size() const { return m_ninfo.size(); }
 
@@ -961,17 +953,25 @@ DATrie<T>::DATrie(std::istream &fin) : DATrie() {
 }
 
 template <typename T>
-DATrie<T>::~DATrie() {}
+DATrie<T>::~DATrie() = default;
 
 template <typename T>
-DATrie<T>::DATrie(DATrie<T> &&other) : d(std::move(other.d)) {}
+DATrie<T>::DATrie(DATrie<T> &&other) noexcept = default;
 
 template <typename T>
-DATrie<T>::DATrie(const DATrie<T> &other) : d(new DATriePrivate<T>(*other.d)) {}
+DATrie<T>::DATrie(const DATrie<T> &other)
+    : d(std::make_unique<DATriePrivate<T>>(*other.d)) {}
 
 template <typename T>
-DATrie<T> &DATrie<T>::operator=(DATrie<T> other) {
-    swap(*this, other);
+DATrie<T> &DATrie<T>::operator=(DATrie<T> &&other) noexcept = default;
+
+template <typename T>
+DATrie<T> &DATrie<T>::operator=(const DATrie<T> &other) {
+    if (d) {
+        *d = *other.d;
+    } else {
+        d = std::make_unique<DATriePrivate<T>>(*other.d);
+    }
     return *this;
 }
 

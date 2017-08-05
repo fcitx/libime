@@ -29,18 +29,18 @@ PinyinMatchState::~PinyinMatchState() {}
 
 void PinyinMatchState::clear() {
     FCITX_D();
-    d->search_.clear();
-    d->nodeCache_.clear();
-    d->matchCache_.clear();
+    d->matchedPaths_.clear();
+    d->nodeCacheMap_.clear();
+    d->matchCacheMap_.clear();
 }
 
 void PinyinMatchState::discardNode(
     const std::unordered_set<const SegmentGraphNode *> &nodes) {
     FCITX_D();
     for (auto node : nodes) {
-        d->search_.erase(node);
+        d->matchedPaths_.erase(node);
     }
-    for (auto &p : d->search_) {
+    for (auto &p : d->matchedPaths_) {
         auto &l = p.second;
         auto iter = l.begin();
         while (iter != l.end()) {
@@ -69,7 +69,7 @@ PinyinMatchState::shuangpinProfile() const {
 
 void PinyinMatchState::discardDictionary(size_t idx) {
     FCITX_D();
-    d->matchCache_.erase(d->context_->ime()->dict()->trie(idx));
-    d->nodeCache_.erase(d->context_->ime()->dict()->trie(idx));
+    d->matchCacheMap_.erase(d->context_->ime()->dict()->trie(idx));
+    d->nodeCacheMap_.erase(d->context_->ime()->dict()->trie(idx));
 }
 }

@@ -155,9 +155,9 @@ public:
     }
 
     void bfs(const SegmentGraphNode *from,
-             SegmentGraphBFSCallback callback) const;
+             const SegmentGraphBFSCallback &callback) const;
 
-    void dfs(SegmentGraphDFSCallback callback) const {
+    void dfs(const SegmentGraphDFSCallback &callback) const {
         std::vector<size_t> path;
         dfsHelper(path, start(), callback);
     }
@@ -208,7 +208,7 @@ protected:
 
 private:
     bool dfsHelper(std::vector<size_t> &path, const SegmentGraphNode &start,
-                   SegmentGraphDFSCallback callback) const {
+                   const SegmentGraphDFSCallback &callback) const {
         if (start == end()) {
             return callback(path);
         }
@@ -244,7 +244,8 @@ public:
     const SegmentGraphNode &end() const override {
         return *graph_[data().size()];
     }
-    void merge(SegmentGraph &graph, DiscardCallback discardCallback = {});
+    void merge(SegmentGraph &graph,
+               const DiscardCallback &discardCallback = {});
 
     SegmentGraphNode &ensureNode(size_t idx) {
         if (nodes(idx).empty()) {

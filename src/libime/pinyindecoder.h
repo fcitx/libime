@@ -30,10 +30,9 @@ public:
     PinyinLatticeNode(boost::string_view word, WordIndex idx,
                       SegmentGraphPath path, const State &state, float cost,
                       boost::string_view aux)
-        : LatticeNode(word, idx, path, state, cost, aux),
-          encodedPinyin_(aux.to_string()) {}
+        : LatticeNode(word, idx, path, state, cost, aux) {}
 
-    const std::string &encodedPinyin() const { return encodedPinyin_; }
+    const std::string &encodedPinyin() const { return aux_; }
 
 private:
     std::string encodedPinyin_;

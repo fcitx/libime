@@ -36,6 +36,7 @@ using State = std::array<char, StateSize>;
 class WordNode;
 class LatticeNode;
 class LanguageModelPrivate;
+class LanguageModelResolverPrivate;
 
 class LIBIME_EXPORT LanguageModelBase {
 public:
@@ -92,8 +93,18 @@ private:
 
 class LIBIME_EXPORT LanguageModelResolver {
 public:
+    LanguageModelResolver();
+    FCITX_DECLARE_VIRTUAL_DTOR_MOVE(LanguageModelResolver)
+    std::shared_ptr<const StaticLanguageModelFile>
+    languageModelFileForLanguage(const std::string &language);
+
+protected:
     virtual std::string
-    languageModelFileForLanguage(boost::string_view language) = 0;
+    languageModelFileNameForLanguage(const std::string &language) = 0;
+
+private:
+    std::unique_ptr<LanguageModelResolverPrivate> d_ptr;
+    FCITX_DECLARE_PRIVATE(LanguageModelResolver);
 };
 }
 

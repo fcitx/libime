@@ -46,10 +46,12 @@ public:
             node);
     }
 };
+UserLanguageModel::UserLanguageModel(const char *file)
+    : UserLanguageModel(std::make_shared<StaticLanguageModelFile>(file)) {}
 
-UserLanguageModel::UserLanguageModel(const char *sysFile)
-    : LanguageModel(sysFile),
-      d_ptr(std::make_unique<UserLanguageModelPrivate>()) {
+UserLanguageModel::UserLanguageModel(
+    std::shared_ptr<const StaticLanguageModelFile> file)
+    : LanguageModel(file), d_ptr(std::make_unique<UserLanguageModelPrivate>()) {
     FCITX_D();
     // resize will fill remaining with zero
     d->beginState_ = LanguageModel::beginState();

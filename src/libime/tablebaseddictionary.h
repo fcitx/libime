@@ -86,7 +86,7 @@ public:
     const TableOptions &tableOptions() const;
 
     void matchWords(boost::string_view code, TableMatchMode mode,
-                    TableMatchCallback callback) const;
+                    const TableMatchCallback &callback) const;
 
 private:
     void loadText(std::istream &in);
@@ -96,7 +96,8 @@ private:
     void parseDataLine(const std::string &buf);
 
     void
-    matchPrefixImpl(const SegmentGraph &graph, GraphMatchCallback callback,
+    matchPrefixImpl(const SegmentGraph &graph,
+                    const GraphMatchCallback &callback,
                     const std::unordered_set<const SegmentGraphNode *> &ignore,
                     void *helper) const override;
 

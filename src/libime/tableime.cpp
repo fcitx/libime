@@ -71,17 +71,15 @@ TableIME::languageModelForDictionary(TableBasedDictionary *dict) {
     auto language = dict->tableOptions().languageCode();
     auto iter = d->languageModels_.find(language);
     if (iter == d->languageModels_.end()) {
-        auto fileName = d->lmProvider_->languageModelFileForLanguage(
+        auto file = d->lmProvider_->languageModelFileForLanguage(
             dict->tableOptions().languageCode());
-        if (!fileName.empty()) {
+        if (!file) {
             return nullptr;
         }
 
-        iter =
-            d->languageModels_
-                .emplace(language,
-                         std::make_unique<UserLanguageModel>(fileName.data()))
-                .first;
+        iter = d->languageModels_
+                   .emplace(language, std::make_unique<UserLanguageModel>(file))
+                   .first;
     }
     return iter->second.get();
 }

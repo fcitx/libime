@@ -42,7 +42,7 @@ struct SegmentGraphNodeGreater {
 };
 
 void SegmentGraphBase::bfs(const SegmentGraphNode *from,
-                           SegmentGraphBFSCallback callback) const {
+                           const SegmentGraphBFSCallback &callback) const {
     std::priority_queue<const SegmentGraphNode *,
                         std::vector<const SegmentGraphNode *>,
                         SegmentGraphNodeGreater>
@@ -105,7 +105,8 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
     return end().index() + 1;
 }
 
-void SegmentGraph::merge(SegmentGraph &graph, DiscardCallback discardCallback) {
+void SegmentGraph::merge(SegmentGraph &graph,
+                         const DiscardCallback &discardCallback) {
     if (&graph == this) {
         return;
     }

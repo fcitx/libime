@@ -473,7 +473,7 @@ void PinyinDictionaryPrivate::matchNode(
 }
 
 void PinyinDictionary::matchPrefixImpl(
-    const SegmentGraph &graph, GraphMatchCallback callback,
+    const SegmentGraph &graph, const GraphMatchCallback &callback,
     const std::unordered_set<const SegmentGraphNode *> &ignore,
     void *helper) const {
     FCITX_D();

@@ -755,9 +755,9 @@ int32_t TableBasedDictionary::pinyinLength() const {
     return d->pyLength_;
 }
 
-void TableBasedDictionary::matchWords(boost::string_view code,
-                                      TableMatchMode mode,
-                                      TableMatchCallback callback) const {
+void TableBasedDictionary::matchWords(
+    boost::string_view code, TableMatchMode mode,
+    const TableMatchCallback &callback) const {
     FCITX_D();
     d->phraseTrie_.foreach (
         code.data(), code.size(),
@@ -780,28 +780,35 @@ void TableBasedDictionary::matchWords(boost::string_view code,
 }
 
 void TableBasedDictionary::matchPrefixImpl(
-    const SegmentGraph &graph, GraphMatchCallback callback,
-    const std::unordered_set<const SegmentGraphNode *> &ignore,
-    void *helper) const {
+    const SegmentGraph &graph, const GraphMatchCallback &callback,
+    const std::unordered_set<const SegmentGraphNode *> &ignore, void *) const {
     assert(graph.isList());
-    auto *node = &graph.start();
-    auto *end = &graph.end();
-
     TableMatchMode mode = tableOptions().exactMatch() ? TableMatchMode::Exact
                                                       : TableMatchMode::Prefix;
     SegmentGraphPath path;
-    while (node != end) {
+    path.reserve(2);
+    for (auto *node = &graph.start(); node;
+         node = node->nextSize() ? &node->nexts().front() : nullptr) {
+        if (!node->prevSize() || ignore.count(node)) {
+            continue;
+        }
+        path.clear();
+        path.push_back(&node->prevs().front());
         path.push_back(node);
-        auto &next = node->nexts().front();
-        auto code = graph.segment(*node, next);
+
+        auto code = graph.segment(*path[0], *path[1]);
+        bool matched = false;
         matchWords(code, mode, [&](boost::string_view code,
                                    boost::string_view word, float score) {
             WordNode wordNode(word, InvalidWordIndex);
             callback(path, wordNode, score, code);
+            matched = true;
             return true;
         });
-
-        node = &next;
+        if (!matched) {
+            WordNode wordNode("", 0);
+            callback(path, wordNode, 0, code);
+        }
     }
 }
 

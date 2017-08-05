@@ -36,7 +36,7 @@ typedef std::function<void(const SegmentGraphPath &, WordNode &, float,
 class LIBIME_EXPORT Dictionary {
 public:
     void
-    matchPrefix(const SegmentGraph &graph, GraphMatchCallback callback,
+    matchPrefix(const SegmentGraph &graph, const GraphMatchCallback &callback,
                 const std::unordered_set<const SegmentGraphNode *> &ignore = {},
                 void *helper = nullptr) const {
         matchPrefixImpl(graph, callback, ignore, helper);
@@ -44,7 +44,8 @@ public:
 
 protected:
     virtual void
-    matchPrefixImpl(const SegmentGraph &graph, GraphMatchCallback callback,
+    matchPrefixImpl(const SegmentGraph &graph,
+                    const GraphMatchCallback &callback,
                     const std::unordered_set<const SegmentGraphNode *> &ignore,
                     void *helper) const = 0;
 };

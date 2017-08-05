@@ -77,7 +77,8 @@ public:
 
 protected:
     void
-    matchPrefixImpl(const SegmentGraph &graph, GraphMatchCallback callback,
+    matchPrefixImpl(const SegmentGraph &graph,
+                    const GraphMatchCallback &callback,
                     const std::unordered_set<const SegmentGraphNode *> &ignore,
                     void *helper) const override;
 

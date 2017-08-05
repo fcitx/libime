@@ -57,14 +57,16 @@ class TestLmResolver : public LanguageModelResolver {
 public:
     TestLmResolver(boost::string_view path) : path_(path.to_string()) {}
 
+protected:
     std::string
-    languageModelFileForLanguage(boost::string_view language) override {
+    languageModelFileNameForLanguage(const std::string &language) override {
         if (language == "zh_CN") {
             return path_;
         }
         return {};
     }
 
+private:
     std::string path_;
 };
 
@@ -92,6 +94,19 @@ int main(int argc, char *argv[]) {
             c.type(word);
         } else if (word == "all") {
             printAll = true;
+        }
+
+        size_t count = 1;
+        for (auto &candidate : c.candidates()) {
+            std::cout << (count % 10) << ": ";
+            for (auto node : candidate.sentence()) {
+                std::cout << node->word() << " " << node->auxiliary();
+            }
+            std::cout << " " << candidate.score() << std::endl;
+            count++;
+            if (!printAll && count > 10) {
+                break;
+            }
         }
     }
 

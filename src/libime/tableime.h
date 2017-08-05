@@ -35,6 +35,7 @@ class TableBasedDictionary;
 
 class TableDictionrayResolver {
 public:
+    virtual ~TableDictionrayResolver() = default;
     virtual TableBasedDictionary *requestDict(boost::string_view name) = 0;
     virtual void saveDict(TableBasedDictionary *dict) = 0;
 };

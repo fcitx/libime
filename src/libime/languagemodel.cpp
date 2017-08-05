@@ -139,4 +139,35 @@ float LanguageModel::unknownPenalty() const {
     FCITX_D();
     return d->unknown_;
 }
+
+class LanguageModelResolverPrivate {
+public:
+    std::unordered_map<std::string,
+                       std::shared_ptr<const StaticLanguageModelFile>>
+        files_;
+};
+
+LanguageModelResolver::LanguageModelResolver()
+    : d_ptr(std::make_unique<LanguageModelResolverPrivate>()) {}
+
+FCITX_DEFINE_DEFAULT_DTOR_AND_MOVE(LanguageModelResolver)
+
+std::shared_ptr<const StaticLanguageModelFile>
+LanguageModelResolver::languageModelFileForLanguage(
+    const std::string &language) {
+    FCITX_D();
+    auto iter = d->files_.find(language);
+    if (iter == d->files_.end()) {
+        auto fileName = languageModelFileNameForLanguage(language);
+        if (fileName.empty()) {
+            return nullptr;
+        }
+
+        iter = d->files_
+                   .emplace(language, std::make_shared<StaticLanguageModelFile>(
+                                          fileName.data()))
+                   .first;
+    }
+    return iter->second;
+}
 }

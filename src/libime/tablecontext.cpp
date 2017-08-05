@@ -38,6 +38,7 @@ public:
     Decoder decoder_;
     Lattice lattice_;
     SegmentGraph graph_;
+    std::vector<SentenceResult> candidates_;
 };
 
 TableContext::TableContext(TableBasedDictionary &dict, UserLanguageModel &model)
@@ -140,20 +141,64 @@ void TableContext::typeOneChar(const char *s, size_t length) {
 
     d->graph_.appendToLast({s, length});
     auto lastSeg = lastSegment(d->graph_);
+    d->lattice_.clear();
     d->decoder_.decode(d->lattice_, d->graph_, 1, d->model_.nullState());
-    // TODO handle exact match
-    std::vector<std::pair<std::string, std::string>> candidates;
-    d->dict_.matchWords(lastSeg, TableMatchMode::Prefix,
-                        [&candidates](boost::string_view code,
-                                      boost::string_view word, float cost) {
-                            candidates.emplace_back(code.to_string(),
-                                                    word.to_string());
-                            return true;
-                        });
-    if (candidates.size()) {
-        for (auto &candidate : candidates) {
-            FCITX_LOG(Info) << candidate.first << " " << candidate.second;
+
+    d->candidates_.clear();
+    std::unordered_set<std::string> dup;
+    for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
+        d->candidates_.push_back(d->lattice_.sentence(i));
+        dup.insert(d->candidates_.back().toString());
+    }
+
+    auto &graph = d->graph_;
+    auto bos = &graph.start();
+    auto beginSize = d->candidates_.size();
+    for (size_t i = graph.size(); i > 0; i--) {
+        float min = 0;
+        float max = -std::numeric_limits<float>::max();
+        //
+        auto adjust = static_cast<float>(graph.size() - i) *
+                      d->model_.unknownPenalty() / 10;
+        for (auto &graphNode : graph.nodes(i)) {
+            for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
+                if (latticeNode.from() == bos) {
+                    if (!d->model_.isNodeUnknown(latticeNode)) {
+                        if (latticeNode.score() < min) {
+                            min = latticeNode.score();
+                        }
+                        if (latticeNode.score() > max) {
+                            max = latticeNode.score();
+                        }
+                    }
+                    if (dup.count(latticeNode.word())) {
+                        continue;
+                    }
+                    d->candidates_.push_back(
+                        latticeNode.toSentenceResult(adjust));
+                    dup.insert(latticeNode.word());
+                }
+            }
+        }
+        for (auto &graphNode : graph.nodes(i)) {
+            for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
+                if (latticeNode.from() != bos) {
+                    auto fullWord = latticeNode.fullWord();
+                    if (dup.count(fullWord)) {
+                        continue;
+                    }
+                    d->candidates_.push_back(
+                        latticeNode.toSentenceResult(adjust));
+                }
+            }
         }
     }
+    std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
+              std::greater<SentenceResult>());
+}
+
+const std::vector<SentenceResult> &TableContext::candidates() const {
+    FCITX_D();
+    return d->candidates_;
 }
 }

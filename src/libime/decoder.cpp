@@ -52,138 +52,79 @@ public:
     buildLattice(const Decoder *q, Lattice &l,
                  const std::unordered_set<const SegmentGraphNode *> &ignore,
                  const State &state, const SegmentGraph &graph,
-                 size_t frameSize, void *helper) const {
-        LatticeMap &lattice = l.d_ptr->lattice_;
+                 size_t frameSize, void *helper) const;
 
-        // Create the root node.
-        if (!lattice.count(&graph.start())) {
-            lattice[&graph.start()].push_back(
-                q->createLatticeNode(graph, model_, "", model_->beginSentence(),
-                                     {nullptr, &graph.start()}, state, 0));
-        }
-
-        std::unordered_map<
-            std::pair<const SegmentGraphNode *, const SegmentGraphNode *>,
-            size_t, boost::hash<std::pair<const SegmentGraphNode *,
-                                          const SegmentGraphNode *>>>
-            dupPath;
-
-        auto dictMatchCallback = [this, &graph, &lattice, &dupPath, q,
-                                  frameSize](const SegmentGraphPath &path,
-                                             WordNode &word, float adjust,
-                                             boost::string_view aux) {
-            if (InvalidWordIndex == word.idx()) {
-                auto idx = model_->index(word.word());
-                word.setIdx(idx);
-            }
-            assert(path.front());
-            size_t &dupSize =
-                dupPath[std::make_pair(path.front(), path.back())];
-            if ((frameSize && (dupSize > frameSize)) &&
-                path.front() != &graph.start()) {
-                return;
-            }
-            auto node = q->createLatticeNode(
-                graph, model_, word.word(), word.idx(), path,
-                model_->nullState(), adjust, aux, dupSize);
-            if (node) {
-                lattice[path.back()].push_back(node);
-                dupSize++;
-            }
-        };
-
-        dict_->matchPrefix(graph, dictMatchCallback, ignore, helper);
-        assert(lattice.count(&graph.end()));
-#if 0
-        for (auto &p : dupPath) {
-            std::cout << "Lattice size From :" << p.first.first->index() << " to " << p.first.second->index() << " " << p.second << " " << frameSize << std::endl;
-        }
-#endif
-
-        // Create the node for end.
-        lattice[nullptr].push_back(
-            q->createLatticeNode(graph, model_, "", model_->endSentence(),
-                                 {&graph.end(), nullptr}, model_->nullState()));
-    }
+    void
+    forwardSearch(const SegmentGraph &graph, Lattice &lattice,
+                  const std::unordered_set<const SegmentGraphNode *> &ignore,
+                  size_t beamSize) const;
+    void backwardSearch(const SegmentGraph &graph, Lattice &l, size_t nbest,
+                        float max, float min) const;
 
     const Dictionary *dict_;
     const LanguageModelBase *model_;
 };
 
-Decoder::Decoder(const Dictionary *dict, const LanguageModelBase *model)
-    : d_ptr(std::make_unique<DecoderPrivate>(dict, model)) {}
-
-Decoder::~Decoder() {}
-
-std::string concatNBest(NBestNode *node, boost::string_view sep = "") {
-    std::string result;
-    while (node != nullptr) {
-        result.append(node->node_->word());
-        result.append(sep.data(), sep.size());
-        node = node->next_;
-    }
-    return result;
-}
-
-const Dictionary *Decoder::dict() const {
-    FCITX_D();
-    return d->dict_;
-}
-
-const LanguageModelBase *Decoder::model() const {
-    FCITX_D();
-    return d->model_;
-}
-
-// #define DEBUG_TIME
-// #define CONSISTENCY_CHECK
-
-void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
-                     const State &beginState, float max, float min,
-                     size_t beamSize, size_t frameSize, void *helper) const {
-    FCITX_D();
+void DecoderPrivate::buildLattice(
+    const Decoder *q, Lattice &l,
+    const std::unordered_set<const SegmentGraphNode *> &ignore,
+    const State &state, const SegmentGraph &graph, size_t frameSize,
+    void *helper) const {
     LatticeMap &lattice = l.d_ptr->lattice_;
-#ifdef DEBUG_TIME
-    auto t0 = std::chrono::high_resolution_clock::now();
-#endif
 
-    // Clear the result.
-    l.d_ptr->nbests_.clear();
-    // Remove end node.
-    l.d_ptr->lattice_.erase(nullptr);
-    std::unordered_set<const SegmentGraphNode *> ignore;
-    for (auto &p : lattice) {
-        ignore.insert(p.first);
-#ifdef CONSISTENCY_CHECK
-        std::cout << "Ignore size: " << p.first << " " << p.second.size()
-                  << std::endl;
-        assert(graph.checkNodeInGraph(p.first));
-#endif
+    // Create the root node.
+    if (!lattice.count(&graph.start())) {
+        lattice[&graph.start()].push_back(
+            q->createLatticeNode(graph, model_, "", model_->beginSentence(),
+                                 {nullptr, &graph.start()}, state, 0));
     }
 
+    std::unordered_map<
+        std::pair<const SegmentGraphNode *, const SegmentGraphNode *>, size_t,
+        boost::hash<
+            std::pair<const SegmentGraphNode *, const SegmentGraphNode *>>>
+        dupPath;
+
+    auto dictMatchCallback = [this, &graph, &lattice, &dupPath, q, frameSize](
+        const SegmentGraphPath &path, WordNode &word, float adjust,
+        boost::string_view aux) {
+        if (InvalidWordIndex == word.idx()) {
+            auto idx = model_->index(word.word());
+            word.setIdx(idx);
+        }
+        assert(path.front());
+        size_t &dupSize = dupPath[std::make_pair(path.front(), path.back())];
+        if ((frameSize && (dupSize > frameSize)) &&
+            path.front() != &graph.start()) {
+            return;
+        }
+        auto node =
+            q->createLatticeNode(graph, model_, word.word(), word.idx(), path,
+                                 model_->nullState(), adjust, aux, dupSize);
+        if (node) {
+            lattice[path.back()].push_back(node);
+            dupSize++;
+        }
+    };
+
+    dict_->matchPrefix(graph, dictMatchCallback, ignore, helper);
+    assert(lattice.count(&graph.end()));
+
+    // Create the node for end.
+    lattice[nullptr].push_back(
+        q->createLatticeNode(graph, model_, "", model_->endSentence(),
+                             {&graph.end(), nullptr}, model_->nullState()));
+}
+
+void DecoderPrivate::forwardSearch(
+    const SegmentGraph &graph, Lattice &l,
+    const std::unordered_set<const SegmentGraphNode *> &ignore,
+    size_t beamSize) const {
+    State state;
+    LatticeMap &lattice = l.d_ptr->lattice_;
     std::unordered_map<const SegmentGraphNode *,
                        std::tuple<float, LatticeNode *, State>>
         unknownIdCache;
-
-    d->buildLattice(this, l, ignore, beginState, graph, frameSize, helper);
-#ifdef DEBUG_TIME
-    {
-        std::cout << "Build Lattice Time: "
-                  << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                         std::chrono::high_resolution_clock::now() -
-                         t0).count() /
-                         1000000.0
-                  << std::endl;
-    }
-#endif
-    // std::cout << "Lattice Size: " << lattice.size() << std::endl;
-    // avoid repeated allocation
-    State state;
-
-#ifdef CONSISTENCY_CHECK
-    assert(graph.checkGraph());
-#endif
-
     auto start = &graph.start();
     // forward search
     auto updateForNode = [&](const SegmentGraphNode *graphNode) {
@@ -197,19 +138,13 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             return;
         }
         auto &latticeNodes = lattice[graphNode];
-#if 0
-        if (graphNode) {
-            std::cout << "Frame idx: " << graphNode->index() << "Lattice nodes size : " << latticeNodes.size() <<
-            std::endl;
-        }
-#endif
         for (auto &node : latticeNodes) {
             auto from = node.from();
             assert(graph.checkNodeInGraph(from));
             float maxScore = -std::numeric_limits<float>::max();
             LatticeNode *maxNode = nullptr;
             State maxState;
-            bool isUnknown = d->model_->isNodeUnknown(node);
+            bool isUnknown = model_->isNodeUnknown(node);
             if (isUnknown) {
                 auto iter = unknownIdCache.find(from);
                 if (iter != unknownIdCache.end()) {
@@ -221,19 +156,6 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                 auto iter = lattice.find(from);
                 assert(iter != lattice.end());
                 auto &searchFrom = iter->second;
-#ifdef CONSISTENCY_CHECK
-                if (searchFrom.size() == 0) {
-                    std::cout << "from in ignore" << ignore.count(from) << " "
-                              << from->index() << " "
-                              << graph.nodes(from->index()).size() << std::endl;
-                    if (graph.nodes(from->index()).size()) {
-                        assert(&graph.node(from->index()) == from);
-                    }
-                }
-                assert(searchFrom.size() > 0);
-                std::cout << "Search from size: " << from << " "
-                          << searchFrom.size() << std::endl;
-#endif
                 auto searchSize = beamSize;
                 if (searchSize) {
                     searchSize = std::min(searchSize, lattice[from].size());
@@ -243,7 +165,7 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
                 for (auto &parent :
                      searchFrom | boost::adaptors::sliced(0, searchSize)) {
                     auto score = parent.score() +
-                                 d->model_->score(parent.state(), node, state);
+                                 model_->score(parent.state(), node, state);
                     if (score > maxScore) {
                         maxScore = score;
                         maxNode = &parent;
@@ -262,18 +184,6 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             node.setScore(maxScore + node.cost());
             node.setPrev(maxNode);
             node.state() = maxState;
-#if 0
-            {
-                auto pos = &node;
-                auto bos = &lattice[&graph.start()][0];
-                std::string sentence;
-                while (pos != bos) {
-                    sentence = pos->word_ + " " + sentence;
-                    pos = pos->prev_;
-                }
-                std::cout << &node << " " << graphNode << " " << sentence << " " << node.score_ << std::endl;
-            }
-#endif
         }
         latticeNodes.sort([](const LatticeNode &lhs, const LatticeNode &rhs) {
             return lhs.score() > rhs.score();
@@ -282,17 +192,22 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
 
     graph.bfs(start, updateForNode);
     updateForNode(nullptr);
+}
 
-#ifdef DEBUG_TIME
-    {
-        std::cout << "Forward search Time: "
-                  << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                         std::chrono::high_resolution_clock::now() -
-                         t0).count() /
-                         1000000.0
-                  << std::endl;
+std::string concatNBest(NBestNode *node, boost::string_view sep = "") {
+    std::string result;
+    while (node != nullptr) {
+        result.append(node->node_->word());
+        result.append(sep.data(), sep.size());
+        node = node->next_;
     }
-#endif
+    return result;
+}
+
+void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
+                                    size_t nbest, float max, float min) const {
+    auto &lattice = l.d_ptr->lattice_;
+    State state;
     // backward search
     if (nbest == 1) {
         assert(lattice[&graph.start()].size() == 1);
@@ -338,7 +253,7 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             } else {
                 for (auto &from : lattice[node->node_->from()]) {
                     auto score =
-                        d->model_->score(from.state(), *node->node_, state) +
+                        model_->score(from.state(), *node->node_, state) +
                         node->node_->cost();
                     if (&from != bos && score < min)
                         continue;
@@ -375,16 +290,41 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
             l.d_ptr->nbests_.emplace_back(std::move(result), node->fn_);
         }
     }
-#ifdef DEBUG_TIME
-    {
-        std::cout << "backward search Time: "
-                  << std::chrono::duration_cast<std::chrono::nanoseconds>(
-                         std::chrono::high_resolution_clock::now() -
-                         t0).count() /
-                         1000000.0
-                  << std::endl;
+}
+
+Decoder::Decoder(const Dictionary *dict, const LanguageModelBase *model)
+    : d_ptr(std::make_unique<DecoderPrivate>(dict, model)) {}
+
+Decoder::~Decoder() {}
+
+const Dictionary *Decoder::dict() const {
+    FCITX_D();
+    return d->dict_;
+}
+
+const LanguageModelBase *Decoder::model() const {
+    FCITX_D();
+    return d->model_;
+}
+
+void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
+                     const State &beginState, float max, float min,
+                     size_t beamSize, size_t frameSize, void *helper) const {
+    FCITX_D();
+    LatticeMap &lattice = l.d_ptr->lattice_;
+    // Clear the result.
+    l.d_ptr->nbests_.clear();
+    // Remove end node.
+    lattice.erase(nullptr);
+    std::unordered_set<const SegmentGraphNode *> ignore;
+    // Add existing SegmentGraphNode to ignore set.
+    for (auto &p : lattice) {
+        ignore.insert(p.first);
     }
-#endif
+
+    d->buildLattice(this, l, ignore, beginState, graph, frameSize, helper);
+    d->forwardSearch(graph, l, ignore, beamSize);
+    d->backwardSearch(graph, l, nbest, max, min);
 }
 
 LatticeNode *Decoder::createLatticeNodeImpl(

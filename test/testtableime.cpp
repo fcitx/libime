@@ -38,6 +38,9 @@ public:
         dict->load(sys_.c_str(), TableFormat::Binary);
         TableOptions options;
         options.setLanguageCode("zh_CN");
+        options.setAutoCommit(true);
+        options.setAutoCommitLength(-1);
+        options.setNoMatchAutoCommitLength(0);
         dict->setTableOptions(options);
         return dict;
     }

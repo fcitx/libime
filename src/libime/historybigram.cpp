@@ -198,7 +198,7 @@ public:
         int bf = bigramFreq(prev, cur);
         int uf1 = unigramFreq(cur);
 
-        const float bigramWeight = 0.80f;
+        const float bigramWeight = 0.68f;
         // add 0.5 to avoid div 0
         float pr = 0.0f;
         pr += bigramWeight * float(bf) / float(uf0 + 0.5f);

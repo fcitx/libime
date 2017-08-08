@@ -28,6 +28,15 @@
 
 namespace libime {
 
+struct SelectedCode {
+    SelectedCode(size_t s, WordNode word, std::string code)
+        : offset_(s), word_(std::move(word)),
+          code_(std::move(code)) {}
+    size_t offset_;
+    WordNode word_;
+    std::string code_;
+};
+
 class TableContextPrivate {
 public:
     TableContextPrivate(TableBasedDictionary &dict, UserLanguageModel &model)
@@ -39,6 +48,7 @@ public:
     Lattice lattice_;
     SegmentGraph graph_;
     std::vector<SentenceResult> candidates_;
+    std::vector<std::pair<bool, std::vector<SelectedCode>>> selected_;
 };
 
 TableContext::TableContext(TableBasedDictionary &dict, UserLanguageModel &model)
@@ -77,6 +87,11 @@ bool TableContext::isValidInput(char c) const {
     return false;
 }
 
+bool TableContext::isEndKey(char c) const {
+    FCITX_D();
+    return d->dict_.tableOptions().endKey().find(c) != std::string::npos;
+}
+
 void TableContext::typeImpl(const char *s, size_t length) {
     cancelTill(cursor());
     boost::string_view view(s, length);
@@ -100,47 +115,37 @@ void TableContext::setCursor(size_t pos) {
 }
 
 void TableContext::erase(size_t from, size_t to) {
+    FCITX_D();
     if (from == to) {
+        return;
+    }
+
+    if (to != size()) {
         return;
     }
 
     // check if erase everything
     if (from == 0 && to >= size()) {
         FCITX_D();
+        d->candidates_.clear();
+        d->selected_.clear();
+        d->lattice_.clear();
+        d->graph_ = SegmentGraph();
         // FIXME
     } else {
         cancelTill(from);
     }
     InputBuffer::erase(from, to);
+    d->graph_.removeSuffixFrom(from);
 
     if (size()) {
         update();
     }
 }
 
-void TableContext::update() {}
-
-boost::string_view lastSegment(const SegmentGraph &graph) {
-    if (!graph.size()) {
-        return {};
-    } else {
-        assert(graph.end().prevSize());
-        return graph.segment(graph.end().prevs().front(), graph.end());
-    }
-}
-
-void TableContext::typeOneChar(const char *s, size_t length) {
+void TableContext::update() {
     FCITX_D();
-    InputBuffer::typeImpl(s, length);
-    auto &option = d->dict_.tableOptions();
-    if (option.pinyinKey() &&
-        fcitx::stringutils::startsWith(userInput(), option.pinyinKey())) {
-        // TODO: do pinyin stuff.
-        return;
-    }
 
-    d->graph_.appendToLast({s, length});
-    auto lastSeg = lastSegment(d->graph_);
     d->lattice_.clear();
     d->decoder_.decode(d->lattice_, d->graph_, 1, d->model_.nullState());
 
@@ -195,6 +200,36 @@ void TableContext::typeOneChar(const char *s, size_t length) {
     }
     std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
               std::greater<SentenceResult>());
+}
+
+boost::string_view lastSegment(const SegmentGraph &graph) {
+    if (!graph.size()) {
+        return {};
+    } else {
+        assert(graph.end().prevSize());
+        return graph.segment(graph.end().prevs().front(), graph.end());
+    }
+}
+
+void TableContext::typeOneChar(const char *s, size_t length) {
+    FCITX_D();
+    InputBuffer::typeImpl(s, length);
+    auto &option = d->dict_.tableOptions();
+    if (option.pinyinKey() &&
+        fcitx::stringutils::startsWith(userInput(), option.pinyinKey())) {
+        // TODO: do pinyin stuff.
+        return;
+    }
+
+    auto lastSeg = lastSegment(d->graph_);
+    FCITX_LOG(Info) << lastSeg;
+    if (lastSeg.size() >= d->dict_.maxLength()
+        || (lastSeg.size() > 0 && isEndKey(lastSeg.back()))
+        || (d->dict_.tableOptions().noMatchAutoCommitLength() && lastSeg.size() >= d->dict_.tableOptions().noMatchAutoCommitLength() && !d->dict_.hasMatchingWords(lastSeg, {s, length}))) {
+        d->graph_.appendNewSegment({s, length});
+    } else {
+        d->graph_.appendToLastSegment({s, length});
+    }
 }
 
 const std::vector<SentenceResult> &TableContext::candidates() const {

@@ -162,6 +162,18 @@ public:
         dfsHelper(path, start(), callback);
     }
 
+    // A naive distance, not necessary be the shortest.
+    size_t distanceToEnd(const SegmentGraphNode &node) const {
+        auto pNode = &node;
+        const SegmentGraphNode *endNode = &end();
+        size_t distance = 0;
+        while (pNode != endNode) {
+            pNode = &pNode->nexts().front();
+            ++distance;
+        }
+        return distance;
+    }
+
     bool isList() const {
         const SegmentGraphNode *node = &start();
         const SegmentGraphNode *endNode = &end();
@@ -276,7 +288,21 @@ public:
         graph_[from]->addEdge(*graph_[to]);
     }
 
-    void appendToLast(boost::string_view str) {
+    void appendNewSegment(boost::string_view str) {
+        // append empty string is meaningless.
+        if (!str.size()) {
+            return;
+        }
+
+        size_t oldSize = data().size();
+        mutableData().append(str.data(), str.size());
+        resize(data().size() + 1);
+        auto &newEnd = newNode(data().size());
+        auto &node = mutableNode(oldSize);
+        node.addEdge(newEnd);
+    }
+
+    void appendToLastSegment(boost::string_view str) {
         // append empty string is meaningless.
         if (!str.size()) {
             return;
@@ -286,9 +312,8 @@ public:
         mutableData().append(str.data(), str.size());
         resize(data().size() + 1);
 
-        newNode(data().size());
+        auto &newEnd = newNode(data().size());
         auto &node = mutableNode(oldSize);
-        auto &newEnd = mutableNode(data().size());
         // If old size is 0, then just create an edge from begin to end.
         if (oldSize == 0) {
             node.addEdge(newEnd);
@@ -302,6 +327,30 @@ public:
         }
         // Remove the old node.
         graph_[oldSize].reset();
+    }
+
+    void removeSuffixFrom(size_t idx) {
+        if (idx >= size()) {
+            return;
+        }
+
+        auto *pNode = &mutableNode(size());
+        auto *pStart = &start();
+        while (pNode != pStart && pNode->index() > idx) {
+            pNode = &pNode->mutablePrevs().front();
+        }
+
+        mutableData().erase(idx);
+        resize(data().size() + 1);
+        if (size() == 0) {
+            return;
+        }
+
+        if (pNode->index() == idx) {
+            return;
+        }
+        auto &newEnd = newNode(size());
+        pNode->addEdge(newEnd);
     }
 
 private:

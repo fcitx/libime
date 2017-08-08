@@ -77,7 +77,7 @@ public:
     bool isInputCode(uint32_t c) const;
 
     bool hasPinyin() const;
-    int32_t inputLength() const;
+    int32_t maxLength() const;
     int32_t pinyinLength() const;
 
     void statistic() const;
@@ -87,6 +87,9 @@ public:
 
     void matchWords(boost::string_view code, TableMatchMode mode,
                     const TableMatchCallback &callback) const;
+
+    bool hasMatchingWords(boost::string_view code) const;
+    bool hasMatchingWords(boost::string_view code, boost::string_view next) const;
 
 private:
     void loadText(std::istream &in);

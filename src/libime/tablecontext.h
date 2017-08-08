@@ -46,13 +46,30 @@ public:
 
     bool isValidInput(char c) const;
 
+    bool isEndKey(char) const;
+
     const std::vector<SentenceResult> &candidates() const;
-#if 0
+
+    bool selected() const;
+    std::string sentence() const {
+        auto &c = candidates();
+        if (c.size()) {
+            return selectedSentence() + c[0].toString();
+        } else {
+            return selectedSentence();
+        }
+    }
+
     std::string preedit() const;
     std::pair<std::string, size_t> preeditWithCursor() const;
     std::string selectedSentence() const;
     size_t selectedLength() const;
-#endif
+
+    std::vector<std::string> selectedWords() const;
+
+    std::string candidateHint(size_t i) const;
+
+    void learn();
 
     const TableBasedDictionary &dict() const;
 

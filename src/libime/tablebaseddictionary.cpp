@@ -533,7 +533,7 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
         break;
     case TableFormat::Text: {
         std::string buf;
-        d->phraseTrie_.foreach ([this, d, &buf, &out](
+        d->userTrie_.foreach ([this, d, &buf, &out](
             int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
             d->phraseTrie_.suffix(buf, _len, pos);
             auto sep = buf.find(keyValueSeparator);
@@ -733,6 +733,12 @@ void TableBasedDictionary::statistic() const {
 void TableBasedDictionary::setTableOptions(TableOptions option) {
     FCITX_D();
     d->options_ = option;
+    if (d->options_.autoCommitLength() < 0) {
+        d->options_.setAutoCommitLength(maxLength());
+    }
+    if (d->options_.noMatchAutoCommitLength() < 0) {
+        d->options_.setNoMatchAutoCommitLength(maxLength());
+    }
 }
 
 const TableOptions &TableBasedDictionary::tableOptions() const {
@@ -745,7 +751,7 @@ bool TableBasedDictionary::hasPinyin() const {
     return d->pinyinPhraseTrie_.size();
 }
 
-int32_t TableBasedDictionary::inputLength() const {
+int32_t TableBasedDictionary::maxLength() const {
     FCITX_D();
     return d->codeLength_;
 }
@@ -759,9 +765,10 @@ void TableBasedDictionary::matchWords(
     boost::string_view code, TableMatchMode mode,
     const TableMatchCallback &callback) const {
     FCITX_D();
-    d->phraseTrie_.foreach (
-        code.data(), code.size(),
-        [this, d, &code, callback, mode](float cost, size_t len,
+
+    bool cont = true;
+    auto matchWord =
+        [this, d, &code, callback, mode, &cont](float cost, size_t len,
                                          DATrie<int32_t>::position_type pos) {
             std::string entry;
             d->phraseTrie_.suffix(entry, code.size() + len, pos);
@@ -772,11 +779,35 @@ void TableBasedDictionary::matchWords(
             if (mode == TableMatchMode::Prefix ||
                 (mode == TableMatchMode::Exact && sep == code.size())) {
                 auto view = boost::string_view(entry);
-                return callback(view.substr(0, sep), view.substr(sep + 1),
-                                cost);
+                if (callback(view.substr(0, sep), view.substr(sep + 1),
+                                cost)) {
+                    return true;
+                } else {
+                    cont = false;
+                    return false;
+                }
             }
             return true;
-        });
+        };
+    d->phraseTrie_.foreach (
+        code.data(), code.size(), matchWord);
+    if (cont) {
+        d->userTrie_.foreach(code.data(), code.size(), matchWord);
+    }
+}
+
+bool TableBasedDictionary::hasMatchingWords(boost::string_view code, boost::string_view next) const {
+    auto str = code.to_string();
+    str.append(next.data(), next.size());
+    return hasMatchingWords(code);
+}
+
+bool TableBasedDictionary::hasMatchingWords(boost::string_view code) const {
+    bool hasMatch = false;
+    matchWords(code, TableMatchMode::Prefix, [&hasMatch] (boost::string_view, boost::string_view, float) {
+        return false;
+    });
+    return hasMatch;
 }
 
 void TableBasedDictionary::matchPrefixImpl(
@@ -806,7 +837,7 @@ void TableBasedDictionary::matchPrefixImpl(
             return true;
         });
         if (!matched) {
-            WordNode wordNode("", 0);
+            WordNode wordNode(tableOptions().commitRawInput() ? code : "", 0);
             callback(path, wordNode, 0, code);
         }
     }

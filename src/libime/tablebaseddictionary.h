@@ -89,7 +89,8 @@ public:
                     const TableMatchCallback &callback) const;
 
     bool hasMatchingWords(boost::string_view code) const;
-    bool hasMatchingWords(boost::string_view code, boost::string_view next) const;
+    bool hasMatchingWords(boost::string_view code,
+                          boost::string_view next) const;
 
 private:
     void loadText(std::istream &in);

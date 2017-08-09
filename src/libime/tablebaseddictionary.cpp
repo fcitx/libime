@@ -134,19 +134,19 @@ void updateReverseLookupEntry(DATrie<int32_t> &trie, boost::string_view key,
                               boost::string_view value) {
     auto reverseEntry = value.to_string() + keyValueSeparator;
     bool insert = true;
-    trie.foreach (reverseEntry,
-                  [&trie, &key, &value, &insert, &reverseEntry](
-                      int32_t, size_t len, DATrie<int32_t>::position_type pos) {
-                      auto oldKeyLen = len;
-                      if (key.length() > oldKeyLen) {
-                          std::string oldEntry;
-                          trie.suffix(oldEntry, len, pos);
-                          trie.erase(pos);
-                      } else {
-                          insert = false;
-                      }
-                      return false;
-                  });
+    trie.foreach(reverseEntry,
+                 [&trie, &key, &value, &insert, &reverseEntry](
+                     int32_t, size_t len, DATrie<int32_t>::position_type pos) {
+                     auto oldKeyLen = len;
+                     if (key.length() > oldKeyLen) {
+                         std::string oldEntry;
+                         trie.suffix(oldEntry, len, pos);
+                         trie.erase(pos);
+                     } else {
+                         insert = false;
+                     }
+                     return false;
+                 });
     if (insert) {
         reverseEntry.append(key.begin(), key.end());
         trie.set(reverseEntry, 1);
@@ -354,7 +354,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     out << strConst[1][STR_DATA] << std::endl;
     std::string buf;
     if (d->promptKey_) {
-        d->promptTrie_.foreach ([this, d, &buf, &out](
+        d->promptTrie_.foreach([this, d, &buf, &out](
             int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
             d->promptTrie_.suffix(buf, _len, pos);
             auto sep = buf.find(keyValueSeparator);
@@ -365,7 +365,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
         });
     }
     if (d->phraseKey_) {
-        d->singleCharConstTrie_.foreach ([this, d, &buf, &out](
+        d->singleCharConstTrie_.foreach([this, d, &buf, &out](
             int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
             d->singleCharConstTrie_.suffix(buf, _len, pos);
             auto sep = buf.find(keyValueSeparator);
@@ -375,7 +375,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
             return true;
         });
     }
-    d->phraseTrie_.foreach ([this, d, &buf, &out](
+    d->phraseTrie_.foreach([this, d, &buf, &out](
         int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
         d->phraseTrie_.suffix(buf, _len, pos);
         auto sep = buf.find(keyValueSeparator);
@@ -383,7 +383,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
         out << ref.substr(0, sep) << " " << ref.substr(sep + 1) << std::endl;
         return true;
     });
-    d->pinyinPhraseTrie_.foreach ([this, d, &buf, &out](
+    d->pinyinPhraseTrie_.foreach([this, d, &buf, &out](
         int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
         d->pinyinPhraseTrie_.suffix(buf, _len, pos);
         auto sep = buf.find(keyValueSeparator);
@@ -533,7 +533,7 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
         break;
     case TableFormat::Text: {
         std::string buf;
-        d->userTrie_.foreach ([this, d, &buf, &out](
+        d->userTrie_.foreach([this, d, &buf, &out](
             int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
             d->phraseTrie_.suffix(buf, _len, pos);
             auto sep = buf.find(keyValueSeparator);
@@ -571,7 +571,7 @@ bool TableBasedDictionary::insert(const std::string &key,
     }
 
     // invalid char
-    if (!fcitx::utf8::validate(value.c_str())) {
+    if (!fcitx::utf8::validate(value)) {
         return false;
     }
 
@@ -612,7 +612,7 @@ bool TableBasedDictionary::insert(const std::string &key,
     }
     case PhraseFlagPrompt:
         if (key.size() == 1) {
-            auto promptChar = fcitx::utf8::getCharValidated(value);
+            auto promptChar = fcitx::utf8::getChar(value);
             d->promptTrie_.set(key, promptChar);
         } else {
             return false;
@@ -664,26 +664,24 @@ bool TableBasedDictionary::generate(const std::string &value,
                     break;
                 }
 
-                iter = value.begin() +
-                       fcitx::utf8::nthChar(value, ruleEntry.character - 1);
+                iter = fcitx::utf8::nextNChar(value.begin(),
+                                              ruleEntry.character - 1);
             } else {
                 if (ruleEntry.character > valueLen) {
                     success = false;
                     break;
                 }
 
-                iter =
-                    value.begin() +
-                    fcitx::utf8::nthChar(value, valueLen - ruleEntry.character);
+                iter = fcitx::utf8::nextNChar(value.begin(),
+                                              valueLen - ruleEntry.character);
             }
             auto prev = iter;
-            iter = value.begin() +
-                   fcitx::utf8::nthChar(value, iter - value.begin(), 1);
+            iter = fcitx::utf8::nextChar(iter);
             std::string s(prev, iter);
             s += keyValueSeparator;
 
             size_t len = 0;
-            d->singleCharConstTrie_.foreach (
+            d->singleCharConstTrie_.foreach(
                 s, [this, d, &len, &entry](int32_t, size_t _len,
                                            DATrie<int32_t>::position_type pos) {
                     len = _len;
@@ -767,36 +765,34 @@ void TableBasedDictionary::matchWords(
     FCITX_D();
 
     bool cont = true;
-    auto matchWord =
-        [this, d, &code, callback, mode, &cont](float cost, size_t len,
-                                         DATrie<int32_t>::position_type pos) {
-            std::string entry;
-            d->phraseTrie_.suffix(entry, code.size() + len, pos);
-            auto sep = entry.find(keyValueSeparator, code.size());
-            if (sep == std::string::npos) {
-                return true;
-            }
-            if (mode == TableMatchMode::Prefix ||
-                (mode == TableMatchMode::Exact && sep == code.size())) {
-                auto view = boost::string_view(entry);
-                if (callback(view.substr(0, sep), view.substr(sep + 1),
-                                cost)) {
-                    return true;
-                } else {
-                    cont = false;
-                    return false;
-                }
-            }
+    auto matchWord = [this, d, &code, callback, mode, &cont](
+        float cost, size_t len, DATrie<int32_t>::position_type pos) {
+        std::string entry;
+        d->phraseTrie_.suffix(entry, code.size() + len, pos);
+        auto sep = entry.find(keyValueSeparator, code.size());
+        if (sep == std::string::npos) {
             return true;
-        };
-    d->phraseTrie_.foreach (
-        code.data(), code.size(), matchWord);
+        }
+        if (mode == TableMatchMode::Prefix ||
+            (mode == TableMatchMode::Exact && sep == code.size())) {
+            auto view = boost::string_view(entry);
+            if (callback(view.substr(0, sep), view.substr(sep + 1), cost)) {
+                return true;
+            } else {
+                cont = false;
+                return false;
+            }
+        }
+        return true;
+    };
+    d->phraseTrie_.foreach(code.data(), code.size(), matchWord);
     if (cont) {
         d->userTrie_.foreach(code.data(), code.size(), matchWord);
     }
 }
 
-bool TableBasedDictionary::hasMatchingWords(boost::string_view code, boost::string_view next) const {
+bool TableBasedDictionary::hasMatchingWords(boost::string_view code,
+                                            boost::string_view next) const {
     auto str = code.to_string();
     str.append(next.data(), next.size());
     return hasMatchingWords(code);
@@ -804,9 +800,10 @@ bool TableBasedDictionary::hasMatchingWords(boost::string_view code, boost::stri
 
 bool TableBasedDictionary::hasMatchingWords(boost::string_view code) const {
     bool hasMatch = false;
-    matchWords(code, TableMatchMode::Prefix, [&hasMatch] (boost::string_view, boost::string_view, float) {
-        return false;
-    });
+    matchWords(code, TableMatchMode::Prefix,
+               [&hasMatch](boost::string_view, boost::string_view, float) {
+                   return false;
+               });
     return hasMatch;
 }
 

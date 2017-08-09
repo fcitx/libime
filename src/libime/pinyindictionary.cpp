@@ -291,7 +291,7 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, const T &callback) {
             continue;
         }
 
-        path.trie()->foreach (
+        path.trie()->foreach(
             [&path, &callback, extraCost](PinyinTrie::value_type value,
                                           size_t len, uint64_t pos) {
                 std::string s;
@@ -565,7 +565,7 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
     }
 
     for (auto &node : nodes) {
-        node.first->foreach (
+        node.first->foreach(
             [&node, &callback, size](PinyinTrie::value_type value, size_t len,
                                      uint64_t pos) {
                 std::string s;
@@ -675,8 +675,8 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
     std::ios state(nullptr);
     state.copyfmt(out);
     auto &trie = d->tries_[idx];
-    trie.foreach ([this, &trie, &buf, &out](float value, size_t _len,
-                                            PinyinTrie::position_type pos) {
+    trie.foreach([this, &trie, &buf, &out](float value, size_t _len,
+                                           PinyinTrie::position_type pos) {
         trie.suffix(buf, _len, pos);
         auto sep = buf.find(pinyinHanziSep);
         if (sep == std::string::npos) {

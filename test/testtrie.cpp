@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
 
     std::string tempKey;
     size_t foreach_count = 0;
-    tree.foreach ([&tree, &map, &tempKey, &foreach_count](
+    tree.foreach([&tree, &map, &tempKey, &foreach_count](
         TestTrie::value_type value, size_t len, uint64_t pos) {
         (void)value;
         tree.suffix(tempKey, len, pos);
@@ -79,8 +79,8 @@ int main(int argc, char *argv[]) {
     swap(tree, trie2);
 
     foreach_count = 0;
-    tree.foreach ([&tree, &map, &tempKey,
-                   &foreach_count](int32_t value, size_t len, uint64_t pos) {
+    tree.foreach([&tree, &map, &tempKey,
+                  &foreach_count](int32_t value, size_t len, uint64_t pos) {
         (void)value;
         tree.suffix(tempKey, len, pos);
         FCITX_ASSERT(map.find(tempKey) != map.end());

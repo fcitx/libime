@@ -500,7 +500,7 @@ public:
         return 0;
     }
 
-    void foreach (callback_type callback, npos_t root = npos_t()) const {
+    void foreach(callback_type callback, npos_t root = npos_t()) const {
         decorder_type b;
         size_t p(0);
         npos_t from = root;
@@ -516,16 +516,15 @@ public:
     template <typename T>
     void dump(T *result, const size_t result_len) const {
         size_t num(0);
-        foreach ([result, result_len, &num](value_type value, size_t len,
-                                            position_type pos) {
+        foreach([result, result_len, &num](value_type value, size_t len,
+                                           position_type pos) {
             if (num < result_len) {
                 _set_result(&result[num++], value, len, npos_t(pos));
             } else {
                 return false;
             }
             return true;
-        })
-            ;
+        });
     }
     void shrink_tail() {
         const size_t length_ =
@@ -1010,21 +1009,21 @@ size_t DATrie<T>::size() const {
 }
 
 template <typename T>
-void DATrie<T>::foreach (const char *key, size_t size, callback_type func,
-                         position_type _pos) const {
+void DATrie<T>::foreach(const char *key, size_t size, callback_type func,
+                        position_type _pos) const {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t from(_pos);
     if (d->_find(key, from, pos, size) == NO_PATH) {
         return;
     }
 
-    d->foreach (func, from);
+    d->foreach(func, from);
 }
 
 template <typename T>
-void DATrie<T>::foreach (callback_type func, position_type pos) const {
+void DATrie<T>::foreach(callback_type func, position_type pos) const {
     typename DATriePrivate<value_type>::npos_t from(pos);
-    d->foreach (func, from);
+    d->foreach(func, from);
 }
 
 template <typename T>

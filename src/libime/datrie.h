@@ -117,13 +117,13 @@ public:
     bool erase(position_type from = 0);
 
     // call callback on each key
-    void foreach (callback_type func, position_type pos = 0) const;
+    void foreach(callback_type func, position_type pos = 0) const;
     // search by prefix
-    void foreach (const char *prefix, size_t size, callback_type func,
-                  position_type pos = 0) const;
-    void foreach (const std::string &prefix, callback_type func,
-                  position_type pos = 0) const {
-        return foreach (prefix.c_str(), prefix.size(), func, pos);
+    void foreach(const char *prefix, size_t size, callback_type func,
+                 position_type pos = 0) const;
+    void foreach(const std::string &prefix, callback_type func,
+                 position_type pos = 0) const {
+        return foreach(prefix.c_str(), prefix.size(), func, pos);
     }
     void clear();
     void shrink_tail();

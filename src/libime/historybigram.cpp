@@ -107,15 +107,15 @@ public:
             }
             next_->dump(out);
         } else {
-            unigram_.foreach ([this, &out](int32_t value, size_t _len,
-                                           DATrie<int32_t>::position_type pos) {
+            unigram_.foreach([this, &out](int32_t value, size_t _len,
+                                          DATrie<int32_t>::position_type pos) {
                 std::string buf;
                 unigram_.suffix(buf, _len, pos);
                 out << buf << " " << value << std::endl;
                 return true;
             });
-            bigram_.foreach ([this, &out](int32_t value, size_t _len,
-                                          DATrie<int32_t>::position_type pos) {
+            bigram_.foreach([this, &out](int32_t value, size_t _len,
+                                         DATrie<int32_t>::position_type pos) {
                 std::string buf;
                 bigram_.suffix(buf, _len, pos);
                 out << buf << " " << value << std::endl;

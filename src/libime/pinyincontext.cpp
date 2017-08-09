@@ -232,8 +232,7 @@ void PinyinContext::update() {
             auto distancePenalty = d->ime_->model()->unknownPenalty() / 3;
             for (auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
-                auto adjust = static_cast<float>(distance) *
-                            distancePenalty;
+                auto adjust = static_cast<float>(distance) * distancePenalty;
                 for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() == bos) {
                         if (!d->ime_->model()->isNodeUnknown(latticeNode)) {
@@ -255,8 +254,7 @@ void PinyinContext::update() {
             }
             for (auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
-                auto adjust = static_cast<float>(distance) *
-                            distancePenalty;
+                auto adjust = static_cast<float>(distance) * distancePenalty;
                 for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() != bos &&
                         latticeNode.score() > min &&

@@ -26,9 +26,9 @@
 #include "libime/shuangpinprofile.h"
 #include "libime/userlanguagemodel.h"
 #include "testutils.h"
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/device/null.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <functional>
@@ -109,7 +109,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    boost::iostreams::stream< boost::iostreams::null_sink > nullOstream( ( boost::iostreams::null_sink() ) );
+    boost::iostreams::stream<boost::iostreams::null_sink> nullOstream(
+        (boost::iostreams::null_sink()));
     ime.dict()->save(PinyinDictionary::UserDict, nullOstream,
                      PinyinDictFormat::Binary);
     ime.model()->history().dump(nullOstream);

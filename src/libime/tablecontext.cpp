@@ -30,8 +30,7 @@ namespace libime {
 
 struct SelectedCode {
     SelectedCode(size_t s, WordNode word, std::string code)
-        : offset_(s), word_(std::move(word)),
-          code_(std::move(code)) {}
+        : offset_(s), word_(std::move(word)), code_(std::move(code)) {}
     size_t offset_;
     WordNode word_;
     std::string code_;
@@ -223,9 +222,11 @@ void TableContext::typeOneChar(const char *s, size_t length) {
 
     auto lastSeg = lastSegment(d->graph_);
     FCITX_LOG(Info) << lastSeg;
-    if (lastSeg.size() >= d->dict_.maxLength()
-        || (lastSeg.size() > 0 && isEndKey(lastSeg.back()))
-        || (d->dict_.tableOptions().noMatchAutoCommitLength() && lastSeg.size() >= d->dict_.tableOptions().noMatchAutoCommitLength() && !d->dict_.hasMatchingWords(lastSeg, {s, length}))) {
+    if (lastSeg.size() >= d->dict_.maxLength() ||
+        (lastSeg.size() > 0 && isEndKey(lastSeg.back())) ||
+        (d->dict_.tableOptions().noMatchAutoCommitLength() &&
+         lastSeg.size() >= d->dict_.tableOptions().noMatchAutoCommitLength() &&
+         !d->dict_.hasMatchingWords(lastSeg, {s, length}))) {
         d->graph_.appendNewSegment({s, length});
     } else {
         d->graph_.appendToLastSegment({s, length});

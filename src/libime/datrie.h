@@ -20,6 +20,9 @@
 #ifndef LIBIME_DATRIE_H
 #define LIBIME_DATRIE_H
 
+/// \file
+/// \brief Provide a DATrie implementation.
+
 #include "libime_export.h"
 
 #include <fcitx-utils/macros.h>

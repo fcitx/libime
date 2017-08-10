@@ -634,11 +634,10 @@ bool TableBasedDictionary::generate(const std::string &value,
         return false;
     }
 
-    if (!fcitx::utf8::validate(value)) {
+    auto valueLen = fcitx::utf8::lengthValidated(value);
+    if (valueLen == fcitx::utf8::INVALID_LENGTH) {
         return false;
     }
-
-    auto valueLen = fcitx::utf8::length(value);
 
     std::string newKey;
     std::string entry;

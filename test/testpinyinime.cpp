@@ -26,6 +26,7 @@
 #include "libime/shuangpinprofile.h"
 #include "libime/userlanguagemodel.h"
 #include "testutils.h"
+#include <boost/algorithm/string.hpp>
 #include <boost/iostreams/device/null.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -40,6 +41,9 @@ int main(int argc, char *argv[]) {
     if (argc < 3) {
         return 1;
     }
+
+    FCITX_ASSERT(boost::starts_with("abcd", "ab"));
+
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
     };

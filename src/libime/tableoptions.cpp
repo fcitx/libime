@@ -25,14 +25,13 @@ class TableOptionsPrivate {
 public:
     OrderPolicy orderPolicy_ = OrderPolicy::No;
     int noSortInputLength_ = 0;
-    bool usePinyin_ = false;
-    char pinyinKey_ = '\0';
-    bool autoCommit_ = false;
-    int autoCommitLength_ = 0;
-    int noMatchAutoCommitLength_ = 0;
+    uint32_t pinyinKey_ = '\0';
+    bool autoSelect_ = false;
+    int autoSelectLength_ = 0;
+    int noMatchAutoSelectLength_ = 0;
     bool commitRawInput_ = false;
-    std::string endKey_;
-    char matchingKey_ = false;
+    std::set<uint32_t> endKey_;
+    uint32_t matchingKey_ = false;
     bool exactMatch_ = false;
 
     bool autoLearning_ = false;
@@ -51,34 +50,25 @@ public:
 };
 
 TableOptions::TableOptions() : d_ptr(std::make_unique<TableOptionsPrivate>()) {}
-TableOptions::TableOptions(const libime::TableOptions &options)
-    : d_ptr(std::make_unique<TableOptionsPrivate>(*options.d_ptr)) {}
 
-TableOptions::TableOptions(libime::TableOptions &&options)
-    : d_ptr(std::move(options.d_ptr)) {}
-
-TableOptions::~TableOptions() {}
-
-TableOptions &TableOptions::operator=(TableOptions other) {
-    using std::swap;
-    swap(d_ptr, other.d_ptr);
-    return *this;
-}
+FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(TableOptions)
 
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, OrderPolicy, orderPolicy,
                               setOrderPolicy);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, noSortInputLength,
                               setNoSortInputLength);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, char, pinyinKey, setPinyinKey);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoCommit, setAutoCommit);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, autoCommitLength,
-                              setAutoCommitLength);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, noMatchAutoCommitLength,
-                              setNoMatchAutoCommitLength);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, uint32_t, pinyinKey, setPinyinKey);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoSelect, setAutoSelect);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, autoSelectLength,
+                              setAutoSelectLength);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, noMatchAutoSelectLength,
+                              setNoMatchAutoSelectLength);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, commitRawInput,
                               setCommitRawInput);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::string, endKey, setEndKey);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, char, matchingKey, setMatchingKey);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::set<uint32_t>, endKey,
+                              setEndKey);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, uint32_t, matchingKey,
+                              setMatchingKey);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, exactMatch, setExactMatch);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoLearning,
                               setAutoLearning);

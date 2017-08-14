@@ -22,6 +22,7 @@
 #include "tablebaseddictionary.h"
 #include "tableoptions.h"
 #include "userlanguagemodel.h"
+#include "utils.h"
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
@@ -47,7 +48,7 @@ public:
     Lattice lattice_;
     SegmentGraph graph_;
     std::vector<SentenceResult> candidates_;
-    std::vector<std::pair<bool, std::vector<SelectedCode>>> selected_;
+    std::vector<SelectedCode> selected_;
 };
 
 TableContext::TableContext(TableBasedDictionary &dict, UserLanguageModel &model)
@@ -61,9 +62,25 @@ const TableBasedDictionary &TableContext::dict() const {
     return d->dict_;
 }
 
-bool TableContext::cancelTill(size_t pos) { return false; }
+bool TableContext::cancelTill(size_t pos) {
+    bool cancelled = false;
+    while (selectedLength() > pos) {
+        cancel();
+        cancelled = true;
+    }
+    return cancelled;
+}
 
-bool TableContext::isValidInput(char c) const {
+void TableContext::cancel() {
+    FCITX_D();
+
+    if (d->selected_.size()) {
+        d->selected_.pop_back();
+    }
+    update();
+}
+
+bool TableContext::isValidInput(uint32_t c) const {
     FCITX_D();
     if (d->dict_.isInputCode(c)) {
         return true;
@@ -86,23 +103,22 @@ bool TableContext::isValidInput(char c) const {
     return false;
 }
 
-bool TableContext::isEndKey(char c) const {
+bool TableContext::isEndKey(uint32_t c) const {
     FCITX_D();
-    return d->dict_.tableOptions().endKey().find(c) != std::string::npos;
+    return !!d->dict_.tableOptions().endKey().count(c);
 }
 
 void TableContext::typeImpl(const char *s, size_t length) {
-    cancelTill(cursor());
+    auto oldCursor = cursor();
+    cancelTill(oldCursor);
     boost::string_view view(s, length);
-    auto utf8len = fcitx::utf8::lengthValidated(view.begin(), view.end());
-    if (utf8len != fcitx::utf8::INVALID_LENGTH && utf8len > 0) {
-        for (auto iter = view.begin(), next = fcitx::utf8::nextChar(iter);
-             next <= view.end();
-             iter = next, next = fcitx::utf8::nextChar(next)) {
-            typeOneChar(iter, next - iter);
-            update();
-        }
+    auto utf8len = fcitx::utf8::lengthValidated(view);
+    if (utf8len == fcitx::utf8::INVALID_LENGTH) {
+        return;
     }
+    InputBuffer::typeImpl(s, length);
+    reparseFrom(oldCursor);
+    update();
 }
 
 void TableContext::setCursor(size_t pos) {
@@ -119,7 +135,7 @@ void TableContext::erase(size_t from, size_t to) {
         return;
     }
 
-    if (to != size()) {
+    if (to > size()) {
         return;
     }
 
@@ -130,20 +146,86 @@ void TableContext::erase(size_t from, size_t to) {
         d->selected_.clear();
         d->lattice_.clear();
         d->graph_ = SegmentGraph();
-        // FIXME
     } else {
         cancelTill(from);
     }
     InputBuffer::erase(from, to);
-    d->graph_.removeSuffixFrom(from);
+    reparseFrom(from);
+    update();
+}
 
-    if (size()) {
-        update();
+boost::string_view firstSegment(const SegmentGraph &graph) {
+    if (!graph.size()) {
+        return {};
+    } else {
+        assert(graph.start().nextSize());
+        return graph.segment(graph.start(), graph.start().nexts().front());
+    }
+}
+
+boost::string_view lastSegment(const SegmentGraph &graph) {
+    if (!graph.size()) {
+        return {};
+    } else {
+        assert(graph.end().prevSize());
+        return graph.segment(graph.end().prevs().front(), graph.end());
+    }
+}
+
+void TableContext::reparseFrom(size_t from) {
+    FCITX_D();
+    auto &option = d->dict_.tableOptions();
+    if (option.pinyinKey() &&
+        fcitx::stringutils::startsWith(userInput(), option.pinyinKey())) {
+        // TODO: do pinyin stuff.
+        return;
+    }
+
+    // Maintain the equality of graph_ and userInput().
+    size_t byteStart = 0;
+    if (from == 0) {
+        byteStart = 0;
+    } else if (from == size()) {
+        byteStart = userInput().size();
+    } else {
+        byteStart = rangeAt(from).first;
+    }
+
+    d->graph_.removeSuffixFrom(byteStart);
+    boost::string_view view = userInput();
+    assert(d->graph_.data() == view.substr(0, byteStart));
+    view = view.substr(byteStart);
+    auto range = fcitx::utf8::MakeUTF8CharRange(view);
+    for (auto iter = range.begin(), end = range.end(); iter != end; iter++) {
+        auto lastSeg = lastSegment(d->graph_);
+        auto charRange = iter.charRange();
+        boost::string_view currentChar(
+            &*charRange.first,
+            std::distance(charRange.first, charRange.second));
+        auto lastSegLength = fcitx::utf8::length(lastSeg);
+        if (!lengthLessThanLimit(lastSegLength, d->dict_.maxLength()) ||
+            (lastSegLength && isEndKey(fcitx::utf8::getLastChar(lastSeg))) ||
+            (d->dict_.tableOptions().noMatchAutoSelectLength() &&
+             !lengthLessThanLimit(
+                 lastSegLength,
+                 d->dict_.tableOptions().noMatchAutoSelectLength()) &&
+             !d->dict_.hasMatchingWords(lastSeg, currentChar))) {
+            d->graph_.appendNewSegment(currentChar);
+        } else {
+            d->graph_.appendToLastSegment(currentChar);
+        }
     }
 }
 
 void TableContext::update() {
     FCITX_D();
+    if (!size()) {
+        return;
+    }
+
+    // Run auto select.
+    if (d->dict_.tableOptions().autoSelect()) {
+    }
 
     d->lattice_.clear();
     d->decoder_.decode(d->lattice_, d->graph_, 1, d->model_.nullState());
@@ -159,40 +241,14 @@ void TableContext::update() {
     auto bos = &graph.start();
     auto beginSize = d->candidates_.size();
     for (size_t i = graph.size(); i > 0; i--) {
-        float min = 0;
-        float max = -std::numeric_limits<float>::max();
-        //
-        auto adjust = static_cast<float>(graph.size() - i) *
-                      d->model_.unknownPenalty() / 10;
         for (auto &graphNode : graph.nodes(i)) {
             for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                 if (latticeNode.from() == bos) {
-                    if (!d->model_.isNodeUnknown(latticeNode)) {
-                        if (latticeNode.score() < min) {
-                            min = latticeNode.score();
-                        }
-                        if (latticeNode.score() > max) {
-                            max = latticeNode.score();
-                        }
-                    }
                     if (dup.count(latticeNode.word())) {
                         continue;
                     }
-                    d->candidates_.push_back(
-                        latticeNode.toSentenceResult(adjust));
+                    d->candidates_.push_back(latticeNode.toSentenceResult());
                     dup.insert(latticeNode.word());
-                }
-            }
-        }
-        for (auto &graphNode : graph.nodes(i)) {
-            for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
-                if (latticeNode.from() != bos) {
-                    auto fullWord = latticeNode.fullWord();
-                    if (dup.count(fullWord)) {
-                        continue;
-                    }
-                    d->candidates_.push_back(
-                        latticeNode.toSentenceResult(adjust));
                 }
             }
         }
@@ -201,40 +257,16 @@ void TableContext::update() {
               std::greater<SentenceResult>());
 }
 
-boost::string_view lastSegment(const SegmentGraph &graph) {
-    if (!graph.size()) {
-        return {};
-    } else {
-        assert(graph.end().prevSize());
-        return graph.segment(graph.end().prevs().front(), graph.end());
-    }
-}
-
-void TableContext::typeOneChar(const char *s, size_t length) {
-    FCITX_D();
-    InputBuffer::typeImpl(s, length);
-    auto &option = d->dict_.tableOptions();
-    if (option.pinyinKey() &&
-        fcitx::stringutils::startsWith(userInput(), option.pinyinKey())) {
-        // TODO: do pinyin stuff.
-        return;
-    }
-
-    auto lastSeg = lastSegment(d->graph_);
-    FCITX_LOG(Info) << lastSeg;
-    if (lastSeg.size() >= d->dict_.maxLength() ||
-        (lastSeg.size() > 0 && isEndKey(lastSeg.back())) ||
-        (d->dict_.tableOptions().noMatchAutoCommitLength() &&
-         lastSeg.size() >= d->dict_.tableOptions().noMatchAutoCommitLength() &&
-         !d->dict_.hasMatchingWords(lastSeg, {s, length}))) {
-        d->graph_.appendNewSegment({s, length});
-    } else {
-        d->graph_.appendToLastSegment({s, length});
-    }
-}
-
 const std::vector<SentenceResult> &TableContext::candidates() const {
     FCITX_D();
     return d->candidates_;
+}
+
+size_t TableContext::selectedLength() const {
+    FCITX_D();
+    if (d->selected_.size()) {
+        return d->selected_.back().offset_;
+    }
+    return 0;
 }
 }

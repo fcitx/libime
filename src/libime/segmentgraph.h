@@ -58,9 +58,9 @@ public:
         auto &nexts = childs();
         return boost::make_iterator_range(
             boost::make_transform_iterator(nexts.begin(),
-                                           &SegmentGraphNode::castCosnt),
+                                           &SegmentGraphNode::castConst),
             boost::make_transform_iterator(nexts.end(),
-                                           &SegmentGraphNode::castCosnt));
+                                           &SegmentGraphNode::castConst));
     }
 
     size_t nextSize() const { return childs().size(); }
@@ -69,9 +69,9 @@ public:
         auto &prevs = parents();
         return boost::make_iterator_range(
             boost::make_transform_iterator(prevs.begin(),
-                                           &SegmentGraphNode::castCosnt),
+                                           &SegmentGraphNode::castConst),
             boost::make_transform_iterator(prevs.end(),
-                                           &SegmentGraphNode::castCosnt));
+                                           &SegmentGraphNode::castConst));
     }
 
     size_t prevSize() const { return parents().size(); }
@@ -109,7 +109,7 @@ protected:
     }
     void removeEdge(SegmentGraphNode &ref) { removeChild(&ref); }
 
-    static auto castCosnt(fcitx::Element *ele) -> const SegmentGraphNode & {
+    static auto castConst(fcitx::Element *ele) -> const SegmentGraphNode & {
         return *static_cast<SegmentGraphNode *>(ele);
     }
     static auto cast(fcitx::Element *ele) -> SegmentGraphNode & {
@@ -127,9 +127,8 @@ typedef std::function<void(
 
 class LIBIME_EXPORT SegmentGraphBase {
 public:
-    SegmentGraphBase(boost::string_view data = {})
-        : data_(std::make_unique<std::string>(data.to_string())) {}
-    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE(SegmentGraphBase)
+    SegmentGraphBase(boost::string_view data = {}) : data_(data.to_string()) {}
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE_WITHOUT_SPEC(SegmentGraphBase)
 
     virtual const SegmentGraphNode &start() const = 0;
     virtual const SegmentGraphNode &end() const = 0;
@@ -140,7 +139,7 @@ public:
     }
 
     // Return the string.
-    const std::string &data() const { return *data_; }
+    const std::string &data() const { return data_; }
 
     // Return the size of string.
     size_t size() const { return data().size(); }
@@ -216,7 +215,7 @@ public:
     }
 
 protected:
-    std::string &mutableData() { return *data_; }
+    std::string &mutableData() { return data_; }
 
 private:
     bool dfsHelper(std::vector<size_t> &path, const SegmentGraphNode &start,
@@ -236,8 +235,7 @@ private:
         return true;
     }
 
-    // Temporary workaround for string's move.
-    std::unique_ptr<std::string> data_;
+    std::string data_;
 };
 
 class LIBIME_EXPORT SegmentGraph : public SegmentGraphBase {
@@ -250,7 +248,7 @@ public:
         newNode(0);
     }
     SegmentGraph(const SegmentGraph &seg) = delete;
-    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE(SegmentGraph)
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE_WITHOUT_SPEC(SegmentGraph)
 
     const SegmentGraphNode &start() const override { return *graph_[0]; }
     const SegmentGraphNode &end() const override {

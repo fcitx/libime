@@ -129,6 +129,15 @@ void throw_if_fail(bool fail, E &&e) {
 inline void throw_if_io_fail(const std::ios &s) {
     throw_if_fail(!s, std::ios_base::failure("io fail"));
 }
+
+/// \brief Helper function compare length. If limit is less than 0, it means no
+// limit. Avoid unsigned / signed compare.
+inline bool lengthLessThanLimit(size_t length, int limit) {
+    if (limit < 0) {
+        return 0;
+    }
+    return length < static_cast<size_t>(limit);
+}
 }
 
 #endif // LIBIME_UTILS_H

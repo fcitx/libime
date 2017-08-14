@@ -37,6 +37,13 @@ public:
         }
     }
 
+    void setPenaltyFactor(float factor) {
+        penaltyFactor_ = factor;
+        if (next_) {
+            next_->setPenaltyFactor(factor);
+        }
+    }
+
     void setUnknownPenalty(float unknown) {
         unknown_ = unknown;
         if (next_) {
@@ -160,6 +167,8 @@ public:
             newSentence.push_back(ss);
         }
         recent_.push_front(std::move(newSentence));
+        incBigram("<s>", sentence.front());
+        incBigram(sentence.back(), "</s>");
         size_++;
     }
 
@@ -209,6 +218,8 @@ public:
         }
         if (pr == 0) {
             pr = unknown_;
+        } else {
+            pr /= penaltyFactor_;
         }
         if (next_) {
             return pr + decay * next_->score(prev, cur) / (1 + decay);
@@ -231,6 +242,8 @@ private:
                 decBigram(*iter, *next);
             }
         }
+        decBigram("<s>", sentence.front());
+        decBigram(sentence.back(), "</s>");
         size_--;
     }
 
@@ -272,6 +285,7 @@ private:
     }
 
     size_t maxSize_;
+    float penaltyFactor_ = 1.0;
     float unknown_ = 1 / 20000.0f;
     size_t size_ = 0;
     std::list<std::vector<std::string>> recent_;
@@ -285,6 +299,7 @@ public:
     HistoryBigramPrivate() {}
 
     float unknown_ = 0.0f;
+    float penaltyFactor_ = 1.0f;
     HistoryBigramPool finalPool_;
     HistoryBigramPool middlePool_{512, &finalPool_};
     HistoryBigramPool recentPool_{128, &middlePool_};
@@ -293,9 +308,16 @@ public:
 HistoryBigram::HistoryBigram()
     : d_ptr(std::make_unique<HistoryBigramPrivate>()) {
     setUnknownPenalty(std::log10(1 / 60000000.0f));
+    setPenaltyFactor(100);
 }
 
 HistoryBigram::~HistoryBigram() {}
+
+void HistoryBigram::setPenaltyFactor(float factor) {
+    FCITX_D();
+    d->penaltyFactor_ = factor;
+    d->recentPool_.setPenaltyFactor(factor);
+}
 
 void HistoryBigram::setUnknownPenalty(float unknown) {
     FCITX_D();
@@ -328,6 +350,12 @@ bool HistoryBigram::isUnknown(boost::string_view v) const {
 float HistoryBigram::score(boost::string_view prev,
                            boost::string_view cur) const {
     FCITX_D();
+    if (prev.empty()) {
+        prev = "<s>";
+    }
+    if (cur.empty()) {
+        cur = "</s>";
+    }
     auto pr = d->recentPool_.score(prev, cur);
     return std::log10(pr);
 }

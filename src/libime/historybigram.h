@@ -44,6 +44,9 @@ public:
     void dump(std::ostream &out);
     void clear();
 
+    void setPenaltyFactor(float factor);
+    float penaltyFactory() const;
+
     void setUnknownPenalty(float unknown);
     float unknownPenalty() const;
 

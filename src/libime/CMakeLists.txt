@@ -18,6 +18,7 @@ set_target_properties(kenlm PROPERTIES
 
 set(LIBIME_HDRS
     datrie.h
+    decoder.h
     tablebaseddictionary.h
     tablerule.h
     pinyinencoder.h

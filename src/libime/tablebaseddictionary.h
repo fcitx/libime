@@ -22,6 +22,7 @@
 #include "dictionary.h"
 #include "libime_export.h"
 #include <fcitx-utils/macros.h>
+#include <fcitx-utils/signals.h>
 #include <memory>
 
 namespace libime {
@@ -42,18 +43,13 @@ typedef std::function<bool(boost::string_view code, boost::string_view word,
 enum class TableFormat { Text, Binary };
 enum class TableMatchMode { Exact, Prefix };
 
-class LIBIME_EXPORT TableBasedDictionary : public Dictionary {
+class LIBIME_EXPORT TableBasedDictionary : public Dictionary,
+                                           public fcitx::ConnectableObject {
 public:
     TableBasedDictionary();
     virtual ~TableBasedDictionary();
 
-    TableBasedDictionary(const TableBasedDictionary &other);
-    TableBasedDictionary(TableBasedDictionary &&other) noexcept;
-
-    TableBasedDictionary &operator=(TableBasedDictionary other);
-
-    friend void swap(TableBasedDictionary &lhs,
-                     TableBasedDictionary &rhs) noexcept;
+    TableBasedDictionary(const TableBasedDictionary &other) = delete;
 
     void load(const char *filename, TableFormat format = TableFormat::Binary);
     void load(std::istream &in, TableFormat format = TableFormat::Binary);
@@ -68,16 +64,18 @@ public:
     void saveUser(std::ostream &out, TableFormat format = TableFormat::Binary);
 
     bool hasRule() const noexcept;
-    bool insert(const std::string &key, const std::string &value,
+    bool insert(boost::string_view key, boost::string_view value,
                 libime::PhraseFlag flag = PhraseFlagNone,
                 bool verifyWithRule = false);
-    bool insert(const std::string &value);
-    bool generate(const std::string &value, std::string &key);
+    bool insert(boost::string_view value);
+    bool generate(boost::string_view value, std::string &key);
 
     bool isInputCode(uint32_t c) const;
+    bool isAllInputCode(boost::string_view code) const;
 
     bool hasPinyin() const;
     int32_t maxLength() const;
+    bool isValidLength(size_t length) const;
     int32_t pinyinLength() const;
 
     void statistic() const;
@@ -92,12 +90,16 @@ public:
     bool hasMatchingWords(boost::string_view code,
                           boost::string_view next) const;
 
+    bool hasOneMatchingWord(boost::string_view code) const;
+
+    FCITX_DECLARE_SIGNAL(TableBasedDictionary, tableOptionsChanged, void());
+
 private:
     void loadText(std::istream &in);
     void loadBinary(std::istream &in);
     void saveText(std::ostream &out);
     void saveBinary(std::ostream &out);
-    void parseDataLine(const std::string &buf);
+    void parseDataLine(boost::string_view buf);
 
     void
     matchPrefixImpl(const SegmentGraph &graph,
@@ -108,8 +110,6 @@ private:
     std::unique_ptr<TableBasedDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableBasedDictionary);
 };
-
-void swap(TableBasedDictionary &lhs, TableBasedDictionary &rhs) noexcept;
 }
 
 #endif // LIBIME_TABLE_H

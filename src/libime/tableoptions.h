@@ -20,8 +20,10 @@
 #define _FCITX_LIBIME_TABLEOPTIONS_H_
 
 #include "libime_export.h"
+#include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <memory>
+#include <set>
 
 namespace libime {
 
@@ -36,22 +38,18 @@ class TableOptionsPrivate;
 class LIBIME_EXPORT TableOptions {
 public:
     TableOptions();
-    TableOptions(const TableOptions &options);
-    TableOptions(TableOptions &&options);
-    virtual ~TableOptions();
-
-    TableOptions &operator=(TableOptions other);
+    FCITX_DECLARE_VIRTUAL_DTOR_COPY_AND_MOVE(TableOptions)
 
     FCITX_DECLARE_PROPERTY(OrderPolicy, orderPolicy, setOrderPolicy);
     FCITX_DECLARE_PROPERTY(int, noSortInputLength, setNoSortInputLength);
-    FCITX_DECLARE_PROPERTY(char, pinyinKey, setPinyinKey);
-    FCITX_DECLARE_PROPERTY(bool, autoCommit, setAutoCommit);
-    FCITX_DECLARE_PROPERTY(int, autoCommitLength, setAutoCommitLength);
-    FCITX_DECLARE_PROPERTY(int, noMatchAutoCommitLength,
-                           setNoMatchAutoCommitLength);
+    FCITX_DECLARE_PROPERTY(uint32_t, pinyinKey, setPinyinKey);
+    FCITX_DECLARE_PROPERTY(bool, autoSelect, setAutoSelect);
+    FCITX_DECLARE_PROPERTY(int, autoSelectLength, setAutoSelectLength);
+    FCITX_DECLARE_PROPERTY(int, noMatchAutoSelectLength,
+                           setNoMatchAutoSelectLength);
     FCITX_DECLARE_PROPERTY(bool, commitRawInput, setCommitRawInput);
-    FCITX_DECLARE_PROPERTY(std::string, endKey, setEndKey);
-    FCITX_DECLARE_PROPERTY(char, matchingKey, setMatchingKey);
+    FCITX_DECLARE_PROPERTY(std::set<uint32_t>, endKey, setEndKey);
+    FCITX_DECLARE_PROPERTY(uint32_t, matchingKey, setMatchingKey);
     FCITX_DECLARE_PROPERTY(bool, exactMatch, setExactMatch);
     FCITX_DECLARE_PROPERTY(bool, autoLearning, setAutoLearning);
     FCITX_DECLARE_PROPERTY(bool, noMatchDontCommit, setNoMatchDontCommit);

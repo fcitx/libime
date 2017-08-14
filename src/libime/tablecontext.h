@@ -19,6 +19,9 @@
 #ifndef _FCITX_LIBIME_TABLECONTEXT_H_
 #define _FCITX_LIBIME_TABLECONTEXT_H_
 
+/// \file
+/// \brief Class provide input method support for table-based ones, like wubi.
+
 #include "inputbuffer.h"
 #include "lattice.h"
 #include "libime_export.h"
@@ -32,6 +35,7 @@ class TableContextPrivate;
 class TableBasedDictionary;
 class UserLanguageModel;
 
+/// \brief Input context for table input method.
 class LIBIME_EXPORT TableContext : public InputBuffer {
 public:
     TableContext(TableBasedDictionary &dict, UserLanguageModel &model);
@@ -44,9 +48,9 @@ public:
     void cancel();
     bool cancelTill(size_t pos);
 
-    bool isValidInput(char c) const;
+    bool isValidInput(uint32_t c) const;
 
-    bool isEndKey(char) const;
+    bool isEndKey(uint32_t c) const;
 
     const std::vector<SentenceResult> &candidates() const;
 
@@ -78,7 +82,7 @@ protected:
 
 private:
     void update();
-    void typeOneChar(const char *s, size_t length);
+    void reparseFrom(size_t from);
 
     std::unique_ptr<TableContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableContext);

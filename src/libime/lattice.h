@@ -44,7 +44,7 @@ public:
         : sentence_(std::move(sentence)), score_(score) {}
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(SentenceResult)
 
-    Sentence sentence() const { return sentence_; }
+    const Sentence &sentence() const { return sentence_; }
 
     float score() const { return score_; }
 
@@ -67,7 +67,7 @@ class WordNode {
 public:
     WordNode(boost::string_view word, WordIndex idx)
         : word_(word.to_string()), idx_(idx) {}
-    FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(WordNode)
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE_WITH_SPEC(WordNode, )
 
     const std::string &word() const { return word_; }
     WordIndex idx() const { return idx_; }

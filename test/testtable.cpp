@@ -52,7 +52,6 @@ int main() {
         table.save("data");
         table.statistic();
 
-        table = libime::TableBasedDictionary();
         table.load("data");
         table.statistic();
         // table.dump(std::cout);

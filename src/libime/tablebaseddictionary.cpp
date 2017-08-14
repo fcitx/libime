@@ -59,14 +59,25 @@ static const char *strConst[2][STR_LAST] = {
     {"KeyCode=", "Length=", "InvalidChar=", "Pinyin=", "PinyinLength=",
      "[Data]", "[Rule]", "Prompt=", "ConstructPhrase="}};
 
-class TableBasedDictionaryPrivate {
+static inline std::string generateTableEntry(boost::string_view key,
+                                             boost::string_view value) {
+    std::string entry;
+    entry.reserve(key.size() + value.size() + 1);
+    entry.append(key.data(), key.size());
+    entry += keyValueSeparator;
+    entry.append(value.data(), value.size());
+    return entry;
+}
+
+class TableBasedDictionaryPrivate
+    : public fcitx::QPtrHolder<TableBasedDictionary> {
 public:
     std::vector<TableRule> rules_;
-    std::set<char> inputCode_;
-    std::set<char> ignoreChars_;
-    char pinyinKey_ = '\0';
-    char promptKey_ = '\0';
-    char phraseKey_ = '\0';
+    std::set<uint32_t> inputCode_;
+    std::set<uint32_t> ignoreChars_;
+    uint32_t pinyinKey_ = 0;
+    uint32_t promptKey_ = 0;
+    uint32_t phraseKey_ = 0;
     int32_t codeLength_ = 0;
     int32_t pyLength_ = 0;
     DATrie<float> phraseTrie_;       // base dictionary
@@ -75,32 +86,14 @@ public:
     DATrie<int32_t> singleCharConstTrie_; // lookup char for new phrase
     DATrie<int32_t> promptTrie_;          // lookup for prompt;
     DATrie<int32_t> pinyinPhraseTrie_;
-    std::function<bool(char)> charCheck_;
     TableOptions options_;
 
-    TableBasedDictionaryPrivate() {
-        charCheck_ = [this](char c) {
-            return inputCode_.find(c) != inputCode_.end();
-        };
-    }
+    TableBasedDictionaryPrivate(TableBasedDictionary *q) : QPtrHolder(q) {}
 
-    TableBasedDictionaryPrivate(const TableBasedDictionaryPrivate &other)
-        : rules_(other.rules_), inputCode_(other.inputCode_),
-          ignoreChars_(other.ignoreChars_), pinyinKey_(other.pinyinKey_),
-          promptKey_(other.promptKey_), phraseKey_(other.phraseKey_),
-          codeLength_(other.codeLength_), pyLength_(other.pyLength_),
-          phraseTrie_(other.phraseTrie_),
-          singleCharTrie_(other.singleCharTrie_),
-          singleCharConstTrie_(other.singleCharConstTrie_),
-          promptTrie_(other.promptTrie_),
-          pinyinPhraseTrie_(other.pinyinPhraseTrie_) {
-        charCheck_ = [this](char c) {
-            return inputCode_.find(c) != inputCode_.end();
-        };
-    }
+    FCITX_DEFINE_SIGNAL_PRIVATE(TableBasedDictionary, tableOptionsChanged);
 
     void reset() {
-        pinyinKey_ = promptKey_ = phraseKey_ = '\0';
+        pinyinKey_ = promptKey_ = phraseKey_ = 0;
         codeLength_ = 0;
         pyLength_ = 0;
         inputCode_.clear();
@@ -117,13 +110,13 @@ public:
         if (inputCode_.empty()) {
             return false;
         }
-        if (inputCode_.find(pinyinKey_) != inputCode_.end()) {
+        if (inputCode_.count(pinyinKey_)) {
             return false;
         }
-        if (inputCode_.find(promptKey_) != inputCode_.end()) {
+        if (inputCode_.count(promptKey_)) {
             return false;
         }
-        if (inputCode_.find(phraseKey_) != inputCode_.end()) {
+        if (inputCode_.count(phraseKey_)) {
             return false;
         }
         return true;
@@ -154,26 +147,12 @@ void updateReverseLookupEntry(DATrie<int32_t> &trie, boost::string_view key,
 }
 
 TableBasedDictionary::TableBasedDictionary()
-    : d_ptr(std::make_unique<TableBasedDictionaryPrivate>()) {
+    : d_ptr(std::make_unique<TableBasedDictionaryPrivate>(this)) {
     FCITX_D();
     d->reset();
 }
 
-TableBasedDictionary::~TableBasedDictionary() {}
-
-TableBasedDictionary::TableBasedDictionary(
-    TableBasedDictionary &&other) noexcept
-    : d_ptr(std::move(other.d_ptr)) {}
-
-TableBasedDictionary::TableBasedDictionary(
-    const libime::TableBasedDictionary &other)
-    : d_ptr(std::make_unique<TableBasedDictionaryPrivate>(*other.d_ptr)) {}
-
-TableBasedDictionary &TableBasedDictionary::
-operator=(TableBasedDictionary other) {
-    swap(*this, other);
-    return *this;
-}
+TableBasedDictionary::~TableBasedDictionary() = default;
 
 void TableBasedDictionary::load(const char *filename, TableFormat format) {
     std::ifstream in(filename, std::ios::in | std::ios::binary);
@@ -194,9 +173,9 @@ void TableBasedDictionary::load(std::istream &in, TableFormat format) {
     }
 }
 
-void TableBasedDictionary::parseDataLine(const std::string &buf) {
+void TableBasedDictionary::parseDataLine(boost::string_view buf) {
     FCITX_D();
-    char special[3] = {d->pinyinKey_, d->phraseKey_, d->promptKey_};
+    uint32_t special[3] = {d->pinyinKey_, d->phraseKey_, d->promptKey_};
     PhraseFlag specialFlag[] = {PhraseFlagPinyin, PhraseFlagConstructPhrase,
                                 PhraseFlagPrompt};
     auto spacePos = buf.find_first_of(" \n\r\f\v\t");
@@ -210,15 +189,20 @@ void TableBasedDictionary::parseDataLine(const std::string &buf) {
 
     auto key = boost::string_view(buf).substr(0, spacePos);
     auto value = boost::string_view(buf).substr(wordPos);
+    if (key.empty() || value.empty()) {
+        return;
+    }
 
-    auto iter = std::find(std::begin(special), std::end(special), key[0]);
+    uint32_t firstChar;
+    auto next = fcitx::utf8::getNextChar(key.begin(), key.end(), &firstChar);
+    auto iter = std::find(std::begin(special), std::end(special), firstChar);
     PhraseFlag flag = PhraseFlagNone;
     if (iter != std::end(special)) {
         flag = specialFlag[iter - std::begin(special)];
-        key = key.substr(1);
+        key = key.substr(std::distance(key.begin(), next));
     }
 
-    insert(key.to_string(), value.to_string(), flag);
+    insert(key, value, flag);
 }
 
 void TableBasedDictionary::loadText(std::istream &in) {
@@ -246,6 +230,11 @@ void TableBasedDictionary::loadText(std::istream &in) {
         }
         lineNumber++;
 
+        // Validate everything first, so it's easier to process.
+        if (!fcitx::utf8::validate(buf)) {
+            continue;
+        }
+
         boost::trim_if(buf, isSpaceCheck);
 
         switch (phase) {
@@ -258,7 +247,8 @@ void TableBasedDictionary::loadText(std::istream &in) {
             if ((match = check_option(STR_KEYCODE)) >= 0) {
                 const std::string code =
                     buf.substr(strlen(strConst[match][STR_KEYCODE]));
-                d->inputCode_ = std::set<char>(code.begin(), code.end());
+                auto range = fcitx::utf8::MakeUTF8CharRange(code);
+                d->inputCode_ = std::set<uint32_t>(range.begin(), range.end());
             } else if ((match = check_option(STR_CODELEN)) >= 0) {
                 d->codeLength_ =
                     std::stoi(buf.substr(strlen(strConst[match][STR_CODELEN])));
@@ -267,9 +257,10 @@ void TableBasedDictionary::loadText(std::istream &in) {
                     buf.substr(strlen(strConst[match][STR_PINYINLEN])));
             } else if ((match = check_option(STR_IGNORECHAR)) >= 0) {
                 const std::string ignoreChars =
-                    buf.substr(strlen(strConst[match][STR_KEYCODE]));
+                    buf.substr(strlen(strConst[match][STR_IGNORECHAR]));
+                auto range = fcitx::utf8::MakeUTF8CharRange(ignoreChars);
                 d->ignoreChars_ =
-                    std::set<char>(ignoreChars.begin(), ignoreChars.end());
+                    std::set<uint32_t>(range.begin(), range.end());
             } else if ((match = check_option(STR_PINYIN)) >= 0) {
                 d->pinyinKey_ = buf[strlen(strConst[match][STR_PINYIN])];
             } else if ((match = check_option(STR_PROMPT)) >= 0) {
@@ -306,6 +297,7 @@ void TableBasedDictionary::loadText(std::istream &in) {
             }
 
             d->rules_.emplace_back(buf, d->codeLength_);
+            break;
         }
         case BuildPhase::PhaseData:
             parseDataLine(buf);
@@ -323,7 +315,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     FCITX_D();
     out << strConst[1][STR_KEYCODE];
     for (auto c : d->inputCode_) {
-        out << c;
+        out << fcitx::utf8::UCS4ToUTF8(c);
     }
     out << std::endl;
     out << strConst[1][STR_CODELEN] << d->codeLength_ << std::endl;
@@ -335,14 +327,17 @@ void TableBasedDictionary::saveText(std::ostream &out) {
         out << std::endl;
     }
     if (d->pinyinKey_) {
-        out << strConst[1][STR_PINYIN] << d->pinyinKey_ << std::endl;
+        out << strConst[1][STR_PINYIN] << fcitx::utf8::UCS4ToUTF8(d->pinyinKey_)
+            << std::endl;
         out << strConst[1][STR_PINYINLEN] << d->pyLength_ << std::endl;
     }
     if (d->promptKey_) {
-        out << strConst[1][STR_PROMPT] << d->promptKey_ << std::endl;
+        out << strConst[1][STR_PROMPT] << fcitx::utf8::UCS4ToUTF8(d->promptKey_)
+            << std::endl;
     }
     if (d->phraseKey_) {
-        out << strConst[1][STR_CONSTRUCTPHRASE] << d->phraseKey_ << std::endl;
+        out << strConst[1][STR_CONSTRUCTPHRASE]
+            << fcitx::utf8::UCS4ToUTF8(d->phraseKey_) << std::endl;
     }
 
     if (hasRule()) {
@@ -354,23 +349,25 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     out << strConst[1][STR_DATA] << std::endl;
     std::string buf;
     if (d->promptKey_) {
-        d->promptTrie_.foreach([this, d, &buf, &out](
+        auto promptString = fcitx::utf8::UCS4ToUTF8(d->promptKey_);
+        d->promptTrie_.foreach([this, &promptString, d, &buf, &out](
             int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
             d->promptTrie_.suffix(buf, _len, pos);
             auto sep = buf.find(keyValueSeparator);
             boost::string_view ref(buf);
-            out << d->promptKey_ << ref.substr(0, sep) << " "
+            out << promptString << ref.substr(0, sep) << " "
                 << ref.substr(sep + 1) << std::endl;
             return true;
         });
     }
     if (d->phraseKey_) {
-        d->singleCharConstTrie_.foreach([this, d, &buf, &out](
+        auto phraseString = fcitx::utf8::UCS4ToUTF8(d->phraseKey_);
+        d->singleCharConstTrie_.foreach([this, &phraseString, d, &buf, &out](
             int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
             d->singleCharConstTrie_.suffix(buf, _len, pos);
             auto sep = buf.find(keyValueSeparator);
             boost::string_view ref(buf);
-            out << d->promptKey_ << ref.substr(sep + 1) << " "
+            out << phraseString << ref.substr(sep + 1) << " "
                 << ref.substr(0, sep) << std::endl;
             return true;
         });
@@ -383,15 +380,19 @@ void TableBasedDictionary::saveText(std::ostream &out) {
         out << ref.substr(0, sep) << " " << ref.substr(sep + 1) << std::endl;
         return true;
     });
-    d->pinyinPhraseTrie_.foreach([this, d, &buf, &out](
-        int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
-        d->pinyinPhraseTrie_.suffix(buf, _len, pos);
-        auto sep = buf.find(keyValueSeparator);
-        boost::string_view ref(buf);
-        out << d->pinyinKey_ << ref.substr(0, sep) << " " << ref.substr(sep + 1)
-            << std::endl;
-        return true;
-    });
+
+    if (d->pinyinKey_) {
+        auto pinyinString = fcitx::utf8::UCS4ToUTF8(d->pinyinKey_);
+        d->pinyinPhraseTrie_.foreach([this, &pinyinString, d, &buf, &out](
+            int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+            d->pinyinPhraseTrie_.suffix(buf, _len, pos);
+            auto sep = buf.find(keyValueSeparator);
+            boost::string_view ref(buf);
+            out << pinyinString << ref.substr(0, sep) << " "
+                << ref.substr(sep + 1) << std::endl;
+            return true;
+        });
+    }
 }
 
 void TableBasedDictionary::loadBinary(std::istream &in) {
@@ -406,7 +407,7 @@ void TableBasedDictionary::loadBinary(std::istream &in) {
     throw_if_io_fail(unmarshall(in, size));
     d->inputCode_.clear();
     while (size--) {
-        char c;
+        uint32_t c;
         throw_if_io_fail(unmarshall(in, c));
         d->inputCode_.insert(c);
     }
@@ -414,7 +415,7 @@ void TableBasedDictionary::loadBinary(std::istream &in) {
     throw_if_io_fail(unmarshall(in, size));
     d->ignoreChars_.clear();
     while (size--) {
-        char c;
+        uint32_t c;
         throw_if_io_fail(unmarshall(in, c));
         d->ignoreChars_.insert(c);
     }
@@ -554,7 +555,7 @@ bool TableBasedDictionary::hasRule() const noexcept {
     return !d->rules_.empty();
 }
 
-bool TableBasedDictionary::insert(const std::string &value) {
+bool TableBasedDictionary::insert(boost::string_view value) {
     std::string key;
     if (generate(value, key)) {
         return insert(key, value);
@@ -562,16 +563,15 @@ bool TableBasedDictionary::insert(const std::string &value) {
     return false;
 }
 
-bool TableBasedDictionary::insert(const std::string &key,
-                                  const std::string &value, PhraseFlag flag,
+bool TableBasedDictionary::insert(boost::string_view key,
+                                  boost::string_view value, PhraseFlag flag,
                                   bool verifyWithRule) {
     FCITX_D();
-    if (flag != PhraseFlagPinyin && !boost::all(key, d->charCheck_)) {
+    auto length = fcitx::utf8::lengthValidated(value);
+    if (length == fcitx::utf8::INVALID_LENGTH || !isValidLength(length)) {
         return false;
     }
-
-    // invalid char
-    if (!fcitx::utf8::validate(value)) {
+    if (flag != PhraseFlagPinyin && !isAllInputCode(key)) {
         return false;
     }
 
@@ -587,13 +587,14 @@ bool TableBasedDictionary::insert(const std::string &key,
             }
         }
 
-        auto entry = key + keyValueSeparator + value;
+        auto entry = generateTableEntry(key, value);
         if (d->phraseTrie_.exactMatchSearch(entry) > 0) {
             return false;
         }
         d->phraseTrie_.set(entry, flag);
 
-        if (fcitx::utf8::length(value) == 1) {
+        if (fcitx::utf8::length(value) == 1 &&
+            !d->ignoreChars_.count(fcitx::utf8::getChar(value))) {
             updateReverseLookupEntry(d->singleCharTrie_, key, value);
 
             if (hasRule() && !d->phraseKey_) {
@@ -603,7 +604,7 @@ bool TableBasedDictionary::insert(const std::string &key,
         break;
     }
     case PhraseFlagPinyin: {
-        auto entry = key + keyValueSeparator + value;
+        auto entry = generateTableEntry(key, value);
         if (d->pinyinPhraseTrie_.exactMatchSearch(entry) > 0) {
             return false;
         }
@@ -627,7 +628,7 @@ bool TableBasedDictionary::insert(const std::string &key,
     return true;
 }
 
-bool TableBasedDictionary::generate(const std::string &value,
+bool TableBasedDictionary::generate(boost::string_view value,
                                     std::string &key) {
     FCITX_D();
     if (!hasRule() || value.empty()) {
@@ -652,7 +653,7 @@ bool TableBasedDictionary::generate(const std::string &value,
 
         bool success = true;
         for (const auto &ruleEntry : rule.entries) {
-            std::string::const_iterator iter;
+            boost::string_view::const_iterator iter;
             if (ruleEntry.character == 0 && ruleEntry.encodingIndex == 0) {
                 continue;
             }
@@ -715,6 +716,19 @@ bool TableBasedDictionary::isInputCode(uint32_t c) const {
     return !!(d->inputCode_.count(c));
 }
 
+bool TableBasedDictionary::isAllInputCode(boost::string_view code) const {
+    auto iter = code.begin();
+    auto end = code.end();
+    while (iter != end) {
+        uint32_t chr;
+        iter = fcitx::utf8::getNextChar(iter, end, &chr);
+        if (!fcitx::utf8::isValidChar(chr) || !isInputCode(chr)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void TableBasedDictionary::statistic() const {
     FCITX_D();
     std::cout << "Phrase Trie: " << d->phraseTrie_.mem_size() << std::endl
@@ -730,11 +744,11 @@ void TableBasedDictionary::statistic() const {
 void TableBasedDictionary::setTableOptions(TableOptions option) {
     FCITX_D();
     d->options_ = option;
-    if (d->options_.autoCommitLength() < 0) {
-        d->options_.setAutoCommitLength(maxLength());
+    if (d->options_.autoSelectLength() < 0) {
+        d->options_.setAutoSelectLength(maxLength());
     }
-    if (d->options_.noMatchAutoCommitLength() < 0) {
-        d->options_.setNoMatchAutoCommitLength(maxLength());
+    if (d->options_.noMatchAutoSelectLength() < 0) {
+        d->options_.setNoMatchAutoSelectLength(maxLength());
     }
 }
 
@@ -751,6 +765,11 @@ bool TableBasedDictionary::hasPinyin() const {
 int32_t TableBasedDictionary::maxLength() const {
     FCITX_D();
     return d->codeLength_;
+}
+
+bool TableBasedDictionary::isValidLength(size_t length) const {
+    FCITX_D();
+    return lengthLessThanLimit(length, d->codeLength_);
 }
 
 int32_t TableBasedDictionary::pinyinLength() const {
@@ -801,7 +820,21 @@ bool TableBasedDictionary::hasMatchingWords(boost::string_view code) const {
     bool hasMatch = false;
     matchWords(code, TableMatchMode::Prefix,
                [&hasMatch](boost::string_view, boost::string_view, float) {
+                   hasMatch = true;
                    return false;
+               });
+    return hasMatch;
+}
+
+bool TableBasedDictionary::hasOneMatchingWord(boost::string_view code) const {
+    bool hasMatch = false;
+    matchWords(code, TableMatchMode::Prefix,
+               [&hasMatch](boost::string_view, boost::string_view, float) {
+                   if (hasMatch) {
+                       return false;
+                   }
+                   hasMatch = true;
+                   return true;
                });
     return hasMatch;
 }
@@ -837,10 +870,5 @@ void TableBasedDictionary::matchPrefixImpl(
             callback(path, wordNode, 0, code);
         }
     }
-}
-
-void swap(TableBasedDictionary &lhs, TableBasedDictionary &rhs) noexcept {
-    using std::swap;
-    swap(lhs.d_ptr, rhs.d_ptr);
 }
 }

@@ -17,6 +17,7 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "pinyincontext.h"
+#include "constants.h"
 #include "historybigram.h"
 #include "pinyindecoder.h"
 #include "pinyinencoder.h"
@@ -24,6 +25,7 @@
 #include "pinyinmatchstate.h"
 #include "userlanguagemodel.h"
 #include <algorithm>
+#include <fcitx-utils/log.h>
 #include <iostream>
 
 namespace libime {
@@ -229,7 +231,8 @@ void PinyinContext::update() {
         for (size_t i = graph.size(); i > 0; i--) {
             float min = 0;
             float max = -std::numeric_limits<float>::max();
-            auto distancePenalty = d->ime_->model()->unknownPenalty() / 3;
+            auto distancePenalty = d->ime_->model()->unknownPenalty() /
+                                   PINYIN_DISTANCE_PENALTY_FACTOR;
             for (auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
                 auto adjust = static_cast<float>(distance) * distancePenalty;

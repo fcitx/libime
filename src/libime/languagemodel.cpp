@@ -18,6 +18,7 @@
  */
 
 #include "languagemodel.h"
+#include "constants.h"
 #include "lattice.h"
 #include "lm/model.hh"
 #include <type_traits>
@@ -68,7 +69,8 @@ public:
     std::shared_ptr<const StaticLanguageModelFile> file_;
     State beginState_;
     State nullState_;
-    float unknown_ = std::log10(1 / 60000000.0f);
+    float unknown_ =
+        std::log10(DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY);
 };
 
 LanguageModel::LanguageModel(const char *file)

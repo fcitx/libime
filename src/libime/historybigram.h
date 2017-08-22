@@ -32,12 +32,11 @@ namespace libime {
 class HistoryBigramPrivate;
 class HistoryBigram;
 
-void swap(HistoryBigram &first, HistoryBigram &second) noexcept;
-
 class LIBIME_EXPORT HistoryBigram {
 public:
     HistoryBigram();
-    virtual ~HistoryBigram();
+
+    FCITX_DECLARE_VIRTUAL_DTOR_MOVE(HistoryBigram);
 
     void load(std::istream &in);
     void save(std::ostream &out);
@@ -45,8 +44,10 @@ public:
     void clear();
 
     void setPenaltyFactor(float factor);
-    float penaltyFactory() const;
+    float penaltyFactor() const;
 
+    /// Set unknown probability penatly.
+    /// \param unknown is a log probability.
     void setUnknownPenalty(float unknown);
     float unknownPenalty() const;
 
@@ -58,17 +59,10 @@ public:
     void add(const SentenceResult &sentence);
     void add(const std::vector<std::string> &sentence);
 
-    friend void swap(HistoryBigram &first, HistoryBigram &second) noexcept;
-
 private:
     std::unique_ptr<HistoryBigramPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(HistoryBigram);
 };
-
-inline void swap(HistoryBigram &first, HistoryBigram &second) noexcept {
-    using std::swap;
-    swap(first.d_ptr, second.d_ptr);
-}
 }
 
 #endif // _FCITX_LIBIME_HISTORYBIGRAM_H_

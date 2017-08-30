@@ -17,8 +17,8 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/pinyindata.h"
-#include "libime/pinyinencoder.h"
+#include "libime/pinyin/pinyindata.h"
+#include "libime/pinyin/pinyinencoder.h"
 #include <boost/algorithm/string.hpp>
 #include <fcitx-utils/log.h>
 #include <unordered_set>

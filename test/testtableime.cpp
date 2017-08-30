@@ -17,9 +17,9 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/tablebaseddictionary.h"
-#include "libime/tablecontext.h"
-#include "libime/tableime.h"
+#include "libime/table/tablebaseddictionary.h"
+#include "libime/table/tablecontext.h"
+#include "libime/table/tableime.h"
 #include "testutils.h"
 #include <fcitx-utils/log.h>
 

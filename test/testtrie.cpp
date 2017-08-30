@@ -1,4 +1,4 @@
-#include "libime/datrie.h"
+#include "libime/core/datrie.h"
 #include <fcitx-utils/log.h>
 #include <fcntl.h>
 #include <fstream>

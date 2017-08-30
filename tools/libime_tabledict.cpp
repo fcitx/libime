@@ -17,7 +17,7 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/tablebaseddictionary.h"
+#include "libime/table/tablebaseddictionary.h"
 #include <fstream>
 #include <getopt.h>
 #include <iostream>

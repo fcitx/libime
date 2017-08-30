@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(Boost 1.61)
+find_dependency(LibIMECore)
+
+include("${CMAKE_CURRENT_LIST_DIR}/LibIMEPinyinTargets.cmake")
+

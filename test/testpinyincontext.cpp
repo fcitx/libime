@@ -17,13 +17,13 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/historybigram.h"
-#include "libime/lattice.h"
-#include "libime/pinyincontext.h"
-#include "libime/pinyindecoder.h"
-#include "libime/pinyindictionary.h"
-#include "libime/pinyinime.h"
-#include "libime/userlanguagemodel.h"
+#include "libime/core/historybigram.h"
+#include "libime/core/lattice.h"
+#include "libime/core/userlanguagemodel.h"
+#include "libime/pinyin/pinyincontext.h"
+#include "libime/pinyin/pinyindecoder.h"
+#include "libime/pinyin/pinyindictionary.h"
+#include "libime/pinyin/pinyinime.h"
 #include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>

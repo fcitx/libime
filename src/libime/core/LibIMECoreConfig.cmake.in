@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(Boost 1.61)
+find_dependency(Fcitx5Utils)
+
+include("${CMAKE_CURRENT_LIST_DIR}/LibIMECoreTargets.cmake")
+set(LIBIME_INSTALL_PKGDATADIR "@LIBIME_INSTALL_PKGDATADIR@")

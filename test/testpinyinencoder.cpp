@@ -17,8 +17,8 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/lattice.h"
-#include "libime/pinyinencoder.h"
+#include "libime/core/lattice.h"
+#include "libime/pinyin/pinyinencoder.h"
 #include <fcitx-utils/log.h>
 
 using namespace libime;

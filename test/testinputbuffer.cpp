@@ -16,7 +16,7 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#include "libime/inputbuffer.h"
+#include "libime/core/inputbuffer.h"
 #include <fcitx-utils/log.h>
 
 void test_basic(bool ascii) {

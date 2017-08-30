@@ -17,8 +17,8 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/pinyindictionary.h"
-#include "libime/pinyinencoder.h"
+#include "libime/pinyin/pinyindictionary.h"
+#include "libime/pinyin/pinyinencoder.h"
 #include "testutils.h"
 #include <fcitx-utils/log.h>
 #include <sstream>

@@ -16,8 +16,8 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#include "libime/pinyindata.h"
-#include "libime/shuangpinprofile.h"
+#include "libime/pinyin/pinyindata.h"
+#include "libime/pinyin/shuangpinprofile.h"
 #include <fcitx-utils/log.h>
 using namespace libime;
 

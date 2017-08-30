@@ -17,7 +17,7 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/historybigram.h"
+#include "libime/core/historybigram.h"
 #include <fstream>
 #include <getopt.h>
 #include <iostream>

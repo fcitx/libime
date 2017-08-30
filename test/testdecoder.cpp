@@ -16,10 +16,10 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#include "libime/languagemodel.h"
-#include "libime/pinyindecoder.h"
-#include "libime/pinyindictionary.h"
-#include "libime/pinyinencoder.h"
+#include "libime/core/languagemodel.h"
+#include "libime/pinyin/pinyindecoder.h"
+#include "libime/pinyin/pinyindictionary.h"
+#include "libime/pinyin/pinyinencoder.h"
 #include "testutils.h"
 #include <fcitx-utils/log.h>
 

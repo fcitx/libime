@@ -1,3 +1,3 @@
 [submodule "src/libime/kenlm"]
-	path = src/libime/kenlm
+	path = src/libime/core/kenlm
 	url = https://github.com/kpu/kenlm.git

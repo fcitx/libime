@@ -1,4 +1,4 @@
-#include "libime/tablebaseddictionary.h"
+#include "libime/table/tablebaseddictionary.h"
 #include <fcitx-utils/log.h>
 #include <set>
 #include <sstream>

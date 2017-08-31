@@ -46,7 +46,7 @@ public:
 
     void clear() { trie_.clear(); }
 
-    const DATrie<int32_t> trie() const { return trie_; }
+    const DATrie<int32_t> &trie() const { return trie_; }
 
     int32_t weightedSize() const { return weightedSize_; }
 

@@ -51,6 +51,22 @@ struct naivevector {
     naivevector() noexcept : m_start(nullptr), m_end(nullptr), m_cap(nullptr) {}
 
     ~naivevector() noexcept { std::free(m_start); }
+    naivevector(const naivevector &other) {
+        reserve(other.size());
+        for (auto value : other) {
+            push_back(value);
+        }
+    }
+    naivevector(naivevector &&other) {
+        std::free(m_start);
+        m_start = m_end = m_cap = nullptr;
+        swap(other);
+    }
+
+    naivevector& operator=(naivevector other) {
+        swap(other);
+        return *this;
+    }
 
     void swap(naivevector &__other) noexcept {
         using std::swap;

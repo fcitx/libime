@@ -20,41 +20,11 @@
 #include "libime/table/tablebaseddictionary.h"
 #include "libime/table/tablecontext.h"
 #include "libime/table/tableime.h"
+#include "testdir.h"
 #include "testutils.h"
 #include <fcitx-utils/log.h>
 
 using namespace libime;
-
-class TestTableResolver : public TableDictionrayResolver {
-public:
-    TestTableResolver(boost::string_view sys, boost::string_view usr)
-        : sys_(sys), usr_(usr) {}
-
-    TableBasedDictionary *requestDict(boost::string_view name) override {
-        if (name != "wbx") {
-            return nullptr;
-        }
-        auto dict = new TableBasedDictionary;
-        dict->load(sys_.c_str(), TableFormat::Binary);
-        TableOptions options;
-        options.setLanguageCode("zh_CN");
-        options.setAutoSelect(true);
-        options.setAutoSelectLength(-1);
-        options.setNoMatchAutoSelectLength(0);
-        dict->setTableOptions(options);
-        return dict;
-    }
-
-    void saveDict(TableBasedDictionary *dict) override {
-        if (usr_.empty()) {
-            return;
-        }
-        dict->saveUser(usr_.c_str(), TableFormat::Binary);
-    }
-
-private:
-    std::string sys_, usr_;
-};
 
 class TestLmResolver : public LanguageModelResolver {
 public:
@@ -73,12 +43,43 @@ private:
     std::string path_;
 };
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        return 1;
+class TestTableIME : public TableIME {
+public:
+    TestTableIME(LanguageModelResolver *r, boost::string_view sys,
+                 boost::string_view usr)
+        : TableIME(r), sys_(sys), usr_(usr) {}
+
+protected:
+    TableBasedDictionary *requestDictImpl(boost::string_view name) override {
+        if (name != "wbx") {
+            return nullptr;
+        }
+        auto dict = new TableBasedDictionary;
+        dict->load(sys_.c_str(), TableFormat::Binary);
+        TableOptions options;
+        options.setLanguageCode("zh_CN");
+        options.setAutoSelect(true);
+        options.setAutoSelectLength(-1);
+        options.setNoMatchAutoSelectLength(0);
+        dict->setTableOptions(options);
+        return dict;
     }
-    TableIME ime(std::make_unique<TestTableResolver>(argv[1], argv[2]),
-                 std::make_unique<TestLmResolver>(argv[3]));
+
+    void saveDictImpl(TableBasedDictionary *dict) override {
+        if (usr_.empty()) {
+            return;
+        }
+        dict->saveUser(usr_.c_str(), TableFormat::Binary);
+    }
+
+private:
+    std::string sys_, usr_;
+};
+
+int main() {
+    TestLmResolver lmresolver(LIBIME_BINARY_DIR "/data/sc.lm");
+    TestTableIME ime(&lmresolver, LIBIME_BINARY_DIR "/data/wbx.main.dict",
+                     LIBIME_BINARY_DIR "/data/wbx.user.dict");
     auto dict = ime.requestDict("wbx");
     TableContext c(*dict, *ime.languageModelForDictionary(dict));
     auto printTime = [](int t) {
@@ -93,6 +94,16 @@ int main(int argc, char *argv[]) {
             c.backspace();
         } else if (word == "reset") {
             c.clear();
+        } else if (word.size() == 1 && ('0' <= word[0] && word[0] <= '9')) {
+            size_t idx;
+            if (word[0] == '0') {
+                idx = 9;
+            } else {
+                idx = word[0] - '1';
+            }
+            if (c.candidates().size() >= idx) {
+                c.select(idx);
+            }
         } else if (word.size() == 1 && c.isValidInput(word[0])) {
             c.type(word);
         } else if (word == "all") {
@@ -100,6 +111,7 @@ int main(int argc, char *argv[]) {
         }
 
         size_t count = 1;
+        std::cout << "Preedit: " << c.preedit() << std::endl;
         for (auto &candidate : c.candidates()) {
             std::cout << (count % 10) << ": ";
             for (auto node : candidate.sentence()) {

@@ -555,6 +555,16 @@ bool TableBasedDictionary::hasRule() const noexcept {
     return !d->rules_.empty();
 }
 
+const TableRule *TableBasedDictionary::findRule(boost::string_view name) const {
+    FCITX_D();
+    for (auto &rule : d->rules_) {
+        if (rule.name() == name) {
+            return &rule;
+        }
+    }
+    return nullptr;
+}
+
 bool TableBasedDictionary::insert(boost::string_view value) {
     std::string key;
     if (generate(value, key)) {
@@ -635,71 +645,62 @@ bool TableBasedDictionary::generate(boost::string_view value,
         return false;
     }
 
+    // Check word is valid utf8.
     auto valueLen = fcitx::utf8::lengthValidated(value);
     if (valueLen == fcitx::utf8::INVALID_LENGTH) {
         return false;
     }
 
     std::string newKey;
-    std::string entry;
     for (const auto &rule : d->rules_) {
         // check rule can be applied
-        if (!((rule.flag == TableRuleFlag::LengthEqual &&
-               valueLen == rule.phraseLength) ||
-              (rule.flag == TableRuleFlag::LengthLongerThan &&
-               valueLen >= rule.phraseLength))) {
+        if (!((rule.flag() == TableRuleFlag::LengthEqual &&
+               valueLen == rule.phraseLength()) ||
+              (rule.flag() == TableRuleFlag::LengthLongerThan &&
+               valueLen >= rule.phraseLength()))) {
             continue;
         }
 
         bool success = true;
-        for (const auto &ruleEntry : rule.entries) {
+        for (const auto &ruleEntry : rule.entries()) {
             boost::string_view::const_iterator iter;
-            if (ruleEntry.character == 0 && ruleEntry.encodingIndex == 0) {
+            // skip rule entry like p00.
+            if (ruleEntry.isPlaceHolder()) {
                 continue;
             }
 
-            if (ruleEntry.flag == TableRuleEntryFlag::FromFront) {
-                if (ruleEntry.character > valueLen) {
-                    success = false;
-                    break;
-                }
-
-                iter = fcitx::utf8::nextNChar(value.begin(),
-                                              ruleEntry.character - 1);
-            } else {
-                if (ruleEntry.character > valueLen) {
-                    success = false;
-                    break;
-                }
-
-                iter = fcitx::utf8::nextNChar(value.begin(),
-                                              valueLen - ruleEntry.character);
-            }
-            auto prev = iter;
-            iter = fcitx::utf8::nextChar(iter);
-            std::string s(prev, iter);
-            s += keyValueSeparator;
-
-            size_t len = 0;
-            d->singleCharConstTrie_.foreach(
-                s, [this, d, &len, &entry](int32_t, size_t _len,
-                                           DATrie<int32_t>::position_type pos) {
-                    len = _len;
-                    d->singleCharConstTrie_.suffix(entry, _len, pos);
-                    return false;
-                });
-
-            if (!len) {
+            if (ruleEntry.character() > valueLen) {
                 success = false;
                 break;
             }
 
-            auto key = entry;
-            if (key.size() < ruleEntry.encodingIndex) {
+            if (ruleEntry.flag() == TableRuleEntryFlag::FromFront) {
+                iter = fcitx::utf8::nextNChar(value.begin(),
+                                              ruleEntry.character() - 1);
+            } else {
+                iter = fcitx::utf8::nextNChar(value.begin(),
+                                              valueLen - ruleEntry.character());
+            }
+            auto prev = iter;
+            iter = fcitx::utf8::nextChar(iter);
+            boost::string_view chr(&*prev, std::distance(prev, iter));
+
+            std::string entry = reverseLookup(chr);
+            if (entry.empty()) {
+                success = false;
+                break;
+            }
+            auto length = fcitx::utf8::lengthValidated(entry);
+            if (length == fcitx::utf8::INVALID_LENGTH ||
+                length < ruleEntry.encodingIndex()) {
                 continue;
             }
 
-            newKey.append(1, key[ruleEntry.encodingIndex - 1]);
+            auto entryStart = fcitx::utf8::nextNChar(
+                entry.begin(), ruleEntry.encodingIndex() - 1);
+            auto entryEnd = fcitx::utf8::nextChar(entryStart);
+
+            newKey.append(entryStart, entryEnd);
         }
 
         if (success && !newKey.empty()) {
@@ -727,6 +728,11 @@ bool TableBasedDictionary::isAllInputCode(boost::string_view code) const {
         }
     }
     return true;
+}
+
+bool TableBasedDictionary::isEndKey(uint32_t c) const {
+    FCITX_D();
+    return !!d->options_.endKey().count(c);
 }
 
 void TableBasedDictionary::statistic() const {
@@ -837,6 +843,27 @@ bool TableBasedDictionary::hasOneMatchingWord(boost::string_view code) const {
                    return true;
                });
     return hasMatch;
+}
+
+std::string TableBasedDictionary::reverseLookup(boost::string_view word,
+                                                PhraseFlag flag) const {
+    FCITX_D();
+    if (flag != PhraseFlag::PhraseFlagConstructPhrase &&
+        flag != PhraseFlag::PhraseFlagNone) {
+        throw std::runtime_error("Invalid flag.");
+    }
+    auto reverseEntry = word.to_string() + keyValueSeparator;
+    std::string key;
+    const auto &trie =
+        (flag == PhraseFlag::PhraseFlagConstructPhrase ? d->singleCharConstTrie_
+                                                       : d->singleCharTrie_);
+    trie.foreach(
+        reverseEntry,
+        [&trie, &key](int32_t, size_t len, DATrie<int32_t>::position_type pos) {
+            trie.suffix(key, len, pos);
+            return false;
+        });
+    return key;
 }
 
 void TableBasedDictionary::matchPrefixImpl(

@@ -19,17 +19,16 @@
 
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinencoder.h"
+#include "testdir.h"
 #include "testutils.h"
 #include <fcitx-utils/log.h>
 #include <sstream>
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        return 1;
-    }
+int main() {
     using namespace libime;
     PinyinDictionary dict;
-    dict.load(PinyinDictionary::SystemDict, argv[1], PinyinDictFormat::Text);
+    dict.load(PinyinDictionary::SystemDict,
+              LIBIME_BINARY_DIR "/data/dict.converted", PinyinDictFormat::Text);
 
     // add a manual dict
     std::stringstream ss;
@@ -45,6 +44,7 @@ int main(int argc, char *argv[]) {
         return true;
     });
 
-    dict.save(0, argv[2], PinyinDictFormat::Binary);
+    dict.save(0, LIBIME_BINARY_DIR "/test/testpinyindictionary.dict",
+              PinyinDictFormat::Binary);
     return 0;
 }

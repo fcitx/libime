@@ -63,7 +63,7 @@ struct naivevector {
         swap(other);
     }
 
-    naivevector& operator=(naivevector other) {
+    naivevector &operator=(naivevector other) {
         swap(other);
         return *this;
     }

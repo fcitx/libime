@@ -3,8 +3,8 @@ set(LIBIME_TABLE_HDRS
     tablecontext.h
     tableime.h
     tableoptions.h
-    tableparser.h
     tablerule.h
+    tabledecoder.h
     ${CMAKE_CURRENT_BINARY_DIR}/libimetable_export.h
     )
 
@@ -13,7 +13,7 @@ set(LIBIME_TABLE_SRCS
     tablecontext.cpp
     tableime.cpp
     tableoptions.cpp
-    tableparser.cpp
+    tabledecoder.cpp
     )
 
 add_library(IMETable SHARED ${LIBIME_TABLE_SRCS})

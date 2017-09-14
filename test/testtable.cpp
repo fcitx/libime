@@ -1,4 +1,24 @@
+/*
+* Copyright (C) 2017~2017 by CSSlayer
+* wengxt@gmail.com
+*
+* This library is free software; you can redistribute it and/or modify
+* it under the terms of the GNU Lesser General Public License as
+* published by the Free Software Foundation; either version 2 of the
+* License, or (at your option) any later version.
+*
+* This library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+* Lesser General Public License for more details.
+*
+* You should have received a copy of the GNU Lesser General Public
+* License along with this library; see the file COPYING. If not,
+* see <http://www.gnu.org/licenses/>.
+*/
+
 #include "libime/table/tablebaseddictionary.h"
+#include "testdir.h"
 #include <fcitx-utils/log.h>
 #include <set>
 #include <sstream>
@@ -16,7 +36,7 @@ void testMatch(const TableBasedDictionary &dict, boost::string_view code,
             actual.insert(word.to_string());
             return true;
         });
-    assert(expect == actual);
+    FCITX_ASSERT(expect == actual);
 }
 
 int main() {
@@ -38,35 +58,38 @@ int main() {
     try {
         libime::TableBasedDictionary table;
         table.load(ss, libime::TableFormat::Text);
-        assert(table.hasRule());
+        FCITX_ASSERT(table.hasRule());
         std::string key;
-        assert(!table.generate("你好", key));
-        assert(table.generate("统计局", key));
-        assert(key == "xynn");
+        FCITX_ASSERT(!table.generate("你好", key));
+        FCITX_ASSERT(table.generate("统计局", key));
+        FCITX_ASSERT(key == "xynn");
 
-        assert(table.insert("wq", "你"));
-        assert(table.insert("wqiy", "你"));
-        assert(table.insert("v", "好"));
-        assert(table.insert("vbg", "好"));
+        FCITX_ASSERT(table.insert("wq", "你"));
+        FCITX_ASSERT(table.insert("wqiy", "你"));
+        FCITX_ASSERT(table.insert("v", "好"));
+        FCITX_ASSERT(table.insert("vbg", "好"));
 
-        table.save("data");
+        table.save(LIBIME_BINARY_DIR "/test/testtable.dict");
         table.statistic();
 
-        table.load("data");
+        table.load(LIBIME_BINARY_DIR "/test/testtable.dict");
         table.statistic();
         // table.dump(std::cout);
 
         std::string key2;
-        assert(table.generate("统计局", key2));
-        assert(key == key2);
-        assert(table.generate("你好", key2));
+        FCITX_ASSERT(table.generate("统计局", key2));
+        FCITX_ASSERT(key == key2);
+        FCITX_ASSERT(table.generate("你好", key2));
         std::cout << key2 << std::endl;
-        assert(key2 == "wqvb");
-        assert(table.insert("你好"));
+        FCITX_ASSERT(key2 == "wqvb");
+        FCITX_ASSERT(table.insert("你好"));
         testMatch(table, "wqvb", {"你好"}, false);
         testMatch(table, "wqvb", {"你好"}, true);
         testMatch(table, "w", {"你", "你好"}, false);
         testMatch(table, "w", {}, true);
+
+        FCITX_ASSERT(table.reverseLookup("你") == "wqiy");
+        FCITX_ASSERT(table.reverseLookup("好") == "vbg");
         table.statistic();
         table.save(std::cout, TableFormat::Text);
     } catch (std::ios_base::failure &e) {

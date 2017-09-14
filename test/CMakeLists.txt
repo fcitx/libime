@@ -1,3 +1,6 @@
+configure_file(testdir.h.in ${CMAKE_CURRENT_BINARY_DIR}/testdir.h @ONLY)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 set(LIBIME_SINGLE_FILE_TEST
     testtable
     testpinyindata

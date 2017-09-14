@@ -25,6 +25,7 @@
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinime.h"
 #include "libime/pinyin/shuangpinprofile.h"
+#include "testdir.h"
 #include "testutils.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/device/null.hpp>
@@ -37,29 +38,22 @@
 
 using namespace libime;
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        return 1;
-    }
-
-    FCITX_ASSERT(boost::starts_with("abcd", "ab"));
-
+int main() {
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
     };
-    PinyinIME ime(std::make_unique<PinyinDictionary>(),
-                  std::make_unique<UserLanguageModel>(argv[2]));
+    PinyinIME ime(
+        std::make_unique<PinyinDictionary>(),
+        std::make_unique<UserLanguageModel>(LIBIME_BINARY_DIR "/data/sc.lm"));
     ime.setNBest(2);
-    ime.dict()->load(PinyinDictionary::SystemDict, argv[1],
+    ime.dict()->load(PinyinDictionary::SystemDict,
+                     LIBIME_BINARY_DIR "/data/sc.dict",
                      PinyinDictFormat::Binary);
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
     ime.setScoreFilter(1.0f);
     ime.setShuangpinProfile(
         std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::Xiaohe));
     PinyinContext c(&ime);
-    if (argc == 4 && strcmp(argv[3], "sp") == 0) {
-        c.setUseShuangpin(true);
-    }
 
     std::string word;
     while (std::cin >> word) {

@@ -21,6 +21,7 @@
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
+#include <tuple>
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0 << " [-d] <source> <dest>" << std::endl

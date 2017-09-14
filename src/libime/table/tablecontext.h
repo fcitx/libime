@@ -24,7 +24,7 @@
 
 #include "libimetable_export.h"
 #include <boost/utility/string_view.hpp>
-#include <fcitx-utils/dynamictrackableobject.h>
+#include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <libime/core/inputbuffer.h>
 #include <libime/core/lattice.h>
@@ -42,15 +42,10 @@ public:
     virtual ~TableContext();
 
     void erase(size_t from, size_t to) override;
-    void setCursor(size_t pos) override;
 
     void select(size_t idx);
-    void cancel();
-    bool cancelTill(size_t pos);
 
     bool isValidInput(uint32_t c) const;
-
-    bool isEndKey(uint32_t c) const;
 
     const std::vector<SentenceResult> &candidates() const;
 
@@ -65,13 +60,8 @@ public:
     }
 
     std::string preedit() const;
-    std::pair<std::string, size_t> preeditWithCursor() const;
     std::string selectedSentence() const;
     size_t selectedLength() const;
-
-    std::vector<std::string> selectedWords() const;
-
-    std::string candidateHint(size_t i) const;
 
     void learn();
 
@@ -81,8 +71,9 @@ protected:
     void typeImpl(const char *s, size_t length) override;
 
 private:
+    void autoSelect();
     void update();
-    void reparseFrom(size_t from);
+    void typeOneChar(boost::string_view chr);
 
     std::unique_ptr<TableContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableContext);

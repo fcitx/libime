@@ -33,6 +33,7 @@ class PinyinDecoder;
 class PinyinDictionary;
 class UserLanguageModel;
 
+/// \brief Provides shared data for PinyinContext.
 class LIBIMEPINYIN_EXPORT PinyinIME : public fcitx::ConnectableObject {
 public:
     PinyinIME(std::unique_ptr<PinyinDictionary> dict,

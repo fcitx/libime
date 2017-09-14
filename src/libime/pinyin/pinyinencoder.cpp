@@ -116,10 +116,10 @@ std::string PinyinSyllable::toString() const {
            PinyinEncoder::finalToString(final_);
 }
 
-SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
+SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view userPinyin,
                                             PinyinFuzzyFlags flags) {
-    SegmentGraph result(pinyin.to_string());
-    pinyin = result.data();
+    SegmentGraph result(userPinyin.to_string());
+    const auto &pinyin = result.data();
     auto end = pinyin.end();
     std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> q;
     q.push(0);
@@ -210,10 +210,11 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view pinyin,
     return result;
 }
 
-SegmentGraph PinyinEncoder::parseUserShuangpin(boost::string_view pinyin,
+SegmentGraph PinyinEncoder::parseUserShuangpin(boost::string_view userPinyin,
                                                const ShuangpinProfile &sp,
                                                PinyinFuzzyFlags flags) {
-    SegmentGraph result(pinyin.to_string());
+    SegmentGraph result(userPinyin.to_string());
+    const auto &pinyin = result.data();
 
     // assume user always type valid shuangpin first, if not keep one.
     size_t i = 0;

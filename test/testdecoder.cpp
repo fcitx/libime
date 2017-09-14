@@ -20,6 +20,7 @@
 #include "libime/pinyin/pinyindecoder.h"
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinencoder.h"
+#include "testdir.h"
 #include "testutils.h"
 #include <fcitx-utils/log.h>
 
@@ -46,13 +47,11 @@ void testTime(PinyinDictionary &, Decoder &decoder, const char *pinyin,
     }
 }
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        return 1;
-    }
+int main() {
     PinyinDictionary dict;
-    dict.load(PinyinDictionary::SystemDict, argv[1], PinyinDictFormat::Binary);
-    LanguageModel model(argv[2]);
+    dict.load(PinyinDictionary::SystemDict, LIBIME_BINARY_DIR "/data/sc.dict",
+              PinyinDictFormat::Binary);
+    LanguageModel model(LIBIME_BINARY_DIR "/data/sc.lm");
     PinyinDecoder decoder(&dict, &model);
     testTime(dict, decoder, "wojiushixiangceshi", PinyinFuzzyFlag::None);
     testTime(dict, decoder, "xian", PinyinFuzzyFlag::Inner);

@@ -24,6 +24,7 @@
 #include "libime/pinyin/pinyindecoder.h"
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinime.h"
+#include "testdir.h"
 #include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
@@ -31,17 +32,16 @@
 
 using namespace libime;
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        return 1;
-    }
-    PinyinIME ime(std::make_unique<PinyinDictionary>(),
-                  std::make_unique<UserLanguageModel>(argv[2]));
+int main() {
+    PinyinIME ime(
+        std::make_unique<PinyinDictionary>(),
+        std::make_unique<UserLanguageModel>(LIBIME_BINARY_DIR "/data/sc.lm"));
     ime.model()->history().add({"字迹", "格子"});
     // add a manual dict
     std::stringstream ss;
     ss << "献世 xian'shi 0.0\n";
-    ime.dict()->load(PinyinDictionary::SystemDict, argv[1],
+    ime.dict()->load(PinyinDictionary::SystemDict,
+                     LIBIME_BINARY_DIR "/data/sc.dict",
                      PinyinDictFormat::Binary);
     ime.dict()->load(PinyinDictionary::UserDict, ss, PinyinDictFormat::Text);
     ime.dict()->addWord(1, "zi'ji'ge'zi", "自机各自");
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
         i++;
     }
     c.select(i);
-    assert(!c.selected());
+    FCITX_ASSERT(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     for (auto &candidate : c.candidates()) {
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "--------------------------------" << std::endl;
     c.select(1);
-    assert(c.selected());
+    FCITX_ASSERT(c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     for (auto &candidate : c.candidates()) {
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "--------------------------------" << std::endl;
     c.clear();
-    assert(!c.selected());
+    FCITX_ASSERT(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     for (auto &candidate : c.candidates()) {
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
     }
     std::cout << "--------------------------------" << std::endl;
     c.type("zi'ji'ge'zi'");
-    assert(!c.selected());
+    FCITX_ASSERT(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     for (auto &candidate : c.candidates()) {
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
         i++;
     }
     c.select(i);
-    assert(!c.selected());
+    FCITX_ASSERT(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     for (auto &candidate : c.candidates()) {
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
         i++;
     }
     c.select(i);
-    assert(c.selected());
+    FCITX_ASSERT(c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     c.clear();

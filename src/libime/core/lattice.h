@@ -28,6 +28,7 @@
 #include <libime/core/languagemodel.h>
 #include <libime/core/segmentgraph.h>
 #include <memory>
+#include <type_traits>
 
 namespace libime {
 
@@ -63,11 +64,16 @@ private:
     float score_;
 };
 
-class WordNode {
+class LIBIMECORE_EXPORT WordNode {
 public:
     WordNode(boost::string_view word, WordIndex idx)
         : word_(word.to_string()), idx_(idx) {}
-    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE_WITH_SPEC(WordNode, )
+
+    virtual ~WordNode() = default;
+    WordNode(WordNode &&other) noexcept(
+        std::is_nothrow_move_constructible<std::string>::value);
+    WordNode &operator=(WordNode &&other) noexcept(
+        std::is_nothrow_move_assignable<std::string>::value);
 
     const std::string &word() const { return word_; }
     WordIndex idx() const { return idx_; }
@@ -78,7 +84,7 @@ protected:
     WordIndex idx_;
 };
 
-class LatticeNode : public WordNode {
+class LIBIMECORE_EXPORT LatticeNode : public WordNode {
 public:
     LatticeNode(boost::string_view word, WordIndex idx, SegmentGraphPath path,
                 const State &state, float cost = 0, boost::string_view aux = "")

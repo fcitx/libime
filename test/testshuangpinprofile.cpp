@@ -55,7 +55,7 @@ void checkProfile(const ShuangpinProfile &profile) {
     for (auto &syl : validSyls) {
         std::cout << syl.toString() << std::endl;
     }
-    assert(validSyls.size() == 0);
+    FCITX_ASSERT(validSyls.size() == 0);
 }
 
 int main() {
@@ -128,8 +128,8 @@ int main() {
                           "uo=O\n";
     std::stringstream ss(zrmText);
     ShuangpinProfile profile(ss);
-    assert(profile.table() == zrm.table());
-    assert(profile.validInput() == zrm.validInput());
+    FCITX_ASSERT(profile.table() == zrm.table());
+    FCITX_ASSERT(profile.validInput() == zrm.validInput());
 
     return 0;
 }

@@ -91,6 +91,10 @@ private:
     FCITX_DECLARE_PRIVATE(LanguageModel);
 };
 
+/// \brief a class that provides language model data for different languages.
+///
+/// The resolver will also hold a weak reference to the language model file.
+/// If the language model file is still alive no new file will be constructed.
 class LIBIMECORE_EXPORT LanguageModelResolver {
 public:
     LanguageModelResolver();
@@ -105,6 +109,20 @@ protected:
 private:
     std::unique_ptr<LanguageModelResolverPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(LanguageModelResolver);
+};
+
+class LIBIMECORE_EXPORT DefaultLanguageModelResolver
+    : public LanguageModelResolver {
+public:
+    static DefaultLanguageModelResolver &instance();
+
+protected:
+    std::string
+    languageModelFileNameForLanguage(const std::string &language) override;
+
+private:
+    DefaultLanguageModelResolver();
+    ~DefaultLanguageModelResolver();
 };
 }
 

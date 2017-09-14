@@ -16,28 +16,32 @@
  * License along with this library; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  */
-#ifndef _FCITX_LIBIME_PINYIN_PINYINDECODER_H_
-#define _FCITX_LIBIME_PINYIN_PINYINDECODER_H_
+#ifndef _FCITX_LIBIME_TABLE_TABLEDECODER_H_
+#define _FCITX_LIBIME_TABLE_TABLEDECODER_H_
 
-#include "libimepinyin_export.h"
+#include "libimetable_export.h"
 #include <libime/core/decoder.h>
-#include <libime/pinyin/pinyindictionary.h>
+#include <libime/table/tablebaseddictionary.h>
 
 namespace libime {
 
-class PinyinLatticeNode : public LatticeNode {
+class TableLatticeNode : public LatticeNode {
 public:
-    PinyinLatticeNode(boost::string_view word, WordIndex idx,
-                      SegmentGraphPath path, const State &state, float cost,
-                      boost::string_view aux)
+    TableLatticeNode(boost::string_view word, WordIndex idx,
+                     SegmentGraphPath path, const State &state, float cost,
+                     boost::string_view aux)
         : LatticeNode(word, idx, path, state, cost, aux) {}
 
-    const std::string &encodedPinyin() const { return aux_; }
+    const std::string &code() const { return aux_; }
+
+private:
+    std::string encodedTable_;
 };
 
-class LIBIMEPINYIN_EXPORT PinyinDecoder : public Decoder {
+class LIBIMETABLE_EXPORT TableDecoder : public Decoder {
 public:
-    PinyinDecoder(const PinyinDictionary *dict, const LanguageModelBase *model)
+    TableDecoder(const TableBasedDictionary *dict,
+                 const LanguageModelBase *model)
         : Decoder(dict, model) {}
 
 protected:
@@ -51,4 +55,4 @@ protected:
 };
 }
 
-#endif // _FCITX_LIBIME_PINYIN_PINYINDECODER_H_
+#endif // _FCITX_LIBIME_TABLE_TABLEDECODER_H_

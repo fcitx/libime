@@ -22,6 +22,11 @@
 
 namespace libime {
 
+WordNode::WordNode(WordNode &&other) noexcept(
+    std::is_nothrow_move_constructible<std::string>::value) = default;
+WordNode &WordNode::operator=(WordNode &&other) noexcept(
+    std::is_nothrow_move_assignable<std::string>::value) = default;
+
 Lattice::Lattice() : d_ptr(std::make_unique<LatticePrivate>()) {}
 
 FCITX_DEFINE_DEFAULT_DTOR_AND_MOVE(Lattice)

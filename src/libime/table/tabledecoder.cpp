@@ -17,26 +17,25 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "libime/core/languagemodel.h"
-#include "libime/core/lattice.h"
-#include "testdir.h"
-#include <fcitx-utils/log.h>
+#include "tabledecoder.h"
+#include <cmath>
 
-int main() {
-    using namespace libime;
-    LanguageModel model(LIBIME_BINARY_DIR "/data/sc.lm");
-    State state(model.nullState()), out_state = model.nullState();
-    std::string word;
-    float sum = 0.0f;
-    while (std::cin >> word) {
-        float s;
-        WordNode w(word, model.index(word));
-        std::cout << w.idx() << " " << (s = model.score(state, w, out_state))
-                  << '\n';
-        state = out_state;
-        sum += s;
+namespace libime {
+
+LatticeNode *TableDecoder::createLatticeNodeImpl(
+    const SegmentGraphBase &graph, const LanguageModelBase *model,
+    boost::string_view word, WordIndex idx, SegmentGraphPath path,
+    const State &state, float cost, boost::string_view aux,
+    bool onlyPath) const {
+    if (model->isUnknown(idx, word)) {
+        // we don't really care about a lot of unknown single character
+        // which is not used for candidates
+        if (aux.size() == 2 && path.front() != &graph.start() && !onlyPath) {
+            return nullptr;
+        }
     }
-    std::cout << sum << std::endl;
 
-    return 0;
+    return new TableLatticeNode(word, idx, std::move(path), std::move(state),
+                                cost, aux);
+}
 }

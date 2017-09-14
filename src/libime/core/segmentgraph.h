@@ -127,7 +127,7 @@ typedef std::function<void(
 
 class LIBIMECORE_EXPORT SegmentGraphBase {
 public:
-    SegmentGraphBase(boost::string_view data = {}) : data_(data.to_string()) {}
+    SegmentGraphBase(std::string data) : data_(std::move(data)) {}
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_MOVE_WITHOUT_SPEC(SegmentGraphBase)
 
     virtual const SegmentGraphNode &start() const = 0;
@@ -240,7 +240,7 @@ private:
 
 class LIBIMECORE_EXPORT SegmentGraph : public SegmentGraphBase {
 public:
-    SegmentGraph(boost::string_view str = {}) : SegmentGraphBase(str) {
+    SegmentGraph(std::string str = {}) : SegmentGraphBase(std::move(str)) {
         resize(data().size() + 1);
         if (data().size()) {
             newNode(data().size());

@@ -37,32 +37,44 @@ enum class TableRuleEntryFlag : std::uint32_t { FromFront, FromBack };
 
 enum class TableRuleFlag : std::uint32_t { LengthLongerThan, LengthEqual };
 
-struct LIBIMETABLE_EXPORT TableRuleEntry {
-
+class LIBIMETABLE_EXPORT TableRuleEntry {
+public:
     TableRuleEntry(TableRuleEntryFlag _flag = TableRuleEntryFlag::FromFront,
                    uint8_t _character = 0, uint8_t _encodingIndex = 0)
-        : flag(_flag), character(_character), encodingIndex(_encodingIndex) {}
-
-    TableRuleEntry(std::istream &in) {
-        throw_if_io_fail(unmarshall(in, flag));
-        throw_if_io_fail(unmarshall(in, character));
-        throw_if_io_fail(unmarshall(in, encodingIndex));
+        : flag_(_flag), character_(_character), encodingIndex_(_encodingIndex) {
     }
+
+    explicit TableRuleEntry(std::istream &in) {
+        throw_if_io_fail(unmarshall(in, flag_));
+        throw_if_io_fail(unmarshall(in, character_));
+        throw_if_io_fail(unmarshall(in, encodingIndex_));
+    }
+
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(TableRuleEntry);
 
     friend std::ostream &operator<<(std::ostream &out,
                                     const TableRuleEntry &r) {
-        marshall(out, r.flag) && marshall(out, r.character) &&
-            marshall(out, r.encodingIndex);
+        marshall(out, r.flag_) && marshall(out, r.character_) &&
+            marshall(out, r.encodingIndex_);
         return out;
     }
 
-    TableRuleEntryFlag flag;
-    uint8_t character;
-    uint8_t encodingIndex;
+    bool isPlaceHolder() const {
+        return character_ == 0 || encodingIndex_ == 0;
+    }
+
+    TableRuleEntryFlag flag() const { return flag_; }
+    uint8_t character() const { return character_; }
+    uint8_t encodingIndex() const { return encodingIndex_; }
+
+private:
+    TableRuleEntryFlag flag_;
+    uint8_t character_;
+    uint8_t encodingIndex_;
 };
 
-struct TableRule {
-
+class TableRule {
+public:
     TableRule(const std::string &ruleString, unsigned int maxLength) {
         if (!ruleString[0]) {
             throw std::invalid_argument("invalid rule string");
@@ -71,12 +83,12 @@ struct TableRule {
         switch (ruleString[0]) {
         case 'e':
         case 'E':
-            flag = TableRuleFlag::LengthEqual;
+            flag_ = TableRuleFlag::LengthEqual;
             break;
 
         case 'a':
         case 'A':
-            flag = TableRuleFlag::LengthLongerThan;
+            flag_ = TableRuleFlag::LengthLongerThan;
             break;
 
         default:
@@ -102,8 +114,8 @@ struct TableRule {
             throw std::invalid_argument("invalid rule string");
         }
 
-        phraseLength = beforeEqualSign[1] - '0';
-        if (phraseLength <= 0 || phraseLength > maxLength) {
+        phraseLength_ = beforeEqualSign[1] - '0';
+        if (phraseLength_ <= 0 || phraseLength_ > maxLength) {
             throw std::invalid_argument("Invalid phrase length");
         }
 
@@ -137,43 +149,33 @@ struct TableRule {
                 throw std::invalid_argument("invalid rule entry");
             }
 
-            entries.push_back(
+            entries_.push_back(
                 TableRuleEntry(entryFlag, character, encodingIndex));
         }
     }
 
     TableRule(TableRuleFlag _flag = TableRuleFlag::LengthEqual,
               int _phraseLength = 0, std::vector<TableRuleEntry> _entries = {})
-        : flag(_flag), phraseLength(_phraseLength),
-          entries(std::move(_entries)) {}
+        : flag_(_flag), phraseLength_(_phraseLength),
+          entries_(std::move(_entries)) {}
 
-    TableRule(const TableRule &other)
-        : TableRule(other.flag, other.phraseLength, other.entries) {}
-
-    TableRule(TableRule &&other) noexcept
-        : flag(other.flag), phraseLength(other.phraseLength),
-          entries(std::move(other.entries)) {}
-
-    TableRule(std::istream &in) {
+    explicit TableRule(std::istream &in) {
         uint32_t size;
-        throw_if_io_fail(unmarshall(in, flag));
-        throw_if_io_fail(unmarshall(in, phraseLength));
+        throw_if_io_fail(unmarshall(in, flag_));
+        throw_if_io_fail(unmarshall(in, phraseLength_));
         throw_if_io_fail(unmarshall(in, size));
-        entries.reserve(size);
+        entries_.reserve(size);
         for (auto i = 0U; i < size; i++) {
-            entries.emplace_back(in);
+            entries_.emplace_back(in);
         }
     }
 
-    TableRule &operator=(TableRule r) noexcept {
-        swap(*this, r);
-        return *this;
-    }
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(TableRule)
 
     friend std::ostream &operator<<(std::ostream &out, const TableRule &r) {
-        if (marshall(out, r.flag) && marshall(out, r.phraseLength) &&
-            marshall(out, static_cast<uint32_t>(r.entries.size()))) {
-            for (const auto &entry : r.entries) {
+        if (marshall(out, r.flag_) && marshall(out, r.phraseLength_) &&
+            marshall(out, static_cast<uint32_t>(r.entries_.size()))) {
+            for (const auto &entry : r.entries_) {
                 if (!(out << entry)) {
                     break;
                 }
@@ -182,41 +184,52 @@ struct TableRule {
         return out;
     }
 
-    friend void swap(TableRule &first, TableRule &second) noexcept {
-        // enable ADL (not necessary in our case, but good practice)
-        using std::swap;
+    std::string name() const {
+        std::string result;
+        result += ((flag_ == TableRuleFlag::LengthEqual) ? 'e' : 'a');
+        result += std::to_string(phraseLength_);
 
-        // by swapping the members of two classes,
-        // the two classes are effectively swapped
-        swap(first.flag, second.flag);
-        swap(first.phraseLength, second.phraseLength);
-        swap(first.entries, second.entries);
+        return result;
     }
 
     std::string toString() const {
         std::string result;
 
-        result += ((flag == TableRuleFlag::LengthEqual) ? 'e' : 'a');
-        result += static_cast<char>('0' + phraseLength);
+        result += name();
         result += '=';
         bool first = true;
-        for (const auto &entry : entries) {
+        for (const auto &entry : entries_) {
             if (first) {
                 first = false;
             } else {
                 result += '+';
             }
             result +=
-                ((entry.flag == TableRuleEntryFlag::FromFront) ? 'p' : 'n');
-            result += static_cast<char>('0' + entry.character);
-            result += static_cast<char>('0' + entry.encodingIndex);
+                ((entry.flag() == TableRuleEntryFlag::FromFront) ? 'p' : 'n');
+            result += static_cast<char>('0' + entry.character());
+            result += static_cast<char>('0' + entry.encodingIndex());
         }
         return result;
     }
 
-    TableRuleFlag flag = TableRuleFlag::LengthLongerThan;
-    unsigned short phraseLength = 0;
-    std::vector<TableRuleEntry> entries;
+    TableRuleFlag flag() const { return flag_; }
+    uint8_t phraseLength() const { return phraseLength_; }
+    const std::vector<TableRuleEntry> &entries() const { return entries_; }
+    size_t codeLength() const {
+        size_t sum = 0;
+        for (const auto &entry : entries_) {
+            if (entry.isPlaceHolder()) {
+                continue;
+            }
+            sum += 1;
+        }
+        return sum;
+    }
+
+private:
+    TableRuleFlag flag_ = TableRuleFlag::LengthLongerThan;
+    uint8_t phraseLength_ = 0;
+    std::vector<TableRuleEntry> entries_;
 };
 }
 

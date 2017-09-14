@@ -24,11 +24,15 @@ include(ECMSetupVersion)
 include(ECMGenerateHeaders)
 include(ECMGeneratePkgConfigFile)
 include(ECMUninstallTarget)
-include(FcitxCompilerSettings)
+
+find_package(Fcitx5Utils REQUIRED)
+include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
 
 find_package(Boost 1.61 REQUIRED)
-find_package(Fcitx5Utils REQUIRED)
 set(LIBIME_INSTALL_PKGDATADIR "${CMAKE_INSTALL_FULL_DATADIR}/libime")
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 if(ENABLE_TEST)
     enable_testing()

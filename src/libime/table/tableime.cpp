@@ -25,23 +25,18 @@ namespace libime {
 
 class TableIMEPrivate {
 public:
-    TableIMEPrivate(std::unique_ptr<TableDictionrayResolver> dictProvider,
-                    std::unique_ptr<LanguageModelResolver> lmProvider)
-        : dictProvider_(std::move(dictProvider)),
-          lmProvider_(std::move(lmProvider)) {}
+    TableIMEPrivate(LanguageModelResolver *lmProvider)
+        : lmProvider_(std::move(lmProvider)) {}
 
-    std::unique_ptr<TableDictionrayResolver> dictProvider_;
-    std::unique_ptr<LanguageModelResolver> lmProvider_;
+    LanguageModelResolver *lmProvider_;
     std::map<std::string, std::unique_ptr<TableBasedDictionary>, std::less<>>
         dicts_;
     std::map<std::string, std::unique_ptr<UserLanguageModel>, std::less<>>
         languageModels_;
 };
 
-TableIME::TableIME(std::unique_ptr<TableDictionrayResolver> dictProvider,
-                   std::unique_ptr<LanguageModelResolver> lmProvider)
-    : d_ptr(std::make_unique<TableIMEPrivate>(std::move(dictProvider),
-                                              std::move(lmProvider))) {}
+TableIME::TableIME(LanguageModelResolver *lmProvider)
+    : d_ptr(std::make_unique<TableIMEPrivate>(lmProvider)) {}
 
 TableIME::~TableIME() { destroy(); }
 
@@ -49,8 +44,7 @@ TableBasedDictionary *TableIME::requestDict(boost::string_view dictName) {
     FCITX_D();
     auto iter = d->dicts_.find(dictName);
     if (iter == d->dicts_.end()) {
-        std::unique_ptr<TableBasedDictionary> dict(
-            d->dictProvider_->requestDict(dictName));
+        std::unique_ptr<TableBasedDictionary> dict(requestDictImpl(dictName));
         if (!dict) {
             return nullptr;
         }
@@ -62,7 +56,7 @@ TableBasedDictionary *TableIME::requestDict(boost::string_view dictName) {
 
 void TableIME::saveDict(TableBasedDictionary *dict) {
     FCITX_D();
-    d->dictProvider_->saveDict(dict);
+    saveDictImpl(dict);
 }
 
 UserLanguageModel *

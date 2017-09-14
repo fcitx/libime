@@ -43,6 +43,8 @@ typedef std::function<bool(boost::string_view code, boost::string_view word,
 enum class TableFormat { Text, Binary };
 enum class TableMatchMode { Exact, Prefix };
 
+class TableRule;
+
 class LIBIMETABLE_EXPORT TableBasedDictionary
     : public Dictionary,
       public fcitx::ConnectableObject {
@@ -65,6 +67,7 @@ public:
     void saveUser(std::ostream &out, TableFormat format = TableFormat::Binary);
 
     bool hasRule() const noexcept;
+    const TableRule *findRule(boost::string_view name) const;
     bool insert(boost::string_view key, boost::string_view value,
                 libime::PhraseFlag flag = PhraseFlagNone,
                 bool verifyWithRule = false);
@@ -73,6 +76,7 @@ public:
 
     bool isInputCode(uint32_t c) const;
     bool isAllInputCode(boost::string_view code) const;
+    bool isEndKey(uint32_t c) const;
 
     bool hasPinyin() const;
     int32_t maxLength() const;
@@ -92,6 +96,10 @@ public:
                           boost::string_view next) const;
 
     bool hasOneMatchingWord(boost::string_view code) const;
+
+    std::string
+    reverseLookup(boost::string_view word,
+                  PhraseFlag flag = PhraseFlag::PhraseFlagNone) const;
 
     FCITX_DECLARE_SIGNAL(TableBasedDictionary, tableOptionsChanged, void());
 

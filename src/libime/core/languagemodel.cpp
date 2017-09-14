@@ -18,6 +18,7 @@
  */
 
 #include "languagemodel.h"
+#include "config.h"
 #include "constants.h"
 #include "lattice.h"
 #include "lm/model.hh"
@@ -145,7 +146,7 @@ float LanguageModel::unknownPenalty() const {
 class LanguageModelResolverPrivate {
 public:
     std::unordered_map<std::string,
-                       std::shared_ptr<const StaticLanguageModelFile>>
+                       std::weak_ptr<const StaticLanguageModelFile>>
         files_;
 };
 
@@ -159,17 +160,38 @@ LanguageModelResolver::languageModelFileForLanguage(
     const std::string &language) {
     FCITX_D();
     auto iter = d->files_.find(language);
-    if (iter == d->files_.end()) {
-        auto fileName = languageModelFileNameForLanguage(language);
-        if (fileName.empty()) {
-            return nullptr;
+    std::shared_ptr<const StaticLanguageModelFile> file;
+    if (iter != d->files_.end()) {
+        file = iter->second.lock();
+        if (file) {
+            return file;
         }
-
-        iter = d->files_
-                   .emplace(language, std::make_shared<StaticLanguageModelFile>(
-                                          fileName.data()))
-                   .first;
+        d->files_.erase(iter);
     }
-    return iter->second;
+
+    auto fileName = languageModelFileNameForLanguage(language);
+    if (fileName.empty()) {
+        return nullptr;
+    }
+
+    file = std::make_shared<StaticLanguageModelFile>(fileName.data());
+    d->files_.emplace(language, file);
+    return file;
+}
+
+DefaultLanguageModelResolver::DefaultLanguageModelResolver() = default;
+DefaultLanguageModelResolver::~DefaultLanguageModelResolver() = default;
+
+DefaultLanguageModelResolver &DefaultLanguageModelResolver::instance() {
+    static DefaultLanguageModelResolver resolver;
+    return resolver;
+}
+
+std::string DefaultLanguageModelResolver::languageModelFileNameForLanguage(
+    const std::string &language) {
+    if (language == "zh_CN") {
+        return LIBIME_INSTALL_PKGDATADIR "/sc.lm";
+    }
+    return {};
 }
 }

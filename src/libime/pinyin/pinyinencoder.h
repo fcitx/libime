@@ -192,10 +192,6 @@ public:
                                            const ShuangpinProfile &sp,
                                            PinyinFuzzyFlags flags);
 
-    static void parseMoreUserPinyin(SegmentGraph &graph,
-                                    boost::string_view pinyin, size_t from,
-                                    PinyinFuzzyFlags flags);
-
     static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
 
     static std::string decodeFullPinyin(const std::vector<char> &v) {

@@ -21,7 +21,7 @@
 
 #include "libimetable_export.h"
 #include <boost/utility/string_view.hpp>
-#include <fcitx-utils/dynamictrackableobject.h>
+#include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <libime/core/decoder.h>
 #include <libime/core/userlanguagemodel.h>
@@ -33,23 +33,19 @@ namespace libime {
 class TableIMEPrivate;
 class TableBasedDictionary;
 
-class TableDictionrayResolver {
+class LIBIMETABLE_EXPORT TableIME : public fcitx::ConnectableObject {
 public:
-    virtual ~TableDictionrayResolver() = default;
-    virtual TableBasedDictionary *requestDict(boost::string_view name) = 0;
-    virtual void saveDict(TableBasedDictionary *dict) = 0;
-};
-
-class LIBIMETABLE_EXPORT TableIME : public fcitx::DynamicTrackableObject {
-public:
-    TableIME(std::unique_ptr<TableDictionrayResolver> dictProvider,
-             std::unique_ptr<LanguageModelResolver> lmProvider);
+    TableIME(LanguageModelResolver *lmProvider);
     virtual ~TableIME();
 
     TableBasedDictionary *requestDict(boost::string_view dictName);
     void saveDict(TableBasedDictionary *dict);
-    void clear();
     UserLanguageModel *languageModelForDictionary(TableBasedDictionary *dict);
+
+protected:
+    virtual TableBasedDictionary *
+    requestDictImpl(boost::string_view dictName) = 0;
+    virtual void saveDictImpl(TableBasedDictionary *dict) = 0;
 
 private:
     std::unique_ptr<TableIMEPrivate> d_ptr;

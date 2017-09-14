@@ -134,7 +134,7 @@ inline void throw_if_io_fail(const std::ios &s) {
 // limit. Avoid unsigned / signed compare.
 inline bool lengthLessThanLimit(size_t length, int limit) {
     if (limit < 0) {
-        return 0;
+        return false;
     }
     return length < static_cast<size_t>(limit);
 }

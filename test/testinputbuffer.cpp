@@ -21,7 +21,8 @@
 
 void test_basic(bool ascii) {
     using namespace libime;
-    InputBuffer buffer(ascii);
+    InputBuffer buffer(ascii ? fcitx::InputBufferOption::AsciiOnly
+                             : fcitx::InputBufferOption::None);
     FCITX_ASSERT(buffer.size() == 0);
     FCITX_ASSERT(buffer.cursor() == 0);
     FCITX_ASSERT(buffer.cursorByChar() == 0);

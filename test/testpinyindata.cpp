@@ -147,17 +147,17 @@ int main() {
 
         auto fullPinyin = PinyinEncoder::initialToString(initial) +
                           PinyinEncoder::finalToString(final);
-        assert(fullPinyin == applyFuzzy(pinyin.to_string(), p.flags()));
+        FCITX_ASSERT(fullPinyin == applyFuzzy(pinyin.to_string(), p.flags()));
         if (p.flags() == 0) {
             // make sure valid item is unique
             auto result = seen.insert(pinyin.to_string());
-            assert(result.second);
+            FCITX_ASSERT(result.second);
 
             int16_t encode =
                 ((static_cast<int16_t>(initial) - PinyinEncoder::firstInitial) *
                  (PinyinEncoder::lastFinal - PinyinEncoder::firstFinal + 1)) +
                 (static_cast<int16_t>(final) - PinyinEncoder::firstFinal);
-            assert(PinyinEncoder::isValidInitialFinal(initial, final));
+            FCITX_ASSERT(PinyinEncoder::isValidInitialFinal(initial, final));
             std::cout << encode << "," << std::endl;
         }
     }

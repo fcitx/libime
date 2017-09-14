@@ -56,7 +56,7 @@ public:
 };
 
 PinyinContext::PinyinContext(PinyinIME *ime)
-    : InputBuffer(true),
+    : InputBuffer(fcitx::InputBufferOption::AsciiOnly),
       d_ptr(std::make_unique<PinyinContextPrivate>(this, ime)) {
     FCITX_D();
     d->conn_.emplace_back(

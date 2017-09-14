@@ -22,8 +22,6 @@
 
 namespace libime {
 
-static const auto unknown = std::log10(1.0f / 10000);
-
 LatticeNode *PinyinDecoder::createLatticeNodeImpl(
     const SegmentGraphBase &graph, const LanguageModelBase *model,
     boost::string_view word, WordIndex idx, SegmentGraphPath path,

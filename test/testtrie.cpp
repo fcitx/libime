@@ -8,15 +8,7 @@
 
 using namespace libime;
 
-int main(int argc, char *argv[]) {
-    if (argc > 1) {
-        int fd = open(argv[1], O_RDONLY);
-        if (fd == -1) {
-            return 1;
-        }
-        dup2(fd, 0);
-    }
-
+int main() {
     typedef DATrie<int32_t> TestTrie;
     TestTrie tree;
     std::string key;

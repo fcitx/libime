@@ -39,7 +39,7 @@ void testMatch(const TableBasedDictionary &dict, boost::string_view code,
     FCITX_ASSERT(expect == actual);
 }
 
-int main() {
+void testWubi() {
 
     std::string test = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
                        "Length=4\n"
@@ -95,6 +95,41 @@ int main() {
     } catch (std::ios_base::failure &e) {
         std::cout << e.what() << std::endl;
     }
+}
+
+void testCangjie() {
+
+    std::string test = "KeyCode=abcdefghijklmnopqrstuvwxyz\n"
+                       "Length=6\n"
+                       "Prompt=&\n"
+                       "[Data]\n"
+                       "&a 日\n"
+                       "&b 月\n"
+                       "&c 金\n"
+                       "a 日\n"
+                       "a 曰\n"
+                       "aa 昌\n"
+                       "aaa 晶\n"
+                       "abac 暝\n";
+
+    std::stringstream ss(test);
+
+    try {
+        libime::TableBasedDictionary table;
+        table.load(ss, libime::TableFormat::Text);
+        table.save(std::cout, TableFormat::Text);
+        FCITX_ASSERT(!table.hasRule());
+        std::string key;
+        FCITX_ASSERT(!table.generate("你好", key));
+        FCITX_ASSERT(table.hint("abac") == "日月日金");
+    } catch (std::ios_base::failure &e) {
+        std::cout << e.what() << std::endl;
+    }
+}
+
+int main() {
+    testWubi();
+    testCangjie();
 
     return 0;
 }

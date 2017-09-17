@@ -41,124 +41,6 @@ struct SelectedCode {
     WordNode word_;
     std::string code_;
 };
-}
-
-class TableContextPrivate : public fcitx::QPtrHolder<TableContext> {
-public:
-    TableContextPrivate(TableContext *q, TableBasedDictionary &dict,
-                        UserLanguageModel &model)
-        : QPtrHolder(q), dict_(dict), model_(model), decoder_(&dict, &model) {}
-
-    State currentState() {
-        State state = model_.nullState();
-        if (selected_.empty()) {
-            return state;
-        }
-        State temp;
-        for (auto &s : selected_) {
-            for (auto &item : s) {
-                if (item.word_.word().empty()) {
-                    continue;
-                }
-                model_.score(state, item.word_, temp);
-                state = std::move(temp);
-            }
-        }
-        return state;
-    }
-
-    void resetMatchingState() {
-        lattice_.clear();
-        candidates_.clear();
-        graph_ = SegmentGraph();
-    }
-
-    TableBasedDictionary &dict_;
-    UserLanguageModel &model_;
-    TableDecoder decoder_;
-    Lattice lattice_;
-    SegmentGraph graph_;
-    std::vector<SentenceResult> candidates_;
-    std::vector<std::vector<SelectedCode>> selected_;
-};
-
-TableContext::TableContext(TableBasedDictionary &dict, UserLanguageModel &model)
-    : InputBuffer(fcitx::InputBufferOption::FixedCursor),
-      d_ptr(std::make_unique<TableContextPrivate>(this, dict, model)) {}
-
-TableContext::~TableContext() {}
-
-const TableBasedDictionary &TableContext::dict() const {
-    FCITX_D();
-    return d->dict_;
-}
-
-bool TableContext::isValidInput(uint32_t c) const {
-    FCITX_D();
-    if (d->dict_.isInputCode(c)) {
-        return true;
-    }
-
-    if (d->dict_.tableOptions().matchingKey() == c) {
-        return true;
-    }
-
-    if (d->dict_.tableOptions().pinyinKey() == c) {
-        return true;
-    }
-    if (d->dict_.tableOptions().pinyinKey()) {
-        const boost::string_view validPinyin("abcdefghijklmnopqrstuvwxyz");
-        if (validPinyin.find(c) != boost::string_view::npos) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void TableContext::typeImpl(const char *s, size_t length) {
-    boost::string_view view(s, length);
-    auto utf8len = fcitx::utf8::lengthValidated(view);
-    if (utf8len == fcitx::utf8::INVALID_LENGTH) {
-        return;
-    }
-
-    auto range = fcitx::utf8::MakeUTF8CharRange(view);
-    for (auto iter = range.begin(), end = range.end(); iter != end; iter++) {
-        auto pair = iter.charRange();
-        boost::string_view chr(&*pair.first,
-                               std::distance(pair.first, pair.second));
-        typeOneChar(chr);
-    }
-    update();
-}
-
-void TableContext::erase(size_t from, size_t to) {
-    FCITX_D();
-    if (from == 0 && to >= size()) {
-        d->resetMatchingState();
-        d->selected_.clear();
-    }
-    InputBuffer::erase(from, to);
-    update();
-}
-
-void TableContext::select(size_t idx) {
-    FCITX_D();
-    assert(idx < d->candidates_.size());
-    auto offset = selectedLength();
-    d->selected_.emplace_back();
-
-    auto &selection = d->selected_.back();
-    for (auto &p : d->candidates_[idx].sentence()) {
-        selection.emplace_back(
-            offset + p->to()->index(),
-            WordNode{p->word(), d->model_.index(p->word())},
-            static_cast<const TableLatticeNode *>(p)->code());
-    }
-
-    update();
-}
 
 bool isPlaceHolder(const TableRuleEntry &entry) {
     return entry.isPlaceHolder();
@@ -230,6 +112,117 @@ SegmentGraph graphForCode(boost::string_view s,
 
     return graph;
 }
+}
+
+class TableContextPrivate : public fcitx::QPtrHolder<TableContext> {
+public:
+    TableContextPrivate(TableContext *q, TableBasedDictionary &dict,
+                        UserLanguageModel &model)
+        : QPtrHolder(q), dict_(dict), model_(model), decoder_(&dict, &model) {}
+
+    State currentState() {
+        State state = model_.nullState();
+        if (selected_.empty()) {
+            return state;
+        }
+        State temp;
+        for (auto &s : selected_) {
+            for (auto &item : s) {
+                if (item.word_.word().empty()) {
+                    continue;
+                }
+                model_.score(state, item.word_, temp);
+                state = std::move(temp);
+            }
+        }
+        return state;
+    }
+
+    void resetMatchingState() {
+        lattice_.clear();
+        candidates_.clear();
+        graph_ = SegmentGraph();
+    }
+
+    TableBasedDictionary &dict_;
+    UserLanguageModel &model_;
+    TableDecoder decoder_;
+    Lattice lattice_;
+    SegmentGraph graph_;
+    std::vector<SentenceResult> candidates_;
+    std::vector<std::vector<SelectedCode>> selected_;
+};
+
+TableContext::TableContext(TableBasedDictionary &dict, UserLanguageModel &model)
+    : InputBuffer(fcitx::InputBufferOption::FixedCursor),
+      d_ptr(std::make_unique<TableContextPrivate>(this, dict, model)) {}
+
+TableContext::~TableContext() {}
+
+const TableBasedDictionary &TableContext::dict() const {
+    FCITX_D();
+    return d->dict_;
+}
+
+bool TableContext::isValidInput(uint32_t c) const {
+    FCITX_D();
+    if (d->dict_.isInputCode(c)) {
+        return true;
+    }
+
+    if (d->dict_.tableOptions().matchingKey() == c) {
+        return true;
+    }
+
+    return false;
+}
+
+void TableContext::typeImpl(const char *s, size_t length) {
+    boost::string_view view(s, length);
+    auto utf8len = fcitx::utf8::lengthValidated(view);
+    if (utf8len == fcitx::utf8::INVALID_LENGTH) {
+        return;
+    }
+
+    auto range = fcitx::utf8::MakeUTF8CharRange(view);
+    for (auto iter = range.begin(), end = range.end(); iter != end; iter++) {
+        auto pair = iter.charRange();
+        boost::string_view chr(&*pair.first,
+                               std::distance(pair.first, pair.second));
+        typeOneChar(chr);
+    }
+    update();
+}
+
+void TableContext::erase(size_t from, size_t to) {
+    FCITX_D();
+    if (from == 0 && to >= size()) {
+        d->resetMatchingState();
+        d->selected_.clear();
+    }
+    InputBuffer::erase(from, to);
+
+    auto lastSeg = userInput().substr(selectedLength());
+    d->graph_ = graphForCode(lastSeg, d->dict_);
+    update();
+}
+
+void TableContext::select(size_t idx) {
+    FCITX_D();
+    assert(idx < d->candidates_.size());
+    auto offset = selectedLength();
+    d->selected_.emplace_back();
+
+    auto &selection = d->selected_.back();
+    for (auto &p : d->candidates_[idx].sentence()) {
+        selection.emplace_back(
+            offset + p->to()->index(),
+            WordNode{p->word(), d->model_.index(p->word())},
+            static_cast<const TableLatticeNode *>(p)->code());
+    }
+
+    update();
+}
 
 void TableContext::typeOneChar(boost::string_view chr) {
     FCITX_D();
@@ -239,12 +232,6 @@ void TableContext::typeOneChar(boost::string_view chr) {
     InputBuffer::typeImpl(chr.data(), chr.size());
 
     auto &option = d->dict_.tableOptions();
-    if (option.pinyinKey() &&
-        fcitx::stringutils::startsWith(userInput(), option.pinyinKey())) {
-        // TODO: do pinyin stuff.
-        return;
-    }
-
     // Logic when append a new char:
     // Auto send disabled:
     // - keep append to buffer.
@@ -374,7 +361,6 @@ std::string TableContext::selectedSentence() const {
 }
 
 std::string TableContext::preedit() const {
-    FCITX_D();
     std::string ss = selectedSentence();
     ss += userInput().substr(selectedLength());
     return ss;
@@ -389,4 +375,21 @@ bool TableContext::selected() const {
 }
 
 void TableContext::learn() {}
+
+std::vector<std::string> TableContext::candidateHint(size_t idx,
+                                                     bool custom) const {
+    FCITX_D();
+    std::vector<std::string> codes;
+    for (auto &p : d->candidates_[idx].sentence()) {
+        if (!p->word().empty()) {
+            const auto &code = static_cast<const TableLatticeNode *>(p)->code();
+            if (custom) {
+                codes.push_back(d->dict_.hint(code));
+            } else {
+                codes.push_back(code);
+            }
+        }
+    }
+    return codes;
+}
 }

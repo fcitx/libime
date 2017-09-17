@@ -47,11 +47,7 @@ enum {
     STR_LAST
 };
 
-enum class BuildPhase {
-    PhaseConfig,
-    PhaseRule,
-    PhaseData
-} phase = BuildPhase::PhaseConfig;
+enum class BuildPhase { PhaseConfig, PhaseRule, PhaseData };
 
 static const char *strConst[2][STR_LAST] = {
     {"键码=", "码长=", "规避字符=", "拼音=", "拼音长度=", "[数据]",
@@ -224,6 +220,7 @@ void TableBasedDictionary::loadText(std::istream &in) {
     };
 
     auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
+    auto phase = BuildPhase::PhaseConfig;
     while (!in.eof()) {
         if (!std::getline(in, buf)) {
             break;
@@ -351,12 +348,10 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     if (d->promptKey_) {
         auto promptString = fcitx::utf8::UCS4ToUTF8(d->promptKey_);
         d->promptTrie_.foreach([this, &promptString, d, &buf, &out](
-            int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+            int32_t value, size_t _len, DATrie<int32_t>::position_type pos) {
             d->promptTrie_.suffix(buf, _len, pos);
-            auto sep = buf.find(keyValueSeparator);
-            boost::string_view ref(buf);
-            out << promptString << ref.substr(0, sep) << " "
-                << ref.substr(sep + 1) << std::endl;
+            out << promptString << buf << " " << fcitx::utf8::UCS4ToUTF8(value)
+                << std::endl;
             return true;
         });
     }
@@ -864,6 +859,29 @@ std::string TableBasedDictionary::reverseLookup(boost::string_view word,
             return false;
         });
     return key;
+}
+
+std::string TableBasedDictionary::hint(boost::string_view key) const {
+    FCITX_D();
+    if (!d->promptKey_) {
+        return key.to_string();
+    }
+
+    std::string result;
+    auto range = fcitx::utf8::MakeUTF8CharRange(key);
+    for (auto iter = std::begin(range); iter != std::end(range); iter++) {
+        auto charRange = iter.charRange();
+        boost::string_view search(
+            &*charRange.first,
+            std::distance(charRange.first, charRange.second));
+        auto value = d->promptTrie_.exactMatchSearch(search);
+        if (d->promptTrie_.isValid(value)) {
+            result.append(fcitx::utf8::UCS4ToUTF8(value));
+        } else {
+            result.append(charRange.first, charRange.second);
+        }
+    }
+    return result;
 }
 
 void TableBasedDictionary::matchPrefixImpl(

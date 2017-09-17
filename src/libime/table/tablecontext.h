@@ -49,6 +49,9 @@ public:
 
     const std::vector<SentenceResult> &candidates() const;
 
+    std::vector<std::string> candidateHint(size_t idx,
+                                           bool custom = false) const;
+
     bool selected() const;
     std::string sentence() const {
         auto &c = candidates();

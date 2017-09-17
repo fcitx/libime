@@ -17,9 +17,10 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
+#include "libime/core/userlanguagemodel.h"
 #include "libime/table/tablebaseddictionary.h"
 #include "libime/table/tablecontext.h"
-#include "libime/table/tableime.h"
+#include "libime/table/tableoptions.h"
 #include "testdir.h"
 #include "testutils.h"
 #include <fcitx-utils/log.h>
@@ -43,45 +44,19 @@ private:
     std::string path_;
 };
 
-class TestTableIME : public TableIME {
-public:
-    TestTableIME(LanguageModelResolver *r, boost::string_view sys,
-                 boost::string_view usr)
-        : TableIME(r), sys_(sys), usr_(usr) {}
-
-protected:
-    TableBasedDictionary *requestDictImpl(boost::string_view name) override {
-        if (name != "wbx") {
-            return nullptr;
-        }
-        auto dict = new TableBasedDictionary;
-        dict->load(sys_.c_str(), TableFormat::Binary);
-        TableOptions options;
-        options.setLanguageCode("zh_CN");
-        options.setAutoSelect(true);
-        options.setAutoSelectLength(-1);
-        options.setNoMatchAutoSelectLength(0);
-        dict->setTableOptions(options);
-        return dict;
-    }
-
-    void saveDictImpl(TableBasedDictionary *dict) override {
-        if (usr_.empty()) {
-            return;
-        }
-        dict->saveUser(usr_.c_str(), TableFormat::Binary);
-    }
-
-private:
-    std::string sys_, usr_;
-};
-
 int main() {
     TestLmResolver lmresolver(LIBIME_BINARY_DIR "/data/sc.lm");
-    TestTableIME ime(&lmresolver, LIBIME_BINARY_DIR "/data/wbx.main.dict",
-                     LIBIME_BINARY_DIR "/data/wbx.user.dict");
-    auto dict = ime.requestDict("wbx");
-    TableContext c(*dict, *ime.languageModelForDictionary(dict));
+    auto lm = lmresolver.languageModelFileForLanguage("zh_CN");
+    TableBasedDictionary dict;
+    UserLanguageModel model(lm);
+    dict.load(LIBIME_BINARY_DIR "/data/wbx.main.dict");
+    TableOptions options;
+    options.setLanguageCode("zh_CN");
+    options.setAutoSelect(true);
+    options.setAutoSelectLength(-1);
+    options.setNoMatchAutoSelectLength(0);
+    dict.setTableOptions(options);
+    TableContext c(dict, model);
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
     };

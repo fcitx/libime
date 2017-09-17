@@ -20,6 +20,7 @@
 #define _FCITX_LIBIME_CORE_USERLANGUAGEMODEL_H_
 
 #include "libimecore_export.h"
+#include <fcitx-utils/connectableobject.h>
 #include <libime/core/languagemodel.h>
 
 namespace libime {

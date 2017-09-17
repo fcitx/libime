@@ -43,7 +43,6 @@ public:
 
     FCITX_DECLARE_PROPERTY(OrderPolicy, orderPolicy, setOrderPolicy);
     FCITX_DECLARE_PROPERTY(int, noSortInputLength, setNoSortInputLength);
-    FCITX_DECLARE_PROPERTY(uint32_t, pinyinKey, setPinyinKey);
     FCITX_DECLARE_PROPERTY(bool, autoSelect, setAutoSelect);
     FCITX_DECLARE_PROPERTY(int, autoSelectLength, setAutoSelectLength);
     FCITX_DECLARE_PROPERTY(int, noMatchAutoSelectLength,
@@ -56,9 +55,6 @@ public:
     FCITX_DECLARE_PROPERTY(bool, noMatchDontCommit, setNoMatchDontCommit);
     FCITX_DECLARE_PROPERTY(bool, autoPhraseLength, setAutoPhraseLength);
     FCITX_DECLARE_PROPERTY(bool, saveAutoPhrase, setSaveAutoPhrase);
-    FCITX_DECLARE_PROPERTY(bool, prompt, setPrompt);
-    FCITX_DECLARE_PROPERTY(bool, displayCustomPromptSymbol,
-                           setDisplayCustomPromptSymbol);
     FCITX_DECLARE_PROPERTY(bool, firstCandidateAsPreedit,
                            setFirstCandidateAsPreedit);
     FCITX_DECLARE_PROPERTY(std::unordered_set<std::string>, autoRuleSet,

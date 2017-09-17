@@ -64,8 +64,10 @@ public:
     LanguageModelPrivate(std::shared_ptr<const StaticLanguageModelFile> file)
         : file_(file) {}
 
-    auto &model() { return file_->d_func()->model_; }
-    const auto &model() const { return file_->d_func()->model_; }
+    auto *model() { return file_ ? &file_->d_func()->model_ : nullptr; }
+    const auto *model() const {
+        return file_ ? &file_->d_func()->model_ : nullptr;
+    }
 
     std::shared_ptr<const StaticLanguageModelFile> file_;
     State beginState_;
@@ -81,33 +83,47 @@ LanguageModel::LanguageModel(
     std::shared_ptr<const StaticLanguageModelFile> file)
     : LanguageModelBase(), d_ptr(std::make_unique<LanguageModelPrivate>(file)) {
     FCITX_D();
-    lmState(d->beginState_) = d->model().BeginSentenceState();
-    lmState(d->nullState_) = d->model().NullContextState();
+    if (d->model()) {
+        lmState(d->beginState_) = d->model()->BeginSentenceState();
+        lmState(d->nullState_) = d->model()->NullContextState();
+    }
 }
 
 LanguageModel::~LanguageModel() {}
 
 WordIndex LanguageModel::beginSentence() const {
     FCITX_D();
-    auto &v = d->model().GetVocabulary();
+    if (!d->model()) {
+        return 0;
+    }
+    auto &v = d->model()->GetVocabulary();
     return v.BeginSentence();
 }
 
 WordIndex LanguageModel::endSentence() const {
     FCITX_D();
-    auto &v = d->model().GetVocabulary();
+    if (!d->model()) {
+        return 0;
+    }
+    auto &v = d->model()->GetVocabulary();
     return v.EndSentence();
 }
 
 WordIndex LanguageModel::unknown() const {
     FCITX_D();
-    auto &v = d->model().GetVocabulary();
+    if (!d->model()) {
+        return 0;
+    }
+    auto &v = d->model()->GetVocabulary();
     return v.NotFound();
 }
 
 WordIndex LanguageModel::index(boost::string_view word) const {
     FCITX_D();
-    auto &v = d->model().GetVocabulary();
+    if (!d->model()) {
+        return 0;
+    }
+    auto &v = d->model()->GetVocabulary();
     return v.Index(StringPiece{word.data(), word.size()});
 }
 
@@ -125,7 +141,10 @@ float LanguageModel::score(const State &state, const WordNode &node,
                            State &out) const {
     FCITX_D();
     assert(&state != &out);
-    return d->model().Score(lmState(state), node.idx(), lmState(out)) +
+    if (!d->model()) {
+        return 0;
+    }
+    return d->model()->Score(lmState(state), node.idx(), lmState(out)) +
            (node.idx() == unknown() ? d->unknown_ : 0.0f);
 }
 

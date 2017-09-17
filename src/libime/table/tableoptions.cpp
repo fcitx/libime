@@ -58,7 +58,6 @@ FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, OrderPolicy, orderPolicy,
                               setOrderPolicy);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, noSortInputLength,
                               setNoSortInputLength);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, uint32_t, pinyinKey, setPinyinKey);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoSelect, setAutoSelect);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, autoSelectLength,
                               setAutoSelectLength);
@@ -79,9 +78,6 @@ FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoPhraseLength,
                               setAutoPhraseLength);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, saveAutoPhrase,
                               setSaveAutoPhrase);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, prompt, setPrompt);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, displayCustomPromptSymbol,
-                              setDisplayCustomPromptSymbol);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, firstCandidateAsPreedit,
                               setFirstCandidateAsPreedit);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::string, languageCode,

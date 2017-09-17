@@ -100,6 +100,7 @@ public:
     std::string
     reverseLookup(boost::string_view word,
                   PhraseFlag flag = PhraseFlag::PhraseFlagNone) const;
+    std::string hint(boost::string_view key) const;
 
     FCITX_DECLARE_SIGNAL(TableBasedDictionary, tableOptionsChanged, void());
 

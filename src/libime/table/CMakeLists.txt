@@ -1,7 +1,6 @@
 set(LIBIME_TABLE_HDRS
     tablebaseddictionary.h
     tablecontext.h
-    tableime.h
     tableoptions.h
     tablerule.h
     tabledecoder.h
@@ -11,7 +10,6 @@ set(LIBIME_TABLE_HDRS
 set(LIBIME_TABLE_SRCS
     tablebaseddictionary.cpp
     tablecontext.cpp
-    tableime.cpp
     tableoptions.cpp
     tabledecoder.cpp
     )

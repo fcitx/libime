@@ -74,7 +74,7 @@ public:
         node(const int32_t base_ = 0, const int32_t check_ = 0)
             : base(base_), check(check_) {}
 
-        node(std::istream &in) {
+        node(std::istream &in) : base(0), check(0) {
             throw_if_io_fail(unmarshall(in, base));
             throw_if_io_fail(unmarshall(in, check));
         }
@@ -125,7 +125,7 @@ public:
         int32_t ehead;  // first empty item
         block() : prev(0), next(0), num(256), reject(257), trial(0), ehead(0) {}
 
-        block(std::istream &in) {
+        block(std::istream &in) : block() {
             throw_if_io_fail(unmarshall(in, prev));
             throw_if_io_fail(unmarshall(in, next));
             throw_if_io_fail(unmarshall(in, num));

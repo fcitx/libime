@@ -428,7 +428,11 @@ bool PinyinContext::learnWord() {
     FCITX_D();
     std::string ss;
     std::string pinyin;
-    if (d->selected_.size() <= 1) {
+    if (d->selected_.empty()) {
+        return false;
+    }
+    // don't learn single character.
+    if (d->selected_.size() == 1 && d->selected_[0].size() == 1) {
         return false;
     }
     for (auto &s : d->selected_) {

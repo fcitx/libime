@@ -42,7 +42,7 @@ public:
     virtual ~Decoder();
 
     constexpr static const size_t beamSizeDefault = 20;
-    constexpr static const size_t frameSizeDefault = 80;
+    constexpr static const size_t frameSizeDefault = 100;
 
     const Dictionary *dict() const;
     const LanguageModelBase *model() const;

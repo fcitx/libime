@@ -49,7 +49,7 @@ struct TableCandidateCompare {
         if (node->code().empty()) {
             return false;
         }
-        return fcitx::utf8::length(node->code()) <= static_cast<size_t>(noSortInputLength_);
+        return fcitx::utf8::length(node->code()) == static_cast<size_t>(noSortInputLength_);
     }
 
     size_t codeLength(const SentenceResult &sentence) const {
@@ -395,11 +395,12 @@ void TableContext::update() {
             }
         }
     }
+    int lastSegLength = fcitx::utf8::length(d->graph_.data());
+    int noSortLength = lastSegLength < d->dict_.tableOptions().noSortInputLength() ? lastSegLength : d->dict_.tableOptions().noSortInputLength();
     std::sort(d->candidates_.begin(), d->candidates_.end(),
-              TableCandidateCompare(d->dict_.tableOptions().orderPolicy(), d->dict_.tableOptions().noSortInputLength()));
+              TableCandidateCompare(d->dict_.tableOptions().orderPolicy(), noSortLength));
     // Run auto select.
     if (d->dict_.tableOptions().autoSelect()) {
-        auto lastSegLength = fcitx::utf8::length(d->graph_.data());
         if (d->candidates_.size() == 1 &&
             !lengthLessThanLimit(lastSegLength,
                                  d->dict_.tableOptions().autoSelectLength())) {

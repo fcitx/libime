@@ -500,7 +500,7 @@ public:
         return 0;
     }
 
-    void foreach(callback_type callback, npos_t root = npos_t()) const {
+    bool foreach(callback_type callback, npos_t root = npos_t()) const {
         decorder_type b;
         size_t p(0);
         npos_t from = root;
@@ -508,9 +508,10 @@ public:
              b.result = next(from, p, root)) {
             if (b.result != CEDAR_NO_VALUE &&
                 !callback(b.result_value, p, from.toInt())) {
-                break;
+                return false;
             }
         }
+        return true;
     }
 
     template <typename T>
@@ -1009,21 +1010,21 @@ size_t DATrie<T>::size() const {
 }
 
 template <typename T>
-void DATrie<T>::foreach(const char *key, size_t size, callback_type func,
+bool DATrie<T>::foreach(const char *key, size_t size, callback_type func,
                         position_type _pos) const {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t from(_pos);
     if (d->_find(key, from, pos, size) == NO_PATH) {
-        return;
+        return true;
     }
 
-    d->foreach(func, from);
+    return d->foreach(func, from);
 }
 
 template <typename T>
-void DATrie<T>::foreach(callback_type func, position_type pos) const {
+bool DATrie<T>::foreach(callback_type func, position_type pos) const {
     typename DATriePrivate<value_type>::npos_t from(pos);
-    d->foreach(func, from);
+    return d->foreach(func, from);
 }
 
 template <typename T>

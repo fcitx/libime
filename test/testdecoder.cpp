@@ -101,7 +101,7 @@ int main() {
         ScopedNanoTimer timer(printTime);
         std::cout << "Pure Match ";
         dict.matchPrefix(graph, [](const SegmentGraphPath &, WordNode &, float,
-                                   boost::string_view) {});
+                                   std::unique_ptr<LatticeNodeData>) {});
     }
     testTime(dict, decoder, "sdfsdfsdfsdfsdfsdfsdf", PinyinFuzzyFlag::None, 2);
     testTime(dict, decoder, "ceshiyixiayebuhuichucuo", PinyinFuzzyFlag::None,

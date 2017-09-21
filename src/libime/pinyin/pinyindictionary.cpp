@@ -23,6 +23,7 @@
 #include "libime/core/lrucache.h"
 #include "libime/core/utils.h"
 #include "pinyindata.h"
+#include "pinyindecoder_p.h"
 #include "pinyinencoder.h"
 #include "pinyinmatchstate_p.h"
 #include <boost/algorithm/string.hpp>
@@ -330,7 +331,8 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
         }
         for (auto &item : *result) {
             context.callback_(path.path_, item.word_, item.value_,
-                              item.encodedPinyin_);
+                              std::make_unique<PinyinLatticeNodePrivate>(
+                                  item.encodedPinyin_));
             if (path.size() == 1 &&
                 path.path_[path.path_.size() - 2] == &prevNode) {
                 matched = true;
@@ -341,7 +343,9 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
                                    boost::string_view encodedPinyin,
                                    boost::string_view hanzi, float cost) {
             WordNode word(hanzi, InvalidWordIndex);
-            context.callback_(path.path_, word, cost, encodedPinyin);
+            context.callback_(
+                path.path_, word, cost,
+                std::make_unique<PinyinLatticeNodePrivate>(encodedPinyin));
             if (path.size() == 1 &&
                 path.path_[path.path_.size() - 2] == &prevNode) {
                 matched = true;
@@ -383,7 +387,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
         // If the last segment is separator, there
         if (&currentNode == &graph.end()) {
             WordNode word("", 0);
-            context.callback_({&prevNode, &currentNode}, word, 0, "");
+            context.callback_({&prevNode, &currentNode}, word, 0, nullptr);
         }
         return;
     }
@@ -446,7 +450,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
             vec.push_back(&prevNode);
             vec.push_back(&currentNode);
             WordNode word(pinyin, InvalidWordIndex);
-            context.callback_(vec, word, invalidPinyinCost, "");
+            context.callback_(vec, word, invalidPinyinCost, nullptr);
         }
     }
 

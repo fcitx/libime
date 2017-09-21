@@ -25,17 +25,21 @@
 
 namespace libime {
 
-class TableLatticeNode : public LatticeNode {
+class TableLatticeNodePrivate;
+
+class LIBIMETABLE_EXPORT TableLatticeNode : public LatticeNode {
 public:
     TableLatticeNode(boost::string_view word, WordIndex idx,
                      SegmentGraphPath path, const State &state, float cost,
-                     boost::string_view aux)
-        : LatticeNode(word, idx, path, state, cost, aux) {}
+                     std::unique_ptr<TableLatticeNodePrivate> data);
+    virtual ~TableLatticeNode();
 
-    const std::string &code() const { return aux_; }
+    uint32_t index() const;
+    PhraseFlag flag() const;
+    const std::string &code() const;
 
 private:
-    std::string encodedTable_;
+    std::unique_ptr<TableLatticeNodePrivate> d_ptr;
 };
 
 class LIBIMETABLE_EXPORT TableDecoder : public Decoder {
@@ -50,7 +54,7 @@ protected:
                                        boost::string_view word, WordIndex idx,
                                        SegmentGraphPath path,
                                        const State &state, float cost,
-                                       boost::string_view aux,
+                                       std::unique_ptr<LatticeNodeData> data,
                                        bool onlyPath) const override;
 };
 }

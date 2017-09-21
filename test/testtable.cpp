@@ -32,7 +32,7 @@ void testMatch(const TableBasedDictionary &dict, boost::string_view code,
     std::set<std::string> actual;
     dict.matchWords(
         code, exact ? TableMatchMode::Exact : TableMatchMode::Prefix,
-        [&actual](boost::string_view, boost::string_view word, float) {
+        [&actual](boost::string_view, boost::string_view word, uint32_t, PhraseFlag) {
             actual.insert(word.to_string());
             return true;
         });
@@ -59,6 +59,7 @@ void testWubi() {
         libime::TableBasedDictionary table;
         table.load(ss, libime::TableFormat::Text);
         FCITX_ASSERT(table.hasRule());
+        FCITX_ASSERT(table.hasPinyin());
         std::string key;
         FCITX_ASSERT(!table.generate("你好", key));
         FCITX_ASSERT(table.generate("统计局", key));
@@ -86,7 +87,10 @@ void testWubi() {
         testMatch(table, "wqvb", {"你好"}, false);
         testMatch(table, "wqvb", {"你好"}, true);
         testMatch(table, "w", {"你", "你好"}, false);
+        testMatch(table, "wq", {"你", "你好"}, false);
         testMatch(table, "w", {}, true);
+        table.insert("wo", "我", PhraseFlag::Pinyin);
+        testMatch(table, "w", {"你", "你好", "我"}, false);
 
         FCITX_ASSERT(table.reverseLookup("你") == "wqiy");
         FCITX_ASSERT(table.reverseLookup("好") == "vbg");

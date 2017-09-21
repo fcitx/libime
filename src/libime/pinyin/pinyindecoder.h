@@ -25,14 +25,19 @@
 
 namespace libime {
 
-class PinyinLatticeNode : public LatticeNode {
+class PinyinLatticeNodePrivate;
+
+class LIBIMEPINYIN_EXPORT PinyinLatticeNode : public LatticeNode {
 public:
     PinyinLatticeNode(boost::string_view word, WordIndex idx,
                       SegmentGraphPath path, const State &state, float cost,
-                      boost::string_view aux)
-        : LatticeNode(word, idx, path, state, cost, aux) {}
+                      std::unique_ptr<PinyinLatticeNodePrivate> data);
+    virtual ~PinyinLatticeNode();
 
-    const std::string &encodedPinyin() const { return aux_; }
+    const std::string &encodedPinyin() const;
+
+private:
+    std::unique_ptr<PinyinLatticeNodePrivate> d_ptr;
 };
 
 class LIBIMEPINYIN_EXPORT PinyinDecoder : public Decoder {
@@ -46,7 +51,7 @@ protected:
                                        boost::string_view word, WordIndex idx,
                                        SegmentGraphPath path,
                                        const State &state, float cost,
-                                       boost::string_view aux,
+                                       std::unique_ptr<LatticeNodeData> data,
                                        bool onlyPath) const override;
 };
 }

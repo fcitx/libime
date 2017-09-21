@@ -34,6 +34,88 @@ namespace libime {
 
 namespace {
 
+struct TableCandidateCompare {
+    TableCandidateCompare(OrderPolicy policy, int noSortInputLength) : policy_(policy), noSortInputLength_(noSortInputLength) {}
+
+    bool isNoSortInputLength(const SentenceResult &sentence) const {
+        if (noSortInputLength_ < 0) {
+            return false;
+        }
+
+        if (sentence.sentence().size() != 1) {
+            return false;
+        }
+        auto node = static_cast<const TableLatticeNode*>(sentence.sentence()[0]);
+        if (node->code().empty()) {
+            return false;
+        }
+        return fcitx::utf8::length(node->code()) <= static_cast<size_t>(noSortInputLength_);
+    }
+
+    size_t codeLength(const SentenceResult &sentence) const {
+        auto node = static_cast<const TableLatticeNode*>(sentence.sentence()[0]);
+        return fcitx::utf8::length(node->code());
+    }
+
+    size_t index(const SentenceResult &sentence) const {
+        auto node = static_cast<const TableLatticeNode*>(sentence.sentence()[0]);
+        return node->index();
+    }
+
+    bool operator()(const SentenceResult &lhs, const SentenceResult &rhs) const {
+        bool lhsShort = isNoSortInputLength(lhs), rhsShort = isNoSortInputLength(rhs);
+        // We want "true" to be put ahead.
+        if (lhsShort != rhsShort) {
+            return lhsShort > rhsShort;
+        }
+        if (lhsShort == rhsShort) {
+            return index(lhs) < index(rhs);
+        }
+
+        switch (policy_) {
+            case OrderPolicy::Fast:
+                if (lhs.sentence().size() != rhs.sentence().size()) {
+                    return lhs.sentence().size() < rhs.sentence().size();
+                }
+                return std::lexicographical_compare(lhs.sentence().begin(), lhs.sentence().end(),
+                    rhs.sentence().begin(), rhs.sentence().end(),
+                    [] (const LatticeNode *lnode, const LatticeNode *rnode) {
+                        return static_cast<const TableLatticeNode *>(lnode)->index() < static_cast<const TableLatticeNode *>(rnode)->index();
+                    }
+                );
+
+                break;
+            case OrderPolicy::Freq:
+                if (lhs.sentence().size() != rhs.sentence().size()) {
+                    return lhs.sentence().size() < rhs.sentence().size();
+                }
+                return std::lexicographical_compare(lhs.sentence().begin(), lhs.sentence().end(),
+                    rhs.sentence().begin(), rhs.sentence().end(),
+                    [] (const LatticeNode *lnode, const LatticeNode *rnode) {
+                        return static_cast<const TableLatticeNode *>(lnode)->score() > static_cast<const TableLatticeNode *>(rnode)->score();
+                    }
+                );
+                break;
+            case OrderPolicy::No:
+            default:
+                if (lhs.sentence().size() != rhs.sentence().size()) {
+                    return lhs.sentence().size() < rhs.sentence().size();
+                }
+                return std::lexicographical_compare(lhs.sentence().begin(), lhs.sentence().end(),
+                    rhs.sentence().begin(), rhs.sentence().end(),
+                    [] (const LatticeNode *lnode, const LatticeNode *rnode) {
+                        return static_cast<const TableLatticeNode *>(lnode)->index() < static_cast<const TableLatticeNode *>(rnode)->index();
+                    }
+                );
+                break;
+        }
+    }
+
+private:
+    OrderPolicy policy_;
+    int noSortInputLength_;
+};
+
 struct SelectedCode {
     SelectedCode(size_t s, WordNode word, std::string code)
         : offset_(s), word_(std::move(word)), code_(std::move(code)) {}
@@ -301,30 +383,20 @@ void TableContext::update() {
     d->decoder_.decode(d->lattice_, d->graph_, 1, state);
 
     d->candidates_.clear();
-    std::unordered_set<std::string> dup;
-    for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
-        d->candidates_.push_back(d->lattice_.sentence(i));
-        dup.insert(d->candidates_.back().toString());
-    }
 
     auto &graph = d->graph_;
     auto bos = &graph.start();
-    auto beginSize = d->candidates_.size();
     for (size_t i = graph.size(); i > 0; i--) {
         for (auto &graphNode : graph.nodes(i)) {
             for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                 if (latticeNode.from() == bos) {
-                    if (dup.count(latticeNode.word())) {
-                        continue;
-                    }
                     d->candidates_.push_back(latticeNode.toSentenceResult());
-                    dup.insert(latticeNode.word());
                 }
             }
         }
     }
-    std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
-              std::greater<SentenceResult>());
+    std::sort(d->candidates_.begin(), d->candidates_.end(),
+              TableCandidateCompare(d->dict_.tableOptions().orderPolicy(), d->dict_.tableOptions().noSortInputLength()));
     // Run auto select.
     if (d->dict_.tableOptions().autoSelect()) {
         auto lastSegLength = fcitx::utf8::length(d->graph_.data());

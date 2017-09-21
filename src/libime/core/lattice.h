@@ -84,12 +84,17 @@ protected:
     WordIndex idx_;
 };
 
+class LIBIMECORE_EXPORT LatticeNodeData {
+public:
+    virtual ~LatticeNodeData() = default;
+};
+
 class LIBIMECORE_EXPORT LatticeNode : public WordNode {
 public:
     LatticeNode(boost::string_view word, WordIndex idx, SegmentGraphPath path,
-                const State &state, float cost = 0, boost::string_view aux = "")
+                const State &state, float cost = 0)
         : WordNode(word, idx), path_(std::move(path)), cost_(cost),
-          state_(state), aux_(aux.to_string()) {
+          state_(state) {
         assert(path_.size() >= 2);
     }
     float cost() const { return cost_; }
@@ -142,15 +147,12 @@ public:
 
     State &state() { return state_; }
 
-    const std::string &auxiliary() const { return aux_; }
-
 protected:
     SegmentGraphPath path_;
     float cost_;
     float score_ = 0.0f;
     State state_;
     LatticeNode *prev_ = nullptr;
-    std::string aux_;
 };
 
 inline std::string SentenceResult::toString() const {

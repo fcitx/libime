@@ -20,6 +20,7 @@
 #include "libime/core/userlanguagemodel.h"
 #include "libime/table/tablebaseddictionary.h"
 #include "libime/table/tablecontext.h"
+#include "libime/table/tabledecoder.h"
 #include "libime/table/tableoptions.h"
 #include "testdir.h"
 #include "testutils.h"
@@ -55,6 +56,7 @@ int main() {
     options.setAutoSelect(true);
     options.setAutoSelectLength(-1);
     options.setNoMatchAutoSelectLength(0);
+    options.setNoSortInputLength(2);
     dict.setTableOptions(options);
     TableContext c(dict, model);
     auto printTime = [](int t) {
@@ -90,7 +92,9 @@ int main() {
         for (auto &candidate : c.candidates()) {
             std::cout << (count % 10) << ": ";
             for (auto node : candidate.sentence()) {
-                std::cout << node->word() << " " << node->auxiliary();
+                std::cout
+                    << node->word() << " "
+                    << static_cast<const TableLatticeNode *>(node)->code();
             }
             std::cout << " " << candidate.score() << std::endl;
             count++;

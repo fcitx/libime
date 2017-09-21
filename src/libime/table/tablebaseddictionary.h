@@ -29,15 +29,16 @@ namespace libime {
 class TableBasedDictionaryPrivate;
 class TableOptions;
 
-enum PhraseFlag {
-    PhraseFlagNone = 1,
-    PhraseFlagPinyin,
-    PhraseFlagPrompt,
-    PhraseFlagConstructPhrase
+enum class PhraseFlag {
+    None = 1,
+    Pinyin,
+    Prompt,
+    ConstructPhrase,
+    User,
 };
 
 typedef std::function<bool(boost::string_view code, boost::string_view word,
-                           float cost)>
+                           uint32_t index, PhraseFlag flag)>
     TableMatchCallback;
 
 enum class TableFormat { Text, Binary };
@@ -69,9 +70,9 @@ public:
     bool hasRule() const noexcept;
     const TableRule *findRule(boost::string_view name) const;
     bool insert(boost::string_view key, boost::string_view value,
-                libime::PhraseFlag flag = PhraseFlagNone,
+                PhraseFlag flag = PhraseFlag::None,
                 bool verifyWithRule = false);
-    bool insert(boost::string_view value);
+    bool insert(boost::string_view value, PhraseFlag flag = PhraseFlag::None);
     bool generate(boost::string_view value, std::string &key);
 
     bool isInputCode(uint32_t c) const;
@@ -88,7 +89,7 @@ public:
     void setTableOptions(TableOptions option);
     const TableOptions &tableOptions() const;
 
-    void matchWords(boost::string_view code, TableMatchMode mode,
+    bool matchWords(boost::string_view code, TableMatchMode mode,
                     const TableMatchCallback &callback) const;
 
     bool hasMatchingWords(boost::string_view code) const;
@@ -97,9 +98,8 @@ public:
 
     bool hasOneMatchingWord(boost::string_view code) const;
 
-    std::string
-    reverseLookup(boost::string_view word,
-                  PhraseFlag flag = PhraseFlag::PhraseFlagNone) const;
+    std::string reverseLookup(boost::string_view word,
+                              PhraseFlag flag = PhraseFlag::None) const;
     std::string hint(boost::string_view key) const;
 
     FCITX_DECLARE_SIGNAL(TableBasedDictionary, tableOptionsChanged, void());

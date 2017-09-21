@@ -56,22 +56,20 @@ public:
                 void *helper = nullptr) const;
 
 protected:
-    inline LatticeNode *createLatticeNode(const SegmentGraph &graph,
-                                          const LanguageModelBase *model,
-                                          boost::string_view word,
-                                          WordIndex idx, SegmentGraphPath path,
-                                          const State &state, float cost = 0,
-                                          boost::string_view aux = "",
-                                          bool onlyPath = false) const {
+    inline LatticeNode *
+    createLatticeNode(const SegmentGraph &graph, const LanguageModelBase *model,
+                      boost::string_view word, WordIndex idx,
+                      SegmentGraphPath path, const State &state, float cost = 0,
+                      std::unique_ptr<LatticeNodeData> data = nullptr,
+                      bool onlyPath = false) const {
         return createLatticeNodeImpl(graph, model, word, idx, std::move(path),
-                                     state, cost, aux, onlyPath);
+                                     state, cost, std::move(data), onlyPath);
     }
-    virtual LatticeNode *
-    createLatticeNodeImpl(const SegmentGraphBase &graph,
-                          const LanguageModelBase *model,
-                          boost::string_view word, WordIndex idx,
-                          SegmentGraphPath path, const State &state, float cost,
-                          boost::string_view aux, bool onlyPath = false) const;
+    virtual LatticeNode *createLatticeNodeImpl(
+        const SegmentGraphBase &graph, const LanguageModelBase *model,
+        boost::string_view word, WordIndex idx, SegmentGraphPath path,
+        const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
+        bool onlyPath) const;
 
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;

@@ -26,6 +26,7 @@
 #include "libimecore_export.h"
 
 #include <boost/utility/string_view.hpp>
+#include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <functional>
 #include <memory>
@@ -41,11 +42,13 @@ class DATrie;
 
 template <typename T>
 struct NaN {
-    enum { N1 = -1, N2 = -2 };
+    static constexpr auto N1 = -1;
+    static constexpr auto N2 = -2;
 };
 template <>
 struct NaN<float> {
-    enum { N1 = 0x7f800001, N2 = 0x7f800002 };
+    static constexpr auto N1 = 0x7f800001;
+    static constexpr auto N2 = 0x7f800002;
 };
 
 /**
@@ -121,11 +124,11 @@ public:
     bool erase(position_type from = 0);
 
     // call callback on each key
-    void foreach(callback_type func, position_type pos = 0) const;
+    bool foreach(callback_type func, position_type pos = 0) const;
     // search by prefix
-    void foreach(const char *prefix, size_t size, callback_type func,
+    bool foreach(const char *prefix, size_t size, callback_type func,
                  position_type pos = 0) const;
-    void foreach(boost::string_view prefix, callback_type func,
+    bool foreach(boost::string_view prefix, callback_type func,
                  position_type pos = 0) const {
         return foreach(prefix.data(), prefix.size(), func, pos);
     }
@@ -144,6 +147,7 @@ private:
 
 template class LIBIMECORE_EXPORT DATrie<float>;
 template class LIBIMECORE_EXPORT DATrie<int32_t>;
+template class LIBIMECORE_EXPORT DATrie<uint32_t>;
 }
 
 #endif // _FCITX_LIBIME_CORE_DATRIE_H_

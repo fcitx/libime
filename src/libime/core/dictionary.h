@@ -19,6 +19,7 @@
 #ifndef _FCITX_LIBIME_CORE_DICTIONARY_H_
 #define _FCITX_LIBIME_CORE_DICTIONARY_H_
 
+#include "lattice.h"
 #include "libimecore_export.h"
 #include "segmentgraph.h"
 #include <boost/utility/string_view.hpp>
@@ -30,7 +31,7 @@ class WordNode;
 
 // The callback accepts the passed path that matches the word.
 typedef std::function<void(const SegmentGraphPath &, WordNode &, float,
-                           boost::string_view)>
+                           std::unique_ptr<LatticeNodeData>)>
     GraphMatchCallback;
 
 class LIBIMECORE_EXPORT Dictionary {

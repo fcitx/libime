@@ -17,25 +17,44 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
-#include "tabledecoder.h"
+#include "tabledecoder_p.h"
 #include <cmath>
 
 namespace libime {
 
+uint32_t TableLatticeNode::index() const {
+    return d_ptr ? d_ptr->index_ : 0xFFFFFFFFu;
+}
+
+PhraseFlag TableLatticeNode::flag() const {
+    return d_ptr ? d_ptr->flag_ : PhraseFlag::None;
+}
+
+const std::string &TableLatticeNode::code() const {
+    static const std::string empty;
+    if (!d_ptr) {
+        return empty;
+    }
+    return d_ptr->code_;
+}
+
+TableLatticeNode::TableLatticeNode(
+    boost::string_view word, WordIndex idx, SegmentGraphPath path,
+    const State &state, float cost,
+    std::unique_ptr<TableLatticeNodePrivate> data)
+    : LatticeNode(word, idx, std::move(path), state, cost),
+      d_ptr(std::move(data)) {}
+
+TableLatticeNode::~TableLatticeNode() = default;
+
 LatticeNode *TableDecoder::createLatticeNodeImpl(
     const SegmentGraphBase &graph, const LanguageModelBase *model,
     boost::string_view word, WordIndex idx, SegmentGraphPath path,
-    const State &state, float cost, boost::string_view aux,
-    bool onlyPath) const {
-    if (model->isUnknown(idx, word)) {
-        // we don't really care about a lot of unknown single character
-        // which is not used for candidates
-        if (aux.size() == 2 && path.front() != &graph.start() && !onlyPath) {
-            return nullptr;
-        }
-    }
-
-    return new TableLatticeNode(word, idx, std::move(path), std::move(state),
-                                cost, aux);
+    const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
+    bool) const {
+    std::unique_ptr<TableLatticeNodePrivate> tableData(
+        static_cast<TableLatticeNodePrivate *>(data.release()));
+    return new TableLatticeNode(word, idx, std::move(path), state, cost,
+                                std::move(tableData));
 }
 }

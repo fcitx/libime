@@ -87,7 +87,7 @@ void DecoderPrivate::buildLattice(
 
     auto dictMatchCallback = [this, &graph, &lattice, &dupPath, q, frameSize](
         const SegmentGraphPath &path, WordNode &word, float adjust,
-        boost::string_view aux) {
+        std::unique_ptr<LatticeNodeData> data) {
         if (InvalidWordIndex == word.idx()) {
             auto idx = model_->index(word.word());
             word.setIdx(idx);
@@ -98,9 +98,9 @@ void DecoderPrivate::buildLattice(
             path.front() != &graph.start()) {
             return;
         }
-        auto node =
-            q->createLatticeNode(graph, model_, word.word(), word.idx(), path,
-                                 model_->nullState(), adjust, aux, dupSize);
+        auto node = q->createLatticeNode(graph, model_, word.word(), word.idx(),
+                                         path, model_->nullState(), adjust,
+                                         std::move(data), dupSize);
         if (node) {
             lattice[path.back()].push_back(node);
             dupSize++;
@@ -330,7 +330,8 @@ void Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
 LatticeNode *Decoder::createLatticeNodeImpl(
     const SegmentGraphBase &, const LanguageModelBase *,
     boost::string_view word, WordIndex idx, SegmentGraphPath path,
-    const State &state, float cost, boost::string_view aux, bool) const {
-    return new LatticeNode(word, idx, std::move(path), state, cost, aux);
+    const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
+    bool) const {
+    return new LatticeNode(word, idx, std::move(path), state, cost);
 }
 }

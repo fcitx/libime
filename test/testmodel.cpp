@@ -20,6 +20,7 @@
 #include "libime/core/languagemodel.h"
 #include "libime/core/lattice.h"
 #include "testdir.h"
+#include <cmath>
 #include <fcitx-utils/log.h>
 
 int main() {
@@ -33,6 +34,7 @@ int main() {
         WordNode w(word, model.index(word));
         std::cout << w.idx() << " " << (s = model.score(state, w, out_state))
                   << '\n';
+        std::cout << "Prob" << std::pow(10, s) << '\n';
         state = out_state;
         sum += s;
     }

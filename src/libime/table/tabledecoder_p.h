@@ -26,7 +26,8 @@ namespace libime {
 
 class TableLatticeNodePrivate : public LatticeNodeData {
 public:
-    TableLatticeNodePrivate(boost::string_view code, uint32_t index, PhraseFlag flag)
+    TableLatticeNodePrivate(boost::string_view code, uint32_t index,
+                            PhraseFlag flag)
         : code_(code.to_string()), index_(index), flag_(flag) {}
 
     std::string code_;

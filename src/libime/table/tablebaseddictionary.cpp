@@ -90,7 +90,7 @@ public:
 
     FCITX_DEFINE_SIGNAL_PRIVATE(TableBasedDictionary, tableOptionsChanged);
 
-    std::pair<DATrie<uint32_t> *, uint32_t*> trieByFlag(PhraseFlag flag) {
+    std::pair<DATrie<uint32_t> *, uint32_t *> trieByFlag(PhraseFlag flag) {
         switch (flag) {
         case PhraseFlag::None:
         case PhraseFlag::Pinyin:
@@ -104,7 +104,8 @@ public:
         }
     }
 
-    std::pair<const DATrie<uint32_t> *, const uint32_t*> trieByFlag(PhraseFlag flag) const {
+    std::pair<const DATrie<uint32_t> *, const uint32_t *>
+    trieByFlag(PhraseFlag flag) const {
         switch (flag) {
         case PhraseFlag::None:
         case PhraseFlag::Pinyin:
@@ -140,17 +141,20 @@ public:
         return true;
     }
 
-    auto matchTrie(boost::string_view code, TableMatchMode mode, PhraseFlag flag, const TableMatchCallback &callback) const {
+    auto matchTrie(boost::string_view code, TableMatchMode mode,
+                   PhraseFlag flag, const TableMatchCallback &callback) const {
         auto range = fcitx::utf8::MakeUTF8CharRange(code);
         std::vector<DATrie<uint32_t>::position_type> positions;
         positions.push_back(0);
         const auto &trie = *trieByFlag(flag).first;
         // BFS on trie.
-        for (auto iter = std::begin(range), end = std::end(range); iter != end; iter++) {
+        for (auto iter = std::begin(range), end = std::end(range); iter != end;
+             iter++) {
             decltype(positions) newPositions;
 
             for (auto position : positions) {
-                if (flag != PhraseFlag::Pinyin && *iter == options_.matchingKey() && options_.matchingKey()) {
+                if (flag != PhraseFlag::Pinyin &&
+                    *iter == options_.matchingKey() && options_.matchingKey()) {
                     for (auto code : inputCode_) {
                         auto curPos = position;
                         auto strCode = fcitx::utf8::UCS4ToUTF8(code);
@@ -161,7 +165,9 @@ public:
                     }
                 } else {
                     auto charRange = iter.charRange();
-                    boost::string_view chr(&*charRange.first, std::distance(charRange.first, charRange.second));
+                    boost::string_view chr(
+                        &*charRange.first,
+                        std::distance(charRange.first, charRange.second));
                     auto curPos = position;
                     auto result = trie.traverse(chr, curPos);
                     if (!trie.isNoPath(result)) {
@@ -185,10 +191,13 @@ public:
             auto view = boost::string_view(entry);
             auto matchedCode = view.substr(0, sep);
             if (mode == TableMatchMode::Prefix ||
-                (mode == TableMatchMode::Exact && fcitx::utf8::length(matchedCode) == fcitx::utf8::length(code))) {
+                (mode == TableMatchMode::Exact &&
+                 fcitx::utf8::length(matchedCode) ==
+                     fcitx::utf8::length(code))) {
                 // Remove pinyinKey.
                 if (flag == PhraseFlag::Pinyin) {
-                    matchedCode.remove_prefix(fcitx::utf8::ncharByteLength(matchedCode.begin(), 1));
+                    matchedCode.remove_prefix(
+                        fcitx::utf8::ncharByteLength(matchedCode.begin(), 1));
                 }
                 if (callback(matchedCode, view.substr(sep + 1), value, flag)) {
                     return true;
@@ -491,11 +500,10 @@ void TableBasedDictionary::saveText(std::ostream &out) {
         auto sep = buf.find(keyValueSeparator);
         boost::string_view ref(buf);
         temp.emplace_back(ref.substr(0, sep).to_string(),
-                          ref.substr(sep + 1).to_string(),
-                          value);
+                          ref.substr(sep + 1).to_string(), value);
         return true;
     });
-    std::sort(temp.begin(), temp.end(), [] (const auto &lhs, const auto &rhs) {
+    std::sort(temp.begin(), temp.end(), [](const auto &lhs, const auto &rhs) {
         return std::get<uint32_t>(lhs) < std::get<uint32_t>(rhs);
     });
     for (auto &item : temp) {
@@ -927,7 +935,8 @@ bool TableBasedDictionary::hasMatchingWords(boost::string_view code,
 bool TableBasedDictionary::hasMatchingWords(boost::string_view code) const {
     bool hasMatch = false;
     matchWords(code, TableMatchMode::Prefix,
-               [&hasMatch](boost::string_view, boost::string_view, uint32_t, PhraseFlag) {
+               [&hasMatch](boost::string_view, boost::string_view, uint32_t,
+                           PhraseFlag) {
                    hasMatch = true;
                    return false;
                });
@@ -937,7 +946,8 @@ bool TableBasedDictionary::hasMatchingWords(boost::string_view code) const {
 bool TableBasedDictionary::hasOneMatchingWord(boost::string_view code) const {
     bool hasMatch = false;
     matchWords(code, TableMatchMode::Prefix,
-               [&hasMatch](boost::string_view, boost::string_view, uint32_t, PhraseFlag) {
+               [&hasMatch](boost::string_view, boost::string_view, uint32_t,
+                           PhraseFlag) {
                    if (hasMatch) {
                        return false;
                    }
@@ -1010,17 +1020,20 @@ void TableBasedDictionary::matchPrefixImpl(
         auto code = graph.segment(*path[0], *path[1]);
         bool matched = false;
         matchWords(code, mode, [&](boost::string_view code,
-                                   boost::string_view word, uint32_t index, PhraseFlag flag) {
+                                   boost::string_view word, uint32_t index,
+                                   PhraseFlag flag) {
             WordNode wordNode(word, InvalidWordIndex);
-            callback(path, wordNode, 0,
-                     std::make_unique<TableLatticeNodePrivate>(code, index, flag));
+            callback(
+                path, wordNode, 0,
+                std::make_unique<TableLatticeNodePrivate>(code, index, flag));
             matched = true;
             return true;
         });
         if (!matched) {
             WordNode wordNode(tableOptions().commitRawInput() ? code : "", 0);
             callback(path, wordNode, 0,
-                     std::make_unique<TableLatticeNodePrivate>(code, 0, PhraseFlag::None));
+                     std::make_unique<TableLatticeNodePrivate>(
+                         code, 0, PhraseFlag::None));
         }
     }
 }

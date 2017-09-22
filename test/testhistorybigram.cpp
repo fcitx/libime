@@ -80,5 +80,25 @@ int main() {
     history.add({"泥浩"});
     std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
               << std::endl;
+
+    history.clear();
+    for (int i = 0; i < 1; i++) {
+        history.add({"跑", "不", "起来"});
+        std::cout << "paobuqilai "
+                  << history.score("", "跑") + history.score("跑", "不") +
+                         history.score("不", "起来")
+                  << " "
+                  << history.score("", "跑步") + history.score("跑步", "起来")
+                  << std::endl;
+    }
+    for (int i = 0; i < 100; i++) {
+        history.add({"跑步", "起来"});
+        std::cout << "paobuqilai "
+                  << history.score("", "跑") + history.score("跑", "不") +
+                         history.score("不", "起来")
+                  << " "
+                  << history.score("", "跑步") + history.score("跑步", "起来")
+                  << std::endl;
+    }
     return 0;
 }

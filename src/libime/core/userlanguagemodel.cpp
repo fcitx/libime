@@ -109,7 +109,7 @@ inline float log1p10exp(float x) {
     return x < MIN_FLOAT_LOG10 ? 0. : std::log1p(std::pow(10, x)) / log_10;
 }
 inline float sum_log_prob(float a, float b) {
-    return a > b ? a + log1p10exp(b - a) : b + log1p10exp(a - b);
+    return a > b ? (a + log1p10exp(b - a)) : (b + log1p10exp(a - b));
 }
 
 float UserLanguageModel::score(const State &state, const WordNode &word,

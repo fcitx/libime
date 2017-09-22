@@ -57,9 +57,7 @@ struct naivevector {
             push_back(value);
         }
     }
-    naivevector(naivevector &&other) : naivevector() {
-        swap(other);
-    }
+    naivevector(naivevector &&other) : naivevector() { swap(other); }
 
     naivevector &operator=(naivevector other) {
         swap(other);

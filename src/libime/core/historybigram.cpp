@@ -52,7 +52,7 @@ public:
 
     int32_t freq(boost::string_view s) const {
         auto v = trie_.exactMatchSearch(s.data(), s.size());
-        if (v == trie_.NO_VALUE) {
+        if (trie_.isNoValue(v)) {
             return 0;
         }
         return v;
@@ -66,7 +66,7 @@ public:
 
     void decFreq(boost::string_view s, int32_t delta) {
         auto v = trie_.exactMatchSearch(s.data(), s.size());
-        if (v == trie_.NO_VALUE) {
+        if (trie_.isNoValue(v)) {
             return;
         }
         if (v <= delta) {
@@ -87,7 +87,7 @@ private:
     DATrie<int32_t> trie_;
 };
 
-constexpr const static float decay = 0.8f;
+constexpr const static float decay = 1.0f;
 class HistoryBigramPool {
 public:
     HistoryBigramPool(size_t maxSize = 0, HistoryBigramPool *next = nullptr)
@@ -276,7 +276,10 @@ public:
         pr += bigramWeight * float(bf) / float(uf0 + 0.5f);
         pr += (1.0f - bigramWeight) * float(uf1) / float(unigramSize() + 0.5f);
         if (auto sizeDiff = (maxSize() - realSize())) {
-            pr /= (sizeDiff)*penaltyFactor_;
+            auto penalty = 1 + (penaltyFactor_ * sizeDiff / maxSize());
+            if (penalty > 1) {
+                pr /= penalty;
+            }
         }
 
         if (pr >= 1.0) {
@@ -317,8 +320,14 @@ public:
 private:
     template <typename R>
     int32_t weightForSentence(const R &sentence) {
-        return sentence.size() <= 2 ? DEFAULT_USER_LANGUAGE_MODEL_UNIGRAM_WEIGHT
-                                    : DEFAULT_USER_LANGUAGE_MODEL_BIGRAM_WEIGHT;
+        if (sentence.size() <= 2) {
+            return DEFAULT_USER_LANGUAGE_MODEL_UNIGRAM_WEIGHT;
+        }
+
+        if (sentence.size() < DEFAULT_USER_LANGUAGE_MODEL_UNIGRAM_WEIGHT) {
+            return sentence.size();
+        }
+        return DEFAULT_USER_LANGUAGE_MODEL_BIGRAM_WEIGHT;
     }
 
     template <typename R>
@@ -372,8 +381,8 @@ public:
     float unknown_ = DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY;
     float penaltyFactor_ = DEFAULT_USER_LANGUAGE_MODEL_PENALTY_FACTOR;
     HistoryBigramPool finalPool_;
-    HistoryBigramPool middlePool_{512, &finalPool_};
-    HistoryBigramPool recentPool_{128, &middlePool_};
+    HistoryBigramPool middlePool_{256, &finalPool_};
+    HistoryBigramPool recentPool_{64, &middlePool_};
 };
 
 HistoryBigram::HistoryBigram()

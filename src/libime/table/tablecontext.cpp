@@ -35,7 +35,8 @@ namespace libime {
 namespace {
 
 struct TableCandidateCompare {
-    TableCandidateCompare(OrderPolicy policy, int noSortInputLength) : policy_(policy), noSortInputLength_(noSortInputLength) {}
+    TableCandidateCompare(OrderPolicy policy, int noSortInputLength)
+        : policy_(policy), noSortInputLength_(noSortInputLength) {}
 
     bool isNoSortInputLength(const SentenceResult &sentence) const {
         if (noSortInputLength_ < 0) {
@@ -45,25 +46,31 @@ struct TableCandidateCompare {
         if (sentence.sentence().size() != 1) {
             return false;
         }
-        auto node = static_cast<const TableLatticeNode*>(sentence.sentence()[0]);
+        auto node =
+            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         if (node->code().empty()) {
             return false;
         }
-        return fcitx::utf8::length(node->code()) == static_cast<size_t>(noSortInputLength_);
+        return fcitx::utf8::length(node->code()) ==
+               static_cast<size_t>(noSortInputLength_);
     }
 
     size_t codeLength(const SentenceResult &sentence) const {
-        auto node = static_cast<const TableLatticeNode*>(sentence.sentence()[0]);
+        auto node =
+            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         return fcitx::utf8::length(node->code());
     }
 
     size_t index(const SentenceResult &sentence) const {
-        auto node = static_cast<const TableLatticeNode*>(sentence.sentence()[0]);
+        auto node =
+            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         return node->index();
     }
 
-    bool operator()(const SentenceResult &lhs, const SentenceResult &rhs) const {
-        bool lhsShort = isNoSortInputLength(lhs), rhsShort = isNoSortInputLength(rhs);
+    bool operator()(const SentenceResult &lhs,
+                    const SentenceResult &rhs) const {
+        bool lhsShort = isNoSortInputLength(lhs),
+             rhsShort = isNoSortInputLength(rhs);
         // We want "true" to be put ahead.
         if (lhsShort != rhsShort) {
             return lhsShort > rhsShort;
@@ -73,41 +80,50 @@ struct TableCandidateCompare {
         }
 
         switch (policy_) {
-            case OrderPolicy::Fast:
-                if (lhs.sentence().size() != rhs.sentence().size()) {
-                    return lhs.sentence().size() < rhs.sentence().size();
-                }
-                return std::lexicographical_compare(lhs.sentence().begin(), lhs.sentence().end(),
-                    rhs.sentence().begin(), rhs.sentence().end(),
-                    [] (const LatticeNode *lnode, const LatticeNode *rnode) {
-                        return static_cast<const TableLatticeNode *>(lnode)->index() < static_cast<const TableLatticeNode *>(rnode)->index();
-                    }
-                );
+        case OrderPolicy::Fast:
+            if (lhs.sentence().size() != rhs.sentence().size()) {
+                return lhs.sentence().size() < rhs.sentence().size();
+            }
+            return std::lexicographical_compare(
+                lhs.sentence().begin(), lhs.sentence().end(),
+                rhs.sentence().begin(), rhs.sentence().end(),
+                [](const LatticeNode *lnode, const LatticeNode *rnode) {
+                    return static_cast<const TableLatticeNode *>(lnode)
+                               ->index() <
+                           static_cast<const TableLatticeNode *>(rnode)
+                               ->index();
+                });
 
-                break;
-            case OrderPolicy::Freq:
-                if (lhs.sentence().size() != rhs.sentence().size()) {
-                    return lhs.sentence().size() < rhs.sentence().size();
-                }
-                return std::lexicographical_compare(lhs.sentence().begin(), lhs.sentence().end(),
-                    rhs.sentence().begin(), rhs.sentence().end(),
-                    [] (const LatticeNode *lnode, const LatticeNode *rnode) {
-                        return static_cast<const TableLatticeNode *>(lnode)->score() > static_cast<const TableLatticeNode *>(rnode)->score();
-                    }
-                );
-                break;
-            case OrderPolicy::No:
-            default:
-                if (lhs.sentence().size() != rhs.sentence().size()) {
-                    return lhs.sentence().size() < rhs.sentence().size();
-                }
-                return std::lexicographical_compare(lhs.sentence().begin(), lhs.sentence().end(),
-                    rhs.sentence().begin(), rhs.sentence().end(),
-                    [] (const LatticeNode *lnode, const LatticeNode *rnode) {
-                        return static_cast<const TableLatticeNode *>(lnode)->index() < static_cast<const TableLatticeNode *>(rnode)->index();
-                    }
-                );
-                break;
+            break;
+        case OrderPolicy::Freq:
+            if (lhs.sentence().size() != rhs.sentence().size()) {
+                return lhs.sentence().size() < rhs.sentence().size();
+            }
+            return std::lexicographical_compare(
+                lhs.sentence().begin(), lhs.sentence().end(),
+                rhs.sentence().begin(), rhs.sentence().end(),
+                [](const LatticeNode *lnode, const LatticeNode *rnode) {
+                    return static_cast<const TableLatticeNode *>(lnode)
+                               ->score() >
+                           static_cast<const TableLatticeNode *>(rnode)
+                               ->score();
+                });
+            break;
+        case OrderPolicy::No:
+        default:
+            if (lhs.sentence().size() != rhs.sentence().size()) {
+                return lhs.sentence().size() < rhs.sentence().size();
+            }
+            return std::lexicographical_compare(
+                lhs.sentence().begin(), lhs.sentence().end(),
+                rhs.sentence().begin(), rhs.sentence().end(),
+                [](const LatticeNode *lnode, const LatticeNode *rnode) {
+                    return static_cast<const TableLatticeNode *>(lnode)
+                               ->index() <
+                           static_cast<const TableLatticeNode *>(rnode)
+                               ->index();
+                });
+            break;
         }
     }
 
@@ -396,9 +412,13 @@ void TableContext::update() {
         }
     }
     int lastSegLength = fcitx::utf8::length(d->graph_.data());
-    int noSortLength = lastSegLength < d->dict_.tableOptions().noSortInputLength() ? lastSegLength : d->dict_.tableOptions().noSortInputLength();
+    int noSortLength =
+        lastSegLength < d->dict_.tableOptions().noSortInputLength()
+            ? lastSegLength
+            : d->dict_.tableOptions().noSortInputLength();
     std::sort(d->candidates_.begin(), d->candidates_.end(),
-              TableCandidateCompare(d->dict_.tableOptions().orderPolicy(), noSortLength));
+              TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
+                                    noSortLength));
     // Run auto select.
     if (d->dict_.tableOptions().autoSelect()) {
         if (d->candidates_.size() == 1 &&

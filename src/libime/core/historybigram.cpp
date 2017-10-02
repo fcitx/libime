@@ -320,6 +320,7 @@ public:
 private:
     template <typename R>
     int32_t weightForSentence(const R &sentence) {
+        // Short <= 2 unigram weight.
         if (sentence.size() <= 2) {
             return DEFAULT_USER_LANGUAGE_MODEL_UNIGRAM_WEIGHT;
         }

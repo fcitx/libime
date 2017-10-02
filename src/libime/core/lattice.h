@@ -46,6 +46,7 @@ public:
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(SentenceResult)
 
     const Sentence &sentence() const { return sentence_; }
+    size_t size() const { return sentence_.size(); }
 
     float score() const { return score_; }
 

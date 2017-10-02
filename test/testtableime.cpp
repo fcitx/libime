@@ -57,6 +57,8 @@ int main() {
     options.setAutoSelectLength(-1);
     options.setNoMatchAutoSelectLength(0);
     options.setNoSortInputLength(2);
+    options.setAutoRuleSet({"e2"});
+    options.setMatchingKey('z');
     dict.setTableOptions(options);
     TableContext c(dict, model);
     auto printTime = [](int t) {

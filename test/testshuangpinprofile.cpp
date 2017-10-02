@@ -68,18 +68,18 @@ int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe));
 
     // wo jiu shi xiang ce shi yi xia
-    auto segs = PinyinEncoder::parseUserShuangpin(
+    PinyinEncoder::parseUserShuangpin(
         "wojquixdceuiyixw", ShuangpinProfile(ShuangpinBuiltinProfile::MS),
-        PinyinFuzzyFlag::None);
-    segs.dfs([&segs](const std::vector<size_t> &path) {
-        size_t s = 0;
-        for (auto e : path) {
-            std::cout << segs.segment(s, e) << " ";
-            s = e;
-        }
-        std::cout << std::endl;
-        return true;
-    });
+        PinyinFuzzyFlag::None)
+        .dfs([](const SegmentGraphBase &segs, const std::vector<size_t> &path) {
+            size_t s = 0;
+            for (auto e : path) {
+                std::cout << segs.segment(s, e) << " ";
+                s = e;
+            }
+            std::cout << std::endl;
+            return true;
+        });
 
     ShuangpinProfile zrm(ShuangpinBuiltinProfile::Ziranma);
 

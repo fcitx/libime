@@ -26,6 +26,7 @@
 #include <boost/algorithm/string.hpp>
 #include <cassert>
 #include <cstring>
+#include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
 #include <fstream>
 #include <set>
@@ -83,7 +84,8 @@ public:
     uint32_t userTrieIndex_ = 0;
     DATrie<int32_t> singleCharTrie_; // reverse lookup from single character
     DATrie<int32_t> singleCharConstTrie_; // lookup char for new phrase
-    DATrie<uint32_t> promptTrie_;         // lookup for prompt;
+    DATrie<int32_t> singleCharLookupTrie_;
+    DATrie<uint32_t> promptTrie_; // lookup for prompt;
     TableOptions options_;
 
     TableBasedDictionaryPrivate(TableBasedDictionary *q) : QPtrHolder(q) {}
@@ -228,6 +230,7 @@ public:
         phraseTrie_.clear();
         singleCharTrie_.clear();
         singleCharConstTrie_.clear();
+        singleCharLookupTrie_.clear();
         promptTrie_.clear();
     }
     bool validate() {
@@ -248,15 +251,22 @@ public:
 };
 
 void updateReverseLookupEntry(DATrie<int32_t> &trie, boost::string_view key,
-                              boost::string_view value) {
+                              boost::string_view value,
+                              DATrie<int32_t> *reverseTrie) {
     auto reverseEntry = value.to_string() + keyValueSeparator;
     bool insert = true;
     trie.foreach(reverseEntry,
-                 [&trie, &key, &value, &insert, &reverseEntry](
+                 [&trie, &key, &value, &insert, &reverseEntry, reverseTrie](
                      int32_t, size_t len, DATrie<int32_t>::position_type pos) {
-                     auto oldKeyLen = len;
-                     if (key.length() > oldKeyLen) {
+                     if (key.length() > len) {
+                         std::string oldKey;
+                         trie.suffix(oldKey, len, pos);
                          trie.erase(pos);
+                         if (reverseTrie) {
+                             auto entry =
+                                 oldKey + keyValueSeparator + value.to_string();
+                             reverseTrie->erase(entry);
+                         }
                      } else {
                          insert = false;
                      }
@@ -265,6 +275,11 @@ void updateReverseLookupEntry(DATrie<int32_t> &trie, boost::string_view key,
     if (insert) {
         reverseEntry.append(key.begin(), key.end());
         trie.set(reverseEntry, 1);
+        if (reverseTrie) {
+            auto entry =
+                key.to_string() + keyValueSeparator + value.to_string();
+            reverseTrie->set(entry, 1);
+        }
     }
 }
 
@@ -558,6 +573,7 @@ void TableBasedDictionary::loadBinary(std::istream &in) {
     d->singleCharTrie_ = decltype(d->singleCharTrie_)(in);
     if (hasRule()) {
         d->singleCharConstTrie_ = decltype(d->singleCharConstTrie_)(in);
+        d->singleCharLookupTrie_ = decltype(d->singleCharLookupTrie_)(in);
     }
     if (d->promptKey_) {
         d->promptTrie_ = decltype(d->promptTrie_)(in);
@@ -608,6 +624,7 @@ void TableBasedDictionary::saveBinary(std::ostream &out) {
     d->singleCharTrie_.save(out);
     if (hasRule()) {
         d->singleCharConstTrie_.save(out);
+        d->singleCharLookupTrie_.save(out);
     }
     if (d->promptKey_) {
         d->promptTrie_.save(out);
@@ -734,10 +751,11 @@ bool TableBasedDictionary::insert(boost::string_view key,
 
         if (flag == PhraseFlag::None && fcitx::utf8::length(value) == 1 &&
             !d->ignoreChars_.count(fcitx::utf8::getChar(value))) {
-            updateReverseLookupEntry(d->singleCharTrie_, key, value);
+            updateReverseLookupEntry(d->singleCharTrie_, key, value, nullptr);
 
             if (hasRule() && !d->phraseKey_) {
-                updateReverseLookupEntry(d->singleCharConstTrie_, key, value);
+                updateReverseLookupEntry(d->singleCharConstTrie_, key, value,
+                                         &d->singleCharLookupTrie_);
             }
         }
         break;
@@ -751,8 +769,9 @@ bool TableBasedDictionary::insert(boost::string_view key,
         }
         break;
     case PhraseFlag::ConstructPhrase:
-        if (hasRule()) {
-            updateReverseLookupEntry(d->singleCharConstTrie_, key, value);
+        if (hasRule() && fcitx::utf8::length(value) == 1) {
+            updateReverseLookupEntry(d->singleCharConstTrie_, key, value,
+                                     &d->singleCharLookupTrie_);
         }
         break;
     }
@@ -862,7 +881,8 @@ void TableBasedDictionary::statistic() const {
               << "Single Char Trie: " << d->singleCharTrie_.mem_size()
               << std::endl
               << "Single char const trie: "
-              << d->singleCharConstTrie_.mem_size() << std::endl
+              << d->singleCharConstTrie_.mem_size() << " + "
+              << d->singleCharLookupTrie_.mem_size() << std::endl
               << "Prompt Trie: " << d->promptTrie_.mem_size() << std::endl;
 }
 
@@ -1003,38 +1023,60 @@ std::string TableBasedDictionary::hint(boost::string_view key) const {
 void TableBasedDictionary::matchPrefixImpl(
     const SegmentGraph &graph, const GraphMatchCallback &callback,
     const std::unordered_set<const SegmentGraphNode *> &ignore, void *) const {
-    assert(graph.isList());
-    TableMatchMode mode = tableOptions().exactMatch() ? TableMatchMode::Exact
-                                                      : TableMatchMode::Prefix;
+    const TableMatchMode mode = tableOptions().exactMatch()
+                                    ? TableMatchMode::Exact
+                                    : TableMatchMode::Prefix;
     SegmentGraphPath path;
     path.reserve(2);
-    for (auto *node = &graph.start(); node;
-         node = node->nextSize() ? &node->nexts().front() : nullptr) {
+    graph.bfs(&graph.start(), [this, &ignore, &path, &callback,
+                               mode](const SegmentGraphBase &graph,
+                                     const SegmentGraphNode *node) {
         if (!node->prevSize() || ignore.count(node)) {
-            continue;
-        }
-        path.clear();
-        path.push_back(&node->prevs().front());
-        path.push_back(node);
-
-        auto code = graph.segment(*path[0], *path[1]);
-        bool matched = false;
-        matchWords(code, mode, [&](boost::string_view code,
-                                   boost::string_view word, uint32_t index,
-                                   PhraseFlag flag) {
-            WordNode wordNode(word, InvalidWordIndex);
-            callback(
-                path, wordNode, 0,
-                std::make_unique<TableLatticeNodePrivate>(code, index, flag));
-            matched = true;
             return true;
-        });
-        if (!matched) {
-            WordNode wordNode(tableOptions().commitRawInput() ? code : "", 0);
-            callback(path, wordNode, 0,
-                     std::make_unique<TableLatticeNodePrivate>(
-                         code, 0, PhraseFlag::None));
         }
-    }
+        for (const auto &prev : node->prevs()) {
+            path.clear();
+            path.push_back(&prev);
+            path.push_back(node);
+
+            auto code = graph.segment(*path[0], *path[1]);
+            if (code.size() == graph.size()) {
+                matchWords(code, mode, [&](boost::string_view code,
+                                           boost::string_view word,
+                                           uint32_t index, PhraseFlag flag) {
+                    WordNode wordNode(word, InvalidWordIndex);
+                    callback(path, wordNode, 0,
+                             std::make_unique<TableLatticeNodePrivate>(
+                                 code, index, flag));
+                    return true;
+                });
+            } else {
+                // use it as a buffer.
+                std::string entry;
+                FCITX_D();
+                d->singleCharLookupTrie_.foreach(
+                    code, [&](uint32_t, size_t len,
+                              DATrie<uint32_t>::position_type pos) {
+                        d->singleCharLookupTrie_.suffix(entry,
+                                                        code.size() + len, pos);
+
+                        auto sep = entry.find(keyValueSeparator);
+                        if (sep == std::string::npos) {
+                            return true;
+                        }
+
+                        boost::string_view ref(entry);
+                        auto code = ref.substr(0, sep);
+                        auto word = ref.substr(sep + 1);
+                        WordNode wordNode(word, InvalidWordIndex);
+                        callback(path, wordNode, 0,
+                                 std::make_unique<TableLatticeNodePrivate>(
+                                     code, 0, PhraseFlag::ConstructPhrase));
+                        return true;
+                    });
+            }
+        }
+        return true;
+    });
 }
 }

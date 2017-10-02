@@ -18,6 +18,8 @@
 */
 
 #include "libime/table/tablebaseddictionary.h"
+#include "libime/table/tabledecoder.h"
+#include "libime/table/tableoptions.h"
 #include "testdir.h"
 #include <fcitx-utils/log.h>
 #include <set>
@@ -97,6 +99,22 @@ void testWubi() {
         FCITX_ASSERT(table.reverseLookup("好") == "vbg");
         table.statistic();
         table.save(std::cout, TableFormat::Text);
+
+        TableOptions options;
+        options.setAutoRuleSet({"e2"});
+        table.setTableOptions(options);
+
+        graphForCode("wqvb", table)
+            .dfs([](const SegmentGraphBase &graph,
+                    const std::vector<size_t> &path) {
+                size_t s = 0;
+                for (auto e : path) {
+                    std::cout << graph.segment(s, e) << " ";
+                    s = e;
+                }
+                std::cout << std::endl;
+                return true;
+            });
     } catch (std::ios_base::failure &e) {
         std::cout << e.what() << std::endl;
     }

@@ -57,6 +57,9 @@ protected:
                                        std::unique_ptr<LatticeNodeData> data,
                                        bool onlyPath) const override;
 };
+
+SegmentGraph graphForCode(boost::string_view s,
+                          const TableBasedDictionary &dict);
 }
 
 #endif // _FCITX_LIBIME_TABLE_TABLEDECODER_H_

@@ -18,6 +18,7 @@
  */
 #include "tablecontext.h"
 #include "libime/core/decoder.h"
+#include "libime/core/historybigram.h"
 #include "libime/core/segmentgraph.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/core/utils.h"
@@ -25,7 +26,6 @@
 #include "tabledecoder.h"
 #include "tableoptions.h"
 #include "tablerule.h"
-#include <boost/range/adaptor/filtered.hpp>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
@@ -55,13 +55,13 @@ struct TableCandidateCompare {
                static_cast<size_t>(noSortInputLength_);
     }
 
-    size_t codeLength(const SentenceResult &sentence) const {
+    static size_t codeLength(const SentenceResult &sentence) {
         auto node =
             static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         return fcitx::utf8::length(node->code());
     }
 
-    size_t index(const SentenceResult &sentence) const {
+    static size_t index(const SentenceResult &sentence) {
         auto node =
             static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         return node->index();
@@ -69,62 +69,32 @@ struct TableCandidateCompare {
 
     bool operator()(const SentenceResult &lhs,
                     const SentenceResult &rhs) const {
-        bool lhsShort = isNoSortInputLength(lhs),
-             rhsShort = isNoSortInputLength(rhs);
-        // We want "true" to be put ahead.
-        if (lhsShort != rhsShort) {
-            return lhsShort > rhsShort;
+        if (lhs.size() != rhs.size()) {
+            return lhs.size() < rhs.size();
         }
-        if (lhsShort == rhsShort) {
-            return index(lhs) < index(rhs);
+        // single word.
+        if (lhs.size() == 1) {
+            bool lShort =
+                static_cast<int>(codeLength(lhs)) == noSortInputLength_;
+            bool rShort =
+                static_cast<int>(codeLength(rhs)) == noSortInputLength_;
+            if (lShort != rShort) {
+                return lShort > rShort;
+            }
+
+            auto policy = lShort ? OrderPolicy::No : policy_;
+
+            switch (policy) {
+            case OrderPolicy::No:
+            case OrderPolicy::Fast:
+                return index(lhs) < index(rhs);
+            case OrderPolicy::Freq:
+                return lhs.score() > rhs.score();
+            }
+            return false;
         }
 
-        switch (policy_) {
-        case OrderPolicy::Fast:
-            if (lhs.sentence().size() != rhs.sentence().size()) {
-                return lhs.sentence().size() < rhs.sentence().size();
-            }
-            return std::lexicographical_compare(
-                lhs.sentence().begin(), lhs.sentence().end(),
-                rhs.sentence().begin(), rhs.sentence().end(),
-                [](const LatticeNode *lnode, const LatticeNode *rnode) {
-                    return static_cast<const TableLatticeNode *>(lnode)
-                               ->index() <
-                           static_cast<const TableLatticeNode *>(rnode)
-                               ->index();
-                });
-
-            break;
-        case OrderPolicy::Freq:
-            if (lhs.sentence().size() != rhs.sentence().size()) {
-                return lhs.sentence().size() < rhs.sentence().size();
-            }
-            return std::lexicographical_compare(
-                lhs.sentence().begin(), lhs.sentence().end(),
-                rhs.sentence().begin(), rhs.sentence().end(),
-                [](const LatticeNode *lnode, const LatticeNode *rnode) {
-                    return static_cast<const TableLatticeNode *>(lnode)
-                               ->score() >
-                           static_cast<const TableLatticeNode *>(rnode)
-                               ->score();
-                });
-            break;
-        case OrderPolicy::No:
-        default:
-            if (lhs.sentence().size() != rhs.sentence().size()) {
-                return lhs.sentence().size() < rhs.sentence().size();
-            }
-            return std::lexicographical_compare(
-                lhs.sentence().begin(), lhs.sentence().end(),
-                rhs.sentence().begin(), rhs.sentence().end(),
-                [](const LatticeNode *lnode, const LatticeNode *rnode) {
-                    return static_cast<const TableLatticeNode *>(lnode)
-                               ->index() <
-                           static_cast<const TableLatticeNode *>(rnode)
-                               ->index();
-                });
-            break;
-        }
+        return lhs.score() > rhs.score();
     }
 
 private:
@@ -133,82 +103,27 @@ private:
 };
 
 struct SelectedCode {
-    SelectedCode(size_t s, WordNode word, std::string code)
-        : offset_(s), word_(std::move(word)), code_(std::move(code)) {}
+    SelectedCode(size_t offset, WordNode word, std::string code,
+                 bool commit = true)
+        : offset_(offset), word_(std::move(word)), code_(std::move(code)),
+          commit_(commit) {}
     size_t offset_;
     WordNode word_;
     std::string code_;
+    bool commit_;
 };
 
-bool isPlaceHolder(const TableRuleEntry &entry) {
-    return entry.isPlaceHolder();
-}
-
-bool checkRuleCanBeUsedAsAutoRule(const TableRule &rule) {
-    if (rule.flag() != TableRuleFlag::LengthEqual) {
-        return false;
+bool shouldReplaceCandidate(const SentenceResult &oldSentence,
+                            const SentenceResult &newSentence) {
+    if (newSentence.sentence().size() != oldSentence.sentence().size()) {
+        return newSentence.sentence().size() < oldSentence.sentence().size();
     }
-
-    auto range = rule.entries() | boost::adaptors::filtered(isPlaceHolder);
-    auto iter = std::begin(range);
-    auto end = std::end(range);
-    int currentChar = 1;
-    while (iter != end) {
-        int currentIndex = 1;
-        while (iter != end) {
-            if (iter->character() == currentChar) {
-                if (iter->flag() == TableRuleEntryFlag::FromFront &&
-                    iter->encodingIndex() == currentIndex) {
-                    currentIndex++;
-                } else {
-                    // reset to invalid.
-                    currentIndex = 1;
-                    break;
-                }
-            } else {
-                break;
-            }
-            ++iter;
-        }
-
-        if (currentIndex == 1) {
-            return false;
-        }
-        currentChar++;
+    // sentence size are equal, prefer shorter code.
+    if (newSentence.sentence().size() == 1) {
+        return TableCandidateCompare::codeLength(newSentence) <
+               TableCandidateCompare::codeLength(oldSentence);
     }
-    return currentChar == rule.phraseLength() + 1;
-}
-
-SegmentGraph graphForCode(boost::string_view s,
-                          const TableBasedDictionary &dict) {
-    SegmentGraph graph(s.to_string());
-    auto length = fcitx::utf8::length(s);
-    graph.addNext(0, graph.size());
-    if (dict.hasRule() && dict.tableOptions().autoRuleSet().size()) {
-        const auto &ruleSet = dict.tableOptions().autoRuleSet();
-        for (const auto &ruleName : ruleSet) {
-            auto rule = dict.findRule(ruleName);
-            if (!rule || length != rule->phraseLength() ||
-                !checkRuleCanBeUsedAsAutoRule(*rule)) {
-                continue;
-            }
-
-            std::vector<int> charSizes(rule->phraseLength());
-            for (const auto &entry :
-                 rule->entries() | boost::adaptors::filtered(isPlaceHolder)) {
-                auto &charSize = charSizes[entry.character() - 1];
-                charSize = std::max(charSize, entry.encodingIndex() - 1);
-            }
-
-            int lastIndex = 0;
-            for (auto charSize : charSizes) {
-                graph.addNext(lastIndex, lastIndex + charSize);
-                lastIndex += charSize;
-            }
-        }
-    }
-
-    return graph;
+    return false;
 }
 }
 
@@ -240,6 +155,39 @@ public:
         lattice_.clear();
         candidates_.clear();
         graph_ = SegmentGraph();
+    }
+
+    size_t selectedLength() const {
+        if (selected_.size()) {
+            return selected_.back().back().offset_;
+        }
+        return 0;
+    }
+
+    void cancel() {
+        if (selected_.size()) {
+            selected_.pop_back();
+        }
+    }
+
+    bool cancelTill(size_t pos) {
+        bool cancelled = false;
+        while (selectedLength() > pos) {
+            cancel();
+            cancelled = true;
+        }
+        return cancelled;
+    }
+
+    bool learnWord(const std::vector<SelectedCode> &selection) {
+        std::string word;
+        for (const auto &selected : selection) {
+            if (!selected.commit_) {
+                return true;
+            }
+            word += selected.word_.word();
+        }
+        return dict_.insert(word, PhraseFlag::User);
     }
 
     TableBasedDictionary &dict_;
@@ -297,11 +245,14 @@ void TableContext::erase(size_t from, size_t to) {
     if (from == 0 && to >= size()) {
         d->resetMatchingState();
         d->selected_.clear();
-    }
-    InputBuffer::erase(from, to);
+        InputBuffer::erase(from, to);
+    } else {
+        d->cancelTill(from);
+        InputBuffer::erase(from, to);
 
-    auto lastSeg = userInput().substr(selectedLength());
-    d->graph_ = graphForCode(lastSeg, d->dict_);
+        auto lastSeg = userInput().substr(selectedLength());
+        d->graph_ = graphForCode(lastSeg, d->dict_);
+    }
     update();
 }
 
@@ -368,16 +319,17 @@ void TableContext::autoSelect() {
     if (d->candidates_.size()) {
         select(0);
     } else {
-        if (d->dict_.tableOptions().commitRawInput()) {
-            d->selected_.emplace_back();
-            d->selected_.back().emplace_back(
-                selectedLength() + d->graph_.data().size(),
-                WordNode{d->graph_.data(), d->model_.unknown()},
-                d->graph_.data());
-        } else {
-            auto lastSegLength = fcitx::utf8::length(d->graph_.data());
-            erase(size() - lastSegLength, size());
+        if (currentCode().empty()) {
+            return;
         }
+        // Need to calculate this first, otherwise we're breaking the contract
+        // of selected_ (contains no zero-length vec).
+        auto offset = selectedLength();
+        d->selected_.emplace_back();
+        d->selected_.back().emplace_back(
+            offset + d->graph_.data().size(),
+            WordNode{d->graph_.data(), d->model_.unknown()}, d->graph_.data(),
+            d->dict_.tableOptions().commitRawInput());
     }
 
     update();
@@ -396,32 +348,65 @@ void TableContext::update() {
 
     d->lattice_.clear();
     State state = d->currentState();
-    d->decoder_.decode(d->lattice_, d->graph_, 1, state);
 
     d->candidates_.clear();
 
-    auto &graph = d->graph_;
-    auto bos = &graph.start();
-    for (size_t i = graph.size(); i > 0; i--) {
-        for (auto &graphNode : graph.nodes(i)) {
-            for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
-                if (latticeNode.from() == bos) {
-                    d->candidates_.push_back(latticeNode.toSentenceResult());
+    int lastSegLength = fcitx::utf8::length(d->graph_.data());
+    if (d->decoder_.decode(d->lattice_, d->graph_, 5, state)) {
+        std::unordered_map<std::string, size_t> dup;
+
+        auto insertCandidate = [d, &dup](SentenceResult sentence) {
+            auto sentenceString = sentence.toString();
+            auto iter = dup.find(sentenceString);
+            if (iter != dup.end()) {
+                auto idx = iter->second;
+                if (shouldReplaceCandidate(d->candidates_[idx], sentence)) {
+                    d->candidates_[idx] = std::move(sentence);
                 }
+            } else {
+                d->candidates_.push_back(std::move(sentence));
+                dup[sentenceString] = d->candidates_.size() - 1;
+            }
+        };
+
+        auto &graph = d->graph_;
+        auto bos = &graph.start(), eos = &graph.end();
+        for (auto &latticeNode : d->lattice_.nodes(eos)) {
+            if (latticeNode.from() == bos && latticeNode.to() == eos) {
+                insertCandidate(latticeNode.toSentenceResult());
             }
         }
+
+        float min = 0;
+        for (const auto &cand : d->candidates_) {
+            if (min > cand.score()) {
+                min = cand.score();
+            }
+        }
+
+        // FIXME: add an option.
+        const float minDistance = 1.0f;
+        for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
+            const auto &sentence = d->lattice_.sentence(i);
+            auto score = sentence.score();
+            if (sentence.sentence().size() >= 1) {
+                score = sentence.sentence().back()->score();
+            }
+            if (min - score < minDistance) {
+                insertCandidate(sentence);
+            }
+        }
+        int noSortLength =
+            lastSegLength < d->dict_.tableOptions().noSortInputLength()
+                ? lastSegLength
+                : d->dict_.tableOptions().noSortInputLength();
+        std::sort(d->candidates_.begin(), d->candidates_.end(),
+                  TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
+                                        noSortLength));
     }
-    int lastSegLength = fcitx::utf8::length(d->graph_.data());
-    int noSortLength =
-        lastSegLength < d->dict_.tableOptions().noSortInputLength()
-            ? lastSegLength
-            : d->dict_.tableOptions().noSortInputLength();
-    std::sort(d->candidates_.begin(), d->candidates_.end(),
-              TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
-                                    noSortLength));
     // Run auto select.
     if (d->dict_.tableOptions().autoSelect()) {
-        if (d->candidates_.size() == 1 &&
+        if (d->candidates_.size() <= 1 &&
             !lengthLessThanLimit(lastSegLength,
                                  d->dict_.tableOptions().autoSelectLength())) {
             autoSelect();
@@ -436,10 +421,7 @@ const std::vector<SentenceResult> &TableContext::candidates() const {
 
 size_t TableContext::selectedLength() const {
     FCITX_D();
-    if (d->selected_.size()) {
-        return d->selected_.back().back().offset_;
-    }
-    return 0;
+    return d->selectedLength();
 }
 
 std::string TableContext::selectedSentence() const {
@@ -447,16 +429,17 @@ std::string TableContext::selectedSentence() const {
     std::string ss;
     for (auto &s : d->selected_) {
         for (auto &item : s) {
-            ss += item.word_.word();
+            if (item.commit_) {
+                ss += item.word_.word();
+            }
         }
     }
     return ss;
 }
 
-std::string TableContext::preedit() const {
-    std::string ss = selectedSentence();
-    ss += userInput().substr(selectedLength());
-    return ss;
+const std::string &TableContext::currentCode() const {
+    FCITX_D();
+    return d->graph_.data();
 }
 
 bool TableContext::selected() const {
@@ -467,22 +450,87 @@ bool TableContext::selected() const {
     return d->selected_.back().back().offset_ == userInput().size();
 }
 
-void TableContext::learn() {}
-
-std::vector<std::string> TableContext::candidateHint(size_t idx,
-                                                     bool custom) const {
+size_t TableContext::selectedSize() const {
     FCITX_D();
-    std::vector<std::string> codes;
-    for (auto &p : d->candidates_[idx].sentence()) {
-        if (!p->word().empty()) {
-            const auto &code = static_cast<const TableLatticeNode *>(p)->code();
-            if (custom) {
-                codes.push_back(d->dict_.hint(code));
-            } else {
-                codes.push_back(code);
+    return d->selected_.size();
+}
+
+std::tuple<std::string, bool> TableContext::selectedSegment(size_t idx) const {
+    FCITX_D();
+    std::string result;
+    bool commit = true;
+    for (auto &item : d->selected_[idx]) {
+        if (!item.commit_) {
+            commit = false;
+        }
+        result += item.word_.word();
+    }
+    return {std::move(result), commit};
+}
+
+std::string TableContext::preedit() const {
+    std::string result;
+    for (size_t i = 0, e = selectedSize(); i < e; i++) {
+        auto seg = selectedSegment(i);
+        if (std::get<bool>(seg)) {
+            result += std::get<std::string>(seg);
+        } else {
+            result += "(";
+            result += std::get<std::string>(seg);
+            result += ")";
+        }
+    }
+    result += currentCode();
+    return result;
+}
+
+void TableContext::learn() {
+    FCITX_D();
+    if (!selected()) {
+        return;
+    }
+
+    for (auto &s : d->selected_) {
+        if (s.size() > 1) {
+            if (!d->learnWord(s)) {
+                return;
             }
         }
     }
-    return codes;
+    std::vector<std::string> newSentence;
+    for (auto &s : d->selected_) {
+        std::string word;
+        for (auto &item : s) {
+            if (!item.commit_) {
+                word.clear();
+                break;
+            }
+            word += item.word_.word();
+        }
+        if (!word.empty()) {
+            newSentence.emplace_back(std::move(word));
+        }
+    }
+    if (newSentence.size()) {
+        d->model_.history().add(newSentence);
+    }
+}
+
+std::string TableContext::candidateHint(size_t idx, bool custom) const {
+    FCITX_D();
+    if (d->candidates_[idx].sentence().size() == 1) {
+        auto p = d->candidates_[idx].sentence()[0];
+        if (!p->word().empty()) {
+            boost::string_view code =
+                static_cast<const TableLatticeNode *>(p)->code();
+            code.remove_prefix(currentCode().size());
+            if (custom) {
+                return d->dict_.hint(code);
+            } else {
+                return code.to_string();
+            }
+        }
+    }
+    return {};
 }
 }

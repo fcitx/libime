@@ -41,7 +41,7 @@ struct SegmentGraphNodeGreater {
     }
 };
 
-void SegmentGraphBase::bfs(const SegmentGraphNode *from,
+bool SegmentGraphBase::bfs(const SegmentGraphNode *from,
                            const SegmentGraphBFSCallback &callback) const {
     std::priority_queue<const SegmentGraphNode *,
                         std::vector<const SegmentGraphNode *>,
@@ -58,11 +58,14 @@ void SegmentGraphBase::bfs(const SegmentGraphNode *from,
             continue;
         }
 
-        callback(node);
+        if (!callback(*this, node)) {
+            return false;
+        }
         for (auto &next : node->nexts()) {
             q.push(&next);
         }
     }
+    return true;
 }
 
 size_t SegmentGraph::check(const SegmentGraph &graph) const {

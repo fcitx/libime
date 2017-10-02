@@ -34,11 +34,15 @@
 namespace libime {
 
 class Lattice;
+class SegmentGraphBase;
 class SegmentGraph;
 class SegmentGraphNode;
-typedef std::function<bool(const std::vector<size_t> &)>
+typedef std::function<bool(const SegmentGraphBase &graph,
+                           const std::vector<size_t> &)>
     SegmentGraphDFSCallback;
-typedef std::function<void(const SegmentGraphNode *)> SegmentGraphBFSCallback;
+typedef std::function<bool(const SegmentGraphBase &graph,
+                           const SegmentGraphNode *)>
+    SegmentGraphBFSCallback;
 
 using SegmentGraphNodeRange =
     boost::any_range<SegmentGraphNode, boost::bidirectional_traversal_tag>;
@@ -153,12 +157,12 @@ public:
         return segment(start.index(), end.index());
     }
 
-    void bfs(const SegmentGraphNode *from,
+    bool bfs(const SegmentGraphNode *from,
              const SegmentGraphBFSCallback &callback) const;
 
-    void dfs(const SegmentGraphDFSCallback &callback) const {
+    bool dfs(const SegmentGraphDFSCallback &callback) const {
         std::vector<size_t> path;
-        dfsHelper(path, start(), callback);
+        return dfsHelper(path, start(), callback);
     }
 
     // A naive distance, not necessary be the shortest.
@@ -196,8 +200,10 @@ public:
             }
         }
 
-        bfs(&start(), [&allNodes](const SegmentGraphNode *node) {
+        bfs(&start(), [&allNodes](const SegmentGraphBase &,
+                                  const SegmentGraphNode *node) {
             allNodes.erase(node);
+            return true;
         });
 
         return allNodes.empty();
@@ -221,7 +227,7 @@ private:
     bool dfsHelper(std::vector<size_t> &path, const SegmentGraphNode &start,
                    const SegmentGraphDFSCallback &callback) const {
         if (start == end()) {
-            return callback(path);
+            return callback(*this, path);
         }
         auto nexts = start.nexts();
         for (auto &next : nexts) {

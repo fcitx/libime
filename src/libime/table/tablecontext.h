@@ -28,6 +28,7 @@
 #include <fcitx-utils/macros.h>
 #include <libime/core/inputbuffer.h>
 #include <libime/core/lattice.h>
+#include <tuple>
 
 namespace libime {
 
@@ -49,32 +50,32 @@ public:
 
     const std::vector<SentenceResult> &candidates() const;
 
-    std::vector<std::string> candidateHint(size_t idx,
-                                           bool custom = false) const;
+    std::string candidateHint(size_t idx, bool custom = false) const;
 
     bool selected() const;
-    std::string sentence() const {
-        auto &c = candidates();
-        if (c.size()) {
-            return selectedSentence() + c[0].toString();
-        } else {
-            return selectedSentence();
-        }
-    }
+    size_t selectedSize() const;
+    std::tuple<std::string, bool> selectedSegment(size_t idx) const;
 
+    /// \brief A simple preedit implementation.
+    /// The value is derived from function selectedSegment and currentCode.
     std::string preedit() const;
+
+    /// \brief Current unselected code.
+    const std::string &currentCode() const;
+
+    /// \brief The concatenation of all selectedSegment where bool == true.
     std::string selectedSentence() const;
     size_t selectedLength() const;
 
     void learn();
 
     const TableBasedDictionary &dict() const;
+    void autoSelect();
 
 protected:
     void typeImpl(const char *s, size_t length) override;
 
 private:
-    void autoSelect();
     void update();
     void typeOneChar(boost::string_view chr);
 

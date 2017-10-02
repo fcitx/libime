@@ -26,7 +26,8 @@ using namespace libime;
 void dfs(const SegmentGraph &segs) {
     FCITX_ASSERT(segs.checkGraph());
 
-    auto callback = [&segs](const std::vector<size_t> &path) {
+    auto callback = [](const SegmentGraphBase &segs,
+                       const std::vector<size_t> &path) {
         size_t s = 0;
         for (auto e : path) {
             std::cout << segs.segment(s, e) << " ";

@@ -47,7 +47,7 @@ public:
     const Dictionary *dict() const;
     const LanguageModelBase *model() const;
 
-    void decode(Lattice &lattice, const SegmentGraph &graph, size_t nbest,
+    bool decode(Lattice &lattice, const SegmentGraph &graph, size_t nbest,
                 const State &state,
                 float max = std::numeric_limits<float>::max(),
                 float min = -std::numeric_limits<float>::max(),

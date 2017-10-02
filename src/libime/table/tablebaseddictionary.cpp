@@ -774,6 +774,8 @@ bool TableBasedDictionary::insert(boost::string_view key,
                                      &d->singleCharLookupTrie_);
         }
         break;
+    case PhraseFlag::Invalid:
+        break;
     }
     return true;
 }

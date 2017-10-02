@@ -46,6 +46,7 @@ private:
 };
 
 int main() {
+    fcitx::Log::setLogRule("*=5");
     TestLmResolver lmresolver(LIBIME_BINARY_DIR "/data/sc.lm");
     auto lm = lmresolver.languageModelFileForLanguage("zh_CN");
     TableBasedDictionary dict;
@@ -59,6 +60,7 @@ int main() {
     options.setNoSortInputLength(2);
     options.setAutoRuleSet({"e2"});
     options.setMatchingKey('z');
+    options.setOrderPolicy(OrderPolicy::Fast);
     dict.setTableOptions(options);
     TableContext c(dict, model);
     auto printTime = [](int t) {
@@ -87,6 +89,10 @@ int main() {
             c.type(word);
         } else if (word == "all") {
             printAll = true;
+        } else if (word == "commit") {
+            c.autoSelect();
+            c.learn();
+            c.clear();
         }
 
         size_t count = 1;

@@ -35,6 +35,7 @@ enum class PhraseFlag {
     Prompt,
     ConstructPhrase,
     User,
+    Invalid
 };
 
 typedef std::function<bool(boost::string_view code, boost::string_view word,

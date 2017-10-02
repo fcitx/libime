@@ -61,10 +61,15 @@ struct TableCandidateCompare {
         return fcitx::utf8::length(node->code());
     }
 
-    static size_t index(const SentenceResult &sentence) {
+    // Larger index should be put ahead.
+    static int64_t index(const SentenceResult &sentence) {
         auto node =
             static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
-        return node->index();
+        if (node->flag() == PhraseFlag::User) {
+            return node->index();
+        } else {
+            return -static_cast<int64_t>(node->index());
+        }
     }
 
     bool operator()(const SentenceResult &lhs,
@@ -87,7 +92,7 @@ struct TableCandidateCompare {
             switch (policy) {
             case OrderPolicy::No:
             case OrderPolicy::Fast:
-                return index(lhs) < index(rhs);
+                return index(lhs) > index(rhs);
             case OrderPolicy::Freq:
                 return lhs.score() > rhs.score();
             }
@@ -104,25 +109,41 @@ private:
 
 struct SelectedCode {
     SelectedCode(size_t offset, WordNode word, std::string code,
-                 bool commit = true)
+                 PhraseFlag flag, bool commit = true)
         : offset_(offset), word_(std::move(word)), code_(std::move(code)),
-          commit_(commit) {}
+          flag_(flag), commit_(commit) {}
     size_t offset_;
     WordNode word_;
     std::string code_;
+    PhraseFlag flag_;
     bool commit_;
 };
 
 bool shouldReplaceCandidate(const SentenceResult &oldSentence,
-                            const SentenceResult &newSentence) {
+                            const SentenceResult &newSentence,
+                            OrderPolicy policy) {
     if (newSentence.sentence().size() != oldSentence.sentence().size()) {
         return newSentence.sentence().size() < oldSentence.sentence().size();
     }
     // sentence size are equal, prefer shorter code.
     if (newSentence.sentence().size() == 1) {
-        return TableCandidateCompare::codeLength(newSentence) <
-               TableCandidateCompare::codeLength(oldSentence);
+        auto oldCode = TableCandidateCompare::codeLength(newSentence);
+        auto newCode = TableCandidateCompare::codeLength(oldSentence);
+
+        if (oldCode != newCode) {
+            return oldCode < newCode;
+        }
+
+        auto newNode =
+            static_cast<const TableLatticeNode *>(newSentence.sentence()[0]);
+        if (policy == OrderPolicy::No && newNode->flag() != PhraseFlag::User) {
+            return true;
+        }
+        if (policy != OrderPolicy::No && newNode->flag() == PhraseFlag::User) {
+            return true;
+        }
     }
+
     return false;
 }
 }
@@ -180,6 +201,17 @@ public:
     }
 
     bool learnWord(const std::vector<SelectedCode> &selection) {
+        if (selection.size() == 1) {
+            auto &select = selection[0];
+            if (select.flag_ == PhraseFlag::None ||
+                select.flag_ == PhraseFlag::User) {
+                FCITX_LOG(Debug) << "";
+                dict_.insert(select.code_, select.word_.word(),
+                             PhraseFlag::User);
+            }
+
+            return true;
+        }
         std::string word;
         for (const auto &selected : selection) {
             if (!selected.commit_) {
@@ -237,7 +269,6 @@ void TableContext::typeImpl(const char *s, size_t length) {
                                std::distance(pair.first, pair.second));
         typeOneChar(chr);
     }
-    update();
 }
 
 void TableContext::erase(size_t from, size_t to) {
@@ -264,10 +295,10 @@ void TableContext::select(size_t idx) {
 
     auto &selection = d->selected_.back();
     for (auto &p : d->candidates_[idx].sentence()) {
-        selection.emplace_back(
-            offset + p->to()->index(),
-            WordNode{p->word(), d->model_.index(p->word())},
-            static_cast<const TableLatticeNode *>(p)->code());
+        auto node = static_cast<const TableLatticeNode *>(p);
+        selection.emplace_back(offset + p->to()->index(),
+                               WordNode{p->word(), d->model_.index(p->word())},
+                               node->code(), node->flag());
     }
 
     update();
@@ -329,7 +360,7 @@ void TableContext::autoSelect() {
         d->selected_.back().emplace_back(
             offset + d->graph_.data().size(),
             WordNode{d->graph_.data(), d->model_.unknown()}, d->graph_.data(),
-            d->dict_.tableOptions().commitRawInput());
+            PhraseFlag::Invalid, d->dict_.tableOptions().commitRawInput());
     }
 
     update();
@@ -360,6 +391,8 @@ void TableContext::update() {
             auto iter = dup.find(sentenceString);
             if (iter != dup.end()) {
                 auto idx = iter->second;
+                FCITX_LOG(Info) << d->candidates_[idx].toString() << " vs "
+                                << sentence.toString();
                 if (shouldReplaceCandidate(d->candidates_[idx], sentence)) {
                     d->candidates_[idx] = std::move(sentence);
                 }
@@ -491,10 +524,8 @@ void TableContext::learn() {
     }
 
     for (auto &s : d->selected_) {
-        if (s.size() > 1) {
-            if (!d->learnWord(s)) {
-                return;
-            }
+        if (!d->learnWord(s)) {
+            return;
         }
     }
     std::vector<std::string> newSentence;

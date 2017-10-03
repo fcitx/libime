@@ -20,6 +20,7 @@
 #include "constants.h"
 #include "datrie.h"
 #include "utils.h"
+#include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <cmath>
@@ -28,11 +29,13 @@
 namespace libime {
 
 struct WeightedTrie {
+    using TrieType = DATrie<int32_t>;
+
 public:
     WeightedTrie() = default;
 
     void load(std::istream &in) {
-        DATrie<int32_t> trie;
+        TrieType trie;
         trie.load(in);
         weightedSize_ = 0;
         trie_ = std::move(trie);
@@ -46,7 +49,7 @@ public:
 
     void clear() { trie_.clear(); }
 
-    const DATrie<int32_t> &trie() const { return trie_; }
+    const TrieType &trie() const { return trie_; }
 
     int32_t weightedSize() const { return weightedSize_; }
 
@@ -71,20 +74,67 @@ public:
         }
         if (v <= delta) {
             trie_.erase(s.data(), s.size());
+            decWeightedSize(v);
         } else {
             v -= delta;
             trie_.set(s.data(), s.size(), v);
+            decWeightedSize(delta);
         }
-        weightedSize_ -= delta;
+    }
+
+    void eraseByKey(boost::string_view s) {
+        auto v = trie_.exactMatchSearch(s.data(), s.size());
+        if (trie_.isNoValue(v)) {
+            return;
+        }
+        trie_.erase(s);
+        decWeightedSize(v);
+    }
+
+    void eraseByPrefix(boost::string_view s) {
+        std::vector<std::pair<std::string, int32_t>> values;
+        trie_.foreach(s, [this, &values](TrieType::value_type value, size_t len,
+                                         TrieType::position_type pos) {
+            std::string buf;
+            trie().suffix(buf, len, pos);
+            values.emplace_back(std::move(buf), value);
+            return true;
+        });
+        for (auto &value : values) {
+            trie_.erase(value.first);
+            decWeightedSize(value.second);
+        }
+    }
+
+    void eraseBySuffix(boost::string_view s) {
+        std::vector<std::pair<std::string, int32_t>> values;
+        trie_.foreach(s,
+                      [this, &values, s](TrieType::value_type value, size_t len,
+                                         TrieType::position_type pos) {
+                          std::string buf;
+                          trie().suffix(buf, len, pos);
+                          if (boost::ends_with(buf, s)) {
+                              values.emplace_back(std::move(buf), value);
+                          }
+                          return true;
+                      });
+        for (auto &value : values) {
+            trie_.erase(value.first);
+            decWeightedSize(value.second);
+        }
+    }
+
+private:
+    void decWeightedSize(int32_t v) {
+        weightedSize_ -= v;
         if (weightedSize_ < 0) {
             // This should not happen.
             weightedSize_ = 0;
         }
     }
 
-private:
     int32_t weightedSize_ = 0;
-    DATrie<int32_t> trie_;
+    TrieType trie_;
 };
 
 constexpr const static float decay = 1.0f;
@@ -231,17 +281,16 @@ public:
             ss += *iter;
             newSentence.push_back(ss);
         }
-        recent_.push_front(std::move(newSentence));
+        if (maxSize_) {
+            recent_.push_front(std::move(newSentence));
+        }
+        unigram_.incFreq("<s>", delta);
+        unigram_.incFreq("</s>", delta);
         incBigram("<s>", sentence.front(), delta);
         incBigram(sentence.back(), "</s>", delta);
-        size_++;
     }
 
     float unigramFreq(boost::string_view s) const {
-        // for <s> and </s> return size of sentence.
-        if (s == "<s>" || s == "</s>") {
-            return size();
-        }
         auto v = unigram_.freq(s);
         if (next_) {
             return v + decay * next_->unigramFreq(s);
@@ -293,17 +342,11 @@ public:
     }
 
     size_t maxSize() const {
-        return (maxSize_ ? maxSize_ : size_) + (next_ ? next_->maxSize() : 0);
+        return (maxSize_ ? maxSize_ : 0) + (next_ ? next_->maxSize() : 0);
     }
 
-    size_t realSize() const { return size_ + (next_ ? next_->realSize() : 0); }
-
-    size_t size() const {
-        auto currentSize = maxSize_ ? maxSize_ : size_;
-        if (next_) {
-            currentSize += next_->size();
-        }
-        return currentSize;
+    size_t realSize() const {
+        return recent_.size() + (next_ ? next_->realSize() : 0);
     }
 
     size_t unigramSize() const {
@@ -315,6 +358,29 @@ public:
             currentSize += next_->unigramSize();
         }
         return currentSize;
+    }
+
+    void forget(boost::string_view word) {
+        if (maxSize_) {
+            auto iter = recent_.begin();
+            while (iter != recent_.end()) {
+                if (std::find(iter->begin(), iter->end(), word) !=
+                    iter->end()) {
+                    remove(*iter);
+                    iter = recent_.erase(iter);
+                } else {
+                    ++iter;
+                }
+            }
+        } else {
+            unigram_.decFreq(word, unigram_.freq(word));
+            std::string prefix = word.to_string() + '|';
+            std::string suffix = '|' + word.to_string();
+        }
+
+        if (next_) {
+            next_->forget(word);
+        }
     }
 
 private:
@@ -344,7 +410,6 @@ private:
         }
         decBigram("<s>", sentence.front(), delta);
         decBigram(sentence.back(), "</s>", delta);
-        size_--;
     }
 
     void decBigram(boost::string_view s1, boost::string_view s2,
@@ -364,13 +429,18 @@ private:
         bigram_.incFreq(ss, delta);
     }
 
-    size_t maxSize_;
+    const size_t maxSize_;
     float unknown_ = DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY;
     float penaltyFactor_ = DEFAULT_USER_LANGUAGE_MODEL_PENALTY_FACTOR;
+
+    // Used when maxSize_ != 0.
     size_t size_ = 0;
     std::list<std::vector<std::string>> recent_;
+
+    // Used for look up
     WeightedTrie unigram_;
     WeightedTrie bigram_;
+
     HistoryBigramPool *next_;
 };
 
@@ -465,5 +535,10 @@ void HistoryBigram::dump(std::ostream &out) {
 void HistoryBigram::clear() {
     FCITX_D();
     d->recentPool_.clear();
+}
+
+void HistoryBigram::forget(boost::string_view word) {
+    FCITX_D();
+    d->recentPool_.forget(word);
 }
 }

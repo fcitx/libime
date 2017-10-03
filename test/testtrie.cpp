@@ -1,88 +1,40 @@
+/*
+* Copyright (C) 2017~2017 by CSSlayer
+* wengxt@gmail.com
+*
+* This library is free software; you can redistribute it and/or modify
+* it under the terms of the GNU Lesser General Public License as
+* published by the Free Software Foundation; either version 2.1 of the
+* License, or (at your option) any later version.
+*
+* This library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+* Lesser General Public License for more details.
+*
+* You should have received a copy of the GNU Lesser General Public
+* License along with this library; see the file COPYING. If not,
+* see <http://www.gnu.org/licenses/>.
+*/
 #include "libime/core/datrie.h"
 #include <fcitx-utils/log.h>
-#include <fcntl.h>
-#include <fstream>
-#include <string>
-#include <unistd.h>
-#include <unordered_map>
 
 using namespace libime;
 
 int main() {
-    typedef DATrie<int32_t> TestTrie;
-    TestTrie tree;
-    std::string key;
-    std::unordered_map<std::string, int32_t> map;
-
-    int count = 1;
-    // key can be same as other
-    while (std::cin >> key) {
-        map[key] = count;
-        tree.update(key, [count, &map, &key](
-                             TestTrie::value_type v) -> TestTrie::value_type {
-            if (v != 0) {
-                // this is a key inserted twice
-                FCITX_ASSERT(map.find(key) != map.end());
-            }
-            // std::cout << key << " " << v << " " << count << std::endl;
-            return count;
-        });
-        FCITX_ASSERT(tree.exactMatchSearch(key) == count);
-        count++;
-    }
-
-    std::vector<TestTrie::value_type> d;
-    d.resize(tree.size());
-    tree.dump(d.data(), d.size());
-
-    FCITX_ASSERT(tree.size() == map.size());
-    for (auto &p : map) {
-        // std::cout << p.first << " " << tree.exactMatchSearch(p.first) << " "
-        // << p.second <<
-        // std::endl;
-        FCITX_ASSERT(tree.exactMatchSearch(p.first) == p.second);
-    }
-
-    std::string tempKey;
-    size_t foreach_count = 0;
-    tree.foreach([&tree, &map, &tempKey, &foreach_count](
-        TestTrie::value_type value, size_t len, uint64_t pos) {
-        (void)value;
-        tree.suffix(tempKey, len, pos);
-        FCITX_ASSERT(map.find(tempKey) != map.end());
-        FCITX_ASSERT(tree.exactMatchSearch(tempKey) == value);
-        FCITX_ASSERT(map[tempKey] == value);
-        tree.update(tempKey, [](int32_t v) { return v + 1; });
-        foreach_count++;
-        return true;
-    });
-
-    tree.erase(map.begin()->first);
-    FCITX_ASSERT(tree.size() == foreach_count - 1);
-
-    tree.save("trie_data");
-
-    tree.clear();
-
-    FCITX_ASSERT(!tree.erase(map.begin()->first));
-    FCITX_ASSERT(tree.size() == 0);
-    decltype(tree) trie2("trie_data");
-    using std::swap;
-    swap(tree, trie2);
-
-    foreach_count = 0;
-    tree.foreach([&tree, &map, &tempKey,
-                  &foreach_count](int32_t value, size_t len, uint64_t pos) {
-        (void)value;
-        tree.suffix(tempKey, len, pos);
-        FCITX_ASSERT(map.find(tempKey) != map.end());
-        FCITX_ASSERT(tree.exactMatchSearch(tempKey) == value);
-        FCITX_ASSERT(map[tempKey] + 1 == value);
-        foreach_count++;
-        return true;
-    });
-
-    FCITX_ASSERT(tree.size() == foreach_count);
-
+    DATrie<int32_t> trie;
+    trie.set("aaaa", 1);
+    trie.set("aaab", 1);
+    trie.set("aaac", 1);
+    trie.set("aaad", 1);
+    trie.set("aab", 1);
+    FCITX_ASSERT(trie.size() == 5);
+    trie.erase("aaaa");
+    FCITX_ASSERT(trie.size() == 4);
+    DATrie<int32_t>::position_type pos = 0;
+    auto result = trie.traverse("aaa", pos);
+    FCITX_ASSERT(trie.isNoValue(result));
+    trie.erase(pos);
+    FCITX_ASSERT(trie.size() == 4);
     return 0;
 }

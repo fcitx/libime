@@ -51,6 +51,8 @@ public:
     void setUnknownPenalty(float unknown);
     float unknownPenalty() const;
 
+    void forget(boost::string_view word);
+
     bool isUnknown(boost::string_view v) const;
     float score(const WordNode *prev, const WordNode *cur) const {
         return score(prev ? prev->word() : "", cur ? cur->word() : "");

@@ -100,5 +100,12 @@ int main() {
                   << history.score("", "跑步") + history.score("跑步", "起来")
                   << std::endl;
     }
+    history.forget("跑步");
+    std::cout << "paobuqilai "
+              << history.score("", "跑") + history.score("跑", "不") +
+                     history.score("不", "起来")
+              << " "
+              << history.score("", "跑步") + history.score("跑步", "起来")
+              << std::endl;
     return 0;
 }

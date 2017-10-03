@@ -391,9 +391,9 @@ void TableContext::update() {
             auto iter = dup.find(sentenceString);
             if (iter != dup.end()) {
                 auto idx = iter->second;
-                FCITX_LOG(Info) << d->candidates_[idx].toString() << " vs "
-                                << sentence.toString();
-                if (shouldReplaceCandidate(d->candidates_[idx], sentence)) {
+                if (shouldReplaceCandidate(
+                        d->candidates_[idx], sentence,
+                        d->dict_.tableOptions().orderPolicy())) {
                     d->candidates_[idx] = std::move(sentence);
                 }
             } else {

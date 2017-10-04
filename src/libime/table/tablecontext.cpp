@@ -244,15 +244,9 @@ const TableBasedDictionary &TableContext::dict() const {
 
 bool TableContext::isValidInput(uint32_t c) const {
     FCITX_D();
-    if (d->dict_.isInputCode(c)) {
-        return true;
-    }
-
-    if (d->dict_.tableOptions().matchingKey() == c) {
-        return true;
-    }
-
-    return false;
+    return (d->dict_.isInputCode(c) ||
+            d->dict_.tableOptions().matchingKey() == c ||
+            (d->dict_.hasPinyin() && (c <= 'z' && c >= 'a')));
 }
 
 void TableContext::typeImpl(const char *s, size_t length) {

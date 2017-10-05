@@ -193,6 +193,7 @@ public:
                                            PinyinFuzzyFlags flags);
 
     static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
+    static std::vector<char> encodeOneUserPinyin(boost::string_view pinyin);
 
     static std::string decodeFullPinyin(const std::vector<char> &v) {
         return decodeFullPinyin(v.data(), v.size());

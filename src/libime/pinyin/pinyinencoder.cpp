@@ -290,6 +290,30 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(boost::string_view pinyin) {
     return result;
 }
 
+std::vector<char> PinyinEncoder::encodeOneUserPinyin(boost::string_view pinyin) {
+    if (pinyin.empty()) {
+        return {};
+    }
+    auto graph = parseUserPinyin(pinyin, PinyinFuzzyFlag::None);
+    std::vector<char> result;
+    const SegmentGraphNode * node = &graph.start(), *prev = nullptr;
+    while (node->nextSize()) {
+        prev = node;
+        node = &node->nexts().front();
+        auto seg = graph.segment(*prev, *node);
+        if (seg.empty() || seg[0] == '\'') {
+            continue;
+        }
+        auto syls = stringToSyllables(seg, PinyinFuzzyFlag::None);
+        if (!syls.size()) {
+            return {};
+        }
+        result.push_back(static_cast<char>(syls[0].first));
+        result.push_back(static_cast<char>(syls[0].second[0].first));
+    }
+    return result;
+}
+
 std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
     if (size % 2 != 0) {
         throw std::invalid_argument("invalid pinyin key");

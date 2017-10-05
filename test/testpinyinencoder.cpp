@@ -142,5 +142,21 @@ int main() {
             }
         }
     }
+    {
+        auto result = PinyinEncoder::encodeOneUserPinyin("nihao");
+        FCITX_ASSERT(PinyinEncoder::decodeFullPinyin(result) == "ni'hao");
+    }
+    {
+        auto result = PinyinEncoder::encodeOneUserPinyin("xian");
+        FCITX_ASSERT(PinyinEncoder::decodeFullPinyin(result) == "xian");
+    }
+    {
+        auto result = PinyinEncoder::encodeOneUserPinyin("xi'an");
+        FCITX_ASSERT(PinyinEncoder::decodeFullPinyin(result) == "xi'an");
+    }
+    {
+        auto result = PinyinEncoder::encodeOneUserPinyin("nh");
+        FCITX_ASSERT(PinyinEncoder::decodeFullPinyin(result) == "n'h");
+    }
     return 0;
 }

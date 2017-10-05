@@ -334,7 +334,7 @@ bool Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
 LatticeNode *Decoder::createLatticeNodeImpl(
     const SegmentGraphBase &, const LanguageModelBase *,
     boost::string_view word, WordIndex idx, SegmentGraphPath path,
-    const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
+    const State &state, float cost, std::unique_ptr<LatticeNodeData>,
     bool) const {
     return new LatticeNode(word, idx, std::move(path), state, cost);
 }

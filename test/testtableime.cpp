@@ -51,16 +51,16 @@ int main() {
     auto lm = lmresolver.languageModelFileForLanguage("zh_CN");
     TableBasedDictionary dict;
     UserLanguageModel model(lm);
-    dict.load(LIBIME_BINARY_DIR "/data/wbx.main.dict");
+    dict.load(LIBIME_BINARY_DIR "/data/wbpy.main.dict");
     TableOptions options;
     options.setLanguageCode("zh_CN");
     options.setAutoSelect(true);
     options.setAutoSelectLength(-1);
-    options.setNoMatchAutoSelectLength(0);
+    options.setNoMatchAutoSelectLength(-1);
     options.setNoSortInputLength(2);
     options.setAutoRuleSet({"e2"});
     options.setMatchingKey('z');
-    options.setOrderPolicy(OrderPolicy::Fast);
+    options.setOrderPolicy(OrderPolicy::Freq);
     dict.setTableOptions(options);
     TableContext c(dict, model);
     auto printTime = [](int t) {

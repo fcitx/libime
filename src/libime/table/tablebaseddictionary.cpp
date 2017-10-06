@@ -951,7 +951,7 @@ bool TableBasedDictionary::hasMatchingWords(boost::string_view code,
                                             boost::string_view next) const {
     auto str = code.to_string();
     str.append(next.data(), next.size());
-    return hasMatchingWords(code);
+    return hasMatchingWords(str);
 }
 
 bool TableBasedDictionary::hasMatchingWords(boost::string_view code) const {

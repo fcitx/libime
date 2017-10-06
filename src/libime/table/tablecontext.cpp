@@ -61,6 +61,12 @@ struct TableCandidateCompare {
         return fcitx::utf8::length(node->code());
     }
 
+    static PhraseFlag flag(const SentenceResult &sentence) {
+        auto node =
+            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
+        return node->flag();
+    }
+
     // Larger index should be put ahead.
     static int64_t index(const SentenceResult &sentence) {
         auto node =
@@ -74,15 +80,21 @@ struct TableCandidateCompare {
 
     bool operator()(const SentenceResult &lhs,
                     const SentenceResult &rhs) const {
+        bool lIsPinyin = lhs.size() == 1 && flag(lhs) == PhraseFlag::Pinyin;
+        bool rIsPinyin = rhs.size() == 1 && flag(rhs) == PhraseFlag::Pinyin;
+
+        if (lIsPinyin != rIsPinyin) {
+            return lIsPinyin < rIsPinyin;
+        }
         if (lhs.size() != rhs.size()) {
             return lhs.size() < rhs.size();
         }
         // single word.
         if (lhs.size() == 1) {
             bool lShort =
-                static_cast<int>(codeLength(lhs)) == noSortInputLength_;
+                static_cast<int>(codeLength(lhs)) == noSortInputLength_ && !lIsPinyin;
             bool rShort =
-                static_cast<int>(codeLength(rhs)) == noSortInputLength_;
+                static_cast<int>(codeLength(rhs)) == noSortInputLength_ && !rIsPinyin;
             if (lShort != rShort) {
                 return lShort > rShort;
             }
@@ -332,7 +344,7 @@ void TableContext::typeOneChar(boost::string_view chr) {
         return;
     }
 
-    if (!lengthLessThanLimit(lastSegLength, d->dict_.maxLength()) ||
+    if ((!d->dict_.hasPinyin() && !lengthLessThanLimit(lastSegLength, d->dict_.maxLength())) ||
         (lastSegLength &&
          d->dict_.isEndKey(fcitx::utf8::getLastChar(lastSeg))) ||
         (d->dict_.tableOptions().noMatchAutoSelectLength() &&
@@ -449,6 +461,7 @@ void TableContext::update() {
     // Run auto select.
     if (d->dict_.tableOptions().autoSelect()) {
         if (d->candidates_.size() == 1 &&
+            lastSegLength <= d->dict_.maxLength() &&
             !lengthLessThanLimit(lastSegLength,
                                  d->dict_.tableOptions().autoSelectLength())) {
             autoSelect();
@@ -561,13 +574,24 @@ std::string TableContext::candidateHint(size_t idx, bool custom) const {
     if (d->candidates_[idx].sentence().size() == 1) {
         auto p = d->candidates_[idx].sentence()[0];
         if (!p->word().empty()) {
-            boost::string_view code =
-                static_cast<const TableLatticeNode *>(p)->code();
-            code.remove_prefix(currentCode().size());
-            if (custom) {
-                return d->dict_.hint(code);
+            auto node = static_cast<const TableLatticeNode *>(p);
+            if (node->flag() == PhraseFlag::Pinyin) {
+                if (fcitx::utf8::length(p->word()) == 1) {
+                    auto code = d->dict_.reverseLookup(node->word());
+                    if (custom) {
+                        return d->dict_.hint(code);
+                    } else {
+                        return code;
+                    }
+                }
             } else {
-                return code.to_string();
+                boost::string_view code = node->code();
+                code.remove_prefix(currentCode().size());
+                if (custom) {
+                    return d->dict_.hint(code);
+                } else {
+                    return code.to_string();
+                }
             }
         }
     }

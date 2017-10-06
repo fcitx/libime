@@ -29,6 +29,7 @@
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
+#include <chrono>
 
 namespace libime {
 
@@ -82,31 +83,31 @@ struct TableCandidateCompare {
                     const SentenceResult &rhs) const {
         bool lIsPinyin = lhs.size() == 1 && flag(lhs) == PhraseFlag::Pinyin;
         bool rIsPinyin = rhs.size() == 1 && flag(rhs) == PhraseFlag::Pinyin;
-
-        if (lIsPinyin != rIsPinyin) {
-            return lIsPinyin < rIsPinyin;
-        }
         if (lhs.size() != rhs.size()) {
             return lhs.size() < rhs.size();
         }
         // single word.
         if (lhs.size() == 1) {
             bool lShort =
-                static_cast<int>(codeLength(lhs)) == noSortInputLength_ && !lIsPinyin;
+                static_cast<int>(codeLength(lhs)) == noSortInputLength_ &&
+                !lIsPinyin;
             bool rShort =
-                static_cast<int>(codeLength(rhs)) == noSortInputLength_ && !rIsPinyin;
+                static_cast<int>(codeLength(rhs)) == noSortInputLength_ &&
+                !rIsPinyin;
             if (lShort != rShort) {
                 return lShort > rShort;
             }
 
             auto policy = lShort ? OrderPolicy::No : policy_;
+            constexpr float pinyinPenalty = -2;
 
             switch (policy) {
             case OrderPolicy::No:
             case OrderPolicy::Fast:
                 return index(lhs) > index(rhs);
             case OrderPolicy::Freq:
-                return lhs.score() > rhs.score();
+                return lhs.score() + (lIsPinyin ? pinyinPenalty : 0) >
+                       rhs.score() + (rIsPinyin ? pinyinPenalty : 0);
             }
             return false;
         }
@@ -164,7 +165,10 @@ class TableContextPrivate : public fcitx::QPtrHolder<TableContext> {
 public:
     TableContextPrivate(TableContext *q, TableBasedDictionary &dict,
                         UserLanguageModel &model)
-        : QPtrHolder(q), dict_(dict), model_(model), decoder_(&dict, &model) {}
+        : QPtrHolder(q), dict_(dict), model_(model), decoder_(&dict, &model) {
+        // Maybe use a better heuristics?
+        candidates_.reserve(2048);
+    }
 
     State currentState() {
         State state = model_.nullState();
@@ -344,7 +348,8 @@ void TableContext::typeOneChar(boost::string_view chr) {
         return;
     }
 
-    if ((!d->dict_.hasPinyin() && !lengthLessThanLimit(lastSegLength, d->dict_.maxLength())) ||
+    if ((!d->dict_.hasPinyin() &&
+         !lengthLessThanLimit(lastSegLength, d->dict_.maxLength())) ||
         (lastSegLength &&
          d->dict_.isEndKey(fcitx::utf8::getLastChar(lastSeg))) ||
         (d->dict_.tableOptions().noMatchAutoSelectLength() &&
@@ -401,10 +406,17 @@ void TableContext::update() {
     d->lattice_.clear();
     State state = d->currentState();
 
+    auto t0 = std::chrono::high_resolution_clock::now();
     d->candidates_.clear();
 
+    constexpr float max = std::numeric_limits<float>::max();
+    constexpr float min = std::numeric_limits<float>::min();
+    constexpr int beamSize = 20;
+    constexpr int frameSize = 10;
     int lastSegLength = fcitx::utf8::length(d->graph_.data());
-    if (d->decoder_.decode(d->lattice_, d->graph_, 5, state)) {
+    if (d->decoder_.decode(d->lattice_, d->graph_, 3, state, max, min, 20, 10)) {
+        FCITX_LOG(Debug) << "Decode: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
+                    .count();
         std::unordered_map<std::string, size_t> dup;
 
         auto insertCandidate = [d, &dup](SentenceResult sentence) {
@@ -450,6 +462,8 @@ void TableContext::update() {
                 insertCandidate(sentence);
             }
         }
+        FCITX_LOG(Debug) << "Insert candidate: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
+                    .count();
         int noSortLength =
             lastSegLength < d->dict_.tableOptions().noSortInputLength()
                 ? lastSegLength
@@ -457,6 +471,9 @@ void TableContext::update() {
         std::sort(d->candidates_.begin(), d->candidates_.end(),
                   TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
                                         noSortLength));
+        FCITX_LOG(Debug) << "Sort: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
+                    .count();
+        FCITX_LOG(Debug) << "Number: " << d->candidates_.size();
     }
     // Run auto select.
     if (d->dict_.tableOptions().autoSelect()) {

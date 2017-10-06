@@ -31,6 +31,7 @@
 #include <fstream>
 #include <set>
 #include <string>
+#include <chrono>
 
 namespace libime {
 
@@ -928,10 +929,14 @@ bool TableBasedDictionary::matchWords(
     boost::string_view code, TableMatchMode mode,
     const TableMatchCallback &callback) const {
     FCITX_D();
+    auto t0 = std::chrono::high_resolution_clock::now();
 
     if (!d->matchTrie(code, mode, PhraseFlag::None, callback)) {
         return false;
     }
+
+    FCITX_LOG(Debug) << "Match trie: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
+                .count();
 
     if (d->pinyinKey_) {
         auto pinyinCode = fcitx::utf8::UCS4ToUTF8(d->pinyinKey_);
@@ -941,9 +946,15 @@ bool TableBasedDictionary::matchWords(
         }
     }
 
+    FCITX_LOG(Debug) << "Match pinyin: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
+                .count();
+
     if (!d->matchTrie(code, mode, PhraseFlag::User, callback)) {
         return false;
     }
+
+    FCITX_LOG(Debug) << "Match user: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
+                .count();
     return true;
 }
 
@@ -1069,6 +1080,11 @@ void TableBasedDictionary::matchPrefixImpl(
                                            boost::string_view word,
                                            uint32_t index, PhraseFlag flag) {
                     WordNode wordNode(word, InvalidWordIndex);
+
+                    // for length 1 "pinyin", skip long pinyin as an optimization.
+                    if (flag == PhraseFlag::Pinyin && graph.size() == 1 && code.size() != 1) {
+                        return true;
+                    }
                     callback(path, wordNode, 0,
                              std::make_unique<TableLatticeNodePrivate>(
                                  code, index, flag));

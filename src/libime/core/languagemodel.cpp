@@ -48,6 +48,13 @@ bool LanguageModelBase::isNodeUnknown(const LatticeNode &node) const {
     return isUnknown(node.idx(), node.word());
 }
 
+float LanguageModelBase::singleWordScore(boost::string_view word) const {
+    auto idx = index(word);
+    State dummy;
+    WordNode node(word, idx);
+    return score(nullState(), node, dummy);
+}
+
 static_assert(std::is_pod<lm::ngram::State>::value, "State should be pod");
 static_assert(std::is_same<WordIndex, lm::WordIndex>::value,
               "word index should be same type");

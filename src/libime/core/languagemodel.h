@@ -50,8 +50,9 @@ public:
     virtual WordIndex index(boost::string_view view) const = 0;
     virtual float score(const State &state, const WordNode &word,
                         State &out) const = 0;
-    bool isNodeUnknown(const LatticeNode &node) const;
     virtual bool isUnknown(WordIndex idx, boost::string_view view) const = 0;
+    bool isNodeUnknown(const LatticeNode &node) const;
+    float singleWordScore(boost::string_view word) const;
 };
 
 class StaticLanguageModelFilePrivate;

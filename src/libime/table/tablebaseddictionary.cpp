@@ -781,7 +781,7 @@ bool TableBasedDictionary::insert(boost::string_view key,
 }
 
 bool TableBasedDictionary::generate(boost::string_view value,
-                                    std::string &key) {
+                                    std::string &key) const {
     FCITX_D();
     if (!hasRule() || value.empty()) {
         return false;
@@ -977,6 +977,28 @@ bool TableBasedDictionary::hasOneMatchingWord(boost::string_view code) const {
                    return true;
                });
     return hasMatch;
+}
+
+PhraseFlag TableBasedDictionary::wordExists(boost::string_view code,
+                                            boost::string_view word) const {
+    FCITX_D();
+    auto entry = code.to_string() + keyValueSeparator + word.to_string();
+    auto value = d->userTrie_.exactMatchSearch(entry);
+    if (d->userTrie_.isValid(value)) {
+        return PhraseFlag::User;
+    }
+    value = d->phraseTrie_.exactMatchSearch(entry);
+    if (d->phraseTrie_.isValid(value)) {
+        return PhraseFlag::None;
+    }
+    return PhraseFlag::Invalid;
+}
+
+void TableBasedDictionary::removeWord(boost::string_view code,
+                                      boost::string_view word) {
+    FCITX_D();
+    auto entry = code.to_string() + keyValueSeparator + word.to_string();
+    d->userTrie_.erase(entry);
 }
 
 std::string TableBasedDictionary::reverseLookup(boost::string_view word,

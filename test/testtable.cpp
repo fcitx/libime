@@ -115,6 +115,10 @@ void testWubi() {
                 std::cout << std::endl;
                 return true;
             });
+        FCITX_ASSERT(table.wordExists("wqvb", "你好") == PhraseFlag::None);
+        FCITX_ASSERT(table.wordExists("xyyf", "统计") == PhraseFlag::Invalid);
+        FCITX_ASSERT(table.insert("统计", PhraseFlag::User));
+        FCITX_ASSERT(table.wordExists("xyyf", "统计") == PhraseFlag::User);
     } catch (std::ios_base::failure &e) {
         std::cout << e.what() << std::endl;
     }

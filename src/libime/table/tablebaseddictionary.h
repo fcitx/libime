@@ -74,7 +74,7 @@ public:
                 PhraseFlag flag = PhraseFlag::None,
                 bool verifyWithRule = false);
     bool insert(boost::string_view value, PhraseFlag flag = PhraseFlag::None);
-    bool generate(boost::string_view value, std::string &key);
+    bool generate(boost::string_view value, std::string &key) const;
 
     bool isInputCode(uint32_t c) const;
     bool isAllInputCode(boost::string_view code) const;
@@ -98,6 +98,10 @@ public:
                           boost::string_view next) const;
 
     bool hasOneMatchingWord(boost::string_view code) const;
+
+    PhraseFlag wordExists(boost::string_view code,
+                          boost::string_view word) const;
+    void removeWord(boost::string_view code, boost::string_view word);
 
     std::string reverseLookup(boost::string_view word,
                               PhraseFlag flag = PhraseFlag::None) const;

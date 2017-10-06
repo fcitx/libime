@@ -70,6 +70,10 @@ public:
     void learn();
 
     const TableBasedDictionary &dict() const;
+    TableBasedDictionary &mutableDict();
+
+    const UserLanguageModel &model() const;
+    UserLanguageModel &mutableModel();
     void autoSelect();
 
 protected:

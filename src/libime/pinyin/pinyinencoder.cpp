@@ -290,13 +290,14 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(boost::string_view pinyin) {
     return result;
 }
 
-std::vector<char> PinyinEncoder::encodeOneUserPinyin(boost::string_view pinyin) {
+std::vector<char>
+PinyinEncoder::encodeOneUserPinyin(boost::string_view pinyin) {
     if (pinyin.empty()) {
         return {};
     }
     auto graph = parseUserPinyin(pinyin, PinyinFuzzyFlag::None);
     std::vector<char> result;
-    const SegmentGraphNode * node = &graph.start(), *prev = nullptr;
+    const SegmentGraphNode *node = &graph.start(), *prev = nullptr;
     while (node->nextSize()) {
         prev = node;
         node = &node->nexts().front();

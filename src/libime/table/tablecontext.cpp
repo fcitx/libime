@@ -242,6 +242,21 @@ const TableBasedDictionary &TableContext::dict() const {
     return d->dict_;
 }
 
+TableBasedDictionary &TableContext::mutableDict() {
+    FCITX_D();
+    return d->dict_;
+}
+
+const UserLanguageModel &TableContext::model() const {
+    FCITX_D();
+    return d->model_;
+}
+
+UserLanguageModel &TableContext::mutableModel() {
+    FCITX_D();
+    return d->model_;
+}
+
 bool TableContext::isValidInput(uint32_t c) const {
     FCITX_D();
     return (d->dict_.isInputCode(c) ||
@@ -433,7 +448,7 @@ void TableContext::update() {
     }
     // Run auto select.
     if (d->dict_.tableOptions().autoSelect()) {
-        if (d->candidates_.size() <= 1 &&
+        if (d->candidates_.size() == 1 &&
             !lengthLessThanLimit(lastSegLength,
                                  d->dict_.tableOptions().autoSelectLength())) {
             autoSelect();

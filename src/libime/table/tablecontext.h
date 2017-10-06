@@ -39,6 +39,10 @@ class UserLanguageModel;
 /// \brief Input context for table input method.
 class LIBIMETABLE_EXPORT TableContext : public InputBuffer {
 public:
+    typedef boost::any_range<const SentenceResult,
+                             boost::random_access_traversal_tag>
+        CandidateRange;
+
     TableContext(TableBasedDictionary &dict, UserLanguageModel &model);
     virtual ~TableContext();
 
@@ -48,7 +52,7 @@ public:
 
     bool isValidInput(uint32_t c) const;
 
-    const std::vector<SentenceResult> &candidates() const;
+    CandidateRange candidates() const;
 
     std::string candidateHint(size_t idx, bool custom = false) const;
 

@@ -71,6 +71,11 @@ protected:
         const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
         bool onlyPath) const;
 
+    virtual bool needSort(const SegmentGraph &,
+                          const SegmentGraphNode *) const {
+        return true;
+    }
+
 private:
     std::unique_ptr<DecoderPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(Decoder);

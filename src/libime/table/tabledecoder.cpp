@@ -104,6 +104,14 @@ LatticeNode *TableDecoder::createLatticeNodeImpl(
                                 std::move(tableData));
 }
 
+bool TableDecoder::needSort(const SegmentGraph &graph,
+                            const SegmentGraphNode *) const {
+    if (graph.start().nextSize() == 1) {
+        return false;
+    }
+    return true;
+}
+
 LIBIMETABLE_EXPORT SegmentGraph graphForCode(boost::string_view s,
                                              const TableBasedDictionary &dict) {
     SegmentGraph graph(s.to_string());

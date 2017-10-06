@@ -40,6 +40,7 @@ set(LIBIME_SRCS
     userlanguagemodel.cpp
     historybigram.cpp
     segmentgraph.cpp
+    utils.cpp
     )
 
 add_library(IMECore SHARED ${LIBIME_SRCS})

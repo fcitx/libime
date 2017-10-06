@@ -25,13 +25,13 @@
 #include "tablerule.h"
 #include <boost/algorithm/string.hpp>
 #include <cassert>
+#include <chrono>
 #include <cstring>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
 #include <fstream>
 #include <set>
 #include <string>
-#include <chrono>
 
 namespace libime {
 
@@ -935,26 +935,26 @@ bool TableBasedDictionary::matchWords(
         return false;
     }
 
-    FCITX_LOG(Debug) << "Match trie: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
-                .count();
+    FCITX_LOG(Debug) << "Match trie: " << millisecondsTill(t0);
+    ;
 
     if (d->pinyinKey_) {
         auto pinyinCode = fcitx::utf8::UCS4ToUTF8(d->pinyinKey_);
         pinyinCode.append(code.begin(), code.end());
-        if (!d->matchTrie(pinyinCode, mode, PhraseFlag::Pinyin, callback)) {
+        // pinyin should force "prefix" otherwise it won't work.
+        if (!d->matchTrie(pinyinCode, TableMatchMode::Prefix,
+                          PhraseFlag::Pinyin, callback)) {
             return false;
         }
     }
 
-    FCITX_LOG(Debug) << "Match pinyin: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
-                .count();
+    FCITX_LOG(Debug) << "Match pinyin: " << millisecondsTill(t0);
 
     if (!d->matchTrie(code, mode, PhraseFlag::User, callback)) {
         return false;
     }
 
-    FCITX_LOG(Debug) << "Match user: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
-                .count();
+    FCITX_LOG(Debug) << "Match user: " << millisecondsTill(t0);
     return true;
 }
 
@@ -1058,12 +1058,19 @@ std::string TableBasedDictionary::hint(boost::string_view key) const {
 void TableBasedDictionary::matchPrefixImpl(
     const SegmentGraph &graph, const GraphMatchCallback &callback,
     const std::unordered_set<const SegmentGraphNode *> &ignore, void *) const {
-    const TableMatchMode mode = tableOptions().exactMatch()
+    FCITX_D();
+    auto range = fcitx::utf8::MakeUTF8CharRange(graph.data());
+    auto hasWildcard =
+        d->options_.matchingKey() &&
+        std::any_of(std::begin(range), std::end(range),
+                    [d](uint32_t c) { return d->options_.matchingKey() == c; });
+
+    const TableMatchMode mode = tableOptions().exactMatch() || hasWildcard
                                     ? TableMatchMode::Exact
                                     : TableMatchMode::Prefix;
     SegmentGraphPath path;
     path.reserve(2);
-    graph.bfs(&graph.start(), [this, &ignore, &path, &callback,
+    graph.bfs(&graph.start(), [this, &ignore, &path, &callback, hasWildcard,
                                mode](const SegmentGraphBase &graph,
                                      const SegmentGraphNode *node) {
         if (!node->prevSize() || ignore.count(node)) {
@@ -1081,8 +1088,10 @@ void TableBasedDictionary::matchPrefixImpl(
                                            uint32_t index, PhraseFlag flag) {
                     WordNode wordNode(word, InvalidWordIndex);
 
-                    // for length 1 "pinyin", skip long pinyin as an optimization.
-                    if (flag == PhraseFlag::Pinyin && graph.size() == 1 && code.size() != 1) {
+                    // for length 1 "pinyin", skip long pinyin as an
+                    // optimization.
+                    if (flag == PhraseFlag::Pinyin && graph.size() == 1 &&
+                        code.size() != 1) {
                         return true;
                     }
                     callback(path, wordNode, 0,
@@ -1090,7 +1099,7 @@ void TableBasedDictionary::matchPrefixImpl(
                                  code, index, flag));
                     return true;
                 });
-            } else {
+            } else if (!hasWildcard) {
                 // use it as a buffer.
                 std::string entry;
                 FCITX_D();

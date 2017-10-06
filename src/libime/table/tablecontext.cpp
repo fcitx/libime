@@ -26,10 +26,11 @@
 #include "tabledecoder.h"
 #include "tableoptions.h"
 #include "tablerule.h"
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <chrono>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
-#include <chrono>
 
 namespace libime {
 
@@ -414,9 +415,18 @@ void TableContext::update() {
     constexpr int beamSize = 20;
     constexpr int frameSize = 10;
     int lastSegLength = fcitx::utf8::length(d->graph_.data());
-    if (d->decoder_.decode(d->lattice_, d->graph_, 3, state, max, min, 20, 10)) {
-        FCITX_LOG(Debug) << "Decode: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
-                    .count();
+    int nbest = 1;
+    if (lastSegLength == d->dict_.maxLength() &&
+        !d->dict_.tableOptions().autoRuleSet().empty()) {
+        nbest = 5;
+    }
+    if (d->decoder_.decode(d->lattice_, d->graph_, nbest, state, max, min,
+                           beamSize, frameSize)) {
+        FCITX_LOG(Debug)
+            << "Decode: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::high_resolution_clock::now() - t0)
+                   .count();
         std::unordered_map<std::string, size_t> dup;
 
         auto insertCandidate = [d, &dup](SentenceResult sentence) {
@@ -430,7 +440,7 @@ void TableContext::update() {
                     d->candidates_[idx] = std::move(sentence);
                 }
             } else {
-                d->candidates_.push_back(std::move(sentence));
+                d->candidates_.emplace_back(std::move(sentence));
                 dup[sentenceString] = d->candidates_.size() - 1;
             }
         };
@@ -462,8 +472,11 @@ void TableContext::update() {
                 insertCandidate(sentence);
             }
         }
-        FCITX_LOG(Debug) << "Insert candidate: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
-                    .count();
+        FCITX_LOG(Debug)
+            << "Insert candidate: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::high_resolution_clock::now() - t0)
+                   .count();
         int noSortLength =
             lastSegLength < d->dict_.tableOptions().noSortInputLength()
                 ? lastSegLength
@@ -471,8 +484,11 @@ void TableContext::update() {
         std::sort(d->candidates_.begin(), d->candidates_.end(),
                   TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
                                         noSortLength));
-        FCITX_LOG(Debug) << "Sort: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - t0)
-                    .count();
+        FCITX_LOG(Debug)
+            << "Sort: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::high_resolution_clock::now() - t0)
+                   .count();
         FCITX_LOG(Debug) << "Number: " << d->candidates_.size();
     }
     // Run auto select.
@@ -486,9 +502,10 @@ void TableContext::update() {
     }
 }
 
-const std::vector<SentenceResult> &TableContext::candidates() const {
+TableContext::CandidateRange TableContext::candidates() const {
     FCITX_D();
-    return d->candidates_;
+    return boost::make_iterator_range(d->candidates_.begin(),
+                                      d->candidates_.end());
 }
 
 size_t TableContext::selectedLength() const {

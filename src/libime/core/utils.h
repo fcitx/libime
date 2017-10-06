@@ -21,7 +21,9 @@
 #define LIBIME_UTILS_H
 
 #include <arpa/inet.h>
+#include <chrono>
 #include <cstdint>
+#include <fcitx-utils/log.h>
 #include <iostream>
 #include <vector>
 
@@ -138,6 +140,16 @@ inline bool lengthLessThanLimit(size_t length, int limit) {
     }
     return length < static_cast<size_t>(limit);
 }
+
+template <typename T>
+inline int millisecondsTill(T t0) {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+               std::chrono::high_resolution_clock::now() - t0)
+        .count();
+}
+
+const ::fcitx::LogCategory &libime_logcategory();
+#define LIBIME_DEBUG() FCITX_LOGC(::libime::libime_logcategory, Debug)
 }
 
 #endif // LIBIME_UTILS_H

@@ -56,6 +56,11 @@ protected:
                                        const State &state, float cost,
                                        std::unique_ptr<LatticeNodeData> data,
                                        bool onlyPath) const override;
+
+    // When segment graph is extremely simple, no need to sort because context
+    // will sort it anyway.
+    bool needSort(const SegmentGraph &,
+                  const SegmentGraphNode *) const override;
 };
 
 SegmentGraph graphForCode(boost::string_view s,

@@ -21,6 +21,7 @@
 #include "datrie.h"
 #include "languagemodel.h"
 #include "lattice_p.h"
+#include "utils.h"
 #include <boost/functional/hash.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptor/sliced.hpp>
@@ -55,7 +56,7 @@ public:
                  size_t frameSize, void *helper) const;
 
     void
-    forwardSearch(const SegmentGraph &graph, Lattice &lattice,
+    forwardSearch(const Decoder *q, const SegmentGraph &graph, Lattice &lattice,
                   const std::unordered_set<const SegmentGraphNode *> &ignore,
                   size_t beamSize) const;
     void backwardSearch(const SegmentGraph &graph, Lattice &l, size_t nbest,
@@ -120,7 +121,7 @@ bool DecoderPrivate::buildLattice(
 }
 
 void DecoderPrivate::forwardSearch(
-    const SegmentGraph &graph, Lattice &l,
+    const Decoder *q, const SegmentGraph &graph, Lattice &l,
     const std::unordered_set<const SegmentGraphNode *> &ignore,
     size_t beamSize) const {
     State state;
@@ -130,7 +131,7 @@ void DecoderPrivate::forwardSearch(
         unknownIdCache;
     auto start = &graph.start();
     // forward search
-    auto updateForNode = [&](const SegmentGraphBase &graph,
+    auto updateForNode = [&](const SegmentGraphBase &,
                              const SegmentGraphNode *graphNode) {
         if (graphNode == start || !lattice.count(graphNode) ||
             ignore.count(graphNode)) {
@@ -184,9 +185,12 @@ void DecoderPrivate::forwardSearch(
             node.setPrev(maxNode);
             node.state() = maxState;
         }
-        latticeNodes.sort([](const LatticeNode &lhs, const LatticeNode &rhs) {
-            return lhs.score() > rhs.score();
-        });
+        if (q->needSort(graph, graphNode)) {
+            latticeNodes.sort(
+                [](const LatticeNode &lhs, const LatticeNode &rhs) {
+                    return lhs.score() > rhs.score();
+                });
+        }
         return true;
     };
 
@@ -322,12 +326,17 @@ bool Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
         ignore.insert(p.first);
     }
 
+    auto t0 = std::chrono::high_resolution_clock::now();
+
     if (!d->buildLattice(this, l, ignore, beginState, graph, frameSize,
                          helper)) {
         return false;
     }
-    d->forwardSearch(graph, l, ignore, beamSize);
+    LIBIME_DEBUG() << "Build Lattice: " << millisecondsTill(t0);
+    d->forwardSearch(this, graph, l, ignore, beamSize);
+    LIBIME_DEBUG() << "Forward Search: " << millisecondsTill(t0);
     d->backwardSearch(graph, l, nbest, max, min);
+    LIBIME_DEBUG() << "Backward Search: " << millisecondsTill(t0);
     return true;
 }
 

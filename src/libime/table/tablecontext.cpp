@@ -39,8 +39,8 @@ namespace libime {
 namespace {
 
 struct TableCandidateCompare {
-    TableCandidateCompare(OrderPolicy policy, int noSortInputLength)
-        : policy_(policy), noSortInputLength_(noSortInputLength) {}
+    TableCandidateCompare(OrderPolicy policy, int noSortInputLength, size_t codeLength)
+        : policy_(policy), noSortInputLength_(noSortInputLength), codeLength_(codeLength) {}
 
     bool isNoSortInputLength(const SentenceResult &sentence) const {
         if (noSortInputLength_ < 0) {
@@ -120,8 +120,8 @@ struct TableCandidateCompare {
             case OrderPolicy::Fast:
                 return index(lhs) > index(rhs);
             case OrderPolicy::Freq:
-                return lhs.score() + (lIsPinyin ? pinyinPenalty : 0) >
-                       rhs.score() + (rIsPinyin ? pinyinPenalty : 0);
+                return lhs.score() + (lIsPinyin && codeLength(lhs) != codeLength_ ? pinyinPenalty : 0) >
+                       rhs.score() + (rIsPinyin && codeLength(rhs) != codeLength_ ? pinyinPenalty : 0);
             }
             return false;
         }
@@ -132,6 +132,7 @@ struct TableCandidateCompare {
 private:
     OrderPolicy policy_;
     int noSortInputLength_;
+    size_t codeLength_;
 };
 
 struct SelectedCode {
@@ -500,7 +501,7 @@ void TableContext::update() {
                 : d->dict_.tableOptions().noSortInputLength();
         std::sort(d->candidates_.begin(), d->candidates_.end(),
                   TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
-                                        noSortLength));
+                                        noSortLength, lastSegLength));
         FCITX_LOG(Debug)
             << "Sort: "
             << std::chrono::duration_cast<std::chrono::milliseconds>(

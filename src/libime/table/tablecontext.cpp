@@ -583,6 +583,15 @@ std::tuple<std::string, bool> TableContext::selectedSegment(size_t idx) const {
     return {std::move(result), commit};
 }
 
+size_t TableContext::selectedSegmentLength(size_t idx) const {
+    FCITX_D();
+    size_t prev = 0;
+    if (idx > 0) {
+        prev = d->selected_[idx - 1].back().offset_;
+    }
+    return d->selected_[idx].back().offset_ - prev;
+}
+
 std::string TableContext::preedit() const {
     std::string result;
     for (size_t i = 0, e = selectedSize(); i < e; i++) {

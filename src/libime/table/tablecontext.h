@@ -59,6 +59,7 @@ public:
     bool selected() const;
     size_t selectedSize() const;
     std::tuple<std::string, bool> selectedSegment(size_t idx) const;
+    size_t selectedSegmentLength(size_t idx) const;
 
     /// \brief A simple preedit implementation.
     /// The value is derived from function selectedSegment and currentCode.

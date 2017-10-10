@@ -39,8 +39,10 @@ namespace libime {
 namespace {
 
 struct TableCandidateCompare {
-    TableCandidateCompare(OrderPolicy policy, int noSortInputLength, size_t codeLength)
-        : policy_(policy), noSortInputLength_(noSortInputLength), codeLength_(codeLength) {}
+    TableCandidateCompare(OrderPolicy policy, int noSortInputLength,
+                          size_t codeLength)
+        : policy_(policy), noSortInputLength_(noSortInputLength),
+          codeLength_(codeLength) {}
 
     bool isNoSortInputLength(const SentenceResult &sentence) const {
         if (noSortInputLength_ < 0) {
@@ -113,15 +115,21 @@ struct TableCandidateCompare {
             }
 
             auto policy = lShort ? OrderPolicy::No : policy_;
-            constexpr float pinyinPenalty = -2;
+            constexpr float pinyinPenalty = -0.5;
+            constexpr float exactMatchAward = 1;
 
             switch (policy) {
             case OrderPolicy::No:
             case OrderPolicy::Fast:
                 return index(lhs) > index(rhs);
-            case OrderPolicy::Freq:
-                return lhs.score() + (lIsPinyin && codeLength(lhs) != codeLength_ ? pinyinPenalty : 0) >
-                       rhs.score() + (rIsPinyin && codeLength(rhs) != codeLength_ ? pinyinPenalty : 0);
+            case OrderPolicy::Freq: {
+                bool lExact = codeLength(lhs) == codeLength_;
+                bool rExact = codeLength(rhs) == codeLength_;
+                return lhs.score() + (lIsPinyin ? pinyinPenalty : 0) +
+                           (lExact ? exactMatchAward : 0) >
+                       rhs.score() + (rIsPinyin ? pinyinPenalty : 0) +
+                           (rExact ? exactMatchAward : 0);
+            }
             }
             return false;
         }

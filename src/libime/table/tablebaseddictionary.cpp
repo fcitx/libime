@@ -348,6 +348,69 @@ public:
 
         q_func()->insert(key, value, flag);
     }
+    bool matchWordsInternal(boost::string_view code, TableMatchMode mode,
+                            bool onlyChecking,
+                            const TableMatchCallback &callback) const {
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        if (!matchTrie(code, mode, PhraseFlag::None, callback)) {
+            return false;
+        }
+
+        LIBIME_TABLE_DEBUG() << "Match trie: " << millisecondsTill(t0);
+
+        if (pinyinKey_) {
+            auto pinyinCode = fcitx::utf8::UCS4ToUTF8(pinyinKey_);
+            pinyinCode.append(code.begin(), code.end());
+            // Apply following heuristic for pinyin.
+            auto pinyinMode = TableMatchMode::Exact;
+            int codeLength = fcitx::utf8::length(code);
+            if (onlyChecking || codeLength >= options_.autoSelectLength() ||
+                static_cast<size_t>(codeLength) > codeLength_ ||
+                codeLength >= options_.noMatchAutoSelectLength()) {
+                pinyinMode = TableMatchMode::Prefix;
+            }
+            if (!matchTrie(pinyinCode, pinyinMode, PhraseFlag::Pinyin,
+                           callback)) {
+                return false;
+            }
+        }
+
+        LIBIME_TABLE_DEBUG() << "Match pinyin: " << millisecondsTill(t0);
+
+        if (!matchTrie(code, mode, PhraseFlag::User, callback)) {
+            return false;
+        }
+
+        LIBIME_TABLE_DEBUG() << "Match user: " << millisecondsTill(t0);
+        auto matchAutoPhrase = [mode, code, &callback](boost::string_view entry,
+                                                       int32_t) {
+            auto sep = entry.find(keyValueSeparator, code.size());
+            if (sep == std::string::npos) {
+                return true;
+            }
+
+            auto view = boost::string_view(entry);
+            auto matchedCode = view.substr(0, sep);
+            if (mode == TableMatchMode::Prefix ||
+                (mode == TableMatchMode::Exact &&
+                 fcitx::utf8::length(matchedCode) ==
+                     fcitx::utf8::length(code))) {
+                if (callback(matchedCode, view.substr(sep + 1), 0,
+                             PhraseFlag::Auto)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        if (!autoPhraseDict_.search(code, matchAutoPhrase)) {
+            return false;
+        }
+        return true;
+    }
 };
 
 TableBasedDictionary::TableBasedDictionary()
@@ -987,62 +1050,11 @@ bool TableBasedDictionary::isValidLength(size_t length) const {
     FCITX_D();
     return length <= d->codeLength_;
 }
-
 bool TableBasedDictionary::matchWords(
     boost::string_view code, TableMatchMode mode,
     const TableMatchCallback &callback) const {
     FCITX_D();
-    auto t0 = std::chrono::high_resolution_clock::now();
-
-    if (!d->matchTrie(code, mode, PhraseFlag::None, callback)) {
-        return false;
-    }
-
-    LIBIME_TABLE_DEBUG() << "Match trie: " << millisecondsTill(t0);
-
-    if (d->pinyinKey_) {
-        auto pinyinCode = fcitx::utf8::UCS4ToUTF8(d->pinyinKey_);
-        pinyinCode.append(code.begin(), code.end());
-        // pinyin should force "prefix" otherwise it won't work.
-        if (!d->matchTrie(pinyinCode, TableMatchMode::Prefix,
-                          PhraseFlag::Pinyin, callback)) {
-            return false;
-        }
-    }
-
-    LIBIME_TABLE_DEBUG() << "Match pinyin: " << millisecondsTill(t0);
-
-    if (!d->matchTrie(code, mode, PhraseFlag::User, callback)) {
-        return false;
-    }
-
-    LIBIME_TABLE_DEBUG() << "Match user: " << millisecondsTill(t0);
-    auto matchAutoPhrase = [mode, code, &callback](boost::string_view entry,
-                                                   int32_t) {
-        auto sep = entry.find(keyValueSeparator, code.size());
-        if (sep == std::string::npos) {
-            return true;
-        }
-
-        auto view = boost::string_view(entry);
-        auto matchedCode = view.substr(0, sep);
-        if (mode == TableMatchMode::Prefix ||
-            (mode == TableMatchMode::Exact &&
-             fcitx::utf8::length(matchedCode) == fcitx::utf8::length(code))) {
-            if (callback(matchedCode, view.substr(sep + 1), 0,
-                         PhraseFlag::Auto)) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-        return true;
-    };
-
-    if (!d->autoPhraseDict_.search(code, matchAutoPhrase)) {
-        return false;
-    }
-    return true;
+    return d->matchWordsInternal(code, mode, false, callback);
 }
 
 bool TableBasedDictionary::hasMatchingWords(boost::string_view code,
@@ -1053,13 +1065,14 @@ bool TableBasedDictionary::hasMatchingWords(boost::string_view code,
 }
 
 bool TableBasedDictionary::hasMatchingWords(boost::string_view code) const {
+    FCITX_D();
     bool hasMatch = false;
-    matchWords(code, TableMatchMode::Prefix,
-               [&hasMatch](boost::string_view, boost::string_view, uint32_t,
-                           PhraseFlag) {
-                   hasMatch = true;
-                   return false;
-               });
+    d->matchWordsInternal(code, TableMatchMode::Prefix, true,
+                          [&hasMatch](boost::string_view, boost::string_view,
+                                      uint32_t, PhraseFlag) {
+                              hasMatch = true;
+                              return false;
+                          });
     return hasMatch;
 }
 

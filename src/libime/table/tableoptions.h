@@ -42,7 +42,7 @@ public:
     FCITX_DECLARE_VIRTUAL_DTOR_COPY_AND_MOVE(TableOptions)
 
     FCITX_DECLARE_PROPERTY(OrderPolicy, orderPolicy, setOrderPolicy);
-    FCITX_DECLARE_PROPERTY(int, noSortInputLength, setNoSortInputLength);
+    FCITX_DECLARE_PROPERTY(uint32_t, noSortInputLength, setNoSortInputLength);
     FCITX_DECLARE_PROPERTY(bool, autoSelect, setAutoSelect);
     FCITX_DECLARE_PROPERTY(int, autoSelectLength, setAutoSelectLength);
     FCITX_DECLARE_PROPERTY(int, noMatchAutoSelectLength,

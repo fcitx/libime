@@ -82,9 +82,8 @@ public:
     bool isEndKey(uint32_t c) const;
 
     bool hasPinyin() const;
-    int32_t maxLength() const;
+    uint32_t maxLength() const;
     bool isValidLength(size_t length) const;
-    int32_t pinyinLength() const;
 
     void statistic() const;
 

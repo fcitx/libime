@@ -431,7 +431,7 @@ void TableContext::update() {
     constexpr float min = std::numeric_limits<float>::min();
     constexpr int beamSize = 20;
     constexpr int frameSize = 10;
-    int lastSegLength = fcitx::utf8::length(d->graph_.data());
+    auto lastSegLength = fcitx::utf8::length(d->graph_.data());
     int nbest = 1;
     if (lastSegLength == d->dict_.maxLength() &&
         !d->dict_.tableOptions().autoRuleSet().empty()) {

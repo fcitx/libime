@@ -138,8 +138,7 @@ public:
     uint32_t pinyinKey_ = 0;
     uint32_t promptKey_ = 0;
     uint32_t phraseKey_ = 0;
-    int32_t codeLength_ = 0;
-    int32_t pyLength_ = 0;
+    uint32_t codeLength_ = 0;
     DATrie<uint32_t> phraseTrie_; // base dictionary
     DATrie<uint32_t> userTrie_;   // base dictionary
     uint32_t phraseTrieIndex_ = 0;
@@ -286,7 +285,6 @@ public:
         pinyinKey_ = promptKey_ = phraseKey_ = 0;
         phraseTrieIndex_ = userTrieIndex_ = 0;
         codeLength_ = 0;
-        pyLength_ = 0;
         inputCode_.clear();
         ignoreChars_.clear();
         rules_.clear();
@@ -428,8 +426,7 @@ void TableBasedDictionary::loadText(std::istream &in) {
                 d->codeLength_ =
                     std::stoi(buf.substr(strlen(strConst[match][STR_CODELEN])));
             } else if ((match = check_option(STR_PINYINLEN)) >= 0) {
-                d->pyLength_ = std::stoi(
-                    buf.substr(strlen(strConst[match][STR_PINYINLEN])));
+                // Deprecated option.
             } else if ((match = check_option(STR_IGNORECHAR)) >= 0) {
                 const std::string ignoreChars =
                     buf.substr(strlen(strConst[match][STR_IGNORECHAR]));
@@ -504,7 +501,6 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     if (d->pinyinKey_) {
         out << strConst[1][STR_PINYIN] << fcitx::utf8::UCS4ToUTF8(d->pinyinKey_)
             << std::endl;
-        out << strConst[1][STR_PINYINLEN] << d->pyLength_ << std::endl;
     }
     if (d->promptKey_) {
         out << strConst[1][STR_PROMPT] << fcitx::utf8::UCS4ToUTF8(d->promptKey_)
@@ -567,7 +563,6 @@ void TableBasedDictionary::loadBinary(std::istream &in) {
     throw_if_io_fail(unmarshall(in, d->promptKey_));
     throw_if_io_fail(unmarshall(in, d->phraseKey_));
     throw_if_io_fail(unmarshall(in, d->codeLength_));
-    throw_if_io_fail(unmarshall(in, d->pyLength_));
     uint32_t size;
 
     throw_if_io_fail(unmarshall(in, size));
@@ -628,7 +623,6 @@ void TableBasedDictionary::saveBinary(std::ostream &out) {
     throw_if_io_fail(marshall(out, d->promptKey_));
     throw_if_io_fail(marshall(out, d->phraseKey_));
     throw_if_io_fail(marshall(out, d->codeLength_));
-    throw_if_io_fail(marshall(out, d->pyLength_));
     throw_if_io_fail(
         marshall(out, static_cast<uint32_t>(d->inputCode_.size())));
     for (auto c : d->inputCode_) {
@@ -787,7 +781,7 @@ bool TableBasedDictionary::insert(boost::string_view key,
     auto valueLength = fcitx::utf8::lengthValidated(value);
     if (keyLength == fcitx::utf8::INVALID_LENGTH ||
         valueLength == fcitx::utf8::INVALID_LENGTH ||
-        !isValidLength(keyLength)) {
+        (flag != PhraseFlag::Pinyin && !isValidLength(keyLength))) {
         return false;
     }
     if (flag != PhraseFlag::Pinyin && !isAllInputCode(key)) {
@@ -984,19 +978,14 @@ bool TableBasedDictionary::hasPinyin() const {
     return d->pinyinKey_;
 }
 
-int32_t TableBasedDictionary::maxLength() const {
+uint32_t TableBasedDictionary::maxLength() const {
     FCITX_D();
     return d->codeLength_;
 }
 
 bool TableBasedDictionary::isValidLength(size_t length) const {
     FCITX_D();
-    return static_cast<int32_t>(length) <= d->codeLength_;
-}
-
-int32_t TableBasedDictionary::pinyinLength() const {
-    FCITX_D();
-    return d->pyLength_;
+    return length <= d->codeLength_;
 }
 
 bool TableBasedDictionary::matchWords(

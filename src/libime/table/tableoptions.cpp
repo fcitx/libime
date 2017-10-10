@@ -24,7 +24,7 @@ namespace libime {
 class TableOptionsPrivate {
 public:
     OrderPolicy orderPolicy_ = OrderPolicy::No;
-    int noSortInputLength_ = 0;
+    uint32_t noSortInputLength_ = 0;
     uint32_t pinyinKey_ = '\0';
     bool autoSelect_ = false;
     int autoSelectLength_ = 0;
@@ -53,7 +53,7 @@ FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(TableOptions)
 
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, OrderPolicy, orderPolicy,
                               setOrderPolicy);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, noSortInputLength,
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, uint32_t, noSortInputLength,
                               setNoSortInputLength);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoSelect, setAutoSelect);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, autoSelectLength,

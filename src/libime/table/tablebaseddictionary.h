@@ -35,6 +35,7 @@ enum class PhraseFlag {
     Prompt,
     ConstructPhrase,
     User,
+    Auto,
     Invalid
 };
 
@@ -114,7 +115,6 @@ private:
     void loadBinary(std::istream &in);
     void saveText(std::ostream &out);
     void saveBinary(std::ostream &out);
-    void parseDataLine(boost::string_view buf);
 
     void
     matchPrefixImpl(const SegmentGraph &graph,

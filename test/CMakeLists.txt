@@ -9,6 +9,7 @@ set(LIBIME_SINGLE_FILE_TEST
     testhistorybigram
     testshuangpinprofile
     testtrie
+    testautophrasedict
     )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})

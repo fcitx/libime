@@ -119,6 +119,42 @@ void PinyinContext::setCursor(size_t pos) {
     }
 }
 
+int PinyinContext::pinyinBeforeCursor() const {
+    FCITX_D();
+    auto c = cursor() + selectedLength();
+    if (d->candidates_.size()) {
+        for (auto &s : d->candidates_[0].sentence()) {
+            for (auto iter = s->path().begin(),
+                      end = std::prev(s->path().end());
+                 iter < end; iter++) {
+                auto from = (*iter)->index(), to = (*std::next(iter))->index();
+                if (to >= c) {
+                    return from;
+                }
+            }
+        }
+    }
+    return -1;
+}
+
+int PinyinContext::pinyinAfterCursor() const {
+    FCITX_D();
+    auto c = cursor() + selectedLength();
+    if (d->candidates_.size()) {
+        for (auto &s : d->candidates_[0].sentence()) {
+            for (auto iter = s->path().begin(),
+                      end = std::prev(s->path().end());
+                 iter < end; iter++) {
+                auto to = (*std::next(iter))->index();
+                if (to > c) {
+                    return to;
+                }
+            }
+        }
+    }
+    return -1;
+}
+
 const std::vector<SentenceResult> &PinyinContext::candidates() const {
     FCITX_D();
     return d->candidates_;

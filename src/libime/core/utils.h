@@ -21,6 +21,7 @@
 #define LIBIME_UTILS_H
 
 #include <arpa/inet.h>
+#include <boost/utility/string_view.hpp>
 #include <chrono>
 #include <cstdint>
 #include <fcitx-utils/log.h>
@@ -121,6 +122,38 @@ unmarshall(std::istream &in, T &data) {
     return in;
 }
 
+inline std::istream &unmarshallString(std::istream &in, std::string &str) {
+    uint32_t length;
+    do {
+        if (!unmarshall(in, length)) {
+            break;
+        }
+        std::vector<char> buffer;
+        buffer.resize(length);
+        if (!in.read(buffer.data(), sizeof(char) * length)) {
+            break;
+        }
+        str.clear();
+        str.reserve(length);
+        str.append(buffer.begin(), buffer.end());
+    } while (0);
+    return in;
+}
+
+inline std::ostream &marshallString(std::ostream &out, boost::string_view str) {
+    uint32_t length = str.size();
+    ;
+    do {
+        if (!marshall(out, length)) {
+            break;
+        }
+        if (!out.write(str.data(), sizeof(char) * length)) {
+            break;
+        }
+    } while (0);
+    return out;
+}
+
 template <typename E>
 void throw_if_fail(bool fail, E &&e) {
     if (fail) {
@@ -148,7 +181,7 @@ inline int millisecondsTill(T t0) {
         .count();
 }
 
-const ::fcitx::LogCategory &libime_logcategory();
+FCITX_DECLARE_LOG_CATEGORY(libime_logcategory);
 #define LIBIME_DEBUG() FCITX_LOGC(::libime::libime_logcategory, Debug)
 }
 

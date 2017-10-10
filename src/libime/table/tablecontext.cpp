@@ -17,11 +17,13 @@
  * see <http://www.gnu.org/licenses/>.
  */
 #include "tablecontext.h"
+#include "constants.h"
 #include "libime/core/decoder.h"
 #include "libime/core/historybigram.h"
 #include "libime/core/segmentgraph.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/core/utils.h"
+#include "log.h"
 #include "tablebaseddictionary.h"
 #include "tabledecoder.h"
 #include "tableoptions.h"
@@ -80,21 +82,32 @@ struct TableCandidateCompare {
         }
     }
 
+    static bool isPinyin(const SentenceResult &sentence) {
+        return sentence.size() == 1 && flag(sentence) == PhraseFlag::Pinyin;
+    }
+
+    static bool isAuto(const SentenceResult &sentence) {
+        return sentence.size() != 1 || flag(sentence) == PhraseFlag::Auto;
+    }
+
+    bool isWithinNoSortLimit(const SentenceResult &sentence) const {
+        return static_cast<int>(codeLength(sentence)) == noSortInputLength_ &&
+               !isPinyin(sentence);
+    }
+
     bool operator()(const SentenceResult &lhs,
                     const SentenceResult &rhs) const {
-        bool lIsPinyin = lhs.size() == 1 && flag(lhs) == PhraseFlag::Pinyin;
-        bool rIsPinyin = rhs.size() == 1 && flag(rhs) == PhraseFlag::Pinyin;
-        if (lhs.size() != rhs.size()) {
-            return lhs.size() < rhs.size();
+        bool lIsAuto = isAuto(lhs);
+        bool rIsAuto = isAuto(rhs);
+        if (lIsAuto != rIsAuto) {
+            return lIsAuto < rIsAuto;
         }
-        // single word.
-        if (lhs.size() == 1) {
-            bool lShort =
-                static_cast<int>(codeLength(lhs)) == noSortInputLength_ &&
-                !lIsPinyin;
-            bool rShort =
-                static_cast<int>(codeLength(rhs)) == noSortInputLength_ &&
-                !rIsPinyin;
+        // non-auto word
+        if (!lIsAuto) {
+            bool lIsPinyin = isPinyin(lhs);
+            bool rIsPinyin = isPinyin(rhs);
+            bool lShort = isWithinNoSortLimit(lhs);
+            bool rShort = isWithinNoSortLimit(rhs);
             if (lShort != rShort) {
                 return lShort > rShort;
             }
@@ -222,7 +235,11 @@ public:
             auto &select = selection[0];
             if (select.flag_ == PhraseFlag::None ||
                 select.flag_ == PhraseFlag::User) {
-                FCITX_LOG(Debug) << "";
+                dict_.insert(select.code_, select.word_.word(),
+                             PhraseFlag::User);
+            } else if (select.flag_ == PhraseFlag::Auto) {
+                // Remove from auto.
+                dict_.removeWord(select.code_, select.word_.word());
                 dict_.insert(select.code_, select.word_.word(),
                              PhraseFlag::User);
             }
@@ -461,7 +478,7 @@ void TableContext::update() {
         }
 
         // FIXME: add an option.
-        const float minDistance = 1.0f;
+        const float minDistance = TABLE_DEFAULT_MIN_DISTANCE;
         for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
             const auto &sentence = d->lattice_.sentence(i);
             auto score = sentence.score();
@@ -575,6 +592,10 @@ std::string TableContext::preedit() const {
 
 void TableContext::learn() {
     FCITX_D();
+    if (!d->dict_.tableOptions().learning()) {
+        return;
+    }
+
     if (!selected()) {
         return;
     }
@@ -600,6 +621,42 @@ void TableContext::learn() {
     }
     if (newSentence.size()) {
         d->model_.history().add(newSentence);
+    }
+}
+
+void TableContext::learnAutoPhrase(boost::string_view history) {
+    FCITX_D();
+    if (!d->dict_.tableOptions().learning() ||
+        !fcitx::utf8::validate(history) ||
+        d->dict_.tableOptions().autoPhraseLength() <= 1) {
+        return;
+    }
+
+    auto range = fcitx::utf8::MakeUTF8CharRange(history);
+    std::string code;
+    for (auto iter = std::begin(range); iter != std::end(range); iter++) {
+        auto charBegin = iter.charRange();
+        auto length = fcitx::utf8::length(charBegin.first, history.end());
+        if (length < 2 ||
+            length > static_cast<size_t>(
+                         d->dict_.tableOptions().autoPhraseLength())) {
+            continue;
+        }
+        auto word =
+            history.substr(std::distance(history.begin(), charBegin.first));
+        LIBIME_TABLE_DEBUG()
+            << "learnAutoPhrase " << word << " AutoPhraseLength: "
+            << d->dict_.tableOptions().autoPhraseLength();
+        ;
+        if (!d->dict_.generate(word, code)) {
+            continue;
+        }
+        auto wordFlag = d->dict_.wordExists(code, word);
+        if (wordFlag == PhraseFlag::None || wordFlag == PhraseFlag::User) {
+            continue;
+        }
+        auto insertResult = d->dict_.insert(code, word, PhraseFlag::Auto);
+        LIBIME_TABLE_DEBUG() << insertResult;
     }
 }
 

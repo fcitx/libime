@@ -16,21 +16,12 @@
 * License along with this library; see the file COPYING. If not,
 * see <http://www.gnu.org/licenses/>.
 */
-#ifndef _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_
-#define _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_
-
-#include "pinyindecoder.h"
-#include <libime/core/lattice.h>
+#ifndef _FCITX_LIBIME_TABLE_CONSTANTS_H_
+#define _FCITX_LIBIME_TABLE_CONSTANTS_H_
 
 namespace libime {
-
-class PinyinLatticeNodePrivate : public LatticeNodeData {
-public:
-    PinyinLatticeNodePrivate(boost::string_view encodedPinyin)
-        : encodedPinyin_(encodedPinyin.to_string()) {}
-
-    std::string encodedPinyin_;
-};
+constexpr int TABLE_AUTOPHRASE_SIZE = 256;
+constexpr float TABLE_DEFAULT_MIN_DISTANCE = 1.0f;
 }
 
-#endif // _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_
+#endif // _FCITX_LIBIME_TABLE_CONSTANTS_H_

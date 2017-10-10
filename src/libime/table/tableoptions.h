@@ -51,12 +51,9 @@ public:
     FCITX_DECLARE_PROPERTY(std::set<uint32_t>, endKey, setEndKey);
     FCITX_DECLARE_PROPERTY(uint32_t, matchingKey, setMatchingKey);
     FCITX_DECLARE_PROPERTY(bool, exactMatch, setExactMatch);
-    FCITX_DECLARE_PROPERTY(bool, autoLearning, setAutoLearning);
-    FCITX_DECLARE_PROPERTY(bool, noMatchDontCommit, setNoMatchDontCommit);
-    FCITX_DECLARE_PROPERTY(bool, autoPhraseLength, setAutoPhraseLength);
-    FCITX_DECLARE_PROPERTY(bool, saveAutoPhrase, setSaveAutoPhrase);
-    FCITX_DECLARE_PROPERTY(bool, firstCandidateAsPreedit,
-                           setFirstCandidateAsPreedit);
+    FCITX_DECLARE_PROPERTY(bool, learning, setLearning);
+    FCITX_DECLARE_PROPERTY(int, autoPhraseLength, setAutoPhraseLength);
+    FCITX_DECLARE_PROPERTY(int, saveAutoPhraseAfter, setSaveAutoPhraseAfter);
     FCITX_DECLARE_PROPERTY(std::unordered_set<std::string>, autoRuleSet,
                            setAutoRuleSet);
     FCITX_DECLARE_PROPERTY(std::string, languageCode, setLanguageCode);

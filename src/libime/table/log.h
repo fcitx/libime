@@ -16,21 +16,16 @@
 * License along with this library; see the file COPYING. If not,
 * see <http://www.gnu.org/licenses/>.
 */
-#ifndef _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_
-#define _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_
+#ifndef _FCITX_LIBIME_TABLE_LOG_H_
+#define _FCITX_LIBIME_TABLE_LOG_H_
 
-#include "pinyindecoder.h"
-#include <libime/core/lattice.h>
+#include <fcitx-utils/log.h>
 
 namespace libime {
+FCITX_DECLARE_LOG_CATEGORY(libime_table_logcategory);
 
-class PinyinLatticeNodePrivate : public LatticeNodeData {
-public:
-    PinyinLatticeNodePrivate(boost::string_view encodedPinyin)
-        : encodedPinyin_(encodedPinyin.to_string()) {}
-
-    std::string encodedPinyin_;
-};
+#define LIBIME_TABLE_DEBUG()                                                   \
+    FCITX_LOGC(::libime::libime_table_logcategory, Debug)
 }
 
-#endif // _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_
+#endif // _FCITX_LIBIME_TABLE_LOG_H_

@@ -173,13 +173,9 @@ public:
                 throw_if_io_fail(unmarshall(in, size));
                 std::vector<std::string> sentence;
                 while (size--) {
-                    uint32_t length;
-                    throw_if_io_fail(unmarshall(in, length));
-                    std::vector<char> buffer;
-                    buffer.resize(length);
-                    throw_if_io_fail(
-                        in.read(buffer.data(), sizeof(char) * length));
-                    sentence.emplace_back(buffer.begin(), buffer.end());
+                    std::string buffer;
+                    throw_if_io_fail(unmarshallString(in, buffer));
+                    sentence.emplace_back(std::move(buffer));
                 }
                 add(sentence);
             }
@@ -198,9 +194,7 @@ public:
                 uint32_t size = sentence.size();
                 throw_if_io_fail(marshall(out, size));
                 for (auto &s : sentence) {
-                    uint32_t length = s.size();
-                    throw_if_io_fail(marshall(out, length));
-                    throw_if_io_fail(out.write(s.data(), s.size()));
+                    throw_if_io_fail(marshallString(out, s));
                 }
             }
             next_->save(out);

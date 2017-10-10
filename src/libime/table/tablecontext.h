@@ -71,7 +71,13 @@ public:
     std::string selectedSentence() const;
     size_t selectedLength() const;
 
+    /// \brief Save the current selected text.
     void learn();
+
+    /// \brief Learn auto word from string.
+    ///
+    /// Depending on the tableOptions, it will try to learn the word in history.
+    void learnAutoPhrase(boost::string_view history);
 
     const TableBasedDictionary &dict() const;
     TableBasedDictionary &mutableDict();

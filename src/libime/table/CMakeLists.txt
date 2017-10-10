@@ -4,6 +4,7 @@ set(LIBIME_TABLE_HDRS
     tableoptions.h
     tablerule.h
     tabledecoder.h
+    autophrasedict.h
     ${CMAKE_CURRENT_BINARY_DIR}/libimetable_export.h
     )
 
@@ -12,6 +13,8 @@ set(LIBIME_TABLE_SRCS
     tablecontext.cpp
     tableoptions.cpp
     tabledecoder.cpp
+    autophrasedict.cpp
+    log.cpp
     )
 
 add_library(IMETable SHARED ${LIBIME_TABLE_SRCS})

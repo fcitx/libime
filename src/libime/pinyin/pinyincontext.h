@@ -69,6 +69,9 @@ public:
 
     void learn();
 
+    int pinyinBeforeCursor() const;
+    int pinyinAfterCursor() const;
+
     PinyinIME *ime() const;
 
 protected:

@@ -34,18 +34,15 @@ public:
     uint32_t matchingKey_ = false;
     bool exactMatch_ = false;
 
-    bool autoLearning_ = false;
-    bool noMatchDontCommit_ = false;
-    bool autoPhraseLength_ = false;
-    bool saveAutoPhrase_ = false;
+    bool learning_ = true;
+    int autoPhraseLength_ = -1;
+    int saveAutoPhraseAfter_ = -1;
+    std::unordered_set<std::string> autoRuleSet_;
 
     // show hint for word.
     bool prompt_ = false;
     // use prompt table
     bool displayCustomPromptSymbol_ = false;
-    //
-    bool firstCandidateAsPreedit_ = true;
-    std::unordered_set<std::string> autoRuleSet_;
 
     std::string languageCode_;
 };
@@ -70,16 +67,11 @@ FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::set<uint32_t>, endKey,
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, uint32_t, matchingKey,
                               setMatchingKey);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, exactMatch, setExactMatch);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoLearning,
-                              setAutoLearning);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, noMatchDontCommit,
-                              setNoMatchDontCommit);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoPhraseLength,
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, learning, setLearning);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, autoPhraseLength,
                               setAutoPhraseLength);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, saveAutoPhrase,
-                              setSaveAutoPhrase);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, firstCandidateAsPreedit,
-                              setFirstCandidateAsPreedit);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, saveAutoPhraseAfter,
+                              setSaveAutoPhraseAfter);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::string, languageCode,
                               setLanguageCode);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::unordered_set<std::string>,

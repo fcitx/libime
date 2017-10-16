@@ -102,7 +102,7 @@ uint32_t AutoPhraseDict::exactSearch(boost::string_view s) const {
     auto &idx = d->il.get<1>();
     auto iter = idx.find(s);
     if (iter == idx.end()) {
-        return -1;
+        return 0;
     }
     return iter->hit_;
 }

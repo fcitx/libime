@@ -74,6 +74,8 @@ public:
 
     PinyinIME *ime() const;
 
+    State state() const;
+
 protected:
     void typeImpl(const char *s, size_t length) override;
 

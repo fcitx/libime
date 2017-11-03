@@ -68,6 +68,11 @@ HistoryBigram &UserLanguageModel::history() {
     return d->history_;
 }
 
+const HistoryBigram &UserLanguageModel::history() const {
+    FCITX_D();
+    return d->history_;
+}
+
 void UserLanguageModel::load(std::istream &in) {
     FCITX_D();
     HistoryBigram history;

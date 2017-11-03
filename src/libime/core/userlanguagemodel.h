@@ -36,6 +36,7 @@ public:
     virtual ~UserLanguageModel();
 
     HistoryBigram &history();
+    const HistoryBigram &history() const;
     void load(std::istream &in);
     void save(std::ostream &out);
 

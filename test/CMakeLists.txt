@@ -22,6 +22,9 @@ endforeach()
 add_executable(testmodel testmodel.cpp)
 target_link_libraries(testmodel LibIME::Core)
 
+add_executable(testprediction testprediction.cpp)
+target_link_libraries(testprediction LibIME::Core)
+
 add_executable(testpinyinime testpinyinime.cpp)
 target_link_libraries(testpinyinime LibIME::Pinyin)
 

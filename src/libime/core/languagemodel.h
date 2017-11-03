@@ -19,6 +19,7 @@
 #ifndef _FCITX_LIBIME_CORE_LANGUAGEMODEL_H_
 #define _FCITX_LIBIME_CORE_LANGUAGEMODEL_H_
 
+#include "datrie.h"
 #include "libimecore_export.h"
 #include <boost/utility/string_view.hpp>
 #include <fcitx-utils/macros.h>
@@ -53,6 +54,9 @@ public:
     virtual bool isUnknown(WordIndex idx, boost::string_view view) const = 0;
     bool isNodeUnknown(const LatticeNode &node) const;
     float singleWordScore(boost::string_view word) const;
+    float singleWordScore(const State &state, boost::string_view word) const;
+    float wordsScore(const State &state,
+                     const std::vector<boost::string_view> &word) const;
 };
 
 class StaticLanguageModelFilePrivate;
@@ -64,6 +68,8 @@ public:
     explicit StaticLanguageModelFile(const char *file);
     virtual ~StaticLanguageModelFile();
 
+    const DATrie<float> &predictionTrie() const;
+
 private:
     std::unique_ptr<StaticLanguageModelFilePrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(StaticLanguageModelFile);
@@ -74,6 +80,8 @@ public:
     LanguageModel(const char *file);
     LanguageModel(std::shared_ptr<const StaticLanguageModelFile> file);
     virtual ~LanguageModel();
+
+    std::shared_ptr<const StaticLanguageModelFile> languageModelFile() const;
 
     WordIndex beginSentence() const override;
     WordIndex endSentence() const override;

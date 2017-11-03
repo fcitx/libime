@@ -4,6 +4,11 @@ target_link_libraries(libime_slm_build_binary kenlm)
 install(TARGETS libime_slm_build_binary DESTINATION ${CMAKE_INSTALL_BINDIR})
 add_executable(LibIME::slm_build_binary ALIAS libime_slm_build_binary)
 
+add_executable(libime_prediction libime_prediction.cpp)
+target_link_libraries(libime_prediction LibIME::Core)
+install(TARGETS libime_prediction DESTINATION ${CMAKE_INSTALL_BINDIR})
+add_executable(LibIME::prediction ALIAS libime_prediction)
+
 add_executable(libime_pinyindict libime_pinyindict.cpp)
 target_link_libraries(libime_pinyindict LibIME::Pinyin)
 install(TARGETS libime_pinyindict DESTINATION ${CMAKE_INSTALL_BINDIR})

@@ -22,6 +22,7 @@
 #include "constants.h"
 #include "lattice.h"
 #include "lm/model.hh"
+#include <fstream>
 #include <type_traits>
 
 namespace libime {
@@ -30,8 +31,11 @@ class StaticLanguageModelFilePrivate {
 public:
     StaticLanguageModelFilePrivate(const char *file,
                                    const lm::ngram::Config &config)
-        : model_(file, config) {}
+        : model_(file, config), file_(file) {}
     lm::ngram::QuantArrayTrieModel model_;
+    std::string file_;
+    mutable bool predictionLoaded_ = false;
+    mutable DATrie<float> prediction_;
 };
 
 StaticLanguageModelFile::StaticLanguageModelFile(const char *file) {
@@ -41,6 +45,24 @@ StaticLanguageModelFile::StaticLanguageModelFile(const char *file) {
 }
 
 StaticLanguageModelFile::~StaticLanguageModelFile() {}
+
+const DATrie<float> &StaticLanguageModelFile::predictionTrie() const {
+    FCITX_D();
+    if (!d->predictionLoaded_) {
+        d->predictionLoaded_ = true;
+        try {
+            std::ifstream fin;
+            fin.open(d->file_ + ".predict", std::ios::in | std::ios::binary);
+            if (fin) {
+                DATrie<float> trie;
+                trie.load(fin);
+                d->prediction_ = std::move(trie);
+            }
+        } catch (...) {
+        }
+    }
+    return d->prediction_;
+}
 
 static_assert(sizeof(void *) + sizeof(lm::ngram::State) <= StateSize, "Size");
 
@@ -53,6 +75,25 @@ float LanguageModelBase::singleWordScore(boost::string_view word) const {
     State dummy;
     WordNode node(word, idx);
     return score(nullState(), node, dummy);
+}
+
+float LanguageModelBase::singleWordScore(const State &state,
+                                         boost::string_view word) const {
+    return wordsScore(state, std::vector<boost::string_view>{word});
+}
+
+float LanguageModelBase::wordsScore(
+    const State &_state, const std::vector<boost::string_view> &words) const {
+    float s = 0;
+    State state = _state, outState;
+    std::vector<WordNode> nodes;
+    for (auto word : words) {
+        auto idx = index(word);
+        nodes.emplace_back(word, idx);
+        s += score(state, nodes.back(), outState);
+        state = std::move(outState);
+    }
+    return s;
 }
 
 static_assert(std::is_pod<lm::ngram::State>::value, "State should be pod");
@@ -97,6 +138,12 @@ LanguageModel::LanguageModel(
 }
 
 LanguageModel::~LanguageModel() {}
+
+std::shared_ptr<const StaticLanguageModelFile>
+LanguageModel::languageModelFile() const {
+    FCITX_D();
+    return d->file_;
+}
 
 WordIndex LanguageModel::beginSentence() const {
     FCITX_D();

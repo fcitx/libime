@@ -9,6 +9,7 @@ fcitx5_extract(opengram-lm-extract ${OPENGRAM_LM_TAR} DEPENDS opengram-lm-downlo
 
 set(OPENGRAM_LM_SRC "${CMAKE_CURRENT_BINARY_DIR}/kenlm_sc.arpa")
 set(OPENGRAM_LM_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.lm")
+set(OPENGRAM_LM_PREDICT_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.lm.predict")
 add_custom_command(
   OUTPUT "${OPENGRAM_LM_SRC}"
   DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/lm_sc.3gm.arpa" ${CMAKE_CURRENT_SOURCE_DIR}/convert_open_gram_arpa.py
@@ -18,7 +19,14 @@ add_custom_command(
   DEPENDS "${OPENGRAM_LM_SRC}" LibIME::slm_build_binary
   COMMAND LibIME::slm_build_binary -s trie -a 22 -q 8 "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_OUTPUT}")
 add_custom_target(opengram-lm ALL DEPENDS "${OPENGRAM_LM_OUTPUT}")
-install(FILES "${OPENGRAM_LM_OUTPUT}" DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")
+
+add_custom_command(
+  OUTPUT "${OPENGRAM_LM_PREDICT_OUTPUT}"
+  DEPENDS "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_OUTPUT}" LibIME::prediction
+  COMMAND LibIME::prediction "${OPENGRAM_LM_OUTPUT}" "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_PREDICT_OUTPUT}")
+add_custom_target(opengram-lm-predict ALL DEPENDS "${OPENGRAM_LM_PREDICT_OUTPUT}")
+
+install(FILES "${OPENGRAM_LM_OUTPUT}" "${OPENGRAM_LM_PREDICT_OUTPUT}" DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")
 
 set(OPENGRAM_DICT_TAR "dict.utf8-20170423.tar.xz")
 set(OPENGRAM_DICT_URL "https://download.fcitx-im.org/data/dict.utf8-20170423.tar.xz")

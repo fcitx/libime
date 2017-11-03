@@ -124,6 +124,22 @@ public:
         }
     }
 
+    void fillPredict(std::unordered_set<std::string> &words,
+                     boost::string_view word, size_t maxSize) const {
+        trie_.foreach(word,
+                      [this, &words, maxSize](TrieType::value_type, size_t len,
+                                              TrieType::position_type pos) {
+                          std::string buf;
+                          trie().suffix(buf, len, pos);
+                          words.emplace(std::move(buf));
+
+                          if (maxSize > 0 && words.size() >= maxSize) {
+                              return false;
+                          }
+                          return true;
+                      });
+    }
+
 private:
     void decWeightedSize(int32_t v) {
         weightedSize_ -= v;
@@ -370,10 +386,20 @@ public:
             unigram_.decFreq(word, unigram_.freq(word));
             std::string prefix = word.to_string() + '|';
             std::string suffix = '|' + word.to_string();
+            bigram_.eraseByPrefix(prefix);
+            bigram_.eraseBySuffix(suffix);
         }
 
         if (next_) {
             next_->forget(word);
+        }
+    }
+
+    void fillPredict(std::unordered_set<std::string> &words,
+                     boost::string_view word, size_t maxSize = 0) const {
+        bigram_.fillPredict(words, word, maxSize);
+        if (next_ && (words.size() < maxSize || maxSize <= 0)) {
+            next_->fillPredict(words, word, maxSize);
         }
     }
 
@@ -534,5 +560,22 @@ void HistoryBigram::clear() {
 void HistoryBigram::forget(boost::string_view word) {
     FCITX_D();
     d->recentPool_.forget(word);
+}
+
+void HistoryBigram::fillPredict(std::unordered_set<std::string> words,
+                                const std::vector<std::string> &sentence,
+                                size_t maxSize) const {
+    FCITX_D();
+    if (maxSize > 0 && words.size() >= maxSize) {
+        return;
+    }
+    std::string lookup;
+    if (sentence.size()) {
+        lookup = sentence.back();
+    } else {
+        lookup = "<s>";
+    }
+    lookup += "|";
+    d->recentPool_.fillPredict(words, lookup, maxSize);
 }
 }

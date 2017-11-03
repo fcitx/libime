@@ -61,6 +61,10 @@ public:
     void add(const SentenceResult &sentence);
     void add(const std::vector<std::string> &sentence);
 
+    void fillPredict(std::unordered_set<std::string> words,
+                     const std::vector<std::string> &sentence,
+                     size_t maxSize) const;
+
 private:
     std::unique_ptr<HistoryBigramPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(HistoryBigram);

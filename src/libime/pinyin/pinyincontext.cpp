@@ -204,6 +204,25 @@ void PinyinContext::cancel() {
     update();
 }
 
+State PinyinContext::state() const {
+    FCITX_D();
+    auto model = d->ime_->model();
+    State state = model->nullState();
+    if (d->selected_.size()) {
+        for (auto &s : d->selected_) {
+            for (auto &item : s) {
+                if (item.word_.word().empty()) {
+                    continue;
+                }
+                State temp;
+                model->score(state, item.word_, temp);
+                state = std::move(temp);
+            }
+        }
+    }
+    return state;
+}
+
 void PinyinContext::update() {
     FCITX_D();
     if (size() == 0) {

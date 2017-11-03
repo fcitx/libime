@@ -131,6 +131,10 @@ public:
                                               TrieType::position_type pos) {
                           std::string buf;
                           trie().suffix(buf, len, pos);
+                          // Skip special word.
+                          if (buf == "<s>" || buf == "</s>") {
+                              return true;
+                          }
                           words.emplace(std::move(buf));
 
                           if (maxSize > 0 && words.size() >= maxSize) {
@@ -562,7 +566,7 @@ void HistoryBigram::forget(boost::string_view word) {
     d->recentPool_.forget(word);
 }
 
-void HistoryBigram::fillPredict(std::unordered_set<std::string> words,
+void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
                                 const std::vector<std::string> &sentence,
                                 size_t maxSize) const {
     FCITX_D();

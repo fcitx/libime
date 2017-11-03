@@ -17,6 +17,7 @@
  * see <http://www.gnu.org/licenses/>.
  */
 
+#include "libime/core/historybigram.h"
 #include "libime/core/languagemodel.h"
 #include "libime/core/prediction.h"
 #include "testdir.h"
@@ -33,10 +34,14 @@
 using namespace libime;
 
 int main() {
-    LanguageModel model(LIBIME_BINARY_DIR "/data/sc.lm");
+    UserLanguageModel model(LIBIME_BINARY_DIR "/data/sc.lm");
     Prediction pred;
-    pred.setLanguageModel(&model);
-    for (auto result : pred.predict(model.nullState(), {"你"})) {
+    pred.setUserLanguageModel(&model);
+    model.history().add({"你", "希望"});
+    for (auto result : pred.predict(std::vector<std::string>{"你"})) {
+        FCITX_LOG(Info) << result;
+    }
+    for (auto result : pred.predict(std::vector<std::string>{"你"})) {
         FCITX_LOG(Info) << result;
     }
 

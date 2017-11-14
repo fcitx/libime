@@ -99,6 +99,9 @@ struct PinyinSegmentGraphPathHasher {
     // equal to pathToPinyins(path), but this function just try to avoid
     // allocate a string for comparisin.
     bool operator()(const SegmentGraphPath &path, const std::string &s) const {
+        if (path.size() <= 1) {
+            return false;
+        }
         auto is = s.begin();
         const auto &data = graph_.data();
         auto iter = path.begin();
@@ -125,7 +128,7 @@ struct PinyinSegmentGraphPathHasher {
             }
             is++;
         }
-        return is == s.end();
+        return iter + 1 == path.end() && is == s.end();
     }
 
 private:

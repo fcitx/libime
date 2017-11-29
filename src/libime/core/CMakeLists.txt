@@ -55,7 +55,7 @@ set_target_properties(IMECore
 )
 target_include_directories(IMECore PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
-    $<BUILD_INTERFACE;${CMAKE_CURRENT_BINARY_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_INCLUDEDIR}/LibIME>)
 
 target_link_libraries(IMECore PRIVATE kenlm

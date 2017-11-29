@@ -10,7 +10,7 @@ foreach(f ${__KENLM_SRCS})
 endforeach()
 
 add_library(kenlm STATIC ${KENLM_SRCS})
-target_include_directories(kenlm PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/kenlm>")
+target_include_directories(kenlm PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/kenlm>)
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=3 PRIVATE -DNDEBUG)
 target_link_libraries(kenlm PUBLIC Boost::boost)
 set_target_properties(kenlm PROPERTIES
@@ -54,8 +54,9 @@ set_target_properties(IMECore
                       EXPORT_NAME Core
 )
 target_include_directories(IMECore PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..;${CMAKE_CURRENT_BINARY_DIR}>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_INCLUDEDIR}/LibIME>")
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+    $<BUILD_INTERFACE;${CMAKE_CURRENT_BINARY_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_INCLUDEDIR}/LibIME>)
 
 target_link_libraries(IMECore PRIVATE kenlm
                               PUBLIC Fcitx5::Utils Boost::boost)

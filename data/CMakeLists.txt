@@ -17,7 +17,7 @@ add_custom_command(
 add_custom_command(
   OUTPUT "${OPENGRAM_LM_OUTPUT}"
   DEPENDS "${OPENGRAM_LM_SRC}" LibIME::slm_build_binary
-  COMMAND LibIME::slm_build_binary -s trie -a 22 -q 8 "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_OUTPUT}")
+  COMMAND LibIME::slm_build_binary -s -a 22 -q 8 trie "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_OUTPUT}")
 add_custom_target(opengram-lm ALL DEPENDS "${OPENGRAM_LM_OUTPUT}")
 
 add_custom_command(

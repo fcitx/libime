@@ -1138,5 +1138,4 @@ size_t DATrie<T>::mem_size() const {
 template class DATrie<float>;
 template class DATrie<int32_t>;
 template class DATrie<uint32_t>;
-
 }

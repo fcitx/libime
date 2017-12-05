@@ -22,7 +22,7 @@ add_custom_target(opengram-lm ALL DEPENDS "${OPENGRAM_LM_OUTPUT}")
 
 add_custom_command(
   OUTPUT "${OPENGRAM_LM_PREDICT_OUTPUT}"
-  DEPENDS "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_OUTPUT}" LibIME::prediction
+  DEPENDS "${OPENGRAM_LM_SRC}" opengram-lm LibIME::prediction
   COMMAND LibIME::prediction "${OPENGRAM_LM_OUTPUT}" "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_PREDICT_OUTPUT}")
 add_custom_target(opengram-lm-predict ALL DEPENDS "${OPENGRAM_LM_PREDICT_OUTPUT}")
 

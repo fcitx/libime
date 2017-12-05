@@ -24,6 +24,7 @@
 #include <fcitx-utils/macros.h>
 #include <memory>
 #include <set>
+#include <string>
 #include <unordered_set>
 
 namespace libime {

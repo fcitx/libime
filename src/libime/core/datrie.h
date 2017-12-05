@@ -145,9 +145,9 @@ private:
     std::unique_ptr<DATriePrivate<value_type>> d;
 };
 
-template class LIBIMECORE_EXPORT DATrie<float>;
-template class LIBIMECORE_EXPORT DATrie<int32_t>;
-template class LIBIMECORE_EXPORT DATrie<uint32_t>;
+extern template class LIBIMECORE_EXPORT DATrie<float>;
+extern template class LIBIMECORE_EXPORT DATrie<int32_t>;
+extern template class LIBIMECORE_EXPORT DATrie<uint32_t>;
 }
 
 #endif // _FCITX_LIBIME_CORE_DATRIE_H_

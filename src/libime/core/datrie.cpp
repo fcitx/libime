@@ -1134,4 +1134,9 @@ size_t DATrie<T>::mem_size() const {
            sizeof(typename decltype(d->m_ninfo)::value_type) *
                d->m_ninfo.size();
 }
+
+template class DATrie<float>;
+template class DATrie<int32_t>;
+template class DATrie<uint32_t>;
+
 }

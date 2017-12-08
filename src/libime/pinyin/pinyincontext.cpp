@@ -121,7 +121,12 @@ void PinyinContext::setCursor(size_t pos) {
 
 int PinyinContext::pinyinBeforeCursor() const {
     FCITX_D();
-    auto c = cursor() + selectedLength();
+    auto len = selectedLength();
+    auto c = cursor();
+    if (c < len) {
+        return -1;
+    }
+    c -= len;
     if (d->candidates_.size()) {
         for (auto &s : d->candidates_[0].sentence()) {
             for (auto iter = s->path().begin(),
@@ -129,7 +134,7 @@ int PinyinContext::pinyinBeforeCursor() const {
                  iter < end; iter++) {
                 auto from = (*iter)->index(), to = (*std::next(iter))->index();
                 if (to >= c) {
-                    return from;
+                    return from + len;
                 }
             }
         }
@@ -139,7 +144,12 @@ int PinyinContext::pinyinBeforeCursor() const {
 
 int PinyinContext::pinyinAfterCursor() const {
     FCITX_D();
-    auto c = cursor() + selectedLength();
+    auto len = selectedLength();
+    auto c = cursor();
+    if (c < len) {
+        return -1;
+    }
+    c -= len;
     if (d->candidates_.size()) {
         for (auto &s : d->candidates_[0].sentence()) {
             for (auto iter = s->path().begin(),
@@ -147,7 +157,7 @@ int PinyinContext::pinyinAfterCursor() const {
                  iter < end; iter++) {
                 auto to = (*std::next(iter))->index();
                 if (to > c) {
-                    return to;
+                    return to + len;
                 }
             }
         }

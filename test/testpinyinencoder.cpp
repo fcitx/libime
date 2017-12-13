@@ -158,5 +158,9 @@ int main() {
         auto result = PinyinEncoder::encodeOneUserPinyin("nh");
         FCITX_ASSERT(PinyinEncoder::decodeFullPinyin(result) == "n'h");
     }
+    {
+        auto result = PinyinEncoder::encodeOneUserPinyin("nfi");
+        FCITX_INFO() << PinyinEncoder::decodeFullPinyin(result);
+    }
     return 0;
 }

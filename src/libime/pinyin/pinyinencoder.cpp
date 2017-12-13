@@ -315,6 +315,19 @@ PinyinEncoder::encodeOneUserPinyin(boost::string_view pinyin) {
     return result;
 }
 
+bool PinyinEncoder::isValidUserPinyin(const char *data, size_t size) {
+    if (size % 2 != 0) {
+        return false;
+    }
+
+    for (size_t i = 0; i < size / 2; i++) {
+        if (!PinyinEncoder::isValidInitial(data[i * 2])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
     if (size % 2 != 0) {
         throw std::invalid_argument("invalid pinyin key");

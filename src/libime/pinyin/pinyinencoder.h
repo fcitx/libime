@@ -195,6 +195,12 @@ public:
     static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
     static std::vector<char> encodeOneUserPinyin(boost::string_view pinyin);
 
+    static bool isValidUserPinyin(const char *data, size_t size);
+
+    static bool isValidUserPinyin(const std::vector<char> &v) {
+        return isValidUserPinyin(v.data(), v.size());
+    }
+
     static std::string decodeFullPinyin(const std::vector<char> &v) {
         return decodeFullPinyin(v.data(), v.size());
     }

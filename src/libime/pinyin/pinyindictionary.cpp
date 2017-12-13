@@ -519,10 +519,8 @@ void PinyinDictionary::matchPrefixImpl(
 void PinyinDictionary::matchWords(const char *data, size_t size,
                                   PinyinMatchCallback callback) const {
     FCITX_D();
-    for (size_t i = 0; i < size / 2; i++) {
-        if (!PinyinEncoder::isValidInitial(data[i * 2])) {
-            throw std::invalid_argument("invalid pinyin");
-        }
+    if (!PinyinEncoder::isValidUserPinyin(data, size)) {
+        return;
     }
 
     std::list<std::pair<const PinyinTrie *, PinyinTrie::position_type>> nodes;

@@ -535,7 +535,7 @@ float HistoryBigram::score(boost::string_view prev,
         prev = "<s>";
     }
     if (cur.empty()) {
-        cur = "</s>";
+        cur = "<unk>";
     }
     auto pr = d->recentPool_.score(prev, cur);
     return std::log10(pr);

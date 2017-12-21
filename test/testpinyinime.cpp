@@ -34,14 +34,16 @@
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <functional>
+#include <fstream>
 #include <sstream>
 
 using namespace libime;
 
-int main() {
+int main(int argc, char *argv[]) {
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
     };
+    fcitx::Log::setLogRule("libime=5");
     PinyinIME ime(
         std::make_unique<PinyinDictionary>(),
         std::make_unique<UserLanguageModel>(LIBIME_BINARY_DIR "/data/sc.lm"));
@@ -49,6 +51,15 @@ int main() {
     ime.dict()->load(PinyinDictionary::SystemDict,
                      LIBIME_BINARY_DIR "/data/sc.dict",
                      PinyinDictFormat::Binary);
+    if (argc >= 2) {
+        ime.dict()->load(PinyinDictionary::UserDict,
+                         argv[1],
+                         PinyinDictFormat::Binary);
+    }
+    if (argc >= 3) {
+        std::fstream fin(argv[2], std::ios::in | std::ios::binary);
+        ime.model()->history().load(fin);
+    }
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
     ime.setScoreFilter(1.0f);
     ime.setShuangpinProfile(

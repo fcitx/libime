@@ -41,8 +41,6 @@ using PinyinTrie = typename TrieDictionary::TrieType;
 
 class LIBIMEPINYIN_EXPORT PinyinDictionary : public TrieDictionary {
 public:
-    static const size_t SystemDict = 0;
-    static const size_t UserDict = 1;
     explicit PinyinDictionary();
     ~PinyinDictionary();
 

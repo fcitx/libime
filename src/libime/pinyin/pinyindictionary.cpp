@@ -195,8 +195,6 @@ public:
     PinyinDictionaryPrivate(PinyinDictionary *q)
         : fcitx::QPtrHolder<PinyinDictionary>(q) {}
 
-    FCITX_DEFINE_SIGNAL_PRIVATE(PinyinDictionary, dictionaryChanged);
-
     void addEmptyMatch(const PinyinMatchContext &context,
                        const SegmentGraphNode &currentNode,
                        MatchedPinyinPaths &currentMatches) const;
@@ -213,13 +211,12 @@ public:
 
     void matchNode(const PinyinMatchContext &context,
                    const SegmentGraphNode &currentNode) const;
-
-    boost::ptr_vector<PinyinTrie> tries_;
 };
 
 void PinyinDictionaryPrivate::addEmptyMatch(
     const PinyinMatchContext &context, const SegmentGraphNode &currentNode,
     MatchedPinyinPaths &currentMatches) const {
+    FCITX_Q();
     const SegmentGraph &graph = context.graph_;
     // Create a new starting point for current node, and put it in matchResult.
     if (&currentNode != &graph.end() &&
@@ -232,7 +229,8 @@ void PinyinDictionaryPrivate::addEmptyMatch(
         }
 
         vec.push_back(&currentNode);
-        for (auto &trie : tries_) {
+        for (size_t i = 0; i < q->dictSize(); i++) {
+            auto &trie = *q->trie(i);
             currentMatches.emplace_back(&trie, 0, vec);
             currentMatches.back().triePositions().emplace_back(0, 0);
         }
@@ -524,7 +522,8 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
     }
 
     std::list<std::pair<const PinyinTrie *, PinyinTrie::position_type>> nodes;
-    for (auto &trie : d->tries_) {
+    for (size_t i = 0; i < dictSize(); i++) {
+        auto &trie = *this->trie(i);
         nodes.emplace_back(&trie, 0);
     }
     for (size_t i = 0; i <= size && nodes.size(); i++) {
@@ -591,11 +590,6 @@ PinyinDictionary::PinyinDictionary()
 
 PinyinDictionary::~PinyinDictionary() {}
 
-void PinyinDictionary::addEmptyDict() {
-    FCITX_D();
-    d->tries_.push_back(new PinyinTrie);
-}
-
 void PinyinDictionary::load(size_t idx, const char *filename,
                             PinyinDictFormat format) {
     std::ifstream in(filename, std::ios::in | std::ios::binary);
@@ -642,14 +636,14 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
             trie.set(result.data(), result.size(), prob);
         }
     }
-    d->tries_[idx] = std::move(trie);
+    *mutableTrie(idx) = std::move(trie);
 }
 
 void PinyinDictionary::loadBinary(size_t idx, std::istream &in) {
     FCITX_D();
     DATrie<float> trie;
     trie.load(in);
-    d->tries_[idx] = std::move(trie);
+    *mutableTrie(idx) = std::move(trie);
 }
 
 void PinyinDictionary::save(size_t idx, const char *filename,
@@ -667,7 +661,7 @@ void PinyinDictionary::save(size_t idx, std::ostream &out,
         saveText(idx, out);
         break;
     case PinyinDictFormat::Binary:
-        d->tries_[idx].save(out);
+        mutableTrie(idx)->save(out);
         break;
     default:
         throw std::invalid_argument("invalid format type");
@@ -679,7 +673,7 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
     std::string buf;
     std::ios state(nullptr);
     state.copyfmt(out);
-    auto &trie = d->tries_[idx];
+    auto &trie = *this->trie(idx);
     trie.foreach([this, &trie, &buf, &out](float value, size_t _len,
                                            PinyinTrie::position_type pos) {
         trie.suffix(buf, _len, pos);
@@ -696,31 +690,13 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
     out.copyfmt(state);
 }
 
-void PinyinDictionary::remove(size_t idx) {
-    FCITX_D();
-    if (idx <= UserDict) {
-        throw std::invalid_argument("User Dict not allow to be removed");
-    }
-    d->tries_.erase(d->tries_.begin() + idx);
-}
-
-const PinyinTrie *PinyinDictionary::trie(size_t idx) const {
-    FCITX_D();
-    return &d->tries_[idx];
-}
-
-size_t PinyinDictionary::dictSize() const {
-    FCITX_D();
-    return d->tries_.size();
-}
-
 void PinyinDictionary::addWord(size_t idx, boost::string_view fullPinyin,
                                boost::string_view hanzi, float cost) {
     FCITX_D();
     auto result = PinyinEncoder::encodeFullPinyin(fullPinyin);
     result.push_back(pinyinHanziSep);
     result.insert(result.end(), hanzi.begin(), hanzi.end());
-    d->tries_[idx].set(result.data(), result.size(), cost);
-    emit<PinyinDictionary::dictionaryChanged>(idx);
+    TrieDictionary::addWord(
+        idx, boost::string_view(result.data(), result.size()), cost);
 }
 }

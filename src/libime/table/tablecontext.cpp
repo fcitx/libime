@@ -303,8 +303,7 @@ UserLanguageModel &TableContext::mutableModel() {
 bool TableContext::isValidInput(uint32_t c) const {
     FCITX_D();
     auto matchingKey = d->dict_.tableOptions().matchingKey();
-    return (d->dict_.isInputCode(c) ||
-            (matchingKey && matchingKey == c) ||
+    return (d->dict_.isInputCode(c) || (matchingKey && matchingKey == c) ||
             (d->dict_.hasPinyin() && (c <= 'z' && c >= 'a')));
 }
 

@@ -22,8 +22,7 @@
 #include "libimepinyin_export.h"
 #include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
-#include <libime/core/datrie.h>
-#include <libime/core/dictionary.h>
+#include <libime/core/triedictionary.h>
 #include <libime/pinyin/pinyinencoder.h>
 #include <memory>
 
@@ -38,10 +37,9 @@ typedef std::function<bool(boost::string_view encodedPinyin,
     PinyinMatchCallback;
 class PinyinDictionary;
 
-using PinyinTrie = DATrie<float>;
+using PinyinTrie = typename TrieDictionary::TrieType;
 
-class LIBIMEPINYIN_EXPORT PinyinDictionary : public Dictionary,
-                                             public fcitx::ConnectableObject {
+class LIBIMEPINYIN_EXPORT PinyinDictionary : public TrieDictionary {
 public:
     static const size_t SystemDict = 0;
     static const size_t UserDict = 1;
@@ -52,9 +50,6 @@ public:
     void load(size_t idx, std::istream &in, PinyinDictFormat format);
     void load(size_t idx, const char *filename, PinyinDictFormat format);
 
-    // Append a dictionary at the end.
-    void addEmptyDict();
-
     // Match the word by encoded pinyin.
     void matchWords(const char *data, size_t size,
                     PinyinMatchCallback callback) const;
@@ -62,18 +57,10 @@ public:
     void save(size_t idx, const char *filename, PinyinDictFormat format);
     void save(size_t idx, std::ostream &out, PinyinDictFormat format);
 
-    // Remove a dictionary by index. The idx after it will be invalided. But the
-    // pointer to PinyinTrie will not.
-    void remove(size_t idx);
-    const PinyinTrie *trie(size_t idx) const;
-
-    // Total number to dictionary.
-    size_t dictSize() const;
-
     void addWord(size_t idx, boost::string_view fullPinyin,
                  boost::string_view hanzi, float cost = 0.0f);
 
-    FCITX_DECLARE_SIGNAL(PinyinDictionary, dictionaryChanged, void(size_t));
+    using dictionaryChanged = TrieDictionary::dictionaryChanged;
 
 protected:
     void

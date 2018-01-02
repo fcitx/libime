@@ -29,6 +29,7 @@ set(LIBIME_HDRS
     userlanguagemodel.h
     lrucache.h
     prediction.h
+    triedictionary.h
     ${CMAKE_CURRENT_BINARY_DIR}/libimecore_export.h
     )
 
@@ -43,6 +44,7 @@ set(LIBIME_SRCS
     segmentgraph.cpp
     utils.cpp
     prediction.cpp
+    triedictionary.cpp
     )
 
 add_library(IMECore SHARED ${LIBIME_SRCS})

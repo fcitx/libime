@@ -33,8 +33,8 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
-#include <functional>
 #include <fstream>
+#include <functional>
 #include <sstream>
 
 using namespace libime;
@@ -52,8 +52,7 @@ int main(int argc, char *argv[]) {
                      LIBIME_BINARY_DIR "/data/sc.dict",
                      PinyinDictFormat::Binary);
     if (argc >= 2) {
-        ime.dict()->load(PinyinDictionary::UserDict,
-                         argv[1],
+        ime.dict()->load(PinyinDictionary::UserDict, argv[1],
                          PinyinDictFormat::Binary);
     }
     if (argc >= 3) {

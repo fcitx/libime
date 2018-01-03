@@ -77,8 +77,9 @@ private:
 
 class LIBIMECORE_EXPORT LanguageModel : public LanguageModelBase {
 public:
-    LanguageModel(const char *file);
-    LanguageModel(std::shared_ptr<const StaticLanguageModelFile> file);
+    explicit LanguageModel(const char *file);
+    LanguageModel(
+        std::shared_ptr<const StaticLanguageModelFile> file = nullptr);
     virtual ~LanguageModel();
 
     std::shared_ptr<const StaticLanguageModelFile> languageModelFile() const;

@@ -30,9 +30,10 @@ class HistoryBigram;
 
 class LIBIMECORE_EXPORT UserLanguageModel : public LanguageModel {
 public:
-    UserLanguageModel(const char *sysfile);
+    explicit UserLanguageModel(const char *sysfile);
 
-    UserLanguageModel(std::shared_ptr<const StaticLanguageModelFile> file);
+    UserLanguageModel(
+        std::shared_ptr<const StaticLanguageModelFile> file = nullptr);
     virtual ~UserLanguageModel();
 
     HistoryBigram &history();

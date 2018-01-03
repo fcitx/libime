@@ -516,7 +516,6 @@ void PinyinDictionary::matchPrefixImpl(
 
 void PinyinDictionary::matchWords(const char *data, size_t size,
                                   PinyinMatchCallback callback) const {
-    FCITX_D();
     if (!PinyinEncoder::isValidUserPinyin(data, size)) {
         return;
     }
@@ -613,7 +612,6 @@ void PinyinDictionary::load(size_t idx, std::istream &in,
 }
 
 void PinyinDictionary::loadText(size_t idx, std::istream &in) {
-    FCITX_D();
     DATrie<float> trie;
 
     std::string buf;
@@ -640,7 +638,6 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
 }
 
 void PinyinDictionary::loadBinary(size_t idx, std::istream &in) {
-    FCITX_D();
     DATrie<float> trie;
     trie.load(in);
     *mutableTrie(idx) = std::move(trie);
@@ -655,7 +652,6 @@ void PinyinDictionary::save(size_t idx, const char *filename,
 
 void PinyinDictionary::save(size_t idx, std::ostream &out,
                             PinyinDictFormat format) {
-    FCITX_D();
     switch (format) {
     case PinyinDictFormat::Text:
         saveText(idx, out);
@@ -669,7 +665,6 @@ void PinyinDictionary::save(size_t idx, std::ostream &out,
 }
 
 void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
-    FCITX_D();
     std::string buf;
     std::ios state(nullptr);
     state.copyfmt(out);
@@ -692,7 +687,6 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
 
 void PinyinDictionary::addWord(size_t idx, boost::string_view fullPinyin,
                                boost::string_view hanzi, float cost) {
-    FCITX_D();
     auto result = PinyinEncoder::encodeFullPinyin(fullPinyin);
     result.push_back(pinyinHanziSep);
     result.insert(result.end(), hanzi.begin(), hanzi.end());

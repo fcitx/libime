@@ -196,7 +196,7 @@ float LanguageModel::score(const State &state, const WordNode &node,
     FCITX_D();
     assert(&state != &out);
     if (!d->model()) {
-        return 0;
+        return d->unknown_;
     }
     return d->model()->Score(lmState(state), node.idx(), lmState(out)) +
            (node.idx() == unknown() ? d->unknown_ : 0.0f);

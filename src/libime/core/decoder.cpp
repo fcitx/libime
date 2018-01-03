@@ -101,7 +101,7 @@ bool DecoderPrivate::buildLattice(
         }
         auto node = q->createLatticeNode(graph, model_, word.word(), word.idx(),
                                          path, model_->nullState(), adjust,
-                                         std::move(data), dupSize);
+                                         std::move(data), dupSize == 0);
         if (node) {
             lattice[path.back()].push_back(node);
             dupSize++;

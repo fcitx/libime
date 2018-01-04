@@ -262,9 +262,9 @@ DefaultLanguageModelResolver &DefaultLanguageModelResolver::instance() {
 
 std::string DefaultLanguageModelResolver::languageModelFileNameForLanguage(
     const std::string &language) {
-    if (language == "zh_CN") {
-        return LIBIME_INSTALL_PKGDATADIR "/sc.lm";
+    if (language.empty() || language.find('/') != std::string::npos) {
+        return {};
     }
-    return {};
+    return fcitx::stringutils::joinPath(LIBIME_INSTALL_PKGDATADIR, language + ".lm");
 }
 }

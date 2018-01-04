@@ -26,7 +26,8 @@ add_custom_command(
   COMMAND LibIME::prediction "${OPENGRAM_LM_OUTPUT}" "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_PREDICT_OUTPUT}")
 add_custom_target(opengram-lm-predict ALL DEPENDS "${OPENGRAM_LM_PREDICT_OUTPUT}")
 
-install(FILES "${OPENGRAM_LM_OUTPUT}" "${OPENGRAM_LM_PREDICT_OUTPUT}" DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")
+install(FILES "${OPENGRAM_LM_OUTPUT}" RENAME zh_CN.lm DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")
+install(FILES "${OPENGRAM_LM_PREDICT_OUTPUT}" RENAME zh_CN.lm.predict DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")
 
 set(OPENGRAM_DICT_TAR "dict.utf8-20170423.tar.xz")
 set(OPENGRAM_DICT_URL "https://download.fcitx-im.org/data/dict.utf8-20170423.tar.xz")

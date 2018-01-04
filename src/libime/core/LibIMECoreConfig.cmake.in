@@ -5,5 +5,17 @@ include(CMakeFindDependencyMacro)
 find_dependency(Boost 1.61)
 find_dependency(Fcitx5Utils)
 
+add_executable(LibIME::slm_build_binary IMPORTED)
+set_target_properties(LibIME::slm_build_binary PROPERTIES
+    IMPORTED_LOCATION "@CMAKE_INSTALL_FULL_BINDIR@/libime_slm_build_binary")
+
+add_executable(LibIME::prediction IMPORTED)
+set_target_properties(LibIME::prediction PROPERTIES
+    IMPORTED_LOCATION "@CMAKE_INSTALL_FULL_BINDIR@/libime_prediction")
+
+add_executable(LibIME::history IMPORTED)
+set_target_properties(LibIME::history PROPERTIES
+    IMPORTED_LOCATION "@CMAKE_INSTALL_FULL_BINDIR@/libime_history")
+
 include("${CMAKE_CURRENT_LIST_DIR}/LibIMECoreTargets.cmake")
 set(LIBIME_INSTALL_PKGDATADIR "@LIBIME_INSTALL_PKGDATADIR@")

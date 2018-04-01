@@ -65,6 +65,11 @@ void TrieDictionary::remove(size_t idx) {
     d->tries_.erase(d->tries_.begin() + idx);
 }
 
+void TrieDictionary::removeAll() {
+    FCITX_D();
+    d->tries_.erase(d->tries_.begin() + UserDict + 1, d->tries_.end());
+}
+
 const TrieDictionary::TrieType *TrieDictionary::trie(size_t idx) const {
     FCITX_D();
     return &d->tries_[idx];

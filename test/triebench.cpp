@@ -18,15 +18,17 @@ int main() {
     // key can be same as other
     while (std::cin >> key) {
         map[key] = count;
-        tree.update(key, [count, &map, &key](
-                             TestTrie::value_type v) -> TestTrie::value_type {
-            if (v != 0) {
-                // this is a key inserted twice
-                FCITX_ASSERT(map.find(key) != map.end());
-            }
-            // std::cout << key << " " << v << " " << count << std::endl;
-            return count;
-        });
+        tree.update(key,
+                    [count, &map,
+                     &key](TestTrie::value_type v) -> TestTrie::value_type {
+                        if (v != 0) {
+                            // this is a key inserted twice
+                            FCITX_ASSERT(map.find(key) != map.end());
+                        }
+                        // std::cout << key << " " << v << " " << count <<
+                        // std::endl;
+                        return count;
+                    });
         FCITX_ASSERT(tree.exactMatchSearch(key) == count);
         count++;
     }
@@ -46,7 +48,7 @@ int main() {
     std::string tempKey;
     size_t foreach_count = 0;
     tree.foreach([&tree, &map, &tempKey, &foreach_count](
-        TestTrie::value_type value, size_t len, uint64_t pos) {
+                     TestTrie::value_type value, size_t len, uint64_t pos) {
         (void)value;
         tree.suffix(tempKey, len, pos);
         FCITX_ASSERT(map.find(tempKey) != map.end());

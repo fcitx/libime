@@ -58,4 +58,4 @@ LatticeNode *PinyinDecoder::createLatticeNodeImpl(
     return new PinyinLatticeNode(word, idx, std::move(path), state, cost,
                                  std::move(pinyinData));
 }
-}
+} // namespace libime

@@ -72,4 +72,4 @@ void PinyinMatchState::discardDictionary(size_t idx) {
     d->matchCacheMap_.erase(d->context_->ime()->dict()->trie(idx));
     d->nodeCacheMap_.erase(d->context_->ime()->dict()->trie(idx));
 }
-}
+} // namespace libime

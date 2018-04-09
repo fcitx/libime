@@ -56,6 +56,6 @@ private:
     std::unique_ptr<PinyinMatchStatePrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinMatchState);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINMATCHSTATE_H_

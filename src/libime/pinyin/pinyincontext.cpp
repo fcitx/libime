@@ -531,4 +531,4 @@ PinyinIME *PinyinContext::ime() const {
     FCITX_D();
     return d->ime_;
 }
-}
+} // namespace libime

@@ -182,7 +182,7 @@ bool shouldReplaceCandidate(const SentenceResult &oldSentence,
 
     return false;
 }
-}
+} // namespace
 
 class TableContextPrivate : public fcitx::QPtrHolder<TableContext> {
 public:
@@ -706,4 +706,4 @@ std::string TableContext::candidateHint(size_t idx, bool custom) const {
     }
     return {};
 }
-}
+} // namespace libime

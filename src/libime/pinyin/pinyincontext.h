@@ -85,6 +85,6 @@ private:
     std::unique_ptr<PinyinContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinContext);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINCONTEXT_H_

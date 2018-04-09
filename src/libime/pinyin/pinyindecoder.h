@@ -54,6 +54,6 @@ protected:
                                        std::unique_ptr<LatticeNodeData> data,
                                        bool onlyPath) const override;
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINDECODER_H_

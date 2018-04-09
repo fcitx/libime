@@ -84,9 +84,8 @@ int main() {
         }
     }
     for (auto syl : PinyinEncoder::stringToSyllables(
-             "cuagn",
-             {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
-              PinyinFuzzyFlag::NG_GN})) {
+             "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
+                       PinyinFuzzyFlag::NG_GN})) {
         for (auto f : syl.second) {
             std::cout << PinyinSyllable(syl.first, f.first).toString()
                       << std::endl;

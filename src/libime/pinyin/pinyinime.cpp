@@ -159,4 +159,4 @@ std::shared_ptr<const ShuangpinProfile> PinyinIME::shuangpinProfile() const {
     FCITX_D();
     return d->spProfile_;
 }
-}
+} // namespace libime

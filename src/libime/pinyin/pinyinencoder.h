@@ -234,6 +234,6 @@ public:
     static const char firstFinal = static_cast<char>(PinyinFinal::A);
     static const char lastFinal = static_cast<char>(PinyinFinal::Zero);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINENCODER_H_

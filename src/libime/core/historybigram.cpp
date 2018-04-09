@@ -582,4 +582,4 @@ void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
     lookup += "|";
     d->recentPool_.fillPredict(words, lookup, maxSize);
 }
-}
+} // namespace libime

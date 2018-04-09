@@ -231,6 +231,6 @@ private:
     uint8_t phraseLength_ = 0;
     std::vector<TableRuleEntry> entries_;
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_TABLE_TABLERULE_H_

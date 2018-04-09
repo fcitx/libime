@@ -75,6 +75,6 @@ private:
     std::unique_ptr<PinyinDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinDictionary);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINDICTIONARY_H_

@@ -68,4 +68,4 @@ void Lattice::discardNode(
         });
     }
 }
-}
+} // namespace libime

@@ -63,6 +63,6 @@ private:
     std::unique_ptr<TableOptionsPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableOptions);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_TABLE_TABLEOPTIONS_H_

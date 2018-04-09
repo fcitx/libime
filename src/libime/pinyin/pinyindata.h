@@ -68,6 +68,6 @@ LIBIMEPINYIN_EXPORT const std::vector<bool> &getEncodedInitialFinal();
 LIBIMEPINYIN_EXPORT const
     std::unordered_map<std::string, std::pair<std::string, std::string>> &
     getInnerSegment();
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINDATA_H_

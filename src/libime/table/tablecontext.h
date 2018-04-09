@@ -97,6 +97,6 @@ private:
     std::unique_ptr<TableContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableContext);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_TABLE_TABLECONTEXT_H_

@@ -161,4 +161,4 @@ void SegmentGraph::merge(SegmentGraph &graph,
         discardCallback(nodeToDiscard);
     }
 }
-}
+} // namespace libime

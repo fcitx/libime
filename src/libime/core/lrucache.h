@@ -122,6 +122,6 @@ private:
         return &i->second.first;
     }
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_LRU_H_

@@ -53,6 +53,6 @@ private:
     std::unique_ptr<UserLanguageModelPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(UserLanguageModel);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_USERLANGUAGEMODEL_H_

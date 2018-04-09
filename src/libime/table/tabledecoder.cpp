@@ -66,7 +66,7 @@ bool checkRuleCanBeUsedAsAutoRule(const TableRule &rule) {
     }
     return currentChar == rule.phraseLength() + 1;
 }
-}
+} // namespace
 
 uint32_t TableLatticeNode::index() const {
     return d_ptr ? d_ptr->index_ : 0xFFFFFFFFu;
@@ -153,4 +153,4 @@ LIBIMETABLE_EXPORT SegmentGraph graphForCode(boost::string_view s,
 
     return graph;
 }
-}
+} // namespace libime

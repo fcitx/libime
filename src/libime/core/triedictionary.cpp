@@ -95,4 +95,4 @@ void TrieDictionary::addWord(size_t idx, boost::string_view key, float cost) {
     d->tries_[idx].set(key.data(), key.size(), cost);
     emit<TrieDictionary::dictionaryChanged>(idx);
 }
-}
+} // namespace libime

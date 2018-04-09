@@ -69,6 +69,6 @@ private:
     std::unique_ptr<HistoryBigramPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(HistoryBigram);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_HISTORYBIGRAM_H_

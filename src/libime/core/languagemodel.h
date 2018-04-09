@@ -134,6 +134,6 @@ private:
     DefaultLanguageModelResolver();
     ~DefaultLanguageModelResolver();
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_LANGUAGEMODEL_H_

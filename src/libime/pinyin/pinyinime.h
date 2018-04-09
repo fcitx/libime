@@ -68,6 +68,6 @@ private:
     std::unique_ptr<PinyinIMEPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(PinyinIME);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINIME_H_

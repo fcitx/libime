@@ -80,6 +80,6 @@ private:
     std::unique_ptr<DecoderPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(Decoder);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_DECODER_H_

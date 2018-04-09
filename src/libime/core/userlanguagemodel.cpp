@@ -132,4 +132,4 @@ bool UserLanguageModel::isUnknown(WordIndex idx,
     FCITX_D();
     return idx == unknown() && d->history_.isUnknown(view);
 }
-}
+} // namespace libime

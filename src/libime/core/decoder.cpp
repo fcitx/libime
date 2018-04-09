@@ -87,8 +87,9 @@ bool DecoderPrivate::buildLattice(
         dupPath;
 
     auto dictMatchCallback = [this, &graph, &lattice, &dupPath, q, frameSize](
-        const SegmentGraphPath &path, WordNode &word, float adjust,
-        std::unique_ptr<LatticeNodeData> data) {
+                                 const SegmentGraphPath &path, WordNode &word,
+                                 float adjust,
+                                 std::unique_ptr<LatticeNodeData> data) {
         if (InvalidWordIndex == word.idx()) {
             auto idx = model_->index(word.word());
             word.setIdx(idx);
@@ -347,4 +348,4 @@ LatticeNode *Decoder::createLatticeNodeImpl(
     bool) const {
     return new LatticeNode(word, idx, std::move(path), state, cost);
 }
-}
+} // namespace libime

@@ -50,6 +50,6 @@ protected:
                     const std::unordered_set<const SegmentGraphNode *> &ignore,
                     void *helper) const = 0;
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_DICTIONARY_H_

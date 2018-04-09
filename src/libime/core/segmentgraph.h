@@ -387,6 +387,6 @@ private:
     // ptr_vector doesn't have move constructor, G-R-E-A-T
     std::vector<std::unique_ptr<SegmentGraphNode>> graph_;
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_SEGMENTGRAPH_H_

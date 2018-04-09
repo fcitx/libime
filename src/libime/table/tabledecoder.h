@@ -65,6 +65,6 @@ protected:
 
 SegmentGraph graphForCode(boost::string_view s,
                           const TableBasedDictionary &dict);
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_TABLE_TABLEDECODER_H_

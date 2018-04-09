@@ -744,4 +744,4 @@ const PinyinMap &getPinyinMap() {
     };
     return pinyinMap;
 }
-}
+} // namespace libime

@@ -693,4 +693,4 @@ void PinyinDictionary::addWord(size_t idx, boost::string_view fullPinyin,
     TrieDictionary::addWord(
         idx, boost::string_view(result.data(), result.size()), cost);
 }
-}
+} // namespace libime

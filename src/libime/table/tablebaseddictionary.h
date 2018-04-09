@@ -124,6 +124,6 @@ private:
     std::unique_ptr<TableBasedDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableBasedDictionary);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_TABLE_TABLEBASEDDICTIONARY_H_

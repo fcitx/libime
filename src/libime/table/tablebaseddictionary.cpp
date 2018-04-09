@@ -127,7 +127,7 @@ void saveTrieToText(const DATrie<uint32_t> &trie, std::ostream &out) {
         out << std::get<0>(item) << " " << std::get<1>(item) << std::endl;
     }
 }
-}
+} // namespace
 
 class TableBasedDictionaryPrivate
     : public fcitx::QPtrHolder<TableBasedDictionary> {
@@ -244,8 +244,9 @@ public:
             positions = std::move(newPositions);
         }
 
-        auto matchWord = [&trie, &code, callback, flag, mode](
-            uint32_t value, size_t len, DATrie<int32_t>::position_type pos) {
+        auto matchWord = [&trie, &code, callback, flag,
+                          mode](uint32_t value, size_t len,
+                                DATrie<int32_t>::position_type pos) {
             std::string entry;
             trie.suffix(entry, code.size() + len, pos);
             auto sep = entry.find(keyValueSeparator, code.size());
@@ -584,8 +585,9 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     std::string buf;
     if (d->promptKey_) {
         auto promptString = fcitx::utf8::UCS4ToUTF8(d->promptKey_);
-        d->promptTrie_.foreach([this, &promptString, d, &buf, &out](
-            uint32_t value, size_t _len, DATrie<uint32_t>::position_type pos) {
+        d->promptTrie_.foreach([this, &promptString, d, &buf,
+                                &out](uint32_t value, size_t _len,
+                                      DATrie<uint32_t>::position_type pos) {
             d->promptTrie_.suffix(buf, _len, pos);
             out << promptString << buf << " " << fcitx::utf8::UCS4ToUTF8(value)
                 << std::endl;
@@ -594,15 +596,16 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     }
     if (d->phraseKey_) {
         auto phraseString = fcitx::utf8::UCS4ToUTF8(d->phraseKey_);
-        d->singleCharConstTrie_.foreach([this, &phraseString, d, &buf, &out](
-            int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
-            d->singleCharConstTrie_.suffix(buf, _len, pos);
-            auto sep = buf.find(keyValueSeparator);
-            boost::string_view ref(buf);
-            out << phraseString << ref.substr(sep + 1) << " "
-                << ref.substr(0, sep) << std::endl;
-            return true;
-        });
+        d->singleCharConstTrie_.foreach(
+            [this, &phraseString, d, &buf,
+             &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+                d->singleCharConstTrie_.suffix(buf, _len, pos);
+                auto sep = buf.find(keyValueSeparator);
+                boost::string_view ref(buf);
+                out << phraseString << ref.substr(sep + 1) << " "
+                    << ref.substr(0, sep) << std::endl;
+                return true;
+            });
     }
 
     saveTrieToText(d->phraseTrie_, out);
@@ -1189,22 +1192,23 @@ void TableBasedDictionary::matchPrefixImpl(
 
             auto code = graph.segment(*path[0], *path[1]);
             if (code.size() == graph.size()) {
-                matchWords(code, mode, [&](boost::string_view code,
-                                           boost::string_view word,
-                                           uint32_t index, PhraseFlag flag) {
-                    WordNode wordNode(word, InvalidWordIndex);
+                matchWords(code, mode,
+                           [&](boost::string_view code, boost::string_view word,
+                               uint32_t index, PhraseFlag flag) {
+                               WordNode wordNode(word, InvalidWordIndex);
 
-                    // for length 1 "pinyin", skip long pinyin as an
-                    // optimization.
-                    if (flag == PhraseFlag::Pinyin && graph.size() == 1 &&
-                        code.size() != 1) {
-                        return true;
-                    }
-                    callback(path, wordNode, 0,
-                             std::make_unique<TableLatticeNodePrivate>(
-                                 code, index, flag));
-                    return true;
-                });
+                               // for length 1 "pinyin", skip long pinyin as an
+                               // optimization.
+                               if (flag == PhraseFlag::Pinyin &&
+                                   graph.size() == 1 && code.size() != 1) {
+                                   return true;
+                               }
+                               callback(
+                                   path, wordNode, 0,
+                                   std::make_unique<TableLatticeNodePrivate>(
+                                       code, index, flag));
+                               return true;
+                           });
             } else if (!hasWildcard) {
                 // use it as a buffer.
                 std::string entry;
@@ -1234,4 +1238,4 @@ void TableBasedDictionary::matchPrefixImpl(
         return true;
     });
 }
-}
+} // namespace libime

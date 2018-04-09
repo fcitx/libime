@@ -238,6 +238,6 @@ template <typename T>
 void swap(naivevector<T> &lhs, naivevector<T> &rhs) {
     lhs.swap(rhs);
 }
-}
+} // namespace libime
 
 #endif // NAIVEVECTOR_H

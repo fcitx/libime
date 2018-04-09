@@ -37,6 +37,6 @@ public:
 
     std::vector<SentenceResult> nbests_;
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_LATTICE_P_H_

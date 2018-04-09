@@ -62,6 +62,6 @@ private:
     std::unique_ptr<ShuangpinProfilePrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(ShuangpinProfile);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_SHUANGPINPROFILE_H_

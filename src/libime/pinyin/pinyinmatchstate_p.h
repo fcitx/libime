@@ -111,6 +111,6 @@ public:
     PinyinTrieNodeCache nodeCacheMap_;
     PinyinMatchResultCache matchCacheMap_;
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINMATCHSTATE_P_H_

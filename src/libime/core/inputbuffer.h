@@ -68,6 +68,6 @@ public:
 
     iterator end() { return iterator(this, size()); }
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_INPUTBUFFER_H_

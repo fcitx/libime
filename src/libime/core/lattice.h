@@ -199,6 +199,6 @@ private:
     std::unique_ptr<LatticePrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(Lattice);
 };
-}
+} // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_LATTICE_H_

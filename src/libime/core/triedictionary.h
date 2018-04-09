@@ -67,6 +67,6 @@ protected:
     std::unique_ptr<TrieDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TrieDictionary);
 };
-}
+} // namespace libime
 
 #endif // _LIBIME_LIBIME_CORE_TRIEDICTIONARY_H_

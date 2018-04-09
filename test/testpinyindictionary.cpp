@@ -37,12 +37,14 @@ int main() {
     // dict.dump(std::cout);
     char c[] = {static_cast<char>(PinyinInitial::N), 0,
                 static_cast<char>(PinyinInitial::H), 0};
-    dict.matchWords(c, sizeof(c), [c](boost::string_view encodedPinyin,
-                                      boost::string_view hanzi, float cost) {
-        std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin) << " "
-                  << hanzi << " " << cost << std::endl;
-        return true;
-    });
+    dict.matchWords(c, sizeof(c),
+                    [c](boost::string_view encodedPinyin,
+                        boost::string_view hanzi, float cost) {
+                        std::cout
+                            << PinyinEncoder::decodeFullPinyin(encodedPinyin)
+                            << " " << hanzi << " " << cost << std::endl;
+                        return true;
+                    });
 
     dict.save(0, LIBIME_BINARY_DIR "/test/testpinyindictionary.dict",
               PinyinDictFormat::Binary);

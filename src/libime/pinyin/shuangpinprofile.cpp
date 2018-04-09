@@ -199,37 +199,38 @@ void ShuangpinProfile::buildShuangpinTable() {
         finalChars.insert(p.first);
     }
 
-    auto addPinyinToList = [](
-        std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys, PinyinInitial i,
-        PinyinFinal f, PinyinFuzzyFlags flags) {
-        PinyinSyllable s(i, f);
-        if (flags == PinyinFuzzyFlag::None) {
+    auto addPinyinToList =
+        [](std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
+           PinyinInitial i, PinyinFinal f, PinyinFuzzyFlags flags) {
+            PinyinSyllable s(i, f);
+            if (flags == PinyinFuzzyFlag::None) {
 
-            auto iter = pys.find(s);
-            if (iter != pys.end() && iter->second != PinyinFuzzyFlag::None) {
-                pys.erase(s);
-            }
-            if (iter == pys.end()) {
-                pys.emplace(s, flags);
-            }
-        } else {
-            auto iterPair = pys.equal_range(s);
-            // no match
-            if (iterPair.first != iterPair.second) {
-                if (iterPair.first->second == PinyinFuzzyFlag::None) {
-                    return;
+                auto iter = pys.find(s);
+                if (iter != pys.end() &&
+                    iter->second != PinyinFuzzyFlag::None) {
+                    pys.erase(s);
                 }
-                // check dup
-                for (auto i = iterPair.first; i != iterPair.second; i++) {
-                    if (i->second == flags) {
+                if (iter == pys.end()) {
+                    pys.emplace(s, flags);
+                }
+            } else {
+                auto iterPair = pys.equal_range(s);
+                // no match
+                if (iterPair.first != iterPair.second) {
+                    if (iterPair.first->second == PinyinFuzzyFlag::None) {
                         return;
                     }
+                    // check dup
+                    for (auto i = iterPair.first; i != iterPair.second; i++) {
+                        if (i->second == flags) {
+                            return;
+                        }
+                    }
                 }
-            }
 
-            pys.emplace(s, flags);
-        }
-    };
+                pys.emplace(s, flags);
+            }
+        };
 
     auto addPinyin = [addPinyinToList,
                       d](std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
@@ -383,4 +384,4 @@ ShuangpinProfile::validInput() const {
     FCITX_D();
     return d->validInputs_;
 }
-}
+} // namespace libime

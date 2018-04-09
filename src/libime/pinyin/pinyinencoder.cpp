@@ -585,4 +585,4 @@ PinyinEncoder::shuangpinToSyllables(boost::string_view pinyin,
 
     return result;
 }
-}
+} // namespace libime

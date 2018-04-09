@@ -265,6 +265,7 @@ std::string DefaultLanguageModelResolver::languageModelFileNameForLanguage(
     if (language.empty() || language.find('/') != std::string::npos) {
         return {};
     }
-    return fcitx::stringutils::joinPath(LIBIME_INSTALL_PKGDATADIR, language + ".lm");
+    return fcitx::stringutils::joinPath(LIBIME_INSTALL_PKGDATADIR,
+                                        language + ".lm");
 }
-}
+} // namespace libime

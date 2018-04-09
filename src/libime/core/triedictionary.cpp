@@ -57,22 +57,18 @@ void TrieDictionary::addEmptyDict() {
     d->tries_.push_back(new TrieType);
 }
 
-void TrieDictionary::remove(size_t idx) {
-    FCITX_D();
-    if (idx <= UserDict) {
-        throw std::invalid_argument("User Dict not allow to be removed");
-    }
-    d->tries_.erase(d->tries_.begin() + idx);
-}
-
 void TrieDictionary::removeAll() {
     FCITX_D();
+    for (auto i = UserDict + 1; i < d->tries_.size(); i++) {
+        emit<TrieDictionary::dictionaryChanged>(i);
+    }
     d->tries_.erase(d->tries_.begin() + UserDict + 1, d->tries_.end());
 }
 
 void TrieDictionary::clear(size_t idx) {
     FCITX_D();
     d->tries_[idx].clear();
+    emit<TrieDictionary::dictionaryChanged>(idx);
 }
 
 const TrieDictionary::TrieType *TrieDictionary::trie(size_t idx) const {

@@ -44,11 +44,15 @@ public:
     void addEmptyDict();
 
     // Remove a dictionary by index. The idx after it will be invalided. But the
-    // pointer to PinyinTrie will not.
+    // pointer to Trie will not.
     void remove(size_t idx);
 
     // Remove all dictionary except system and user.
     void removeAll();
+
+    // Clear dictionary.
+    void clear(size_t idx);
+
     const DATrie<float> *trie(size_t idx) const;
 
     // Total number to dictionary.

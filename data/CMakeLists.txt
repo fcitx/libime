@@ -1,6 +1,7 @@
 find_package(PythonInterp 3 REQUIRED)
 set(OPENGRAM_LM_TAR "lm_sc.3gm.arpa-20140820.tar.bz2")
-set(OPENGRAM_LM_URL "https://10gbps-io.dl.sourceforge.net/project/open-gram/${OPENGRAM_LM_TAR}")
+# Use our own file server for convenience.
+set(OPENGRAM_LM_URL "https://download.fcitx-im.org/data/${OPENGRAM_LM_TAR}")
 
 fcitx5_download(opengram-lm-download ${OPENGRAM_LM_URL} ${OPENGRAM_LM_TAR}
                 751bab7c55ea93a2cedfb0fbb7eb09f67d4da9c2c55496e5f31eb8580f1d1e2f)

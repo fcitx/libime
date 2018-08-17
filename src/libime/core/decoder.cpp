@@ -155,7 +155,10 @@ void DecoderPrivate::forwardSearch(
 
             if (!maxNode) {
                 auto iter = lattice.find(from);
-                assert(iter != lattice.end());
+                // assert(iter != lattice.end());
+                if (iter == lattice.end()) {
+                    continue;
+                }
                 auto &searchFrom = iter->second;
                 auto searchSize = beamSize;
                 if (searchSize) {

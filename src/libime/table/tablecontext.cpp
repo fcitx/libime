@@ -437,7 +437,7 @@ void TableContext::update() {
     d->candidates_.clear();
 
     constexpr float max = std::numeric_limits<float>::max();
-    constexpr float min = std::numeric_limits<float>::min();
+    constexpr float min = -std::numeric_limits<float>::max();
     constexpr int beamSize = 20;
     constexpr int frameSize = 10;
     auto lastSegLength = fcitx::utf8::length(d->graph_.data());
@@ -494,7 +494,8 @@ void TableContext::update() {
             if (sentence.sentence().size() >= 1) {
                 score = sentence.sentence().back()->score();
             }
-            if (min - score < minDistance) {
+            // Check the limit, or if there's no candidate.
+            if (min - score < minDistance || candidates().size() == 0) {
                 insertCandidate(sentence);
             }
         }

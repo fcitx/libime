@@ -1227,6 +1227,7 @@ void TableBasedDictionary::matchPrefixImpl(
                         boost::string_view ref(entry);
                         auto code = ref.substr(0, sep);
                         auto word = ref.substr(sep + 1);
+
                         WordNode wordNode(word, InvalidWordIndex);
                         callback(path, wordNode, 0,
                                  std::make_unique<TableLatticeNodePrivate>(

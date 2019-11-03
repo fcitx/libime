@@ -123,7 +123,7 @@ struct naivevector {
             reserve(cap);
 
             m_end = m_start + new_size;
-            if (!std::is_trivial<value_type>::value) {
+            if constexpr (!std::is_trivial_v<value_type>) {
                 for (auto p = m_start + old_size; p != m_end; p++) {
                     new (p) value_type();
                 }

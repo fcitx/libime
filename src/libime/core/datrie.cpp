@@ -79,11 +79,7 @@ public:
             throw_if_io_fail(unmarshall(in, check));
         }
 
-        node &operator=(const node &other) {
-            base = other.base;
-            check = other.check;
-            return (*this);
-        }
+        FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(node);
 
         friend std::ostream &operator<<(std::ostream &out, const node &n) {
             marshall(out, n.base) && marshall(out, n.check);
@@ -1138,4 +1134,4 @@ size_t DATrie<T>::mem_size() const {
 template class DATrie<float>;
 template class DATrie<int32_t>;
 template class DATrie<uint32_t>;
-}
+} // namespace libime

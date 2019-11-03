@@ -156,6 +156,7 @@ FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 
 void ShuangpinProfile::buildShuangpinTable() {
     FCITX_D();
+    // Set up valid inputs.
     for (char c = 'a'; c <= 'z'; c++) {
         d->validInputs_.insert(c);
     }
@@ -172,6 +173,7 @@ void ShuangpinProfile::buildShuangpinTable() {
         initialChars.insert(d->zeroS_);
     }
 
+    // Collect all initial and final chars.
     for (auto c = PinyinEncoder::firstInitial; c <= PinyinEncoder::lastInitial;
          c++) {
         const auto &initialString =
@@ -185,6 +187,7 @@ void ShuangpinProfile::buildShuangpinTable() {
         initialChars.insert(p.first);
     }
 
+    // Collect all final chars.
     std::set<char> finalChars;
     for (auto c = PinyinEncoder::firstFinal; c <= PinyinEncoder::lastFinal;
          c++) {
@@ -232,8 +235,8 @@ void ShuangpinProfile::buildShuangpinTable() {
             }
         };
 
-    auto addPinyin = [addPinyinToList,
-                      d](std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
+    auto addPinyin = [addPinyinToList](
+                         std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
                          const std::string &py) {
         auto &map = getPinyinMap();
         auto iterPair = map.equal_range(py);
@@ -246,35 +249,40 @@ void ShuangpinProfile::buildShuangpinTable() {
         }
     };
 
+    // Special handling for Xiaohe
     if (d->zeroS_ == '*') {
+        // length 1: aeiou, repeat it once: e.g. aa
+        // length 2: keep same as quanpin
+        // length 3: use the initial of quanpin and the one in the table.
         for (auto c : finalChars) {
-            std::string input{c, c};
-            auto &pys = d->spTable_[input];
+            // Check if final char is already a final (e.g. aeiou).
             auto final = PinyinEncoder::stringToFinal(std::string{c});
             if (final != PinyinFinal::Invalid &&
                 PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
                                                    final)) {
-                pys.emplace(PinyinSyllable{PinyinInitial::Zero, final},
-                            PinyinFuzzyFlag::None);
+                std::string input{c, c};
+                d->spTable_[input].emplace(
+                    PinyinSyllable{PinyinInitial::Zero, final},
+                    PinyinFuzzyFlag::None);
             }
-            if (d->finalMap_.count(c)) {
-                auto finalIterPair = d->finalMap_.equal_range(c);
-                if (finalIterPair.first != finalIterPair.second) {
-                    for (auto &item : boost::make_iterator_range(
-                             finalIterPair.first, finalIterPair.second)) {
-                        if (PinyinEncoder::isValidInitialFinal(
-                                PinyinInitial::Zero, item.second) &&
-                            PinyinEncoder::finalToString(item.second).size() !=
-                                2) {
-                            pys.emplace(PinyinSyllable{PinyinInitial::Zero,
-                                                       item.second},
-                                        PinyinFuzzyFlag::None);
-                        }
+            // If c is in final map.
+            auto finalIterPair = d->finalMap_.equal_range(c);
+            for (auto &item : boost::make_iterator_range(
+                     finalIterPair.first, finalIterPair.second)) {
+                if (PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
+                                                       item.second)) {
+                    std::string input;
+                    const auto finalString =
+                        PinyinEncoder::finalToString(item.second);
+                    if (finalString.size() == 1) {
+                        input = std::string{c, c};
+                    } else {
+                        input = std::string{finalString[0], c};
                     }
+                    d->spTable_[input].emplace(
+                        PinyinSyllable{PinyinInitial::Zero, item.second},
+                        PinyinFuzzyFlag::None);
                 }
-            }
-            if (!pys.size()) {
-                d->spTable_.erase(input);
             }
         }
     }
@@ -283,10 +291,6 @@ void ShuangpinProfile::buildShuangpinTable() {
         for (auto c2 : finalChars) {
             std::string input{c1, c2};
             auto &pys = d->spTable_[input];
-
-            if (input == "oo") {
-                input = input;
-            }
 
             std::vector<PinyinInitial> initials;
             std::vector<PinyinFinal> finals;

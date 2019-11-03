@@ -58,6 +58,21 @@ void checkProfile(const ShuangpinProfile &profile) {
     FCITX_ASSERT(validSyls.size() == 0);
 }
 
+void checkXiaoHe() {
+    PinyinEncoder::parseUserShuangpin(
+        "aiaaah", ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe),
+        PinyinFuzzyFlag::None)
+        .dfs([](const SegmentGraphBase &segs, const std::vector<size_t> &path) {
+            size_t s = 0;
+            for (auto e : path) {
+                std::cout << segs.segment(s, e) << " ";
+                s = e;
+            }
+            std::cout << std::endl;
+            return true;
+        });
+}
+
 int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma));
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS));
@@ -66,6 +81,8 @@ int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Zhongwenzhixing));
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::PinyinJiajia));
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe));
+
+    checkXiaoHe();
 
     // wo jiu shi xiang ce shi yi xia
     PinyinEncoder::parseUserShuangpin(

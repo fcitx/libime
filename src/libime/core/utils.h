@@ -20,6 +20,7 @@
 #ifndef LIBIME_UTILS_H
 #define LIBIME_UTILS_H
 
+#include "libimecore_export.h"
 #include <arpa/inet.h>
 #include <boost/utility/string_view.hpp>
 #include <chrono>
@@ -181,7 +182,7 @@ inline int millisecondsTill(T t0) {
         .count();
 }
 
-FCITX_DECLARE_LOG_CATEGORY(libime_logcategory);
+LIBIMECORE_EXPORT FCITX_DECLARE_LOG_CATEGORY(libime_logcategory);
 #define LIBIME_DEBUG() FCITX_LOGC(::libime::libime_logcategory, Debug)
 } // namespace libime
 

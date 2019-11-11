@@ -30,6 +30,7 @@ set(LIBIME_HDRS
     lrucache.h
     prediction.h
     triedictionary.h
+    utils.h
     ${CMAKE_CURRENT_BINARY_DIR}/libimecore_export.h
     )
 

@@ -42,6 +42,11 @@ namespace libime {
 namespace {
 
 static constexpr char keyValueSeparator = '\x01';
+// "fc" t"ab"l"e"
+static constexpr uint32_t tableBinaryFormatMagic = 0x000fcabe;
+static constexpr uint32_t tableBinaryFormatVersion = 0x1;
+static constexpr uint32_t userTableBinaryFormatMagic = 0x356fcabe;
+static constexpr uint32_t userTableBinaryFormatVersion = 0x1;
 
 enum {
     STR_KEYCODE,
@@ -625,6 +630,16 @@ uint32_t maxValue(const DATrie<uint32_t> &trie) {
 
 void TableBasedDictionary::loadBinary(std::istream &in) {
     FCITX_D();
+    uint32_t magic;
+    uint32_t version;
+    throw_if_io_fail(unmarshall(in, magic));
+    if (magic != tableBinaryFormatMagic) {
+        throw std::invalid_argument("Invalid table magic.");
+    }
+    throw_if_io_fail(unmarshall(in, version));
+    if (version != tableBinaryFormatVersion) {
+        throw std::invalid_argument("Invalid table version.");
+    }
     throw_if_io_fail(unmarshall(in, d->pinyinKey_));
     throw_if_io_fail(unmarshall(in, d->promptKey_));
     throw_if_io_fail(unmarshall(in, d->phraseKey_));
@@ -685,6 +700,8 @@ void TableBasedDictionary::save(std::ostream &out, TableFormat format) {
 
 void TableBasedDictionary::saveBinary(std::ostream &out) {
     FCITX_D();
+    throw_if_io_fail(marshall(out, tableBinaryFormatMagic));
+    throw_if_io_fail(marshall(out, tableBinaryFormatVersion));
     throw_if_io_fail(marshall(out, d->pinyinKey_));
     throw_if_io_fail(marshall(out, d->promptKey_));
     throw_if_io_fail(marshall(out, d->phraseKey_));
@@ -722,8 +739,17 @@ void TableBasedDictionary::loadUser(const char *filename, TableFormat format) {
 
 void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
     FCITX_D();
+    uint32_t magic, version;
     switch (format) {
     case TableFormat::Binary:
+        throw_if_io_fail(unmarshall(in, magic));
+        if (magic != userTableBinaryFormatMagic) {
+            throw std::invalid_argument("Invalid user table magic.");
+        }
+        throw_if_io_fail(unmarshall(in, version));
+        if (version != userTableBinaryFormatVersion) {
+            throw std::invalid_argument("Invalid user table version.");
+        }
         d->userTrie_ = decltype(d->userTrie_)(in);
         d->userTrieIndex_ = maxValue(d->userTrie_);
         d->autoPhraseDict_ =
@@ -781,6 +807,8 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
     FCITX_D();
     switch (format) {
     case TableFormat::Binary:
+        throw_if_io_fail(marshall(out, userTableBinaryFormatMagic));
+        throw_if_io_fail(marshall(out, userTableBinaryFormatVersion));
         d->userTrie_.save(out);
         throw_if_io_fail(out);
         d->autoPhraseDict_.save(out);

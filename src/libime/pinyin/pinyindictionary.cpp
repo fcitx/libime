@@ -42,6 +42,9 @@ static const float fuzzyCost = std::log10(0.5f);
 static const float invalidPinyinCost = -100.0f;
 static const char pinyinHanziSep = '!';
 
+static constexpr uint32_t pinyinBinaryFormatMagic = 0x000fc613;
+static constexpr uint32_t pinyinBinaryFormatVersion = 0x1;
+
 struct PinyinSegmentGraphPathHasher {
     PinyinSegmentGraphPathHasher(const SegmentGraph &graph) : graph_(graph) {}
 
@@ -639,6 +642,16 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
 
 void PinyinDictionary::loadBinary(size_t idx, std::istream &in) {
     DATrie<float> trie;
+    uint32_t magic;
+    uint32_t version;
+    throw_if_io_fail(unmarshall(in, magic));
+    if (magic != pinyinBinaryFormatMagic) {
+        throw std::invalid_argument("Invalid pinyin magic.");
+    }
+    throw_if_io_fail(unmarshall(in, version));
+    if (version != pinyinBinaryFormatVersion) {
+        throw std::invalid_argument("Invalid pinyin version.");
+    }
     trie.load(in);
     *mutableTrie(idx) = std::move(trie);
 }
@@ -657,6 +670,8 @@ void PinyinDictionary::save(size_t idx, std::ostream &out,
         saveText(idx, out);
         break;
     case PinyinDictFormat::Binary:
+        throw_if_io_fail(marshall(out, pinyinBinaryFormatMagic));
+        throw_if_io_fail(marshall(out, pinyinBinaryFormatVersion));
         mutableTrie(idx)->save(out);
         break;
     default:

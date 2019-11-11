@@ -27,6 +27,9 @@
 #include <fcitx-utils/log.h>
 
 namespace libime {
+    
+static constexpr uint32_t historyBinaryFormatMagic = 0x000fc315;
+static constexpr uint32_t historyBinaryFormatVersion = 0x1;
 
 struct WeightedTrie {
     using TrieType = DATrie<int32_t>;
@@ -543,11 +546,23 @@ float HistoryBigram::score(boost::string_view prev,
 
 void HistoryBigram::load(std::istream &in) {
     FCITX_D();
+    uint32_t magic;
+    uint32_t version;
+    throw_if_io_fail(unmarshall(in, magic));
+    if (magic != historyBinaryFormatMagic) {
+        throw std::invalid_argument("Invalid history magic.");
+    }
+    throw_if_io_fail(unmarshall(in, version));
+    if (version != historyBinaryFormatVersion) {
+        throw std::invalid_argument("Invalid history version.");
+    }
     d->recentPool_.load(in);
 }
 
 void HistoryBigram::save(std::ostream &out) {
     FCITX_D();
+    throw_if_io_fail(marshall(out, historyBinaryFormatMagic));
+    throw_if_io_fail(marshall(out, historyBinaryFormatVersion));
     d->recentPool_.save(out);
 }
 

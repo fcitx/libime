@@ -27,7 +27,7 @@
 #include <fcitx-utils/log.h>
 
 namespace libime {
-    
+
 static constexpr uint32_t historyBinaryFormatMagic = 0x000fc315;
 static constexpr uint32_t historyBinaryFormatVersion = 0x1;
 

@@ -32,6 +32,18 @@ namespace libime {
 
 static const std::string emptyString;
 
+fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
+                                     PinyinInitial initial) {
+    log << PinyinEncoder::initialToString(initial);
+    return log;
+}
+
+fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
+                                     PinyinFinal final) {
+    log << PinyinEncoder::finalToString(final);
+    return log;
+}
+
 template <typename L, typename R>
 boost::bimap<L, R>
 makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
@@ -527,7 +539,7 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin,
         getFuzzy(result, {iter->second, PinyinFinal::Invalid}, flags);
     }
 
-    if (result.size() == 0) {
+    if (result.empty()) {
         result.emplace_back(
             std::piecewise_construct,
             std::forward_as_tuple(PinyinInitial::Invalid),
@@ -575,7 +587,7 @@ PinyinEncoder::shuangpinToSyllables(boost::string_view pinyin,
         }
     }
 
-    if (result.size()) {
+    if (result.empty()) {
         result.emplace_back(
             std::piecewise_construct,
             std::forward_as_tuple(PinyinInitial::Invalid),

@@ -34,7 +34,7 @@ public:
     ShuangpinProfilePrivate() = default;
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(ShuangpinProfilePrivate)
 
-    char zeroS_ = 'o';
+    std::string zeroS_ = "o";
     std::unordered_multimap<char, PinyinFinal> finalMap_;
     std::unordered_multimap<char, PinyinInitial> initialMap_;
     std::set<PinyinFinal> finalSet_;
@@ -51,6 +51,7 @@ ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
     case ShuangpinBuiltinProfile::Ziranma:
         c = SPMap_C_Ziranma;
         s = SPMap_S_Ziranma;
+        d->zeroS_ = "o*";
         break;
     case ShuangpinBuiltinProfile::MS:
         c = SPMap_C_MS;
@@ -73,7 +74,7 @@ ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
         s = SPMap_S_PinyinJiaJia;
         break;
     case ShuangpinBuiltinProfile::Xiaohe:
-        d->zeroS_ = '*';
+        d->zeroS_ = "*";
         c = SPMap_C_XIAOHE;
         s = SPMap_S_XIAOHE;
         break;
@@ -125,8 +126,12 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
             continue;
         }
 
-        if (lineView[0] == '=') {
-            d->zeroS_ = fcitx::charutils::tolower(lineView[1]);
+        if (lineView[0] == '=' && lineView.size() > 1) {
+            d->zeroS_ = std::string(lineView.substr(1));
+            std::transform(d->zeroS_.begin(), d->zeroS_.end(),
+                           d->zeroS_.begin(),
+                           [](char c) { return fcitx::charutils::tolower(c); });
+            continue;
         }
 
         auto equal = lineView.find('=');
@@ -168,9 +173,11 @@ void ShuangpinProfile::buildShuangpinTable() {
     }
 
     std::set<char> initialChars;
-    if (d->zeroS_ != '*') {
-        d->validInputs_.insert(d->zeroS_);
-        initialChars.insert(d->zeroS_);
+    for (auto zero : d->zeroS_) {
+        if (zero != '*') {
+            d->validInputs_.insert(zero);
+            initialChars.insert(zero);
+        }
     }
 
     // Collect all initial and final chars.
@@ -249,8 +256,8 @@ void ShuangpinProfile::buildShuangpinTable() {
         }
     };
 
-    // Special handling for Xiaohe
-    if (d->zeroS_ == '*') {
+    // Special handling for Ziranma & Xiaohe style.
+    if (d->zeroS_.find('*') != std::string::npos) {
         // length 1: aeiou, repeat it once: e.g. aa
         // length 2: keep same as quanpin
         // length 3: use the initial of quanpin and the one in the table.
@@ -306,7 +313,7 @@ void ShuangpinProfile::buildShuangpinTable() {
                 initials.push_back(initial);
             }
 
-            if (c1 == d->zeroS_) {
+            if (d->zeroS_.find(c1) != std::string::npos) {
                 initials.push_back(PinyinInitial::Zero);
             }
 
@@ -341,7 +348,8 @@ void ShuangpinProfile::buildShuangpinTable() {
 
     for (auto &p : getPinyinMap()) {
         if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
-            (!d->spTable_.count(p.pinyin().to_string()) || d->zeroS_ == '*')) {
+            (!d->spTable_.count(p.pinyin().to_string()) ||
+             d->zeroS_.find('*') == std::string::npos)) {
             auto &pys = d->spTable_[p.pinyin().to_string()];
             pys.emplace(PinyinSyllable{p.initial(), p.final()}, p.flags());
         }

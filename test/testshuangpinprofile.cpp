@@ -73,6 +73,25 @@ void checkXiaoHe() {
         });
 }
 
+void checkSegments(const libime::SegmentGraph &graph,
+                   std::vector<std::vector<std::string>> segments) {
+    graph.dfs([&segments](const SegmentGraphBase &segs,
+                          const std::vector<size_t> &path) {
+        size_t s = 0;
+        std::vector<std::string> segment;
+        for (auto e : path) {
+            segment.push_back(std::string(segs.segment(s, e)));
+            std::cout << segment.back() << " ";
+            s = e;
+        }
+        segments.erase(std::remove(segments.begin(), segments.end(), segment),
+                       segments.end());
+        std::cout << std::endl;
+        return true;
+    });
+    FCITX_ASSERT(segments.empty()) << "Remaining segments: " << segments;
+}
+
 int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma));
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS));
@@ -84,27 +103,43 @@ int main() {
 
     checkXiaoHe();
 
+    std::vector<std::vector<std::string>> expectedSegments();
     // wo jiu shi xiang ce shi yi xia
-    PinyinEncoder::parseUserShuangpin(
-        "wojquixdceuiyixw", ShuangpinProfile(ShuangpinBuiltinProfile::MS),
-        PinyinFuzzyFlag::None)
-        .dfs([](const SegmentGraphBase &segs, const std::vector<size_t> &path) {
-            size_t s = 0;
-            for (auto e : path) {
-                std::cout << segs.segment(s, e) << " ";
-                s = e;
-            }
-            std::cout << std::endl;
-            return true;
-        });
+    checkSegments(PinyinEncoder::parseUserShuangpin(
+                      "wojquixdceuiyixw",
+                      ShuangpinProfile(ShuangpinBuiltinProfile::MS),
+                      PinyinFuzzyFlag::None),
+                  {{"wo", "jq", "ui", "xd", "ce", "ui", "yi", "xw"}});
 
+    checkSegments(PinyinEncoder::parseUserShuangpin(
+                      "aaaierorilah",
+                      ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma),
+                      PinyinFuzzyFlag::None),
+                  {{"aa", "ai", "er", "or", "il", "ah"}});
+
+    struct {
+        const char *qp;
+        const char *sp;
+    } zrmZero[] = {
+        {"a", "aa"},   {"ai", "ai"}, {"an", "an"}, {"ang", "ah"},
+        {"ao", "ao"},  {"e", "ee"},  {"ei", "ei"}, {"en", "en"},
+        {"eng", "eg"}, {"er", "er"}, {"o", "oo"},  {"ou", "ou"},
+    };
     ShuangpinProfile zrm(ShuangpinBuiltinProfile::Ziranma);
+    for (auto [qp, sp] : zrmZero) {
+        auto matchedSp =
+            PinyinEncoder::shuangpinToSyllables(sp, zrm, PinyinFuzzyFlag::None);
+        auto matchedQp =
+            PinyinEncoder::stringToSyllables(qp, PinyinFuzzyFlag::None);
+        FCITX_ASSERT(matchedQp == matchedSp)
+            << " " << matchedQp << " " << matchedSp;
+    }
 
     std::string zrmText = "[方案]\n"
                           "方案名称=自定义\n"
                           "\n"
                           "[零声母标识]\n"
-                          "=O\n"
+                          "=O*\n"
                           "\n"
                           "[声母]\n"
                           "# 双拼编码就是它本身的声母不必列出\n"

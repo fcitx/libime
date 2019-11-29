@@ -23,6 +23,7 @@
 #include <boost/utility/string_view.hpp>
 #include <cassert>
 #include <fcitx-utils/flags.h>
+#include <fcitx-utils/log.h>
 #include <functional>
 #include <libime/core/segmentgraph.h>
 #include <string>
@@ -94,6 +95,10 @@ inline bool operator>(PinyinInitial l, PinyinInitial r) { return !(l <= r); }
 
 inline bool operator>=(PinyinInitial l, PinyinInitial r) { return !(l < r); }
 
+LIBIMEPINYIN_EXPORT
+fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
+                                     PinyinInitial initial);
+
 enum class PinyinFinal : char {
     Invalid = 0,
     A = 'A',
@@ -143,6 +148,10 @@ inline bool operator<=(PinyinFinal l, PinyinFinal r) { return l < r || l == r; }
 inline bool operator>(PinyinFinal l, PinyinFinal r) { return !(l <= r); }
 
 inline bool operator>=(PinyinFinal l, PinyinFinal r) { return !(l < r); }
+
+LIBIMEPINYIN_EXPORT
+fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
+                                     PinyinFinal final);
 
 struct LIBIMEPINYIN_EXPORT PinyinSyllable {
 public:

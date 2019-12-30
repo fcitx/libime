@@ -30,7 +30,7 @@ using namespace libime;
 
 class TestLmResolver : public LanguageModelResolver {
 public:
-    TestLmResolver(boost::string_view path) : path_(path.to_string()) {}
+    TestLmResolver(std::string_view path) : path_(path) {}
 
 protected:
     std::string

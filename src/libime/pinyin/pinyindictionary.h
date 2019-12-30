@@ -32,8 +32,8 @@ enum class PinyinDictFormat { Text, Binary };
 
 class PinyinDictionaryPrivate;
 
-typedef std::function<bool(boost::string_view encodedPinyin,
-                           boost::string_view hanzi, float cost)>
+typedef std::function<bool(std::string_view encodedPinyin,
+                           std::string_view hanzi, float cost)>
     PinyinMatchCallback;
 class PinyinDictionary;
 
@@ -55,8 +55,8 @@ public:
     void save(size_t idx, const char *filename, PinyinDictFormat format);
     void save(size_t idx, std::ostream &out, PinyinDictFormat format);
 
-    void addWord(size_t idx, boost::string_view fullPinyin,
-                 boost::string_view hanzi, float cost = 0.0f);
+    void addWord(size_t idx, std::string_view fullPinyin,
+                 std::string_view hanzi, float cost = 0.0f);
 
     using dictionaryChanged = TrieDictionary::dictionaryChanged;
 

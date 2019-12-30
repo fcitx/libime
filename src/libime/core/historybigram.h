@@ -20,11 +20,11 @@
 #define _FCITX_LIBIME_CORE_HISTORYBIGRAM_H_
 
 #include "libimecore_export.h"
-#include <boost/utility/string_view.hpp>
 #include <fcitx-utils/macros.h>
 #include <libime/core/lattice.h>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace libime {
@@ -51,13 +51,13 @@ public:
     void setUnknownPenalty(float unknown);
     float unknownPenalty() const;
 
-    void forget(boost::string_view word);
+    void forget(std::string_view word);
 
-    bool isUnknown(boost::string_view v) const;
+    bool isUnknown(std::string_view v) const;
     float score(const WordNode *prev, const WordNode *cur) const {
         return score(prev ? prev->word() : "", cur ? cur->word() : "");
     }
-    float score(boost::string_view prev, boost::string_view cur) const;
+    float score(std::string_view prev, std::string_view cur) const;
     void add(const SentenceResult &sentence);
     void add(const std::vector<std::string> &sentence);
 

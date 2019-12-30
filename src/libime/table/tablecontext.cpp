@@ -308,7 +308,7 @@ bool TableContext::isValidInput(uint32_t c) const {
 }
 
 void TableContext::typeImpl(const char *s, size_t length) {
-    boost::string_view view(s, length);
+    std::string_view view(s, length);
     auto utf8len = fcitx::utf8::lengthValidated(view);
     if (utf8len == fcitx::utf8::INVALID_LENGTH) {
         return;
@@ -317,8 +317,8 @@ void TableContext::typeImpl(const char *s, size_t length) {
     auto range = fcitx::utf8::MakeUTF8CharRange(view);
     for (auto iter = range.begin(), end = range.end(); iter != end; iter++) {
         auto pair = iter.charRange();
-        boost::string_view chr(&*pair.first,
-                               std::distance(pair.first, pair.second));
+        std::string_view chr(&*pair.first,
+                             std::distance(pair.first, pair.second));
         typeOneChar(chr);
     }
 }
@@ -356,7 +356,7 @@ void TableContext::select(size_t idx) {
     update();
 }
 
-void TableContext::typeOneChar(boost::string_view chr) {
+void TableContext::typeOneChar(std::string_view chr) {
     FCITX_D();
     auto lastSeg = userInput().substr(selectedLength());
     auto lastSegLength = fcitx::utf8::length(lastSeg);
@@ -643,7 +643,7 @@ void TableContext::learn() {
     }
 }
 
-void TableContext::learnAutoPhrase(boost::string_view history) {
+void TableContext::learnAutoPhrase(std::string_view history) {
     FCITX_D();
     if (!d->dict_.tableOptions().learning() ||
         !fcitx::utf8::validate(history) ||
@@ -695,12 +695,12 @@ std::string TableContext::candidateHint(size_t idx, bool custom) const {
                     }
                 }
             } else {
-                boost::string_view code = node->code();
+                std::string_view code = node->code();
                 code.remove_prefix(currentCode().size());
                 if (custom) {
                     return d->dict_.hint(code);
                 } else {
-                    return code.to_string();
+                    return std::string{code};
                 }
             }
         }

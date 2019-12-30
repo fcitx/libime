@@ -70,7 +70,7 @@ bool LanguageModelBase::isNodeUnknown(const LatticeNode &node) const {
     return isUnknown(node.idx(), node.word());
 }
 
-float LanguageModelBase::singleWordScore(boost::string_view word) const {
+float LanguageModelBase::singleWordScore(std::string_view word) const {
     auto idx = index(word);
     State dummy;
     WordNode node(word, idx);
@@ -78,12 +78,12 @@ float LanguageModelBase::singleWordScore(boost::string_view word) const {
 }
 
 float LanguageModelBase::singleWordScore(const State &state,
-                                         boost::string_view word) const {
-    return wordsScore(state, std::vector<boost::string_view>{word});
+                                         std::string_view word) const {
+    return wordsScore(state, std::vector<std::string_view>{word});
 }
 
 float LanguageModelBase::wordsScore(
-    const State &_state, const std::vector<boost::string_view> &words) const {
+    const State &_state, const std::vector<std::string_view> &words) const {
     float s = 0;
     State state = _state, outState;
     std::vector<WordNode> nodes;
@@ -172,7 +172,7 @@ WordIndex LanguageModel::unknown() const {
     return v.NotFound();
 }
 
-WordIndex LanguageModel::index(boost::string_view word) const {
+WordIndex LanguageModel::index(std::string_view word) const {
     FCITX_D();
     if (!d->model()) {
         return 0;
@@ -202,7 +202,7 @@ float LanguageModel::score(const State &state, const WordNode &node,
            (node.idx() == unknown() ? d->unknown_ : 0.0f);
 }
 
-bool LanguageModel::isUnknown(WordIndex idx, boost::string_view) const {
+bool LanguageModel::isUnknown(WordIndex idx, std::string_view) const {
     return idx == unknown();
 }
 

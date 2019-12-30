@@ -25,11 +25,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/utility/string_view.hpp>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <queue>
+#include <string_view>
 #include <type_traits>
 
 namespace libime {
@@ -86,7 +86,7 @@ size_t TrieDictionary::dictSize() const {
     return d->tries_.size();
 }
 
-void TrieDictionary::addWord(size_t idx, boost::string_view key, float cost) {
+void TrieDictionary::addWord(size_t idx, std::string_view key, float cost) {
     FCITX_D();
     d->tries_[idx].set(key.data(), key.size(), cost);
     emit<TrieDictionary::dictionaryChanged>(idx);

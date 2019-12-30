@@ -127,8 +127,7 @@ float UserLanguageModel::score(const State &state, const WordNode &word,
     return std::max(score, sum_log_prob(score + d->wa_, userScore + d->wb_));
 }
 
-bool UserLanguageModel::isUnknown(WordIndex idx,
-                                  boost::string_view view) const {
+bool UserLanguageModel::isUnknown(WordIndex idx, std::string_view view) const {
     FCITX_D();
     return idx == unknown() && d->history_.isUnknown(view);
 }

@@ -40,8 +40,8 @@ void dfs(const SegmentGraph &segs) {
     segs.dfs(callback);
 }
 
-void check(boost::string_view py, PinyinFuzzyFlags flags) {
-    dfs(PinyinEncoder::parseUserPinyin(py, flags));
+void check(std::string py, PinyinFuzzyFlags flags) {
+    dfs(PinyinEncoder::parseUserPinyin(std::move(py), flags));
 }
 
 int main() {

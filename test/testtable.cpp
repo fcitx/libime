@@ -29,14 +29,14 @@
 
 using namespace libime;
 
-void testMatch(const TableBasedDictionary &dict, boost::string_view code,
+void testMatch(const TableBasedDictionary &dict, std::string_view code,
                std::set<std::string> expect, bool exact) {
     std::set<std::string> actual;
     dict.matchWords(code,
                     exact ? TableMatchMode::Exact : TableMatchMode::Prefix,
-                    [&actual](boost::string_view, boost::string_view word,
-                              uint32_t, PhraseFlag) {
-                        actual.insert(word.to_string());
+                    [&actual](std::string_view, std::string_view word, uint32_t,
+                              PhraseFlag) {
+                        actual.insert(std::string{word});
                         return true;
                     });
     FCITX_ASSERT(expect == actual);

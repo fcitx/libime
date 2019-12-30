@@ -21,11 +21,11 @@
 #include "pinyinencoder.h"
 #include "shuangpindata.h"
 #include <boost/algorithm/string.hpp>
-#include <boost/utility/string_view.hpp>
 #include <exception>
 #include <fcitx-utils/charutils.h>
 #include <iostream>
 #include <set>
+#include <string_view>
 
 namespace libime {
 
@@ -107,11 +107,11 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
         if (!line.size() || line[0] == '#') {
             continue;
         }
-        boost::string_view lineView(line);
+        std::string_view lineView(line);
 
-        boost::string_view option("方案名称=");
+        std::string_view option("方案名称=");
         if (boost::starts_with(lineView, option)) {
-            auto name = lineView.substr(option.size()).to_string();
+            std::string name{lineView.substr(option.size())};
             boost::trim_if(name, isSpaceCheck);
             if (name == "自然码" || name == "微软" || name == "紫光" ||
                 name == "拼音加加" || name == "中文之星" || name == "智能ABC" ||
@@ -136,15 +136,15 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
 
         auto equal = lineView.find('=');
         // no '=', or equal at first char, or len(substr after equal) != 1
-        if (equal == boost::string_view::npos || equal == 0 ||
+        if (equal == std::string_view::npos || equal == 0 ||
             equal + 2 != line.size()) {
             continue;
         }
-        auto pinyin = lineView.substr(0, equal);
+        std::string pinyin{lineView.substr(0, equal)};
         auto key = fcitx::charutils::tolower(lineView[equal + 1]);
-        auto final = PinyinEncoder::stringToFinal(pinyin.to_string());
+        auto final = PinyinEncoder::stringToFinal(pinyin);
         if (final == PinyinFinal::Invalid) {
-            auto initial = PinyinEncoder::stringToInitial(pinyin.to_string());
+            auto initial = PinyinEncoder::stringToInitial(pinyin);
             if (initial == PinyinInitial::Invalid) {
                 continue;
             }
@@ -348,9 +348,9 @@ void ShuangpinProfile::buildShuangpinTable() {
 
     for (auto &p : getPinyinMap()) {
         if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
-            (!d->spTable_.count(p.pinyin().to_string()) ||
+            (!d->spTable_.count(p.pinyin()) ||
              d->zeroS_.find('*') == std::string::npos)) {
-            auto &pys = d->spTable_[p.pinyin().to_string()];
+            auto &pys = d->spTable_[p.pinyin()];
             pys.emplace(PinyinSyllable{p.initial(), p.final()}, p.flags());
         }
     }

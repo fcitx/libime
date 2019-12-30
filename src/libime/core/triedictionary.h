@@ -58,7 +58,7 @@ public:
 
 protected:
     DATrie<float> *mutableTrie(size_t idx);
-    void addWord(size_t idx, boost::string_view result, float cost = 0.0f);
+    void addWord(size_t idx, std::string_view result, float cost = 0.0f);
 
     std::unique_ptr<TrieDictionaryPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TrieDictionary);

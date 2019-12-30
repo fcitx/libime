@@ -147,10 +147,10 @@ int main() {
 
         auto fullPinyin = PinyinEncoder::initialToString(initial) +
                           PinyinEncoder::finalToString(final);
-        FCITX_ASSERT(fullPinyin == applyFuzzy(pinyin.to_string(), p.flags()));
+        FCITX_ASSERT(fullPinyin == applyFuzzy(pinyin, p.flags()));
         if (p.flags() == 0) {
             // make sure valid item is unique
-            auto result = seen.insert(pinyin.to_string());
+            auto result = seen.insert(pinyin);
             FCITX_ASSERT(result.second);
 
             int16_t encode =

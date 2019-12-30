@@ -20,7 +20,6 @@
 #define _FCITX_LIBIME_TABLE_AUTOPHRASEDICT_H_
 
 #include "libimetable_export.h"
-#include <boost/utility/string_view.hpp>
 #include <cstddef>
 #include <fcitx-utils/macros.h>
 #include <functional>
@@ -28,6 +27,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <string_view>
 
 namespace libime {
 
@@ -47,13 +47,12 @@ public:
     void insert(const std::string &entry, uint32_t value = 0);
 
     /// \brief Check if any word starting with s exists in the dictionary.
-    bool
-    search(boost::string_view s,
-           std::function<bool(boost::string_view, uint32_t)> callback) const;
+    bool search(std::string_view s,
+                std::function<bool(std::string_view, uint32_t)> callback) const;
 
     /// \brief Returns 0 if there is no such word.
-    uint32_t exactSearch(boost::string_view s) const;
-    void erase(boost::string_view s);
+    uint32_t exactSearch(std::string_view s) const;
+    void erase(std::string_view s);
     void clear();
 
     void load(std::istream &in);

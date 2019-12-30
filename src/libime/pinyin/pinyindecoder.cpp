@@ -23,7 +23,7 @@
 namespace libime {
 
 PinyinLatticeNode::PinyinLatticeNode(
-    boost::string_view word, WordIndex idx, SegmentGraphPath path,
+    std::string_view word, WordIndex idx, SegmentGraphPath path,
     const State &state, float cost,
     std::unique_ptr<PinyinLatticeNodePrivate> data)
     : LatticeNode(word, idx, std::move(path), state, cost),
@@ -41,7 +41,7 @@ const std::string &PinyinLatticeNode::encodedPinyin() const {
 
 LatticeNode *PinyinDecoder::createLatticeNodeImpl(
     const SegmentGraphBase &graph, const LanguageModelBase *model,
-    boost::string_view word, WordIndex idx, SegmentGraphPath path,
+    std::string_view word, WordIndex idx, SegmentGraphPath path,
     const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
     bool onlyPath) const {
     std::unique_ptr<PinyinLatticeNodePrivate> pinyinData(

@@ -29,7 +29,7 @@ class TableLatticeNodePrivate;
 
 class LIBIMETABLE_EXPORT TableLatticeNode : public LatticeNode {
 public:
-    TableLatticeNode(boost::string_view word, WordIndex idx,
+    TableLatticeNode(std::string_view word, WordIndex idx,
                      SegmentGraphPath path, const State &state, float cost,
                      std::unique_ptr<TableLatticeNodePrivate> data);
     virtual ~TableLatticeNode();
@@ -51,7 +51,7 @@ public:
 protected:
     LatticeNode *createLatticeNodeImpl(const SegmentGraphBase &graph,
                                        const LanguageModelBase *model,
-                                       boost::string_view word, WordIndex idx,
+                                       std::string_view word, WordIndex idx,
                                        SegmentGraphPath path,
                                        const State &state, float cost,
                                        std::unique_ptr<LatticeNodeData> data,
@@ -63,8 +63,7 @@ protected:
                   const SegmentGraphNode *) const override;
 };
 
-SegmentGraph graphForCode(boost::string_view s,
-                          const TableBasedDictionary &dict);
+SegmentGraph graphForCode(std::string_view s, const TableBasedDictionary &dict);
 } // namespace libime
 
 #endif // _FCITX_LIBIME_TABLE_TABLEDECODER_H_

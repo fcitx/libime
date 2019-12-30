@@ -24,10 +24,10 @@
 #include <boost/ptr_container/ptr_list.hpp>
 #include <boost/range/adaptor/type_erased.hpp>
 #include <boost/range/iterator_range.hpp>
-#include <boost/utility/string_view.hpp>
 #include <fcitx-utils/element.h>
 #include <functional>
 #include <list>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -148,12 +148,12 @@ public:
     // Return the size of string.
     size_t size() const { return data().size(); }
 
-    inline boost::string_view segment(size_t start, size_t end) const {
-        return boost::string_view(data().data() + start, end - start);
+    inline std::string_view segment(size_t start, size_t end) const {
+        return std::string_view(data().data() + start, end - start);
     }
 
-    inline boost::string_view segment(const SegmentGraphNode &start,
-                                      const SegmentGraphNode &end) const {
+    inline std::string_view segment(const SegmentGraphNode &start,
+                                    const SegmentGraphNode &end) const {
         return segment(start.index(), end.index());
     }
 
@@ -292,7 +292,7 @@ public:
         graph_[from]->addEdge(*graph_[to]);
     }
 
-    void appendNewSegment(boost::string_view str) {
+    void appendNewSegment(std::string_view str) {
         // append empty string is meaningless.
         if (!str.size()) {
             return;
@@ -306,7 +306,7 @@ public:
         node.addEdge(newEnd);
     }
 
-    void appendToLastSegment(boost::string_view str) {
+    void appendToLastSegment(std::string_view str) {
         // append empty string is meaningless.
         if (!str.size()) {
             return;

@@ -23,11 +23,11 @@
 /// \brief Class provide input method support for table-based ones, like wubi.
 
 #include "libimetable_export.h"
-#include <boost/utility/string_view.hpp>
 #include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <libime/core/inputbuffer.h>
 #include <libime/core/lattice.h>
+#include <string_view>
 #include <tuple>
 
 namespace libime {
@@ -78,7 +78,7 @@ public:
     /// \brief Learn auto word from string.
     ///
     /// Depending on the tableOptions, it will try to learn the word in history.
-    void learnAutoPhrase(boost::string_view history);
+    void learnAutoPhrase(std::string_view history);
 
     const TableBasedDictionary &dict() const;
     TableBasedDictionary &mutableDict();
@@ -92,7 +92,7 @@ protected:
 
 private:
     void update();
-    void typeOneChar(boost::string_view chr);
+    void typeOneChar(std::string_view chr);
 
     std::unique_ptr<TableContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableContext);

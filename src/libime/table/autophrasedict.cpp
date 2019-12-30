@@ -31,7 +31,7 @@ struct AutoPhrase {
     AutoPhrase(const std::string &entry, uint32_t hit)
         : entry_(entry), hit_(hit) {}
 
-    boost::string_view entry() const { return entry_; }
+    std::string_view entry() const { return entry_; }
 
     std::string entry_;
     uint32_t hit_ = 0;
@@ -43,8 +43,8 @@ class AutoPhraseDictPrivate {
         boost::multi_index::indexed_by<
             boost::multi_index::sequenced<>,
             boost::multi_index::ordered_unique<
-                boost::multi_index::const_mem_fun<
-                    AutoPhrase, boost::string_view, &AutoPhrase::entry>>>>
+                boost::multi_index::const_mem_fun<AutoPhrase, std::string_view,
+                                                  &AutoPhrase::entry>>>>
         item_list;
 
 public:
@@ -83,8 +83,8 @@ void AutoPhraseDict::insert(const std::string &entry, uint32_t value) {
 }
 
 bool AutoPhraseDict::search(
-    boost::string_view s,
-    std::function<bool(boost::string_view, uint32_t)> callback) const {
+    std::string_view s,
+    std::function<bool(std::string_view, uint32_t)> callback) const {
     FCITX_D();
     auto &idx = d->il.get<1>();
     auto iter = idx.lower_bound(s);
@@ -97,7 +97,7 @@ bool AutoPhraseDict::search(
     return true;
 }
 
-uint32_t AutoPhraseDict::exactSearch(boost::string_view s) const {
+uint32_t AutoPhraseDict::exactSearch(std::string_view s) const {
     FCITX_D();
     auto &idx = d->il.get<1>();
     auto iter = idx.find(s);
@@ -107,7 +107,7 @@ uint32_t AutoPhraseDict::exactSearch(boost::string_view s) const {
     return iter->hit_;
 }
 
-void AutoPhraseDict::erase(boost::string_view s) {
+void AutoPhraseDict::erase(std::string_view s) {
     FCITX_D();
     auto &idx = d->il.get<1>();
     idx.erase(s);

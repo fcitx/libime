@@ -23,13 +23,13 @@
 #include "libimetable_export.h"
 
 #include <boost/algorithm/string.hpp>
-#include <boost/utility/string_view.hpp>
 #include <cstdint>
 #include <iostream>
 #include <libime/core/utils.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace libime {
@@ -101,7 +101,7 @@ public:
         }
 
         auto afterEqualSign =
-            boost::string_view(ruleString).substr(equalSignPos + 1);
+            std::string_view(ruleString).substr(equalSignPos + 1);
         std::vector<std::string> entryStrings;
         boost::split(entryStrings, afterEqualSign, boost::is_any_of("+"));
         if (entryStrings.empty() || entryStrings.size() > maxLength) {
@@ -109,7 +109,7 @@ public:
         }
 
         auto beforeEqualSign =
-            boost::string_view(ruleString).substr(0, equalSignPos);
+            std::string_view(ruleString).substr(0, equalSignPos);
         if (beforeEqualSign.size() != 2 || !isdigit(beforeEqualSign[1])) {
             throw std::invalid_argument("invalid rule string");
         }

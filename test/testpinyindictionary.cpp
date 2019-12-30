@@ -38,8 +38,8 @@ int main() {
     char c[] = {static_cast<char>(PinyinInitial::N), 0,
                 static_cast<char>(PinyinInitial::H), 0};
     dict.matchWords(c, sizeof(c),
-                    [c](boost::string_view encodedPinyin,
-                        boost::string_view hanzi, float cost) {
+                    [c](std::string_view encodedPinyin, std::string_view hanzi,
+                        float cost) {
                         std::cout
                             << PinyinEncoder::decodeFullPinyin(encodedPinyin)
                             << " " << hanzi << " " << cost << std::endl;

@@ -29,7 +29,7 @@ class PinyinLatticeNodePrivate;
 
 class LIBIMEPINYIN_EXPORT PinyinLatticeNode : public LatticeNode {
 public:
-    PinyinLatticeNode(boost::string_view word, WordIndex idx,
+    PinyinLatticeNode(std::string_view word, WordIndex idx,
                       SegmentGraphPath path, const State &state, float cost,
                       std::unique_ptr<PinyinLatticeNodePrivate> data);
     virtual ~PinyinLatticeNode();
@@ -48,7 +48,7 @@ public:
 protected:
     LatticeNode *createLatticeNodeImpl(const SegmentGraphBase &graph,
                                        const LanguageModelBase *model,
-                                       boost::string_view word, WordIndex idx,
+                                       std::string_view word, WordIndex idx,
                                        SegmentGraphPath path,
                                        const State &state, float cost,
                                        std::unique_ptr<LatticeNodeData> data,

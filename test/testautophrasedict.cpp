@@ -23,10 +23,10 @@
 
 using namespace libime;
 
-void testSearch(const AutoPhraseDict &dict, boost::string_view key,
+void testSearch(const AutoPhraseDict &dict, std::string_view key,
                 std::unordered_set<std::string> expect) {
-    dict.search(key, [&expect](boost::string_view entry, int) {
-        expect.erase(entry.to_string());
+    dict.search(key, [&expect](std::string_view entry, int) {
+        expect.erase(std::string{entry});
         return true;
     });
     FCITX_ASSERT(expect.empty());

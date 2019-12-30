@@ -85,7 +85,7 @@ const std::string &TableLatticeNode::code() const {
 }
 
 TableLatticeNode::TableLatticeNode(
-    boost::string_view word, WordIndex idx, SegmentGraphPath path,
+    std::string_view word, WordIndex idx, SegmentGraphPath path,
     const State &state, float cost,
     std::unique_ptr<TableLatticeNodePrivate> data)
     : LatticeNode(word, idx, std::move(path), state, cost),
@@ -94,10 +94,9 @@ TableLatticeNode::TableLatticeNode(
 TableLatticeNode::~TableLatticeNode() = default;
 
 LatticeNode *TableDecoder::createLatticeNodeImpl(
-    const SegmentGraphBase &, const LanguageModelBase *,
-    boost::string_view word, WordIndex idx, SegmentGraphPath path,
-    const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
-    bool) const {
+    const SegmentGraphBase &, const LanguageModelBase *, std::string_view word,
+    WordIndex idx, SegmentGraphPath path, const State &state, float cost,
+    std::unique_ptr<LatticeNodeData> data, bool) const {
     std::unique_ptr<TableLatticeNodePrivate> tableData(
         static_cast<TableLatticeNodePrivate *>(data.release()));
     return new TableLatticeNode(word, idx, std::move(path), state, cost,
@@ -112,9 +111,9 @@ bool TableDecoder::needSort(const SegmentGraph &graph,
     return true;
 }
 
-LIBIMETABLE_EXPORT SegmentGraph graphForCode(boost::string_view s,
+LIBIMETABLE_EXPORT SegmentGraph graphForCode(std::string_view s,
                                              const TableBasedDictionary &dict) {
-    SegmentGraph graph(s.to_string());
+    SegmentGraph graph{std::string(s)};
     if (s.empty()) {
         return graph;
     }

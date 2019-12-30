@@ -22,9 +22,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
-#include <boost/utility/string_view.hpp>
 #include <queue>
 #include <sstream>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 
@@ -89,12 +89,12 @@ static const auto finalMap = makeBimap<PinyinFinal, std::string>({
 static const int maxPinyinLength = 6;
 
 template <typename Iter>
-std::pair<boost::string_view, bool> longestMatch(Iter iter, Iter end,
-                                                 PinyinFuzzyFlags flags) {
+std::pair<std::string_view, bool> longestMatch(Iter iter, Iter end,
+                                               PinyinFuzzyFlags flags) {
     if (std::distance(iter, end) > maxPinyinLength) {
         end = iter + maxPinyinLength;
     }
-    auto range = boost::string_view(&*iter, std::distance(iter, end));
+    auto range = std::string_view(&*iter, std::distance(iter, end));
     auto &map = getPinyinMap();
     for (; range.size(); range.remove_suffix(1)) {
         auto iterPair = map.equal_range(range);
@@ -109,7 +109,7 @@ std::pair<boost::string_view, bool> longestMatch(Iter iter, Iter end,
             }
         }
         if (range.size() <= 2) {
-            auto iter = initialMap.right.find(range.to_string());
+            auto iter = initialMap.right.find(std::string{range});
             if (iter != initialMap.right.end()) {
                 return std::make_pair(range, false);
             }
@@ -117,7 +117,7 @@ std::pair<boost::string_view, bool> longestMatch(Iter iter, Iter end,
     }
 
     if (!range.size()) {
-        range = boost::string_view(&*iter, 1);
+        range = std::string_view(&*iter, 1);
     }
 
     return std::make_pair(range, false);
@@ -128,9 +128,9 @@ std::string PinyinSyllable::toString() const {
            PinyinEncoder::finalToString(final_);
 }
 
-SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view userPinyin,
+SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
                                             PinyinFuzzyFlags flags) {
-    SegmentGraph result(userPinyin.to_string());
+    SegmentGraph result{std::move(userPinyin)};
     const auto &pinyin = result.data();
     auto end = pinyin.end();
     std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> q;
@@ -156,7 +156,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view userPinyin,
             }
             continue;
         }
-        boost::string_view str;
+        std::string_view str;
         bool isCompletePinyin;
         std::tie(str, isCompletePinyin) = longestMatch(iter, end, flags);
 
@@ -209,7 +209,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view userPinyin,
                 if (nextSize[i] >= 4 && flags.test(PinyinFuzzyFlag::Inner)) {
                     auto &innerSegments = getInnerSegment();
                     auto iter = innerSegments.find(
-                        str.substr(0, nextSize[i]).to_string());
+                        std::string{str.substr(0, nextSize[i])});
                     if (iter != innerSegments.end()) {
                         result.addNext(top, top + iter->second.first.size());
                         result.addNext(top + iter->second.first.size(),
@@ -222,10 +222,10 @@ SegmentGraph PinyinEncoder::parseUserPinyin(boost::string_view userPinyin,
     return result;
 }
 
-SegmentGraph PinyinEncoder::parseUserShuangpin(boost::string_view userPinyin,
+SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
                                                const ShuangpinProfile &sp,
                                                PinyinFuzzyFlags flags) {
-    SegmentGraph result(userPinyin.to_string());
+    SegmentGraph result{std::move(userPinyin)};
     const auto &pinyin = result.data();
 
     // assume user always type valid shuangpin first, if not keep one.
@@ -282,7 +282,7 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(boost::string_view userPinyin,
     return result;
 }
 
-std::vector<char> PinyinEncoder::encodeFullPinyin(boost::string_view pinyin) {
+std::vector<char> PinyinEncoder::encodeFullPinyin(std::string_view pinyin) {
     std::vector<std::string> pinyins;
     boost::split(pinyins, pinyin, boost::is_any_of("'"));
     std::vector<char> result;
@@ -293,7 +293,7 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(boost::string_view pinyin) {
         auto iter = map.find(singlePinyin);
         if (iter == map.end() || iter->flags() != PinyinFuzzyFlag::None) {
             throw std::invalid_argument("invalid full pinyin: " +
-                                        pinyin.to_string());
+                                        std::string{pinyin});
         }
         result[idx++] = static_cast<char>(iter->initial());
         result[idx++] = static_cast<char>(iter->final());
@@ -302,12 +302,11 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(boost::string_view pinyin) {
     return result;
 }
 
-std::vector<char>
-PinyinEncoder::encodeOneUserPinyin(boost::string_view pinyin) {
+std::vector<char> PinyinEncoder::encodeOneUserPinyin(std::string pinyin) {
     if (pinyin.empty()) {
         return {};
     }
-    auto graph = parseUserPinyin(pinyin, PinyinFuzzyFlag::None);
+    auto graph = parseUserPinyin(std::move(pinyin), PinyinFuzzyFlag::None);
     std::vector<char> result;
     const SegmentGraphNode *node = &graph.start(), *prev = nullptr;
     while (node->nextSize()) {
@@ -516,7 +515,7 @@ static void getFuzzy(
 }
 
 MatchedPinyinSyllables
-PinyinEncoder::stringToSyllables(boost::string_view pinyin,
+PinyinEncoder::stringToSyllables(std::string_view pinyin,
                                  PinyinFuzzyFlags flags) {
     std::vector<
         std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
@@ -534,7 +533,7 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin,
         }
     }
 
-    auto iter = initialMap.right.find(pinyin.to_string());
+    auto iter = initialMap.right.find(std::string{pinyin});
     if (initialMap.right.end() != iter) {
         getFuzzy(result, {iter->second, PinyinFinal::Invalid}, flags);
     }
@@ -569,12 +568,12 @@ PinyinEncoder::stringToSyllables(boost::string_view pinyin,
 }
 
 MatchedPinyinSyllables
-PinyinEncoder::shuangpinToSyllables(boost::string_view pinyin,
+PinyinEncoder::shuangpinToSyllables(std::string_view pinyin,
                                     const ShuangpinProfile &sp,
                                     PinyinFuzzyFlags flags) {
     assert(pinyin.size() <= 2);
     auto &table = sp.table();
-    auto iter = table.find(pinyin.to_string());
+    auto iter = table.find(std::string{pinyin});
 
     std::vector<
         std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>

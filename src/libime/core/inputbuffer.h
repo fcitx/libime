@@ -21,10 +21,10 @@
 
 #include "libimecore_export.h"
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/utility/string_view.hpp>
 #include <fcitx-utils/inputbuffer.h>
 #include <fcitx-utils/macros.h>
 #include <memory>
+#include <string_view>
 
 namespace libime {
 class InputBufferPrivate;
@@ -32,9 +32,9 @@ class InputBufferPrivate;
 class LIBIMECORE_EXPORT InputBuffer : public fcitx::InputBuffer {
 public:
     class iterator
-        : public boost::iterator_facade<iterator, boost::string_view,
+        : public boost::iterator_facade<iterator, std::string_view,
                                         boost::bidirectional_traversal_tag,
-                                        boost::string_view> {
+                                        std::string_view> {
     public:
         iterator() {}
         iterator(const InputBuffer *buffer, size_t idx)
@@ -48,7 +48,7 @@ public:
 
         void decrement() { idx_--; }
 
-        boost::string_view dereference() const { return buffer_->at(idx_); }
+        std::string_view dereference() const { return buffer_->at(idx_); }
 
     private:
         const InputBuffer *buffer_ = nullptr;
@@ -59,10 +59,10 @@ public:
 
     using fcitx::InputBuffer::type;
     // add one overload for string_view
-    void type(boost::string_view s) { return type(s.data(), s.length()); }
-    boost::string_view at(size_t i) const;
+    void type(std::string_view s) { return type(s.data(), s.length()); }
+    std::string_view at(size_t i) const;
 
-    boost::string_view operator[](size_t i) const { return at(i); }
+    std::string_view operator[](size_t i) const { return at(i); }
 
     iterator begin() { return iterator(this, 0); }
 

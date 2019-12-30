@@ -20,13 +20,13 @@
 #define _FCITX_LIBIME_PINYIN_PINYINENCODER_H_
 
 #include "libimepinyin_export.h"
-#include <boost/utility/string_view.hpp>
 #include <cassert>
 #include <fcitx-utils/flags.h>
 #include <fcitx-utils/log.h>
 #include <functional>
 #include <libime/core/segmentgraph.h>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -195,14 +195,14 @@ using MatchedPinyinSyllables = std::vector<
 
 class LIBIMEPINYIN_EXPORT PinyinEncoder {
 public:
-    static SegmentGraph parseUserPinyin(boost::string_view pinyin,
+    static SegmentGraph parseUserPinyin(std::string pinyin,
                                         PinyinFuzzyFlags flags);
-    static SegmentGraph parseUserShuangpin(boost::string_view pinyin,
+    static SegmentGraph parseUserShuangpin(std::string pinyin,
                                            const ShuangpinProfile &sp,
                                            PinyinFuzzyFlags flags);
 
-    static std::vector<char> encodeFullPinyin(boost::string_view pinyin);
-    static std::vector<char> encodeOneUserPinyin(boost::string_view pinyin);
+    static std::vector<char> encodeFullPinyin(std::string_view pinyin);
+    static std::vector<char> encodeOneUserPinyin(std::string pinyin);
 
     static bool isValidUserPinyin(const char *data, size_t size);
 
@@ -213,7 +213,7 @@ public:
     static std::string decodeFullPinyin(const std::vector<char> &v) {
         return decodeFullPinyin(v.data(), v.size());
     }
-    static std::string decodeFullPinyin(boost::string_view s) {
+    static std::string decodeFullPinyin(std::string_view s) {
         return decodeFullPinyin(s.data(), s.size());
     }
     static std::string decodeFullPinyin(const char *data, size_t size);
@@ -232,10 +232,10 @@ public:
 
     static bool isValidInitialFinal(PinyinInitial initial, PinyinFinal final);
 
-    static MatchedPinyinSyllables stringToSyllables(boost::string_view pinyin,
+    static MatchedPinyinSyllables stringToSyllables(std::string_view pinyin,
                                                     PinyinFuzzyFlags flags);
     static MatchedPinyinSyllables
-    shuangpinToSyllables(boost::string_view pinyin, const ShuangpinProfile &sp,
+    shuangpinToSyllables(std::string_view pinyin, const ShuangpinProfile &sp,
                          PinyinFuzzyFlags flags);
 
     static const char firstInitial = static_cast<char>(PinyinInitial::B);

@@ -26,9 +26,9 @@
 
 namespace libime {
 
-boost::string_view InputBuffer::at(size_t i) const {
+std::string_view InputBuffer::at(size_t i) const {
     size_t start, end;
     std::tie(start, end) = rangeAt(i);
-    return boost::string_view(userInput()).substr(start, end - start);
+    return std::string_view(userInput()).substr(start, end - start);
 }
 } // namespace libime

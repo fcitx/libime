@@ -39,7 +39,7 @@ enum class PhraseFlag {
     Invalid
 };
 
-typedef std::function<bool(boost::string_view code, boost::string_view word,
+typedef std::function<bool(std::string_view code, std::string_view word,
                            uint32_t index, PhraseFlag flag)>
     TableMatchCallback;
 
@@ -70,15 +70,15 @@ public:
     void saveUser(std::ostream &out, TableFormat format = TableFormat::Binary);
 
     bool hasRule() const noexcept;
-    const TableRule *findRule(boost::string_view name) const;
-    bool insert(boost::string_view key, boost::string_view value,
+    const TableRule *findRule(std::string_view name) const;
+    bool insert(std::string_view key, std::string_view value,
                 PhraseFlag flag = PhraseFlag::None,
                 bool verifyWithRule = false);
-    bool insert(boost::string_view value, PhraseFlag flag = PhraseFlag::None);
-    bool generate(boost::string_view value, std::string &key) const;
+    bool insert(std::string_view value, PhraseFlag flag = PhraseFlag::None);
+    bool generate(std::string_view value, std::string &key) const;
 
     bool isInputCode(uint32_t c) const;
-    bool isAllInputCode(boost::string_view code) const;
+    bool isAllInputCode(std::string_view code) const;
     bool isEndKey(uint32_t c) const;
 
     bool hasPinyin() const;
@@ -90,22 +90,20 @@ public:
     void setTableOptions(TableOptions option);
     const TableOptions &tableOptions() const;
 
-    bool matchWords(boost::string_view code, TableMatchMode mode,
+    bool matchWords(std::string_view code, TableMatchMode mode,
                     const TableMatchCallback &callback) const;
 
-    bool hasMatchingWords(boost::string_view code) const;
-    bool hasMatchingWords(boost::string_view code,
-                          boost::string_view next) const;
+    bool hasMatchingWords(std::string_view code) const;
+    bool hasMatchingWords(std::string_view code, std::string_view next) const;
 
-    bool hasOneMatchingWord(boost::string_view code) const;
+    bool hasOneMatchingWord(std::string_view code) const;
 
-    PhraseFlag wordExists(boost::string_view code,
-                          boost::string_view word) const;
-    void removeWord(boost::string_view code, boost::string_view word);
+    PhraseFlag wordExists(std::string_view code, std::string_view word) const;
+    void removeWord(std::string_view code, std::string_view word);
 
-    std::string reverseLookup(boost::string_view word,
+    std::string reverseLookup(std::string_view word,
                               PhraseFlag flag = PhraseFlag::None) const;
-    std::string hint(boost::string_view key) const;
+    std::string hint(std::string_view key) const;
 
     FCITX_DECLARE_SIGNAL(TableBasedDictionary, tableOptionsChanged, void());
 

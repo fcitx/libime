@@ -25,11 +25,11 @@
 
 #include "libimecore_export.h"
 
-#include <boost/utility/string_view.hpp>
 #include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <functional>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 namespace libime {
@@ -89,11 +89,11 @@ public:
 
     // result will be NO_VALUE
     value_type exactMatchSearch(const char *key, size_t len) const;
-    value_type exactMatchSearch(boost::string_view key) const {
+    value_type exactMatchSearch(std::string_view key) const {
         return exactMatchSearch(key.data(), key.size());
     }
 
-    DATrie<T>::value_type traverse(boost::string_view key,
+    DATrie<T>::value_type traverse(std::string_view key,
                                    position_type &from) const {
         return traverse(key.data(), key.size(), from);
     }
@@ -101,12 +101,12 @@ public:
                                    position_type &from) const;
 
     // set value
-    void set(boost::string_view key, value_type val) {
+    void set(std::string_view key, value_type val) {
         return set(key.data(), key.size(), val);
     }
     void set(const char *key, size_t len, value_type val);
 
-    void update(boost::string_view key, updater_type updater) {
+    void update(std::string_view key, updater_type updater) {
         update(key.data(), key.size(), updater);
     }
     void update(const char *key, size_t len, updater_type updater);
@@ -117,7 +117,7 @@ public:
         std::vector<std::tuple<value_type, size_t, position_type>> &data) const;
 
     // remove key
-    bool erase(boost::string_view key, position_type from = 0) {
+    bool erase(std::string_view key, position_type from = 0) {
         return erase(key.data(), key.size(), from);
     }
     bool erase(const char *key, size_t len, position_type from = 0);
@@ -128,7 +128,7 @@ public:
     // search by prefix
     bool foreach(const char *prefix, size_t size, callback_type func,
                  position_type pos = 0) const;
-    bool foreach(boost::string_view prefix, callback_type func,
+    bool foreach(std::string_view prefix, callback_type func,
                  position_type pos = 0) const {
         return foreach(prefix.data(), prefix.size(), func, pos);
     }

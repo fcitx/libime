@@ -21,9 +21,9 @@
 
 #include "datrie.h"
 #include "libimecore_export.h"
-#include <boost/utility/string_view.hpp>
 #include <fcitx-utils/macros.h>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 namespace libime {
@@ -48,15 +48,15 @@ public:
     virtual WordIndex unknown() const = 0;
     virtual const State &beginState() const = 0;
     virtual const State &nullState() const = 0;
-    virtual WordIndex index(boost::string_view view) const = 0;
+    virtual WordIndex index(std::string_view view) const = 0;
     virtual float score(const State &state, const WordNode &word,
                         State &out) const = 0;
-    virtual bool isUnknown(WordIndex idx, boost::string_view view) const = 0;
+    virtual bool isUnknown(WordIndex idx, std::string_view view) const = 0;
     bool isNodeUnknown(const LatticeNode &node) const;
-    float singleWordScore(boost::string_view word) const;
-    float singleWordScore(const State &state, boost::string_view word) const;
+    float singleWordScore(std::string_view word) const;
+    float singleWordScore(const State &state, std::string_view word) const;
     float wordsScore(const State &state,
-                     const std::vector<boost::string_view> &word) const;
+                     const std::vector<std::string_view> &word) const;
 };
 
 class StaticLanguageModelFilePrivate;
@@ -89,10 +89,10 @@ public:
     WordIndex unknown() const override;
     const State &beginState() const override;
     const State &nullState() const override;
-    WordIndex index(boost::string_view view) const override;
+    WordIndex index(std::string_view view) const override;
     float score(const State &state, const WordNode &word,
                 State &out) const override;
-    bool isUnknown(WordIndex idx, boost::string_view view) const override;
+    bool isUnknown(WordIndex idx, std::string_view view) const override;
     void setUnknownPenalty(float unknown);
     float unknownPenalty() const;
 

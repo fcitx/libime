@@ -56,7 +56,7 @@ public:
 
     int32_t weightedSize() const { return weightedSize_; }
 
-    int32_t freq(boost::string_view s) const {
+    int32_t freq(std::string_view s) const {
         auto v = trie_.exactMatchSearch(s.data(), s.size());
         if (trie_.isNoValue(v)) {
             return 0;
@@ -64,13 +64,13 @@ public:
         return v;
     }
 
-    void incFreq(boost::string_view s, int32_t delta) {
+    void incFreq(std::string_view s, int32_t delta) {
         trie_.update(s.data(), s.size(),
                      [delta](int32_t v) { return v + delta; });
         weightedSize_ += delta;
     }
 
-    void decFreq(boost::string_view s, int32_t delta) {
+    void decFreq(std::string_view s, int32_t delta) {
         auto v = trie_.exactMatchSearch(s.data(), s.size());
         if (trie_.isNoValue(v)) {
             return;
@@ -85,7 +85,7 @@ public:
         }
     }
 
-    void eraseByKey(boost::string_view s) {
+    void eraseByKey(std::string_view s) {
         auto v = trie_.exactMatchSearch(s.data(), s.size());
         if (trie_.isNoValue(v)) {
             return;
@@ -94,7 +94,7 @@ public:
         decWeightedSize(v);
     }
 
-    void eraseByPrefix(boost::string_view s) {
+    void eraseByPrefix(std::string_view s) {
         std::vector<std::pair<std::string, int32_t>> values;
         trie_.foreach(s, [this, &values](TrieType::value_type value, size_t len,
                                          TrieType::position_type pos) {
@@ -109,7 +109,7 @@ public:
         }
     }
 
-    void eraseBySuffix(boost::string_view s) {
+    void eraseBySuffix(std::string_view s) {
         std::vector<std::pair<std::string, int32_t>> values;
         trie_.foreach(s,
                       [this, &values, s](TrieType::value_type value, size_t len,
@@ -128,7 +128,7 @@ public:
     }
 
     void fillPredict(std::unordered_set<std::string> &words,
-                     boost::string_view word, size_t maxSize) const {
+                     std::string_view word, size_t maxSize) const {
         trie_.foreach(word,
                       [this, &words, maxSize](TrieType::value_type, size_t len,
                                               TrieType::position_type pos) {
@@ -307,7 +307,7 @@ public:
         incBigram(sentence.back(), "</s>", delta);
     }
 
-    float unigramFreq(boost::string_view s) const {
+    float unigramFreq(std::string_view s) const {
         auto v = unigram_.freq(s);
         if (next_) {
             return v + decay * next_->unigramFreq(s);
@@ -315,7 +315,7 @@ public:
         return v;
     }
 
-    float bigramFreq(boost::string_view s1, boost::string_view s2) const {
+    float bigramFreq(std::string_view s1, std::string_view s2) const {
         std::string s;
         s.append(s1.data(), s1.size());
         s += '|';
@@ -327,11 +327,11 @@ public:
         return v;
     }
 
-    bool isUnknown(boost::string_view word) const {
+    bool isUnknown(std::string_view word) const {
         return unigramFreq(word) == 0 && (!next_ || next_->isUnknown(word));
     }
 
-    float score(boost::string_view prev, boost::string_view cur) const {
+    float score(std::string_view prev, std::string_view cur) const {
         int uf0 = unigramFreq(prev);
         int bf = bigramFreq(prev, cur);
         int uf1 = unigramFreq(cur);
@@ -377,7 +377,7 @@ public:
         return currentSize;
     }
 
-    void forget(boost::string_view word) {
+    void forget(std::string_view word) {
         if (maxSize_) {
             auto iter = recent_.begin();
             while (iter != recent_.end()) {
@@ -391,8 +391,10 @@ public:
             }
         } else {
             unigram_.decFreq(word, unigram_.freq(word));
-            std::string prefix = word.to_string() + '|';
-            std::string suffix = '|' + word.to_string();
+            std::string prefix(word);
+            prefix.append("|");
+            std::string suffix("|");
+            suffix += word;
             bigram_.eraseByPrefix(prefix);
             bigram_.eraseBySuffix(suffix);
         }
@@ -403,7 +405,7 @@ public:
     }
 
     void fillPredict(std::unordered_set<std::string> &words,
-                     boost::string_view word, size_t maxSize = 0) const {
+                     std::string_view word, size_t maxSize = 0) const {
         bigram_.fillPredict(words, word, maxSize);
         if (next_ && (words.size() < maxSize || maxSize <= 0)) {
             next_->fillPredict(words, word, maxSize);
@@ -439,8 +441,7 @@ private:
         decBigram(sentence.back(), "</s>", delta);
     }
 
-    void decBigram(boost::string_view s1, boost::string_view s2,
-                   int32_t delta) {
+    void decBigram(std::string_view s1, std::string_view s2, int32_t delta) {
         std::string ss;
         ss.append(s1.data(), s1.size());
         ss += '|';
@@ -448,7 +449,7 @@ private:
         bigram_.decFreq(ss, delta);
     }
 
-    void incBigram(boost::string_view s1, boost::string_view s2, int delta) {
+    void incBigram(std::string_view s1, std::string_view s2, int delta) {
         std::string ss;
         ss.append(s1.data(), s1.size());
         ss += '|';
@@ -526,13 +527,12 @@ void HistoryBigram::add(const std::vector<std::string> &sentence) {
     d->recentPool_.add(sentence);
 }
 
-bool HistoryBigram::isUnknown(boost::string_view v) const {
+bool HistoryBigram::isUnknown(std::string_view v) const {
     FCITX_D();
     return d->recentPool_.isUnknown(v);
 }
 
-float HistoryBigram::score(boost::string_view prev,
-                           boost::string_view cur) const {
+float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
     FCITX_D();
     if (prev.empty()) {
         prev = "<s>";
@@ -576,7 +576,7 @@ void HistoryBigram::clear() {
     d->recentPool_.clear();
 }
 
-void HistoryBigram::forget(boost::string_view word) {
+void HistoryBigram::forget(std::string_view word) {
     FCITX_D();
     d->recentPool_.forget(word);
 }

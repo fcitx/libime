@@ -22,11 +22,11 @@
 
 #include "libimecore_export.h"
 #include <arpa/inet.h>
-#include <boost/utility/string_view.hpp>
 #include <chrono>
 #include <cstdint>
 #include <fcitx-utils/log.h>
 #include <iostream>
+#include <string_view>
 #include <vector>
 
 namespace libime {
@@ -141,7 +141,7 @@ inline std::istream &unmarshallString(std::istream &in, std::string &str) {
     return in;
 }
 
-inline std::ostream &marshallString(std::ostream &out, boost::string_view str) {
+inline std::ostream &marshallString(std::ostream &out, std::string_view str) {
     uint32_t length = str.size();
     ;
     do {

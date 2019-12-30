@@ -48,10 +48,10 @@ struct MatchedPinyinTrieNodes {
 // A cache to store the matched word, encoded Full Pinyin for this word and the
 // adjustment score.
 struct PinyinMatchResult {
-    PinyinMatchResult(boost::string_view s, float value,
-                      boost::string_view encodedPinyin)
+    PinyinMatchResult(std::string_view s, float value,
+                      std::string_view encodedPinyin)
         : word_(s, InvalidWordIndex), value_(value),
-          encodedPinyin_(encodedPinyin.to_string()) {}
+          encodedPinyin_(encodedPinyin) {}
     WordNode word_;
     float value_;
     std::string encodedPinyin_;

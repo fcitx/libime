@@ -30,8 +30,8 @@
 #include <vector>
 
 namespace libime {
-struct PinyinHash : std::unary_function<boost::string_view, std::size_t> {
-    std::size_t operator()(boost::string_view const &val) const {
+struct PinyinHash : std::unary_function<std::string_view, std::size_t> {
+    std::size_t operator()(std::string_view const &val) const {
         return boost::hash_range(val.begin(), val.end());
     }
 };
@@ -42,7 +42,8 @@ public:
                 PinyinFuzzyFlags flags)
         : pinyin_(pinyin), initial_(initial), final_(final), flags_(flags) {}
 
-    boost::string_view pinyin() const { return pinyin_; }
+    std::string_view pinyinView() const { return pinyin_; }
+    const std::string &pinyin() const { return pinyin_; }
     PinyinInitial initial() const { return initial_; }
     PinyinFinal final() const { return final_; }
     PinyinFuzzyFlags flags() const { return flags_; }
@@ -57,8 +58,8 @@ private:
 using PinyinMap = boost::multi_index_container<
     PinyinEntry,
     boost::multi_index::indexed_by<boost::multi_index::hashed_non_unique<
-        boost::multi_index::const_mem_fun<PinyinEntry, boost::string_view,
-                                          &PinyinEntry::pinyin>,
+        boost::multi_index::const_mem_fun<PinyinEntry, std::string_view,
+                                          &PinyinEntry::pinyinView>,
         PinyinHash>>>;
 
 LIBIMEPINYIN_EXPORT

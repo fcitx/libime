@@ -58,7 +58,7 @@ public:
 protected:
     inline LatticeNode *
     createLatticeNode(const SegmentGraph &graph, const LanguageModelBase *model,
-                      boost::string_view word, WordIndex idx,
+                      std::string_view word, WordIndex idx,
                       SegmentGraphPath path, const State &state, float cost = 0,
                       std::unique_ptr<LatticeNodeData> data = nullptr,
                       bool onlyPath = false) const {
@@ -67,7 +67,7 @@ protected:
     }
     virtual LatticeNode *createLatticeNodeImpl(
         const SegmentGraphBase &graph, const LanguageModelBase *model,
-        boost::string_view word, WordIndex idx, SegmentGraphPath path,
+        std::string_view word, WordIndex idx, SegmentGraphPath path,
         const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
         bool onlyPath) const;
 

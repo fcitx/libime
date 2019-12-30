@@ -26,8 +26,8 @@ namespace libime {
 
 class PinyinLatticeNodePrivate : public LatticeNodeData {
 public:
-    PinyinLatticeNodePrivate(boost::string_view encodedPinyin)
-        : encodedPinyin_(encodedPinyin.to_string()) {}
+    PinyinLatticeNodePrivate(std::string_view encodedPinyin)
+        : encodedPinyin_(encodedPinyin) {}
 
     std::string encodedPinyin_;
 };

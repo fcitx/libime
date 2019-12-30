@@ -202,7 +202,7 @@ void DecoderPrivate::forwardSearch(
     updateForNode(graph, nullptr);
 }
 
-std::string concatNBest(NBestNode *node, boost::string_view sep = "") {
+std::string concatNBest(NBestNode *node, std::string_view sep = "") {
     std::string result;
     while (node != nullptr) {
         result.append(node->node_->word());
@@ -345,10 +345,9 @@ bool Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
 }
 
 LatticeNode *Decoder::createLatticeNodeImpl(
-    const SegmentGraphBase &, const LanguageModelBase *,
-    boost::string_view word, WordIndex idx, SegmentGraphPath path,
-    const State &state, float cost, std::unique_ptr<LatticeNodeData>,
-    bool) const {
+    const SegmentGraphBase &, const LanguageModelBase *, std::string_view word,
+    WordIndex idx, SegmentGraphPath path, const State &state, float cost,
+    std::unique_ptr<LatticeNodeData>, bool) const {
     return new LatticeNode(word, idx, std::move(path), state, cost);
 }
 } // namespace libime

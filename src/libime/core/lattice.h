@@ -67,8 +67,7 @@ private:
 
 class LIBIMECORE_EXPORT WordNode {
 public:
-    WordNode(boost::string_view word, WordIndex idx)
-        : word_(word.to_string()), idx_(idx) {}
+    WordNode(std::string_view word, WordIndex idx) : word_(word), idx_(idx) {}
 
     virtual ~WordNode() = default;
     WordNode(WordNode &&other) noexcept(
@@ -92,7 +91,7 @@ public:
 
 class LIBIMECORE_EXPORT LatticeNode : public WordNode {
 public:
-    LatticeNode(boost::string_view word, WordIndex idx, SegmentGraphPath path,
+    LatticeNode(std::string_view word, WordIndex idx, SegmentGraphPath path,
                 const State &state, float cost = 0)
         : WordNode(word, idx), path_(std::move(path)), cost_(cost),
           state_(state) {

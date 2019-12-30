@@ -38,10 +38,10 @@ void usage(const char *argv0) {
               << "-h: Show this help" << std::endl;
 }
 
-float score(const libime::LanguageModel &model, boost::string_view w,
-            boost::string_view w2) {
+float score(const libime::LanguageModel &model, std::string_view w,
+            std::string_view w2) {
     auto state = model.nullState();
-    return model.wordsScore(state, std::vector<boost::string_view>{w, w2});
+    return model.wordsScore(state, std::vector<std::string_view>{w, w2});
 }
 
 int main(int argc, char *argv[]) {

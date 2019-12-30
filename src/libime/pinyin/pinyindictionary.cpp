@@ -29,11 +29,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/utility/string_view.hpp>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <queue>
+#include <string_view>
 #include <type_traits>
 
 namespace libime {
@@ -302,7 +302,7 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, const T &callback) {
                 std::string s;
                 s.reserve(len + path.size() * 2 + 1);
                 path.trie()->suffix(s, len + path.size() * 2 + 1, pos);
-                boost::string_view view(s);
+                std::string_view view(s);
                 auto encodedPinyin = view.substr(0, path.size() * 2);
                 auto hanzi = view.substr(path.size() * 2 + 1);
                 callback(encodedPinyin, hanzi, value + extraCost);
@@ -328,8 +328,8 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
 
             auto &items = *result;
             matchWordsOnTrie(path,
-                             [&items](boost::string_view encodedPinyin,
-                                      boost::string_view hanzi, float cost) {
+                             [&items](std::string_view encodedPinyin,
+                                      std::string_view hanzi, float cost) {
                                  items.emplace_back(hanzi, cost, encodedPinyin);
                              });
         }
@@ -343,9 +343,9 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
             }
         }
     } else {
-        matchWordsOnTrie(path, [&matched, &path, &context, &prevNode](
-                                   boost::string_view encodedPinyin,
-                                   boost::string_view hanzi, float cost) {
+        matchWordsOnTrie(path, [&matched, &path, &context,
+                                &prevNode](std::string_view encodedPinyin,
+                                           std::string_view hanzi, float cost) {
             WordNode word(hanzi, InvalidWordIndex);
             context.callback_(
                 path.path_, word, cost,
@@ -577,7 +577,7 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
                 std::string s;
                 node.first->suffix(s, len + size + 1, pos);
 
-                auto view = boost::string_view(s);
+                auto view = std::string_view(s);
                 return callback(s.substr(0, size), view.substr(size + 1),
                                 value);
             },
@@ -629,9 +629,9 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
         boost::split(tokens, buf, isSpaceCheck);
         if (tokens.size() == 3) {
             const std::string &hanzi = tokens[0];
-            boost::string_view pinyin = tokens[1];
+            std::string_view pinyin = tokens[1];
             float prob = std::stof(tokens[2]);
-            auto result = PinyinEncoder::encodeFullPinyin(pinyin.to_string());
+            auto result = PinyinEncoder::encodeFullPinyin(pinyin);
             result.push_back(pinyinHanziSep);
             result.insert(result.end(), hanzi.begin(), hanzi.end());
             trie.set(result.data(), result.size(), prob);
@@ -691,7 +691,7 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
         if (sep == std::string::npos) {
             return true;
         }
-        boost::string_view ref(buf);
+        std::string_view ref(buf);
         auto fullPinyin = PinyinEncoder::decodeFullPinyin(ref.data(), sep);
         out << ref.substr(sep + 1) << " " << fullPinyin << " "
             << std::setprecision(16) << value << std::endl;
@@ -700,12 +700,12 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
     out.copyfmt(state);
 }
 
-void PinyinDictionary::addWord(size_t idx, boost::string_view fullPinyin,
-                               boost::string_view hanzi, float cost) {
+void PinyinDictionary::addWord(size_t idx, std::string_view fullPinyin,
+                               std::string_view hanzi, float cost) {
     auto result = PinyinEncoder::encodeFullPinyin(fullPinyin);
     result.push_back(pinyinHanziSep);
     result.insert(result.end(), hanzi.begin(), hanzi.end());
-    TrieDictionary::addWord(
-        idx, boost::string_view(result.data(), result.size()), cost);
+    TrieDictionary::addWord(idx, std::string_view(result.data(), result.size()),
+                            cost);
 }
 } // namespace libime

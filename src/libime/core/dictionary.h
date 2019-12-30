@@ -22,8 +22,8 @@
 #include "lattice.h"
 #include "libimecore_export.h"
 #include "segmentgraph.h"
-#include <boost/utility/string_view.hpp>
 #include <functional>
+#include <string_view>
 
 namespace libime {
 

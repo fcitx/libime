@@ -186,7 +186,7 @@ void PinyinContext::select(size_t idx) {
             static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
     }
     // add some special code for handling separator at the end
-    auto remain = boost::string_view(userInput()).substr(selectedLength());
+    auto remain = std::string_view(userInput()).substr(selectedLength());
     if (!remain.empty()) {
         if (std::all_of(remain.begin(), remain.end(),
                         [](char c) { return c == '\''; })) {
@@ -263,12 +263,10 @@ void PinyinContext::update() {
         SegmentGraph newGraph;
         if (auto spProfile = d->matchState_.shuangpinProfile()) {
             newGraph = PinyinEncoder::parseUserShuangpin(
-                boost::string_view(userInput()).substr(start), *spProfile,
-                d->ime_->fuzzyFlags());
+                userInput().substr(start), *spProfile, d->ime_->fuzzyFlags());
         } else {
-            newGraph = PinyinEncoder::parseUserPinyin(
-                boost::string_view(userInput()).substr(start),
-                d->ime_->fuzzyFlags());
+            newGraph = PinyinEncoder::parseUserPinyin(userInput().substr(start),
+                                                      d->ime_->fuzzyFlags());
         }
         d->segs_.merge(
             newGraph,

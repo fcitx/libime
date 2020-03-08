@@ -23,10 +23,10 @@ namespace libime {
 
 constexpr float DEFAULT_USER_LANGUAGE_MODEL_UNIGRAM_WEIGHT = 3;
 constexpr float DEFAULT_USER_LANGUAGE_MODEL_BIGRAM_WEIGHT = 15;
-constexpr float DEFAULT_USER_LANGUAGE_MODEL_PENALTY_FACTOR = 0.3;
 constexpr float DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY =
     1 / 60000000.0f;
 // -38... is log10(2^-127)
+constexpr float HISTORY_BIGRAM_ALPHA_VALUE = 1.0f;
 constexpr float MIN_FLOAT_LOG10 = -38.23080944932561;
 constexpr float DEFAULT_USER_LANGUAGE_MODEL_USER_WEIGHT = 0.3f;
 } // namespace libime

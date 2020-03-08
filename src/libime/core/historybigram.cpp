@@ -20,35 +20,24 @@
 #include "constants.h"
 #include "datrie.h"
 #include "utils.h"
+#include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/algorithm.hpp>
 #include <cmath>
 #include <fcitx-utils/log.h>
 
 namespace libime {
 
 static constexpr uint32_t historyBinaryFormatMagic = 0x000fc315;
-static constexpr uint32_t historyBinaryFormatVersion = 0x1;
+static constexpr uint32_t historyBinaryFormatVersion = 0x2;
 
 struct WeightedTrie {
     using TrieType = DATrie<int32_t>;
 
 public:
     WeightedTrie() = default;
-
-    void load(std::istream &in) {
-        TrieType trie;
-        trie.load(in);
-        weightedSize_ = 0;
-        trie_ = std::move(trie);
-        trie_.foreach([this](int32_t value, size_t, uint64_t) {
-            weightedSize_ += value;
-            return true;
-        });
-    }
-
-    void save(std::ostream &out) { trie_.save(out); }
 
     void clear() { trie_.clear(); }
 
@@ -160,105 +149,51 @@ private:
     TrieType trie_;
 };
 
-constexpr const static float decay = 1.0f;
 class HistoryBigramPool {
 public:
-    HistoryBigramPool(size_t maxSize = 0, HistoryBigramPool *next = nullptr)
-        : maxSize_(maxSize), next_(next) {
-        if (maxSize) {
-            assert(next);
-        } else {
-            assert(!next);
-        }
-    }
-
-    void setUnknownPenalty(float unknown) {
-        unknown_ = unknown;
-        if (next_) {
-            next_->setUnknownPenalty(unknown);
-        }
-    }
-
-    void setPenaltyFactor(float factor) {
-        penaltyFactor_ = factor;
-        if (next_) {
-            next_->setPenaltyFactor(factor);
-        }
-    }
+    HistoryBigramPool(size_t maxSize) : maxSize_(maxSize) {}
 
     void load(std::istream &in) {
         clear();
-        if (maxSize_) {
-            uint32_t count;
-            throw_if_io_fail(unmarshall(in, count));
-            while (count--) {
-                uint32_t size;
-                throw_if_io_fail(unmarshall(in, size));
-                std::vector<std::string> sentence;
-                while (size--) {
-                    std::string buffer;
-                    throw_if_io_fail(unmarshallString(in, buffer));
-                    sentence.emplace_back(std::move(buffer));
-                }
-                add(sentence);
+        uint32_t count;
+        throw_if_io_fail(unmarshall(in, count));
+        while (count--) {
+            uint32_t size;
+            throw_if_io_fail(unmarshall(in, size));
+            std::vector<std::string> sentence;
+            while (size--) {
+                std::string buffer;
+                throw_if_io_fail(unmarshallString(in, buffer));
+                sentence.emplace_back(std::move(buffer));
             }
-            next_->load(in);
-        } else {
-            unigram_.load(in);
-            bigram_.load(in);
+            add(sentence);
         }
     }
 
     void save(std::ostream &out) {
-        if (maxSize_) {
-            uint32_t count = recent_.size();
-            throw_if_io_fail(marshall(out, count));
-            for (auto &sentence : recent_) {
-                uint32_t size = sentence.size();
-                throw_if_io_fail(marshall(out, size));
-                for (auto &s : sentence) {
-                    throw_if_io_fail(marshallString(out, s));
-                }
+        uint32_t count = recent_.size();
+        throw_if_io_fail(marshall(out, count));
+        for (auto &sentence : recent_) {
+            uint32_t size = sentence.size();
+            throw_if_io_fail(marshall(out, size));
+            for (auto &s : sentence) {
+                throw_if_io_fail(marshallString(out, s));
             }
-            next_->save(out);
-        } else {
-            unigram_.save(out);
-            bigram_.save(out);
         }
     }
 
-    void dump(std::ostream &out) {
-        if (maxSize_) {
-            for (auto &sentence : recent_ | boost::adaptors::reversed) {
-                bool first = true;
-                for (auto &s : sentence) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        std::cout << " ";
-                    }
-                    std::cout << s;
+    void dump(std::ostream &out) const {
+        for (auto &sentence : recent_ | boost::adaptors::reversed) {
+            bool first = true;
+            for (auto &s : sentence) {
+                if (first) {
+                    first = false;
+                } else {
+                    out << " ";
                 }
-                std::cout << std::endl;
+                out << s;
             }
-            next_->dump(out);
-        } else {
-            unigram_.trie().foreach(
-                [this, &out](int32_t value, size_t _len,
-                             DATrie<int32_t>::position_type pos) {
-                    std::string buf;
-                    unigram_.trie().suffix(buf, _len, pos);
-                    out << buf << " " << value << std::endl;
-                    return true;
-                });
-            bigram_.trie().foreach(
-                [this, &out](int32_t value, size_t _len,
-                             DATrie<int32_t>::position_type pos) {
-                    std::string buf;
-                    bigram_.trie().suffix(buf, _len, pos);
-                    out << buf << " " << value << std::endl;
-                    return true;
-                });
+            out << std::endl;
         }
     }
 
@@ -267,26 +202,22 @@ public:
         unigram_.clear();
         bigram_.clear();
         size_ = 0;
-        if (next_) {
-            next_->clear();
-        }
     }
 
     template <typename R>
-    void add(const R &sentence) {
+    std::list<std::vector<std::string>> add(const R &sentence) {
+        std::list<std::vector<std::string>> popedSentence;
         if (sentence.empty()) {
-            return;
+            return popedSentence;
         }
-        if (maxSize_) {
-            while (recent_.size() >= maxSize_) {
-                next_->add(recent_.back());
-                remove(recent_.back());
-                recent_.pop_back();
-            }
+        while (recent_.size() >= maxSize_) {
+            remove(recent_.back());
+            popedSentence.splice(popedSentence.end(), recent_,
+                                 std::prev(recent_.end()));
         }
 
         std::vector<std::string> newSentence;
-        auto delta = weightForSentence(sentence);
+        auto delta = 1;
         for (auto iter = sentence.begin(), end = sentence.end(); iter != end;
              iter++) {
             unigram_.incFreq(*iter, delta);
@@ -298,20 +229,17 @@ public:
             ss += *iter;
             newSentence.push_back(ss);
         }
-        if (maxSize_) {
-            recent_.push_front(std::move(newSentence));
-        }
+        recent_.push_front(std::move(newSentence));
         unigram_.incFreq("<s>", delta);
         unigram_.incFreq("</s>", delta);
         incBigram("<s>", sentence.front(), delta);
         incBigram(sentence.back(), "</s>", delta);
+
+        return popedSentence;
     }
 
     float unigramFreq(std::string_view s) const {
         auto v = unigram_.freq(s);
-        if (next_) {
-            return v + decay * next_->unigramFreq(s);
-        }
         return v;
     }
 
@@ -321,114 +249,38 @@ public:
         s += '|';
         s.append(s2.data(), s2.size());
         auto v = bigram_.freq(s);
-        if (next_) {
-            v += decay * next_->bigramFreq(s1, s2);
-        }
         return v;
     }
 
     bool isUnknown(std::string_view word) const {
-        return unigramFreq(word) == 0 && (!next_ || next_->isUnknown(word));
+        return unigramFreq(word) == 0;
     }
 
-    float score(std::string_view prev, std::string_view cur) const {
-        int uf0 = unigramFreq(prev);
-        int bf = bigramFreq(prev, cur);
-        int uf1 = unigramFreq(cur);
+    size_t maxSize() const { return maxSize_; }
 
-        float bigramWeight = 0.68f;
-        // add 0.5 to avoid div 0
-        float pr = 0.0f;
-        pr += bigramWeight * float(bf) / float(uf0 + 0.5f);
-        pr += (1.0f - bigramWeight) * float(uf1) / float(unigramSize() + 0.5f);
-        if (auto sizeDiff = (maxSize() - realSize())) {
-            auto penalty = 1 + (penaltyFactor_ * sizeDiff / maxSize());
-            if (penalty > 1) {
-                pr /= penalty;
-            }
-        }
-
-        if (pr >= 1.0) {
-            pr = 1.0;
-        }
-        if (pr == 0) {
-            pr = unknown_;
-        }
-
-        return pr;
-    }
-
-    size_t maxSize() const {
-        return (maxSize_ ? maxSize_ : 0) + (next_ ? next_->maxSize() : 0);
-    }
-
-    size_t realSize() const {
-        return recent_.size() + (next_ ? next_->realSize() : 0);
-    }
-
-    size_t unigramSize() const {
-        auto currentSize =
-            std::max(static_cast<size_t>(
-                         maxSize_ * DEFAULT_USER_LANGUAGE_MODEL_UNIGRAM_WEIGHT),
-                     static_cast<size_t>(unigram_.weightedSize()));
-        if (next_) {
-            currentSize += next_->unigramSize();
-        }
-        return currentSize;
-    }
+    size_t realSize() const { return recent_.size(); }
 
     void forget(std::string_view word) {
-        if (maxSize_) {
-            auto iter = recent_.begin();
-            while (iter != recent_.end()) {
-                if (std::find(iter->begin(), iter->end(), word) !=
-                    iter->end()) {
-                    remove(*iter);
-                    iter = recent_.erase(iter);
-                } else {
-                    ++iter;
-                }
+        auto iter = recent_.begin();
+        while (iter != recent_.end()) {
+            if (std::find(iter->begin(), iter->end(), word) != iter->end()) {
+                remove(*iter);
+                iter = recent_.erase(iter);
+            } else {
+                ++iter;
             }
-        } else {
-            unigram_.decFreq(word, unigram_.freq(word));
-            std::string prefix(word);
-            prefix.append("|");
-            std::string suffix("|");
-            suffix += word;
-            bigram_.eraseByPrefix(prefix);
-            bigram_.eraseBySuffix(suffix);
-        }
-
-        if (next_) {
-            next_->forget(word);
         }
     }
 
     void fillPredict(std::unordered_set<std::string> &words,
                      std::string_view word, size_t maxSize = 0) const {
         bigram_.fillPredict(words, word, maxSize);
-        if (next_ && (words.size() < maxSize || maxSize <= 0)) {
-            next_->fillPredict(words, word, maxSize);
-        }
     }
 
 private:
     template <typename R>
-    int32_t weightForSentence(const R &sentence) {
-        // Short <= 2 unigram weight.
-        if (sentence.size() <= 2) {
-            return DEFAULT_USER_LANGUAGE_MODEL_UNIGRAM_WEIGHT;
-        }
-
-        if (sentence.size() < DEFAULT_USER_LANGUAGE_MODEL_UNIGRAM_WEIGHT) {
-            return sentence.size();
-        }
-        return DEFAULT_USER_LANGUAGE_MODEL_BIGRAM_WEIGHT;
-    }
-
-    template <typename R>
     void remove(const R &sentence) {
-        int32_t delta = weightForSentence(sentence);
+        const int delta = 1;
         for (auto iter = sentence.begin(), end = sentence.end(); iter != end;
              iter++) {
             unigram_.decFreq(*iter, delta);
@@ -458,8 +310,6 @@ private:
     }
 
     const size_t maxSize_;
-    float unknown_ = DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY;
-    float penaltyFactor_ = DEFAULT_USER_LANGUAGE_MODEL_PENALTY_FACTOR;
 
     // Used when maxSize_ != 0.
     size_t size_ = 0;
@@ -468,27 +318,81 @@ private:
     // Used for look up
     WeightedTrie unigram_;
     WeightedTrie bigram_;
-
-    HistoryBigramPool *next_;
 };
 
+// We define the frequency as following.
+// (1 - p) the frequency belongs to first pool.
+// p * (1 - p) Second pool
+// p^2 * (1 - p) Third pool
+// ...
+// p^(n-1) n-th pool.
+// In sum, it's (1-p) * p^(i - 1)
+// And then we define alpha as p = 1 / (1 + alpha).
 class HistoryBigramPrivate {
 public:
     HistoryBigramPrivate() {}
 
-    // A probabilty, not log'ed
-    float unknown_ = DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY;
-    float penaltyFactor_ = DEFAULT_USER_LANGUAGE_MODEL_PENALTY_FACTOR;
-    HistoryBigramPool finalPool_;
-    HistoryBigramPool middlePool_{256, &finalPool_};
-    HistoryBigramPool recentPool_{64, &middlePool_};
+    void populateSentence(std::list<std::vector<std::string>> popedSentence) {
+        for (size_t i = 1; !popedSentence.empty() && i < pools_.size(); i++) {
+            std::list<std::vector<std::string>> nextSentences;
+            while (!popedSentence.empty()) {
+                auto newPopedSentence = pools_[i].add(popedSentence.front());
+                popedSentence.pop_front();
+                nextSentences.splice(nextSentences.end(), newPopedSentence);
+            }
+            popedSentence = std::move(nextSentences);
+        }
+    }
+
+    float unigramFreq(std::string_view word) const {
+        assert(pools_.size() == poolWeight_.size());
+        float freq = 0;
+        for (size_t i = 0; i < pools_.size(); i++) {
+            freq += pools_[i].unigramFreq(word) * poolWeight_[i];
+        }
+        return freq;
+    }
+
+    float bigramFreq(std::string_view prev, std::string_view cur) const {
+        assert(pools_.size() == poolWeight_.size());
+        float freq = 0;
+        for (size_t i = 0; i < pools_.size(); i++) {
+            freq += pools_[i].bigramFreq(prev, cur) * poolWeight_[i];
+        }
+        return freq;
+    }
+
+    float unigramSize() const {
+        float size = 0;
+        for (size_t i = 0; i < pools_.size(); i++) {
+            size += pools_[i].maxSize() * poolWeight_[i];
+        }
+        return size;
+    }
+
+    // A log probabilty.
+    float unknown_ =
+        std::log10(DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY);
+    std::vector<HistoryBigramPool> pools_;
+    std::vector<float> poolWeight_;
 };
 
 HistoryBigram::HistoryBigram()
     : d_ptr(std::make_unique<HistoryBigramPrivate>()) {
+    FCITX_D();
+    const float p = 1.0 / (1 + HISTORY_BIGRAM_ALPHA_VALUE);
+    constexpr std::array<int, 3> poolSize = {128, 8192, 65536};
+    for (auto size : poolSize) {
+        d->pools_.emplace_back(size);
+        float portion = 1.0f;
+        if (d->pools_.size() != poolSize.size()) {
+            portion *= 1 - p;
+        }
+        portion *= std::pow(p, d->pools_.size() - 1);
+        d->poolWeight_.push_back(portion / d->pools_.back().maxSize());
+    }
     setUnknownPenalty(
         std::log10(DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY));
-    setPenaltyFactor(DEFAULT_USER_LANGUAGE_MODEL_PENALTY_FACTOR);
 }
 
 FCITX_DEFINE_DEFAULT_DTOR_AND_MOVE(HistoryBigram)
@@ -496,7 +400,6 @@ FCITX_DEFINE_DEFAULT_DTOR_AND_MOVE(HistoryBigram)
 void HistoryBigram::setUnknownPenalty(float unknown) {
     FCITX_D();
     d->unknown_ = unknown;
-    d->recentPool_.setUnknownPenalty(std::pow(10, unknown));
 }
 
 float HistoryBigram::unknownPenalty() const {
@@ -504,32 +407,24 @@ float HistoryBigram::unknownPenalty() const {
     return d->unknown_;
 }
 
-void HistoryBigram::setPenaltyFactor(float factor) {
-    FCITX_D();
-    d->penaltyFactor_ = factor;
-    d->recentPool_.setPenaltyFactor(factor);
-}
-
-float HistoryBigram::penaltyFactor() const {
-    FCITX_D();
-    return d->penaltyFactor_;
-}
-
 void HistoryBigram::add(const libime::SentenceResult &sentence) {
     FCITX_D();
-    d->recentPool_.add(sentence.sentence() |
-                       boost::adaptors::transformed(
-                           [](const auto &item) { return item->word(); }));
+    d->populateSentence(
+        d->pools_[0].add(sentence.sentence() |
+                         boost::adaptors::transformed(
+                             [](const auto &item) { return item->word(); })));
 }
 
 void HistoryBigram::add(const std::vector<std::string> &sentence) {
     FCITX_D();
-    d->recentPool_.add(sentence);
+    d->populateSentence(d->pools_[0].add(sentence));
 }
 
 bool HistoryBigram::isUnknown(std::string_view v) const {
     FCITX_D();
-    return d->recentPool_.isUnknown(v);
+    return boost::algorithm::all_of(
+        d->pools_,
+        [v](const HistoryBigramPool &pool) { return pool.isUnknown(v); });
 }
 
 float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
@@ -540,7 +435,25 @@ float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
     if (cur.empty()) {
         cur = "<unk>";
     }
-    auto pr = d->recentPool_.score(prev, cur);
+
+    auto uf0 = d->unigramFreq(prev);
+    auto bf = d->bigramFreq(prev, cur);
+    auto uf1 = d->unigramFreq(cur);
+
+    float bigramWeight = 0.68f;
+    // add 0.5 to avoid div 0
+    float pr = 0.0f;
+    pr += bigramWeight * float(bf) / float(uf0 + d->poolWeight_[0] / 2);
+    pr += (1.0f - bigramWeight) * float(uf1) /
+          float(d->unigramSize() + d->poolWeight_[0] / 2);
+
+    if (pr >= 1.0) {
+        pr = 1.0;
+    }
+    if (pr == 0) {
+        return d->unknown_;
+    }
+
     return std::log10(pr);
 }
 
@@ -553,32 +466,42 @@ void HistoryBigram::load(std::istream &in) {
         throw std::invalid_argument("Invalid history magic.");
     }
     throw_if_io_fail(unmarshall(in, version));
-    if (version != historyBinaryFormatVersion) {
+    switch (version) {
+    case 1:
+        std::for_each_n(d->pools_.begin(), 2,
+                        [&in](auto &pool) { pool.load(in); });
+        break;
+    case historyBinaryFormatVersion:
+        boost::range::for_each(d->pools_, [&in](auto &pool) { pool.load(in); });
+        break;
+    default: {
         throw std::invalid_argument("Invalid history version.");
     }
-    d->recentPool_.load(in);
+    }
 }
 
 void HistoryBigram::save(std::ostream &out) {
     FCITX_D();
     throw_if_io_fail(marshall(out, historyBinaryFormatMagic));
     throw_if_io_fail(marshall(out, historyBinaryFormatVersion));
-    d->recentPool_.save(out);
+    boost::range::for_each(d->pools_, [&out](auto &pool) { pool.save(out); });
 }
 
 void HistoryBigram::dump(std::ostream &out) {
     FCITX_D();
-    d->recentPool_.dump(out);
+    boost::range::for_each(d->pools_,
+                           [&out](const auto &pool) { pool.dump(out); });
 }
 
 void HistoryBigram::clear() {
     FCITX_D();
-    d->recentPool_.clear();
+    boost::range::for_each(d->pools_, std::mem_fn(&HistoryBigramPool::clear));
 }
 
 void HistoryBigram::forget(std::string_view word) {
     FCITX_D();
-    d->recentPool_.forget(word);
+    boost::range::for_each(d->pools_,
+                           [word](auto &pool) { pool.forget(word); });
 }
 
 void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
@@ -595,6 +518,9 @@ void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
         lookup = "<s>";
     }
     lookup += "|";
-    d->recentPool_.fillPredict(words, lookup, maxSize);
+    boost::range::for_each(
+        d->pools_, [&words, lookup, maxSize](const HistoryBigramPool &pool) {
+            pool.fillPredict(words, lookup, maxSize);
+        });
 }
 } // namespace libime

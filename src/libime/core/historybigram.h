@@ -43,9 +43,6 @@ public:
     void dump(std::ostream &out);
     void clear();
 
-    void setPenaltyFactor(float factor);
-    float penaltyFactor() const;
-
     /// Set unknown probability penatly.
     /// \param unknown is a log probability.
     void setUnknownPenalty(float unknown);

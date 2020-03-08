@@ -77,7 +77,6 @@ void UserLanguageModel::load(std::istream &in) {
     FCITX_D();
     HistoryBigram history;
     history.setUnknownPenalty(d->history_.unknownPenalty());
-    history.setPenaltyFactor(d->history_.penaltyFactor());
     history.load(in);
     d->history_ = std::move(history);
 }

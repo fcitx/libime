@@ -28,6 +28,8 @@ int main() {
     history.add({"你", "是", "一个", "好人"});
     history.add({"我", "是", "一个", "坏人"});
     history.add({"他"});
+
+    history.dump(std::cout);
     std::cout << history.score("你", "是") << std::endl;
     std::cout << history.score("他", "是") << std::endl;
     std::cout << history.score("他", "不是") << std::endl;
@@ -43,6 +45,8 @@ int main() {
     std::cout << history.score("你", "是") << std::endl;
     std::cout << history.score("他", "是") << std::endl;
     std::cout << history.score("他", "不是") << std::endl;
+
+    history.dump(std::cout);
     {
         std::stringstream ss;
         try {

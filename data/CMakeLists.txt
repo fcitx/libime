@@ -30,11 +30,11 @@ add_custom_target(opengram-lm-predict ALL DEPENDS "${OPENGRAM_LM_PREDICT_OUTPUT}
 install(FILES "${OPENGRAM_LM_OUTPUT}" RENAME zh_CN.lm DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")
 install(FILES "${OPENGRAM_LM_PREDICT_OUTPUT}" RENAME zh_CN.lm.predict DESTINATION "${CMAKE_INSTALL_DATADIR}/libime")
 
-set(OPENGRAM_DICT_TAR "dict.utf8-20170423.tar.xz")
-set(OPENGRAM_DICT_URL "https://download.fcitx-im.org/data/dict.utf8-20170423.tar.xz")
+set(OPENGRAM_DICT_TAR "dict.utf8-20200310.tar.xz")
+set(OPENGRAM_DICT_URL "https://download.fcitx-im.org/data/dict.utf8-20200310.tar.xz")
 
 fcitx5_download(opengram-dict-download ${OPENGRAM_DICT_URL} ${OPENGRAM_DICT_TAR}
-                15775a25c9b4e02891e935e0b0dc692ee6d5a747079e7239c1a71976db90f54e)
+                f9e6b786698770a853317b1ab8972f8cd5eda50fa1f3e47d63a8d5f74c71f13d)
 fcitx5_extract(opengram-dict-extract ${OPENGRAM_DICT_TAR} DEPENDS opengram-dict-download
                OUTPUT dict.utf8)
 set(OPENGRAM_DICT_SRC "${CMAKE_CURRENT_BINARY_DIR}/dict.converted")

@@ -361,7 +361,11 @@ void TableContext::typeOneChar(std::string_view chr) {
     auto lastSeg = userInput().substr(selectedLength());
     auto lastSegLength = fcitx::utf8::length(lastSeg);
     // update userInput()
+    auto oldSize = size();
     InputBuffer::typeImpl(chr.data(), chr.size());
+    if (oldSize == size()) {
+        return;
+    }
 
     auto &option = d->dict_.tableOptions();
     // Logic when append a new char:

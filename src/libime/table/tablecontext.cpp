@@ -307,20 +307,25 @@ bool TableContext::isValidInput(uint32_t c) const {
             (d->dict_.hasPinyin() && (c <= 'z' && c >= 'a')));
 }
 
-void TableContext::typeImpl(const char *s, size_t length) {
+bool TableContext::typeImpl(const char *s, size_t length) {
     std::string_view view(s, length);
     auto utf8len = fcitx::utf8::lengthValidated(view);
     if (utf8len == fcitx::utf8::INVALID_LENGTH) {
-        return;
+        return false;
     }
 
+    bool changed = false;
     auto range = fcitx::utf8::MakeUTF8CharRange(view);
     for (auto iter = range.begin(), end = range.end(); iter != end; iter++) {
         auto pair = iter.charRange();
         std::string_view chr(&*pair.first,
                              std::distance(pair.first, pair.second));
-        typeOneChar(chr);
+        if (!typeOneChar(chr)) {
+            break;
+        }
+        changed = true;
     }
+    return changed;
 }
 
 void TableContext::erase(size_t from, size_t to) {
@@ -356,15 +361,13 @@ void TableContext::select(size_t idx) {
     update();
 }
 
-void TableContext::typeOneChar(std::string_view chr) {
+bool TableContext::typeOneChar(std::string_view chr) {
     FCITX_D();
     auto lastSeg = userInput().substr(selectedLength());
     auto lastSegLength = fcitx::utf8::length(lastSeg);
     // update userInput()
-    auto oldSize = size();
-    InputBuffer::typeImpl(chr.data(), chr.size());
-    if (oldSize == size()) {
-        return;
+    if (!InputBuffer::typeImpl(chr.data(), chr.size())) {
+        return false;
     }
 
     auto &option = d->dict_.tableOptions();
@@ -376,7 +379,7 @@ void TableContext::typeOneChar(std::string_view chr) {
     if (!option.autoSelect()) {
         lastSeg.append(chr.data(), chr.size());
         d->graph_ = graphForCode(lastSeg, d->dict_);
-        return;
+        return true;
     }
 
     if ((!d->dict_.hasPinyin() &&
@@ -396,6 +399,7 @@ void TableContext::typeOneChar(std::string_view chr) {
     }
 
     update();
+    return true;
 }
 
 void TableContext::autoSelect() {

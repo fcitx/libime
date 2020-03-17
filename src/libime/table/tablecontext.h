@@ -88,11 +88,11 @@ public:
     void autoSelect();
 
 protected:
-    void typeImpl(const char *s, size_t length) override;
+    bool typeImpl(const char *s, size_t length) override;
 
 private:
     void update();
-    void typeOneChar(std::string_view chr);
+    bool typeOneChar(std::string_view chr);
 
     std::unique_ptr<TableContextPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(TableContext);

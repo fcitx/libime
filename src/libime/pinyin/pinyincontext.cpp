@@ -82,14 +82,13 @@ bool PinyinContext::useShuangpin() const {
     return d->sp_;
 }
 
-void PinyinContext::typeImpl(const char *s, size_t length) {
-    cancelTill(cursor());
-    auto oldSize = size();
-    InputBuffer::typeImpl(s, length);
-    if (oldSize == size()) {
-        return;
+bool PinyinContext::typeImpl(const char *s, size_t length) {
+    auto changed = cancelTill(cursor());
+    changed = InputBuffer::typeImpl(s, length) || changed;
+    if (changed) {
+        update();
     }
-    update();
+    return changed;
 }
 
 void PinyinContext::erase(size_t from, size_t to) {

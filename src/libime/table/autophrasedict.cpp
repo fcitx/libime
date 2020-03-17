@@ -53,7 +53,7 @@ public:
     AutoPhraseDictPrivate(size_t maxItem) : maxItems_(maxItem) {}
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(AutoPhraseDictPrivate);
 
-    item_list il;
+    item_list il_;
     std::size_t maxItems_;
 };
 
@@ -69,7 +69,7 @@ FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(AutoPhraseDict)
 
 void AutoPhraseDict::insert(const std::string &entry, uint32_t value) {
     FCITX_D();
-    auto &il = d->il;
+    auto &il = d->il_;
     auto p = il.push_front(AutoPhrase{entry, value});
 
     if (!p.second) {
@@ -86,7 +86,7 @@ bool AutoPhraseDict::search(
     std::string_view s,
     std::function<bool(std::string_view, uint32_t)> callback) const {
     FCITX_D();
-    auto &idx = d->il.get<1>();
+    auto &idx = d->il_.get<1>();
     auto iter = idx.lower_bound(s);
     while (iter != idx.end() && boost::starts_with(iter->entry(), s)) {
         if (!callback(iter->entry(), iter->hit_)) {
@@ -99,7 +99,7 @@ bool AutoPhraseDict::search(
 
 uint32_t AutoPhraseDict::exactSearch(std::string_view s) const {
     FCITX_D();
-    auto &idx = d->il.get<1>();
+    auto &idx = d->il_.get<1>();
     auto iter = idx.find(s);
     if (iter == idx.end()) {
         return 0;
@@ -109,13 +109,13 @@ uint32_t AutoPhraseDict::exactSearch(std::string_view s) const {
 
 void AutoPhraseDict::erase(std::string_view s) {
     FCITX_D();
-    auto &idx = d->il.get<1>();
+    auto &idx = d->il_.get<1>();
     idx.erase(s);
 }
 
 void AutoPhraseDict::clear() {
     FCITX_D();
-    d->il.clear();
+    d->il_.clear();
 }
 
 void AutoPhraseDict::load(std::istream &in) {
@@ -132,9 +132,9 @@ void AutoPhraseDict::load(std::istream &in) {
 
 void AutoPhraseDict::save(std::ostream &out) {
     FCITX_D();
-    uint32_t size = d->il.size();
+    uint32_t size = d->il_.size();
     throw_if_io_fail(marshall(out, size));
-    for (auto &phrase : d->il | boost::adaptors::reversed) {
+    for (auto &phrase : d->il_ | boost::adaptors::reversed) {
         throw_if_io_fail(marshallString(out, phrase.entry_));
         throw_if_io_fail(marshall(out, phrase.hit_));
     }

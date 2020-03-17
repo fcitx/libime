@@ -59,7 +59,7 @@ public:
 
     using fcitx::InputBuffer::type;
     // add one overload for string_view
-    void type(std::string_view s) { return type(s.data(), s.length()); }
+    bool type(std::string_view s) { return type(s.data(), s.length()); }
     std::string_view at(size_t i) const;
 
     std::string_view operator[](size_t i) const { return at(i); }

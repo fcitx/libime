@@ -47,6 +47,7 @@ public:
     std::vector<std::vector<SelectedPinyin>> selected_;
 
     bool sp_ = false;
+    int maxSentenceLength_ = -1;
     PinyinIME *ime_;
     SegmentGraph segs_;
     Lattice lattice_;
@@ -82,7 +83,28 @@ bool PinyinContext::useShuangpin() const {
     return d->sp_;
 }
 
+void PinyinContext::setMaxSentenceLength(int length) {
+    FCITX_D();
+    d->maxSentenceLength_ = length;
+    d->matchState_.clear();
+}
+
+int PinyinContext::maxSentenceLength() const {
+    FCITX_D();
+    return d->maxSentenceLength_;
+}
+
 bool PinyinContext::typeImpl(const char *s, size_t length) {
+    FCITX_D();
+    if (d->maxSentenceLength_ > 0 && !d->candidates_.empty()) {
+        auto size = 0;
+        for (auto &s : d->candidates_[0].sentence()) {
+            size += s->path().size();
+        }
+        if (size > d->maxSentenceLength_) {
+            return false;
+        }
+    }
     auto changed = cancelTill(cursor());
     changed = InputBuffer::typeImpl(s, length) || changed;
     if (changed) {

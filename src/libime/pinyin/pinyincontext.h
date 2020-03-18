@@ -42,6 +42,9 @@ public:
     void erase(size_t from, size_t to) override;
     void setCursor(size_t pos) override;
 
+    int maxSentenceLength() const;
+    void setMaxSentenceLength(int length);
+
     const std::vector<SentenceResult> &candidates() const;
     void select(size_t idx);
     void cancel();

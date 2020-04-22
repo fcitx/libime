@@ -22,6 +22,7 @@
 #include "constants.h"
 #include "lattice.h"
 #include "lm/model.hh"
+#include <fcitx-utils/fs.h>
 #include <fstream>
 #include <type_traits>
 
@@ -265,7 +266,11 @@ std::string DefaultLanguageModelResolver::languageModelFileNameForLanguage(
     if (language.empty() || language.find('/') != std::string::npos) {
         return {};
     }
-    return fcitx::stringutils::joinPath(LIBIME_INSTALL_PKGDATADIR,
-                                        language + ".lm");
+    auto file = fcitx::stringutils::joinPath(LIBIME_INSTALL_PKGDATADIR,
+                                             language + ".lm");
+    if (fcitx::fs::isreg(file)) {
+        return file;
+    }
+    return {};
 }
 } // namespace libime

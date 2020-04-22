@@ -20,6 +20,7 @@
 #include "libime/table/tablebaseddictionary.h"
 #include "libime/table/tabledecoder.h"
 #include "libime/table/tableoptions.h"
+#include "libime/table/tablerule.h"
 #include "testdir.h"
 #include <fcitx-utils/log.h>
 #include <set>
@@ -154,7 +155,27 @@ void testCangjie() {
     }
 }
 
+void testRule() {
+    TableRule rule("e2=p11+p12+p21+p22+p00", 5);
+    FCITX_ASSERT(rule.entries().size() == 5);
+    bool ex = false;
+    try {
+        TableRule ruleBad("e2=p11+p12+p21+p22+p10", 5);
+    } catch (...) {
+        ex = true;
+    }
+    FCITX_ASSERT(ex);
+    ex = false;
+    try {
+        TableRule ruleBad("e2=p11+p12+p21+p22+p01", 5);
+    } catch (...) {
+        ex = true;
+    }
+    FCITX_ASSERT(ex);
+}
+
 int main() {
+    testRule();
     testWubi();
     testCangjie();
 

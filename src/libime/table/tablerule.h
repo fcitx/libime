@@ -141,10 +141,11 @@ public:
                 throw std::invalid_argument("invalid rule entry");
             }
 
-            uint8_t character = entryString[1] - '0';     // 0 ~ maxLength
-            uint8_t encodingIndex = entryString[2] - '0'; // 0 ~ maxLength
-            if (character <= 0 || encodingIndex > maxLength ||
-                encodingIndex <= 0 ||
+            int8_t character = entryString[1] - '0';     // 0 ~ maxLength
+            int8_t encodingIndex = entryString[2] - '0'; // 0 ~ maxLength
+            if (character < 0 || character > static_cast<int>(maxLength) ||
+                encodingIndex < 0 ||
+                encodingIndex > static_cast<int>(maxLength) ||
                 ((character == 0) ^ (encodingIndex == 0))) {
                 throw std::invalid_argument("invalid rule entry");
             }

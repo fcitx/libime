@@ -376,21 +376,30 @@ bool TableContext::typeOneChar(std::string_view chr) {
     // - keep append to buffer.
     // Auto send enabled:
     // - check no match auto select length.
-    if (!option.autoSelect()) {
-        lastSeg.append(chr.data(), chr.size());
-        d->graph_ = graphForCode(lastSeg, d->dict_);
-        return true;
+    bool doAutoSelect = option.autoSelect();
+    if (doAutoSelect) {
+        // No pinyin, because pinyin has no limit on length.
+        // Also, check if it exceeds the code length.
+        doAutoSelect =
+            (!d->dict_.hasPinyin() &&
+             !lengthLessThanLimit(lastSegLength, d->dict_.maxLength()));
+        // Check if it
+        doAutoSelect = doAutoSelect ||
+                       (lastSegLength &&
+                        d->dict_.isEndKey(fcitx::utf8::getLastChar(lastSeg)));
+        // Check no match auto select.
+        // It means "last segement + chr" has no match, so
+        // we just select lastSeg instead.
+        doAutoSelect =
+            doAutoSelect ||
+            (d->dict_.tableOptions().noMatchAutoSelectLength() &&
+             !lengthLessThanLimit(
+                 lastSegLength,
+                 d->dict_.tableOptions().noMatchAutoSelectLength()) &&
+             !d->dict_.hasMatchingWords(lastSeg, chr));
     }
 
-    if ((!d->dict_.hasPinyin() &&
-         !lengthLessThanLimit(lastSegLength, d->dict_.maxLength())) ||
-        (lastSegLength &&
-         d->dict_.isEndKey(fcitx::utf8::getLastChar(lastSeg))) ||
-        (d->dict_.tableOptions().noMatchAutoSelectLength() &&
-         !lengthLessThanLimit(
-             lastSegLength,
-             d->dict_.tableOptions().noMatchAutoSelectLength()) &&
-         !d->dict_.hasMatchingWords(lastSeg, chr))) {
+    if (doAutoSelect) {
         autoSelect();
         d->graph_ = graphForCode(chr, d->dict_);
     } else {
@@ -456,11 +465,10 @@ void TableContext::update() {
     }
     if (d->decoder_.decode(d->lattice_, d->graph_, nbest, state, max, min,
                            beamSize, frameSize)) {
-        FCITX_LOG(Debug)
-            << "Decode: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::high_resolution_clock::now() - t0)
-                   .count();
+        LIBIME_DEBUG() << "Decode: "
+                       << std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::high_resolution_clock::now() - t0)
+                              .count();
         std::unordered_map<std::string, size_t> dup;
 
         auto insertCandidate = [d, &dup](SentenceResult sentence) {
@@ -507,11 +515,10 @@ void TableContext::update() {
                 insertCandidate(sentence);
             }
         }
-        FCITX_LOG(Debug)
-            << "Insert candidate: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::high_resolution_clock::now() - t0)
-                   .count();
+        LIBIME_DEBUG() << "Insert candidate: "
+                       << std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::high_resolution_clock::now() - t0)
+                              .count();
         int noSortLength =
             lastSegLength < d->dict_.tableOptions().noSortInputLength()
                 ? lastSegLength
@@ -519,14 +526,14 @@ void TableContext::update() {
         std::sort(d->candidates_.begin(), d->candidates_.end(),
                   TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
                                         noSortLength, lastSegLength));
-        FCITX_LOG(Debug)
-            << "Sort: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::high_resolution_clock::now() - t0)
-                   .count();
-        FCITX_LOG(Debug) << "Number: " << d->candidates_.size();
+        LIBIME_DEBUG() << "Sort: "
+                       << std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::high_resolution_clock::now() - t0)
+                              .count();
+        LIBIME_DEBUG() << "Number: " << d->candidates_.size();
     }
-    // Run auto select.
+    // Run auto select for the second pass.
+    // if number of candidate is 1, do auto select.
     if (d->dict_.tableOptions().autoSelect()) {
         if (d->candidates_.size() == 1 &&
             lastSegLength <= d->dict_.maxLength() &&

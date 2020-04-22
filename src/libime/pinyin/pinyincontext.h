@@ -50,7 +50,10 @@ public:
     void cancel();
     bool cancelTill(size_t pos);
 
+    /// Whether the input is fully selected.
     bool selected() const;
+
+    /// The sentence for this context, can be used as preedit.
     std::string sentence() const {
         auto &c = candidates();
         if (c.size()) {
@@ -61,22 +64,39 @@ public:
     }
 
     std::string preedit() const;
+
+    /// Mixed preedit (selected hanzi + pinyin).
     std::pair<std::string, size_t> preeditWithCursor() const;
+
+    /// Selected hanzi.
     std::string selectedSentence() const;
+
+    /// Selected pinyin length.
     size_t selectedLength() const;
 
+    /// Selected hanzi segments.
     std::vector<std::string> selectedWords() const;
 
+    /// Get the full pinyin string of the selected part.
     std::string selectedFullPinyin() const;
+
+    /// Get the full pinyin string of certain candidate.
     std::string candidateFullPinyin(size_t i) const;
 
+    /// Add the selected part to history if selected() == true.
     void learn();
 
+    /// Return the position of last pinyin. E.g. 你h|ao, return the offset
+    /// before h.
     int pinyinBeforeCursor() const;
+
+    /// Return the position of last pinyin. E.g. 你h|ao, return the offset after
+    /// h.
     int pinyinAfterCursor() const;
 
     PinyinIME *ime() const;
 
+    /// Opaque language model state.
     State state() const;
 
 protected:

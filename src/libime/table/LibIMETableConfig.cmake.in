@@ -7,3 +7,10 @@ find_dependency(LibIMECore)
 
 include("${CMAKE_CURRENT_LIST_DIR}/LibIMETableTargets.cmake")
 
+if(NOT TARGET LibIME::tabledict)
+    add_executable(LibIME::tabledict IMPORTED)
+    set_target_properties(LibIME::tabledict PROPERTIES
+        IMPORTED_LOCATION "@CMAKE_INSTALL_FULL_BINDIR@/libime_tabledict")
+endif()
+
+

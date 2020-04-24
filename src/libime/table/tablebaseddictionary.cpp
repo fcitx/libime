@@ -88,7 +88,7 @@ void updateReverseLookupEntry(DATrie<int32_t> &trie, std::string_view key,
     auto reverseEntry = generateTableEntry(value, "");
     bool insert = true;
     trie.foreach(reverseEntry,
-                 [&trie, &key, &value, &insert, &reverseEntry, reverseTrie](
+                 [&trie, &key, &value, &insert, reverseTrie](
                      int32_t, size_t len, DATrie<int32_t>::position_type pos) {
                      if (key.length() > len) {
                          std::string oldKey;
@@ -588,22 +588,30 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     std::string buf;
     if (d->promptKey_) {
         auto promptString = fcitx::utf8::UCS4ToUTF8(d->promptKey_);
-        d->promptTrie_.foreach([this, &promptString, d, &buf,
-                                &out](uint32_t value, size_t _len,
-                                      DATrie<uint32_t>::position_type pos) {
-            d->promptTrie_.suffix(buf, _len, pos);
-            out << promptString << buf << " " << fcitx::utf8::UCS4ToUTF8(value)
-                << std::endl;
-            return true;
-        });
+        d->promptTrie_.foreach(
+            [&promptString, d, &buf,
+             &out](uint32_t, size_t _len, DATrie<uint32_t>::position_type pos) {
+                d->promptTrie_.suffix(buf, _len, pos);
+                auto sep = buf.find(keyValueSeparator);
+                if (sep == std::string::npos) {
+                    return true;
+                }
+                std::string_view ref(buf);
+                out << promptString << ref.substr(sep + 1) << " "
+                    << ref.substr(0, sep) << std::endl;
+                return true;
+            });
     }
     if (d->phraseKey_) {
         auto phraseString = fcitx::utf8::UCS4ToUTF8(d->phraseKey_);
         d->singleCharConstTrie_.foreach(
-            [this, &phraseString, d, &buf,
-             &out](int32_t, size_t _len, DATrie<int32_t>::position_type pos) {
+            [&phraseString, d, &buf, &out](int32_t, size_t _len,
+                                           DATrie<int32_t>::position_type pos) {
                 d->singleCharConstTrie_.suffix(buf, _len, pos);
                 auto sep = buf.find(keyValueSeparator);
+                if (sep == std::string::npos) {
+                    return true;
+                }
                 std::string_view ref(buf);
                 out << phraseString << ref.substr(sep + 1) << " "
                     << ref.substr(0, sep) << std::endl;
@@ -909,9 +917,8 @@ bool TableBasedDictionary::insert(std::string_view key, std::string_view value,
         break;
     }
     case PhraseFlag::Prompt:
-        if (key.size() == 1) {
-            auto promptChar = fcitx::utf8::getChar(value);
-            d->promptTrie_.set(key, promptChar);
+        if (key.size()) {
+            d->promptTrie_.set(generateTableEntry(key, value), 0);
         } else {
             return false;
         }
@@ -1180,9 +1187,16 @@ std::string TableBasedDictionary::hint(std::string_view key) const {
         std::string_view search(
             &*charRange.first,
             std::distance(charRange.first, charRange.second));
-        auto value = d->promptTrie_.exactMatchSearch(search);
-        if (d->promptTrie_.isValid(value)) {
-            result.append(fcitx::utf8::UCS4ToUTF8(value));
+        std::string entry;
+        d->promptTrie_.foreach(
+            generateTableEntry(search, ""),
+            [&entry, d](uint32_t, size_t len,
+                        DATrie<uint32_t>::position_type pos) {
+                d->promptTrie_.suffix(entry, len, pos);
+                return false;
+            });
+        if (!entry.empty()) {
+            result.append(entry);
         } else {
             result.append(charRange.first, charRange.second);
         }

@@ -194,12 +194,36 @@ public:
     }
 
     // sort should already happened at this point.
-    bool canDoAutoSelect() {
+    bool canDoAutoSelect() const {
         if (candidates_.size() == 0) {
             return false;
         }
         return !TableCandidateCompare::isAuto(candidates_[0]) &&
                !TableCandidateCompare::isPinyin(candidates_[0]);
+    };
+
+    // sort should already happened at this point.
+    bool hasOnlyOneAutoselectChoice() const {
+        if (!canDoAutoSelect()) {
+            return false;
+        }
+        if (candidates_.size() == 1) {
+            return true;
+        }
+
+        for (size_t idx = 1, e = candidates_.size(); idx < e; idx++) {
+            // Optimization: auto is always at the end, once we see it, we
+            // should be know there is no other choice.
+            if (TableCandidateCompare::isAuto(candidates_[idx])) {
+                return true;
+            }
+            // Do not auto select on pinyin.
+            if (TableCandidateCompare::isPinyin(candidates_[idx])) {
+                continue;
+            }
+            return false;
+        }
+        return true;
     };
 
     State currentState() {
@@ -558,7 +582,8 @@ void TableContext::update() {
     // Run auto select for the second pass.
     // if number of candidate is 1, do auto select.
     if (d->dict_.tableOptions().autoSelect()) {
-        if (d->canDoAutoSelect() && lastSegLength <= d->dict_.maxLength() &&
+        if (d->hasOnlyOneAutoselectChoice() &&
+            lastSegLength <= d->dict_.maxLength() &&
             !lengthLessThanLimit(lastSegLength,
                                  d->dict_.tableOptions().autoSelectLength())) {
             autoSelect();

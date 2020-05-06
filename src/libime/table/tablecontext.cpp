@@ -733,6 +733,15 @@ std::string TableContext::candidateHint(size_t idx, bool custom) const {
                 }
             } else {
                 std::string_view code = node->code();
+                auto matchingKey = d->dict_.tableOptions().matchingKey();
+                if (matchingKey) {
+                    auto matchingKeyString =
+                        fcitx::utf8::UCS4ToUTF8(matchingKey);
+                    if (currentCode().find(matchingKeyString) !=
+                        std::string::npos) {
+                        return std::string{code};
+                    }
+                }
                 code.remove_prefix(currentCode().size());
                 if (custom) {
                     return d->dict_.hint(code);

@@ -193,6 +193,15 @@ public:
         candidates_.reserve(2048);
     }
 
+    // sort should already happened at this point.
+    bool canDoAutoSelect() {
+        if (candidates_.size() == 0) {
+            return false;
+        }
+        return !TableCandidateCompare::isAuto(candidates_[0]) &&
+               !TableCandidateCompare::isPinyin(candidates_[0]);
+    };
+
     State currentState() {
         State state = model_.nullState();
         if (selected_.empty()) {
@@ -417,7 +426,7 @@ void TableContext::autoSelect() {
         return;
     }
 
-    if (d->candidates_.size()) {
+    if (d->canDoAutoSelect()) {
         select(0);
     } else {
         if (currentCode().empty()) {
@@ -533,19 +542,10 @@ void TableContext::update() {
         LIBIME_DEBUG() << "Number: " << d->candidates_.size();
     }
 
-    // sort should already happened at this point.
-    auto canDoAutoSelect = [d]() {
-        if (d->candidates_.size() == 0) {
-            return false;
-        }
-        return !TableCandidateCompare::isAuto(d->candidates_[0]) &&
-               !TableCandidateCompare::isPinyin(d->candidates_[0]);
-    };
-
     // Run auto select for the second pass.
     // if number of candidate is 1, do auto select.
     if (d->dict_.tableOptions().autoSelect()) {
-        if (canDoAutoSelect() && lastSegLength <= d->dict_.maxLength() &&
+        if (d->canDoAutoSelect() && lastSegLength <= d->dict_.maxLength() &&
             !lengthLessThanLimit(lastSegLength,
                                  d->dict_.tableOptions().autoSelectLength())) {
             autoSelect();

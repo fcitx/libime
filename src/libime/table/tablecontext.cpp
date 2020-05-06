@@ -535,6 +535,19 @@ void TableContext::update() {
         std::sort(d->candidates_.begin(), d->candidates_.end(),
                   TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
                                         noSortLength, lastSegLength));
+        if (!d->candidates_.empty() &&
+            TableCandidateCompare::isPinyin(d->candidates_[0])) {
+            auto iter =
+                std::find_if(d->candidates_.begin(), d->candidates_.end(),
+                             [](const auto &cand) {
+                                 return !TableCandidateCompare::isAuto(cand) &&
+                                        !TableCandidateCompare::isPinyin(cand);
+                             });
+            // Make sure first is non pinyin/auto candidate.
+            if (iter != d->candidates_.end()) {
+                std::rotate(d->candidates_.begin(), iter, std::next(iter));
+            }
+        }
         LIBIME_DEBUG() << "Sort: "
                        << std::chrono::duration_cast<std::chrono::milliseconds>(
                               std::chrono::high_resolution_clock::now() - t0)

@@ -198,8 +198,7 @@ public:
         if (candidates_.size() == 0) {
             return false;
         }
-        return !TableCandidateCompare::isAuto(candidates_[0]) &&
-               !TableCandidateCompare::isPinyin(candidates_[0]);
+        return !TableCandidateCompare::isAuto(candidates_[0]);
     };
 
     // sort should already happened at this point.
@@ -216,10 +215,6 @@ public:
             // should be know there is no other choice.
             if (TableCandidateCompare::isAuto(candidates_[idx])) {
                 return true;
-            }
-            // Do not auto select on pinyin.
-            if (TableCandidateCompare::isPinyin(candidates_[idx])) {
-                continue;
             }
             return false;
         }

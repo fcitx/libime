@@ -68,5 +68,8 @@ int main() {
     c.type("qfgo");
     FCITX_ASSERT(!c.selected());
 
+    c.clear();
+    c.type("qfgop");
+
     return 0;
 }

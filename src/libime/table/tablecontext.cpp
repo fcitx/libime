@@ -532,11 +532,20 @@ void TableContext::update() {
                               .count();
         LIBIME_DEBUG() << "Number: " << d->candidates_.size();
     }
+
+    // sort should already happened at this point.
+    auto canDoAutoSelect = [d]() {
+        if (d->candidates_.size() == 0) {
+            return false;
+        }
+        return !TableCandidateCompare::isAuto(d->candidates_[0]) &&
+               !TableCandidateCompare::isPinyin(d->candidates_[0]);
+    };
+
     // Run auto select for the second pass.
     // if number of candidate is 1, do auto select.
     if (d->dict_.tableOptions().autoSelect()) {
-        if (d->candidates_.size() == 1 &&
-            lastSegLength <= d->dict_.maxLength() &&
+        if (canDoAutoSelect() && lastSegLength <= d->dict_.maxLength() &&
             !lengthLessThanLimit(lastSegLength,
                                  d->dict_.tableOptions().autoSelectLength())) {
             autoSelect();

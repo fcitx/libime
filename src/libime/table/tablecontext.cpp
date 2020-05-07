@@ -178,13 +178,13 @@ bool shouldReplaceCandidate(const SentenceResult &oldSentence,
                 return true;
             }
             break;
+        case OrderPolicy::Freq:
+            if (newSentence.score() != oldSentence.score()) {
+                return newSentence.score() > oldSentence.score();
+            }
+            [[fallthrough]];
         case OrderPolicy::Fast:
             if (newNode->flag() == PhraseFlag::User) {
-                return true;
-            }
-            break;
-        case OrderPolicy::Freq:
-            if (newSentence.score() > oldSentence.score()) {
                 return true;
             }
             break;

@@ -24,19 +24,24 @@
 #include <tuple>
 
 void usage(const char *argv0) {
-    std::cout << "Usage: " << argv0 << " [-d] <source> <dest>" << std::endl
+    std::cout << "Usage: " << argv0 << " [-du] <source> <dest>" << std::endl
               << "-d: Dump binary to text" << std::endl
+              << "-u: User dict" << std::endl
               << "-h: Show this help" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
 
     bool dump = false;
+    bool user = false;
     int c;
-    while ((c = getopt(argc, argv, "dh")) != -1) {
+    while ((c = getopt(argc, argv, "dhu")) != -1) {
         switch (c) {
         case 'd':
             dump = true;
+            break;
+        case 'u':
+            user = true;
             break;
         case 'h':
             usage(argv[0]);
@@ -63,7 +68,11 @@ int main(int argc, char *argv[]) {
         in = &fin;
     }
 
-    dict.load(*in, dump ? TableFormat::Binary : TableFormat::Text);
+    if (user) {
+        dict.loadUser(*in, dump ? TableFormat::Binary : TableFormat::Text);
+    } else {
+        dict.load(*in, dump ? TableFormat::Binary : TableFormat::Text);
+    }
 
     std::ofstream fout;
     std::ostream *out;
@@ -73,6 +82,11 @@ int main(int argc, char *argv[]) {
         fout.open(argv[optind + 1], std::ios::out | std::ios::binary);
         out = &fout;
     }
-    dict.save(*out, dump ? TableFormat::Text : TableFormat::Binary);
+
+    if (user) {
+        dict.saveUser(*out, dump ? TableFormat::Text : TableFormat::Binary);
+    } else {
+        dict.save(*out, dump ? TableFormat::Text : TableFormat::Binary);
+    }
     return 0;
 }

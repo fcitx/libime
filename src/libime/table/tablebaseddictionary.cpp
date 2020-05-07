@@ -1064,6 +1064,9 @@ void TableBasedDictionary::setTableOptions(TableOptions option) {
     if (d->options_.noMatchAutoSelectLength() < 0) {
         d->options_.setNoMatchAutoSelectLength(maxLength());
     }
+    if (d->options_.autoPhraseLength() < 0) {
+        d->options_.setAutoPhraseLength(maxLength());
+    }
 }
 
 const TableOptions &TableBasedDictionary::tableOptions() const {

@@ -46,7 +46,6 @@ private:
 };
 
 int main() {
-    fcitx::Log::setLogRule("*=5");
     TestLmResolver lmresolver(LIBIME_BINARY_DIR "/data/sc.lm");
     auto lm = lmresolver.languageModelFileForLanguage("zh_CN");
     TableBasedDictionary dict;
@@ -54,11 +53,13 @@ int main() {
     dict.load(LIBIME_BINARY_DIR "/data/wbx.main.dict");
     TableOptions options;
     options.setLanguageCode("zh_CN");
+    options.setLearning(true);
+    options.setAutoPhraseLength(-1);
     options.setAutoSelect(true);
     options.setAutoSelectLength(-1);
     options.setNoMatchAutoSelectLength(-1);
     options.setNoSortInputLength(2);
-    options.setAutoRuleSet({"e2"});
+    options.setAutoRuleSet({});
     options.setMatchingKey('z');
     options.setOrderPolicy(OrderPolicy::Freq);
     dict.setTableOptions(options);
@@ -70,6 +71,40 @@ int main() {
 
     c.clear();
     c.type("qfgop");
+    FCITX_ASSERT(!c.selected());
+    c.clear();
+
+    c.type("vb");
+
+    for (auto &candidate : c.candidates()) {
+        FCITX_INFO() << candidate.toString() << candidate.score();
+    }
+    c.select(0);
+    c.learn();
+    c.clear();
+
+    c.type("bbh");
+
+    for (auto &candidate : c.candidates()) {
+        FCITX_INFO() << candidate.toString() << candidate.score();
+    }
+    c.select(0);
+    c.learn();
+    c.clear();
+    c.learnAutoPhrase("好耶");
+
+    fcitx::Log::setLogRule("*=5");
+    for (int i = 0; i < 2; i++) {
+        c.type("vbbb");
+
+        for (auto &candidate : c.candidates()) {
+            FCITX_INFO() << candidate.toString() << candidate.score();
+        }
+        c.select(1);
+        c.learn();
+        c.clear();
+        FCITX_INFO() << "========================";
+    }
 
     return 0;
 }

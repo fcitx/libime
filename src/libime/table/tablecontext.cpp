@@ -172,11 +172,22 @@ bool shouldReplaceCandidate(const SentenceResult &oldSentence,
 
         auto newNode =
             static_cast<const TableLatticeNode *>(newSentence.sentence()[0]);
-        if (policy == OrderPolicy::No && newNode->flag() != PhraseFlag::User) {
-            return true;
-        }
-        if (policy != OrderPolicy::No && newNode->flag() == PhraseFlag::User) {
-            return true;
+        switch (policy) {
+        case OrderPolicy::No:
+            if (newNode->flag() != PhraseFlag::User) {
+                return true;
+            }
+            break;
+        case OrderPolicy::Fast:
+            if (newNode->flag() == PhraseFlag::User) {
+                return true;
+            }
+            break;
+        case OrderPolicy::Freq:
+            if (newSentence.score() > oldSentence.score()) {
+                return true;
+            }
+            break;
         }
     }
 
@@ -206,19 +217,7 @@ public:
         if (!canDoAutoSelect()) {
             return false;
         }
-        if (candidates_.size() == 1) {
-            return true;
-        }
-
-        for (size_t idx = 1, e = candidates_.size(); idx < e; idx++) {
-            // Optimization: auto is always at the end, once we see it, we
-            // should be know there is no other choice.
-            if (TableCandidateCompare::isAuto(candidates_[idx])) {
-                return true;
-            }
-            return false;
-        }
-        return true;
+        return candidates_.size() == 1;
     };
 
     State currentState() {
@@ -493,10 +492,11 @@ void TableContext::update() {
     }
     if (d->decoder_.decode(d->lattice_, d->graph_, nbest, state, max, min,
                            beamSize, frameSize)) {
-        LIBIME_DEBUG() << "Decode: "
-                       << std::chrono::duration_cast<std::chrono::milliseconds>(
-                              std::chrono::high_resolution_clock::now() - t0)
-                              .count();
+        LIBIME_TABLE_DEBUG()
+            << "Decode: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::high_resolution_clock::now() - t0)
+                   .count();
         std::unordered_map<std::string, size_t> dup;
 
         auto insertCandidate = [d, &dup](SentenceResult sentence) {
@@ -543,10 +543,11 @@ void TableContext::update() {
                 insertCandidate(sentence);
             }
         }
-        LIBIME_DEBUG() << "Insert candidate: "
-                       << std::chrono::duration_cast<std::chrono::milliseconds>(
-                              std::chrono::high_resolution_clock::now() - t0)
-                              .count();
+        LIBIME_TABLE_DEBUG()
+            << "Insert candidate: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::high_resolution_clock::now() - t0)
+                   .count();
         int noSortLength =
             lastSegLength < d->dict_.tableOptions().noSortInputLength()
                 ? lastSegLength
@@ -567,11 +568,12 @@ void TableContext::update() {
                 std::rotate(d->candidates_.begin(), iter, std::next(iter));
             }
         }
-        LIBIME_DEBUG() << "Sort: "
-                       << std::chrono::duration_cast<std::chrono::milliseconds>(
-                              std::chrono::high_resolution_clock::now() - t0)
-                              .count();
-        LIBIME_DEBUG() << "Number: " << d->candidates_.size();
+        LIBIME_TABLE_DEBUG()
+            << "Sort: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                   std::chrono::high_resolution_clock::now() - t0)
+                   .count();
+        LIBIME_TABLE_DEBUG() << "Number: " << d->candidates_.size();
     }
 
     // Run auto select for the second pass.
@@ -720,10 +722,6 @@ void TableContext::learnAutoPhrase(std::string_view history) {
         }
         auto word =
             history.substr(std::distance(history.begin(), charBegin.first));
-        LIBIME_TABLE_DEBUG()
-            << "learnAutoPhrase " << word << " AutoPhraseLength: "
-            << d->dict_.tableOptions().autoPhraseLength();
-        ;
         if (!d->dict_.generate(word, code)) {
             continue;
         }
@@ -732,7 +730,10 @@ void TableContext::learnAutoPhrase(std::string_view history) {
             continue;
         }
         auto insertResult = d->dict_.insert(code, word, PhraseFlag::Auto);
-        LIBIME_TABLE_DEBUG() << insertResult;
+        LIBIME_TABLE_DEBUG() << "learnAutoPhrase " << word << " " << code
+                             << " AutoPhraseLength: "
+                             << d->dict_.tableOptions().autoPhraseLength()
+                             << " success: " << insertResult;
     }
 }
 

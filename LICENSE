@@ -1,7 +1,0 @@
-Most of the code here is licensed under the LGPL.  There are exceptions that
-have their own licenses, listed below.  See comments in those files for more
-details.
-
-src/libime/kenlm see src/libime/kenlm/LICENSE
-src/libime/datrie.* is a modified version based on
-cedar <www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/>.

@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+#
+# SPDX-FileCopyrightText: 2017 Weng Xuetian <wengxt@gmail.com>
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
 import sys
 import fileinput
 import math

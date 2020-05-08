@@ -1,4 +1,9 @@
-
+/*
+ * SPDX-FileCopyrightText: 2011-2020 CSSlayer <wengxt@gmail.com>
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ *
+ */
 
 #ifndef SPDATA_H
 #define SPDATA_H

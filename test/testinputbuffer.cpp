@@ -9,7 +9,7 @@
 void test_basic(bool ascii) {
     using namespace libime;
     InputBuffer buffer(ascii ? fcitx::InputBufferOption::AsciiOnly
-                             : fcitx::InputBufferOption::None);
+                             : fcitx::InputBufferOption::NoOption);
     FCITX_ASSERT(buffer.size() == 0);
     FCITX_ASSERT(buffer.cursor() == 0);
     FCITX_ASSERT(buffer.cursorByChar() == 0);

@@ -31,23 +31,6 @@ struct TableCandidateCompare {
         : policy_(policy), noSortInputLength_(noSortInputLength),
           codeLength_(codeLength) {}
 
-    bool isNoSortInputLength(const SentenceResult &sentence) const {
-        if (noSortInputLength_ < 0) {
-            return false;
-        }
-
-        if (sentence.sentence().size() != 1) {
-            return false;
-        }
-        auto node =
-            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
-        if (node->code().empty()) {
-            return false;
-        }
-        return fcitx::utf8::length(node->code()) ==
-               static_cast<size_t>(noSortInputLength_);
-    }
-
     static size_t codeLength(const SentenceResult &sentence) {
         auto node =
             static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
@@ -80,7 +63,7 @@ struct TableCandidateCompare {
     }
 
     bool isWithinNoSortLimit(const SentenceResult &sentence) const {
-        return static_cast<int>(codeLength(sentence)) == noSortInputLength_ &&
+        return static_cast<int>(codeLength(sentence)) <= noSortInputLength_ &&
                !isPinyin(sentence);
     }
 
@@ -100,22 +83,23 @@ struct TableCandidateCompare {
             if (lShort != rShort) {
                 return lShort > rShort;
             }
+            auto lLength = codeLength(lhs);
+            auto rLength = codeLength(rhs);
+            // Always sort result by code length.
+            if (lLength != rLength) {
+                return lLength < rLength;
+            }
 
             auto policy = lShort ? OrderPolicy::No : policy_;
             constexpr float pinyinPenalty = -0.5;
-            constexpr float exactMatchAward = 1;
 
             switch (policy) {
             case OrderPolicy::No:
             case OrderPolicy::Fast:
                 return index(lhs) > index(rhs);
             case OrderPolicy::Freq: {
-                bool lExact = codeLength(lhs) == codeLength_;
-                bool rExact = codeLength(rhs) == codeLength_;
-                return lhs.score() + (lIsPinyin ? pinyinPenalty : 0) +
-                           (lExact ? exactMatchAward : 0) >
-                       rhs.score() + (rIsPinyin ? pinyinPenalty : 0) +
-                           (rExact ? exactMatchAward : 0);
+                return (lhs.score() + (lIsPinyin ? pinyinPenalty : 0)) >
+                       (rhs.score() + (rIsPinyin ? pinyinPenalty : 0));
             }
             }
             return false;
@@ -542,6 +526,10 @@ void TableContext::update() {
         std::sort(d->candidates_.begin(), d->candidates_.end(),
                   TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
                                         noSortLength, lastSegLength));
+        for (size_t i = 0; i < std::min(3ul, d->candidates_.size()); i++) {
+            FCITX_INFO() << d->candidates_[i].toString()
+                         << d->candidates_[i].score();
+        }
         if (!d->candidates_.empty() &&
             TableCandidateCompare::isPinyin(d->candidates_[0])) {
             auto iter =

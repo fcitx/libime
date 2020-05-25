@@ -359,6 +359,7 @@ public:
     // A log probabilty.
     float unknown_ =
         std::log10(DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY);
+    bool useOnlyUnigram_ = false;
     std::vector<HistoryBigramPool> pools_;
     std::vector<float> poolWeight_;
 };
@@ -391,6 +392,16 @@ void HistoryBigram::setUnknownPenalty(float unknown) {
 float HistoryBigram::unknownPenalty() const {
     FCITX_D();
     return d->unknown_;
+}
+
+void HistoryBigram::setUseOnlyUnigram(bool useOnlyUnigram) {
+    FCITX_D();
+    d->useOnlyUnigram_ = useOnlyUnigram;
+}
+
+bool HistoryBigram::useOnlyUnigram() const {
+    FCITX_D();
+    return d->useOnlyUnigram_;
 }
 
 void HistoryBigram::add(const libime::SentenceResult &sentence) {
@@ -426,7 +437,7 @@ float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
     auto bf = d->bigramFreq(prev, cur);
     auto uf1 = d->unigramFreq(cur);
 
-    float bigramWeight = 0.68f;
+    float bigramWeight = d->useOnlyUnigram_ ? 0.0f : 0.68f;
     // add 0.5 to avoid div 0
     float pr = 0.0f;
     pr += bigramWeight * float(bf) / float(uf0 + d->poolWeight_[0] / 2);

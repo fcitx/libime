@@ -29,6 +29,10 @@ public:
     void save(std::ostream &out);
 
     void setHistoryWeight(float w);
+    float historyWeight() const;
+
+    void setUseOnlyUnigram(bool useOnlyUnigram);
+    bool useOnlyUnigram() const;
 
     const State &beginState() const override;
     const State &nullState() const override;

@@ -16,6 +16,7 @@ class UserLanguageModelPrivate {
 public:
     State beginState_;
     State nullState_;
+    bool useOnlyUnigram_ = false;
 
     HistoryBigram history_;
     float weight_ = DEFAULT_USER_LANGUAGE_MODEL_USER_WEIGHT;
@@ -106,7 +107,12 @@ inline float sum_log_prob(float a, float b) {
 float UserLanguageModel::score(const State &state, const WordNode &word,
                                State &out) const {
     FCITX_D();
-    float score = LanguageModel::score(state, word, out);
+    float score;
+    if (d->useOnlyUnigram_) {
+        score = LanguageModel::score(d->nullState_, word, out);
+    } else {
+        score = LanguageModel::score(state, word, out);
+    }
     auto prev = d->wordFromState(state);
     float userScore = d->history_.score(prev, &word);
     d->setWordToState(out, &word);
@@ -116,5 +122,21 @@ float UserLanguageModel::score(const State &state, const WordNode &word,
 bool UserLanguageModel::isUnknown(WordIndex idx, std::string_view view) const {
     FCITX_D();
     return idx == unknown() && d->history_.isUnknown(view);
+}
+
+float UserLanguageModel::historyWeight() const {
+    FCITX_D();
+    return d->weight_;
+}
+
+void UserLanguageModel::setUseOnlyUnigram(bool useOnlyUnigram) {
+    FCITX_D();
+    d->useOnlyUnigram_ = useOnlyUnigram;
+    d->history_.setUseOnlyUnigram(useOnlyUnigram);
+}
+
+bool UserLanguageModel::useOnlyUnigram() const {
+    FCITX_D();
+    return d->useOnlyUnigram_;
 }
 } // namespace libime

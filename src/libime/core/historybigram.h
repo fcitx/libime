@@ -35,6 +35,9 @@ public:
     void setUnknownPenalty(float unknown);
     float unknownPenalty() const;
 
+    void setUseOnlyUnigram(bool useOnlyUnigram);
+    bool useOnlyUnigram() const;
+
     void forget(std::string_view word);
 
     bool isUnknown(std::string_view v) const;

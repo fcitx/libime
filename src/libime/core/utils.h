@@ -130,7 +130,6 @@ inline std::istream &unmarshallString(std::istream &in, std::string &str) {
 
 inline std::ostream &marshallString(std::ostream &out, std::string_view str) {
     uint32_t length = str.size();
-    ;
     do {
         if (!marshall(out, length)) {
             break;

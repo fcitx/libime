@@ -1222,23 +1222,31 @@ void TableBasedDictionary::matchPrefixImpl(
 
             auto code = graph.segment(*path[0], *path[1]);
             if (code.size() == graph.size()) {
-                matchWords(code, mode,
-                           [&](std::string_view code, std::string_view word,
-                               uint32_t index, PhraseFlag flag) {
-                               WordNode wordNode(word, InvalidWordIndex);
+                matchWords(
+                    code, mode,
+                    [&](std::string_view code, std::string_view word,
+                        uint32_t index, PhraseFlag flag) {
+                        // Do not return user for noSortInputLength, so code
+                        // shorter than noSortInputLength is always in stable
+                        // order.
+                        if (flag == PhraseFlag::User &&
+                            code.size() <= tableOptions().noSortInputLength()) {
+                            return true;
+                        }
 
-                               // for length 1 "pinyin", skip long pinyin as an
-                               // optimization.
-                               if (flag == PhraseFlag::Pinyin &&
-                                   graph.size() == 1 && code.size() != 1) {
-                                   return true;
-                               }
-                               callback(
-                                   path, wordNode, 0,
-                                   std::make_unique<TableLatticeNodePrivate>(
-                                       code, index, flag));
-                               return true;
-                           });
+                        WordNode wordNode(word, InvalidWordIndex);
+
+                        // for length 1 "pinyin", skip long pinyin as an
+                        // optimization.
+                        if (flag == PhraseFlag::Pinyin && graph.size() == 1 &&
+                            code.size() != 1) {
+                            return true;
+                        }
+                        callback(path, wordNode, 0,
+                                 std::make_unique<TableLatticeNodePrivate>(
+                                     code, index, flag));
+                        return true;
+                    });
             } else if (!hasWildcard) {
                 // use it as a buffer.
                 std::string entry;

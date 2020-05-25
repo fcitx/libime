@@ -59,6 +59,7 @@ public:
     void saveUser(std::ostream &out, TableFormat format = TableFormat::Binary);
 
     bool hasRule() const noexcept;
+    bool hasCustomPrompt() const noexcept;
     const TableRule *findRule(std::string_view name) const;
     bool insert(std::string_view key, std::string_view value,
                 PhraseFlag flag = PhraseFlag::None,

@@ -14,6 +14,7 @@
 #include <fcitx-utils/macros.h>
 #include <libime/core/inputbuffer.h>
 #include <libime/core/lattice.h>
+#include <libime/table/tablebaseddictionary.h>
 #include <string_view>
 #include <tuple>
 
@@ -42,6 +43,11 @@ public:
     CandidateRange candidates() const;
 
     std::string candidateHint(size_t idx, bool custom = false) const;
+
+    static std::string code(const SentenceResult &sentence);
+    static PhraseFlag flag(const SentenceResult &sentence);
+    static bool isPinyin(const SentenceResult &sentence);
+    static bool isAuto(const SentenceResult &sentence);
 
     bool selected() const;
     size_t selectedSize() const;

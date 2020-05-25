@@ -127,7 +127,6 @@ LIBIMETABLE_EXPORT SegmentGraph graphForCode(std::string_view s,
 
             int lastIndex = 0;
             for (auto charSize : charSizes) {
-
                 graph.addNext(fcitx::utf8::ncharByteLength(graph.data().begin(),
                                                            lastIndex),
                               fcitx::utf8::ncharByteLength(

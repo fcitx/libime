@@ -37,12 +37,6 @@ struct TableCandidateCompare {
         return fcitx::utf8::length(node->code());
     }
 
-    static PhraseFlag flag(const SentenceResult &sentence) {
-        auto node =
-            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
-        return node->flag();
-    }
-
     // Larger index should be put ahead.
     static int64_t index(const SentenceResult &sentence) {
         auto node =
@@ -54,30 +48,22 @@ struct TableCandidateCompare {
         }
     }
 
-    static bool isPinyin(const SentenceResult &sentence) {
-        return sentence.size() == 1 && flag(sentence) == PhraseFlag::Pinyin;
-    }
-
-    static bool isAuto(const SentenceResult &sentence) {
-        return sentence.size() != 1 || flag(sentence) == PhraseFlag::Auto;
-    }
-
     bool isWithinNoSortLimit(const SentenceResult &sentence) const {
         return static_cast<int>(codeLength(sentence)) <= noSortInputLength_ &&
-               !isPinyin(sentence);
+               !TableContext::isPinyin(sentence);
     }
 
     bool operator()(const SentenceResult &lhs,
                     const SentenceResult &rhs) const {
-        bool lIsAuto = isAuto(lhs);
-        bool rIsAuto = isAuto(rhs);
+        bool lIsAuto = TableContext::isAuto(lhs);
+        bool rIsAuto = TableContext::isAuto(rhs);
         if (lIsAuto != rIsAuto) {
             return lIsAuto < rIsAuto;
         }
         // non-auto word
         if (!lIsAuto) {
-            bool lIsPinyin = isPinyin(lhs);
-            bool rIsPinyin = isPinyin(rhs);
+            bool lIsPinyin = TableContext::isPinyin(lhs);
+            bool rIsPinyin = TableContext::isPinyin(rhs);
             bool lShort = isWithinNoSortLimit(lhs);
             bool rShort = isWithinNoSortLimit(rhs);
             if (lShort != rShort) {
@@ -184,7 +170,7 @@ public:
         if (candidates_.size() == 0) {
             return false;
         }
-        return !TableCandidateCompare::isAuto(candidates_[0]);
+        return !TableContext::isAuto(candidates_[0]);
     };
 
     // sort should already happened at this point.
@@ -530,13 +516,11 @@ void TableContext::update() {
         std::sort(d->candidates_.begin(), d->candidates_.end(),
                   TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
                                         noSortLength, lastSegLength));
-        if (!d->candidates_.empty() &&
-            TableCandidateCompare::isPinyin(d->candidates_[0])) {
+        if (!d->candidates_.empty() && isPinyin(d->candidates_[0])) {
             auto iter =
                 std::find_if(d->candidates_.begin(), d->candidates_.end(),
                              [](const auto &cand) {
-                                 return !TableCandidateCompare::isAuto(cand) &&
-                                        !TableCandidateCompare::isPinyin(cand);
+                                 return !isAuto(cand) && !isPinyin(cand);
                              });
             // Make sure first is non pinyin/auto candidate.
             if (iter != d->candidates_.end()) {
@@ -730,15 +714,12 @@ std::string TableContext::candidateHint(size_t idx, bool custom) const {
             } else {
                 std::string_view code = node->code();
                 auto matchingKey = d->dict_.tableOptions().matchingKey();
-                if (matchingKey) {
-                    auto matchingKeyString =
-                        fcitx::utf8::UCS4ToUTF8(matchingKey);
-                    if (currentCode().find(matchingKeyString) !=
-                        std::string::npos) {
-                        return std::string{code};
-                    }
+                // If we're not using matching key remove the prefix.
+                // Otherwise show the full code.
+                if (!matchingKey || (currentCode().find(fcitx::utf8::UCS4ToUTF8(
+                                         matchingKey)) == std::string::npos)) {
+                    code.remove_prefix(currentCode().size());
                 }
-                code.remove_prefix(currentCode().size());
                 if (custom) {
                     return d->dict_.hint(code);
                 } else {
@@ -749,4 +730,31 @@ std::string TableContext::candidateHint(size_t idx, bool custom) const {
     }
     return {};
 }
+
+std::string TableContext::code(const SentenceResult &sentence) {
+    if (sentence.size() == 1) {
+        auto node =
+            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
+        return node->code();
+    }
+    return "";
+}
+
+PhraseFlag TableContext::flag(const SentenceResult &sentence) {
+    if (sentence.size() == 1) {
+        auto node =
+            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
+        return node->flag();
+    }
+    return PhraseFlag::Auto;
+}
+
+bool TableContext::isPinyin(const SentenceResult &sentence) {
+    return sentence.size() == 1 && flag(sentence) == PhraseFlag::Pinyin;
+}
+
+bool TableContext::isAuto(const SentenceResult &sentence) {
+    return sentence.size() != 1 || flag(sentence) == PhraseFlag::Auto;
+}
+
 } // namespace libime

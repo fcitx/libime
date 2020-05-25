@@ -837,6 +837,11 @@ bool TableBasedDictionary::hasRule() const noexcept {
     return !d->rules_.empty();
 }
 
+bool TableBasedDictionary::hasCustomPrompt() const noexcept {
+    FCITX_D();
+    return d->promptTrie_.size();
+}
+
 const TableRule *TableBasedDictionary::findRule(std::string_view name) const {
     FCITX_D();
     for (auto &rule : d->rules_) {

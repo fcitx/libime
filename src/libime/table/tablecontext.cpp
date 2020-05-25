@@ -98,8 +98,12 @@ struct TableCandidateCompare {
             case OrderPolicy::Fast:
                 return index(lhs) > index(rhs);
             case OrderPolicy::Freq: {
-                return (lhs.score() + (lIsPinyin ? pinyinPenalty : 0)) >
-                       (rhs.score() + (rIsPinyin ? pinyinPenalty : 0));
+                float lScore = (lhs.score() + (lIsPinyin ? pinyinPenalty : 0));
+                float rScore = (rhs.score() + (rIsPinyin ? pinyinPenalty : 0));
+                if (lScore != rScore) {
+                    return lScore > rScore;
+                }
+                return index(lhs) > index(rhs);
             }
             }
             return false;
@@ -526,10 +530,6 @@ void TableContext::update() {
         std::sort(d->candidates_.begin(), d->candidates_.end(),
                   TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
                                         noSortLength, lastSegLength));
-        for (size_t i = 0; i < std::min(3ul, d->candidates_.size()); i++) {
-            FCITX_INFO() << d->candidates_[i].toString()
-                         << d->candidates_[i].score();
-        }
         if (!d->candidates_.empty() &&
             TableCandidateCompare::isPinyin(d->candidates_[0])) {
             auto iter =

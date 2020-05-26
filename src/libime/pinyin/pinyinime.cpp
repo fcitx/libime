@@ -28,6 +28,7 @@ public:
     size_t nbest_ = 1;
     size_t beamSize_ = Decoder::beamSizeDefault;
     size_t frameSize_ = Decoder::frameSizeDefault;
+    size_t partialLongWordLimit_ = 0;
     float maxDistance_ = std::numeric_limits<float>::max();
     float minPath_ = -std::numeric_limits<float>::max();
 };
@@ -110,6 +111,19 @@ void PinyinIME::setFrameSize(size_t n) {
     FCITX_D();
     if (d->frameSize_ != n) {
         d->frameSize_ = n;
+        emit<PinyinIME::optionChanged>();
+    }
+}
+
+size_t PinyinIME::partialLongWordLimit() const {
+    FCITX_D();
+    return d->partialLongWordLimit_;
+}
+
+void PinyinIME::setPartialLongWordLimit(size_t n) {
+    FCITX_D();
+    if (d->partialLongWordLimit_ != n) {
+        d->partialLongWordLimit_ = n;
         emit<PinyinIME::optionChanged>();
     }
 }

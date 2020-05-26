@@ -54,6 +54,11 @@ PinyinMatchState::shuangpinProfile() const {
     return {};
 }
 
+size_t PinyinMatchState::partialLongWordLimit() const {
+    FCITX_D();
+    return d->context_->ime()->partialLongWordLimit();
+}
+
 void PinyinMatchState::discardDictionary(size_t idx) {
     FCITX_D();
     d->matchCacheMap_.erase(d->context_->ime()->dict()->trie(idx));

@@ -35,6 +35,8 @@ public:
     void setBeamSize(size_t n);
     size_t frameSize() const;
     void setFrameSize(size_t n);
+    size_t partialLongWordLimit() const;
+    void setPartialLongWordLimit(size_t n);
     void setScoreFilter(float maxDistance = std::numeric_limits<float>::max(),
                         float minPath = -std::numeric_limits<float>::max());
     void setShuangpinProfile(std::shared_ptr<const ShuangpinProfile> profile);

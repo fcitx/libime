@@ -38,6 +38,7 @@ public:
 
     PinyinFuzzyFlags fuzzyFlags() const;
     std::shared_ptr<const ShuangpinProfile> shuangpinProfile() const;
+    size_t partialLongWordLimit() const;
 
 private:
     std::unique_ptr<PinyinMatchStatePrivate> d_ptr;

@@ -9,6 +9,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
+#include <fcitx-utils/charutils.h>
 #include <queue>
 #include <sstream>
 #include <string_view>
@@ -118,7 +119,9 @@ std::string PinyinSyllable::toString() const {
 SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
                                             PinyinFuzzyFlags flags) {
     SegmentGraph result{std::move(userPinyin)};
-    const auto &pinyin = result.data();
+    auto pinyin = result.data();
+    std::transform(pinyin.begin(), pinyin.end(), pinyin.begin(),
+                   fcitx::charutils::tolower);
     auto end = pinyin.end();
     std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> q;
     q.push(0);
@@ -213,7 +216,9 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
                                                const ShuangpinProfile &sp,
                                                PinyinFuzzyFlags flags) {
     SegmentGraph result{std::move(userPinyin)};
-    const auto &pinyin = result.data();
+    auto pinyin = result.data();
+    std::transform(pinyin.begin(), pinyin.end(), pinyin.begin(),
+                   fcitx::charutils::tolower);
 
     // assume user always type valid shuangpin first, if not keep one.
     size_t i = 0;
@@ -502,11 +507,14 @@ static void getFuzzy(
 }
 
 MatchedPinyinSyllables
-PinyinEncoder::stringToSyllables(std::string_view pinyin,
+PinyinEncoder::stringToSyllables(std::string_view pinyinView,
                                  PinyinFuzzyFlags flags) {
     std::vector<
         std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>
         result;
+    std::string pinyin(pinyinView);
+    std::transform(pinyin.begin(), pinyin.end(), pinyin.begin(),
+                   fcitx::charutils::tolower);
     auto &map = getPinyinMap();
     // we only want {M,N,R}/Invalid instead of {M,N,R}/Zero, so we could get
     // match for everything.
@@ -555,12 +563,15 @@ PinyinEncoder::stringToSyllables(std::string_view pinyin,
 }
 
 MatchedPinyinSyllables
-PinyinEncoder::shuangpinToSyllables(std::string_view pinyin,
+PinyinEncoder::shuangpinToSyllables(std::string_view pinyinView,
                                     const ShuangpinProfile &sp,
                                     PinyinFuzzyFlags flags) {
-    assert(pinyin.size() <= 2);
+    assert(pinyinView.size() <= 2);
+    std::string pinyin(pinyinView);
+    std::transform(pinyin.begin(), pinyin.end(), pinyin.begin(),
+                   fcitx::charutils::tolower);
     auto &table = sp.table();
-    auto iter = table.find(std::string{pinyin});
+    auto iter = table.find(pinyin);
 
     std::vector<
         std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>

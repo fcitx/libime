@@ -491,6 +491,10 @@ void PinyinContext::learn() {
         for (auto &s : d->selected_) {
             for (auto &item : s) {
                 if (!item.word_.word().empty()) {
+                    // Non pinyin word. Skip it.
+                    if (!item.encodedPinyin_.size()) {
+                        return;
+                    }
                     newSentence.push_back(item.word_.word());
                 }
             }
@@ -514,6 +518,7 @@ bool PinyinContext::learnWord() {
         bool first = true;
         for (auto &item : s) {
             if (!item.word_.word().empty()) {
+                // We can't learn non pinyin word.
                 if (item.encodedPinyin_.size() != 2) {
                     return false;
                 }

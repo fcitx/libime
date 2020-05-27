@@ -111,7 +111,7 @@ unmarshall(std::istream &in, T &data) {
 }
 
 inline std::istream &unmarshallString(std::istream &in, std::string &str) {
-    uint32_t length;
+    uint32_t length = 0;
     do {
         if (!unmarshall(in, length)) {
             break;

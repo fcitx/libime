@@ -152,9 +152,31 @@ void testPredict() {
     }
 }
 
+void testSaveAndLoad() {
+    using namespace libime;
+    HistoryBigram history;
+    history.add({std::to_string(1)});
+    history.add({std::to_string(2)});
+    history.add({std::to_string(3)});
+
+    std::stringstream dump1;
+    std::stringstream dump2;
+    std::stringstream ss;
+    history.save(ss);
+
+    HistoryBigram history2;
+    history2.load(ss);
+
+    history.dump(dump1);
+    history2.dump(dump2);
+
+    FCITX_ASSERT(dump1.str() == dump2.str());
+}
+
 int main() {
     testBasic();
     testOverflow();
     testPredict();
+    testSaveAndLoad();
     return 0;
 }

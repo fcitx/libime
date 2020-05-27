@@ -106,11 +106,11 @@ void AutoPhraseDict::clear() {
 }
 
 void AutoPhraseDict::load(std::istream &in) {
-    uint32_t size;
+    uint32_t size = 0;
     throw_if_io_fail(unmarshall(in, size));
     while (size--) {
         std::string text;
-        uint32_t hit;
+        uint32_t hit = 0;
         throw_if_io_fail(unmarshallString(in, text));
         throw_if_io_fail(unmarshall(in, hit));
         insert(text, hit);

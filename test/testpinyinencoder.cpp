@@ -95,6 +95,8 @@ int main() {
         // hua c o
         check("xion", PinyinFuzzyFlag::None);
         check("xiana", PinyinFuzzyFlag::None);
+
+        check("Nihao", PinyinFuzzyFlag::None);
     }
 
     {

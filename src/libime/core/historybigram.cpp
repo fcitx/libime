@@ -9,6 +9,7 @@
 #include "utils.h"
 #include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm.hpp>
 #include <cmath>
@@ -159,7 +160,10 @@ public:
     void save(std::ostream &out) {
         uint32_t count = recent_.size();
         throw_if_io_fail(marshall(out, count));
-        for (auto &sentence : recent_) {
+        // When we do save, we need to reverse the history order.
+        // Because loading the history is done by call "add", which basically
+        // expect the history from old to new.
+        for (auto &sentence : recent_ | boost::adaptors::reversed) {
             uint32_t size = sentence.size();
             throw_if_io_fail(marshall(out, size));
             for (auto &s : sentence) {

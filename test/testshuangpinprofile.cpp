@@ -170,5 +170,12 @@ int main() {
     FCITX_ASSERT(profile.table() == zrm.table());
     FCITX_ASSERT(profile.validInput() == zrm.validInput());
 
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("bu", zrm) == "bu");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("ds", zrm) == "dong");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("dm", zrm) == "dian");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("zu", zrm) == "zu");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("he", zrm) == "he");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("zi", zrm) == "zi");
+
     return 0;
 }

@@ -191,6 +191,9 @@ public:
     static std::vector<char> encodeFullPinyin(std::string_view pinyin);
     static std::vector<char> encodeOneUserPinyin(std::string pinyin);
 
+    static std::string shuangpinToPinyin(std::string_view pinyin,
+                                         const ShuangpinProfile &sp);
+
     static bool isValidUserPinyin(const char *data, size_t size);
 
     static bool isValidUserPinyin(const std::vector<char> &v) {

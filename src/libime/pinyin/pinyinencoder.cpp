@@ -594,4 +594,18 @@ PinyinEncoder::shuangpinToSyllables(std::string_view pinyinView,
 
     return result;
 }
+
+std::string
+PinyinEncoder::shuangpinToPinyin(std::string_view pinyinView,
+                                 const libime::ShuangpinProfile &sp) {
+    assert(pinyinView.size() <= 2);
+    auto syls = shuangpinToSyllables(pinyinView, sp, PinyinFuzzyFlag::None);
+    if (!syls.empty() && !syls[0].second.empty() && !syls[0].second[0].second) {
+        auto initial = syls[0].first;
+        auto final = syls[0].second[0].first;
+        return initialToString(initial) + finalToString(final);
+    }
+    return "";
+}
+
 } // namespace libime

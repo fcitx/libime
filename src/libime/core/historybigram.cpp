@@ -142,10 +142,10 @@ public:
 
     void load(std::istream &in) {
         clear();
-        uint32_t count;
+        uint32_t count = 0;
         throw_if_io_fail(unmarshall(in, count));
         while (count--) {
-            uint32_t size;
+            uint32_t size = 0;
             throw_if_io_fail(unmarshall(in, size));
             std::vector<std::string> sentence;
             while (size--) {
@@ -460,8 +460,8 @@ float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
 
 void HistoryBigram::load(std::istream &in) {
     FCITX_D();
-    uint32_t magic;
-    uint32_t version;
+    uint32_t magic = 0;
+    uint32_t version = 0;
     throw_if_io_fail(unmarshall(in, magic));
     if (magic != historyBinaryFormatMagic) {
         throw std::invalid_argument("Invalid history magic.");

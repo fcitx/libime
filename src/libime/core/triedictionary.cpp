@@ -28,6 +28,7 @@ public:
         : fcitx::QPtrHolder<TrieDictionary>(q) {}
 
     FCITX_DEFINE_SIGNAL_PRIVATE(TrieDictionary, dictionaryChanged);
+    FCITX_DEFINE_SIGNAL_PRIVATE(TrieDictionary, dictSizeChanged);
 
     boost::ptr_vector<typename TrieDictionary::TrieType> tries_;
 };
@@ -43,6 +44,7 @@ TrieDictionary::~TrieDictionary() {}
 void TrieDictionary::addEmptyDict() {
     FCITX_D();
     d->tries_.push_back(new TrieType);
+    emit<TrieDictionary::dictSizeChanged>(d->tries_.size());
 }
 
 void TrieDictionary::removeAll() {
@@ -51,6 +53,7 @@ void TrieDictionary::removeAll() {
         emit<TrieDictionary::dictionaryChanged>(i);
     }
     d->tries_.erase(d->tries_.begin() + UserDict + 1, d->tries_.end());
+    emit<TrieDictionary::dictSizeChanged>(d->tries_.size());
 }
 
 void TrieDictionary::clear(size_t idx) {

@@ -26,6 +26,10 @@ class PinyinDictionary;
 
 using PinyinTrie = typename TrieDictionary::TrieType;
 
+enum class PinyinDictFlag { NoFlag = 0, FullMatch = (1 << 1) };
+
+using PinyinDictFlags = fcitx::Flags<PinyinDictFlag>;
+
 class LIBIMEPINYIN_EXPORT PinyinDictionary : public TrieDictionary {
 public:
     explicit PinyinDictionary();
@@ -44,6 +48,8 @@ public:
 
     void addWord(size_t idx, std::string_view fullPinyin,
                  std::string_view hanzi, float cost = 0.0f);
+
+    void setFlags(size_t idx, PinyinDictFlags flags);
 
     using dictionaryChanged = TrieDictionary::dictionaryChanged;
 

@@ -204,6 +204,9 @@ public:
 
     void matchNode(const PinyinMatchContext &context,
                    const SegmentGraphNode &currentNode) const;
+
+    fcitx::ScopedConnection conn_;
+    std::vector<PinyinDictFlags> flags_;
 };
 
 void PinyinDictionaryPrivate::addEmptyMatch(
@@ -223,8 +226,12 @@ void PinyinDictionaryPrivate::addEmptyMatch(
 
         vec.push_back(&currentNode);
         for (size_t i = 0; i < q->dictSize(); i++) {
+            if (flags_[i].test(PinyinDictFlag::FullMatch) &&
+                &currentNode != &graph.start()) {
+                continue;
+            }
             auto &trie = *q->trie(i);
-            currentMatches.emplace_back(&trie, 0, vec);
+            currentMatches.emplace_back(&trie, 0, vec, flags_[i]);
             currentMatches.back().triePositions().emplace_back(0, 0);
         }
     }
@@ -333,12 +340,19 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
     assert(path.path_.size() >= 2);
     const SegmentGraphNode &prevNode = *path.path_[path.path_.size() - 2];
 
+    if (path.flags_.test(PinyinDictFlag::FullMatch) &&
+        (path.path_.front() != &context.graph_.start() ||
+         path.path_.back() != &context.graph_.end())) {
+        return false;
+    }
+
     // minimumLongWordLength is to prevent algorithm runs too slow.
     bool matchLongWord =
         (path.path_.back() == &context.graph_.end() &&
          context.partialLongWordLimit_ &&
          std::max(minimumLongWordLength, context.partialLongWordLimit_) + 1 <=
-             path.path_.size());
+             path.path_.size() &&
+         !path.flags_.test(PinyinDictFlag::FullMatch));
 
     auto foundOneWord = [&path, &prevNode, &matched,
                          &context](std::string_view encodedPinyin,
@@ -409,7 +423,8 @@ void PinyinDictionaryPrivate::findMatchesBetween(
             // copy the path, and append current node.
             auto path = match.path_;
             path.push_back(&currentNode);
-            currentMatches.emplace_back(match.result_, std::move(path));
+            currentMatches.emplace_back(match.result_, std::move(path),
+                                        match.flags_);
         }
         // If the last segment is separator, there
         if (&currentNode == &graph.end()) {
@@ -450,11 +465,12 @@ void PinyinDictionaryPrivate::findMatchesBetween(
             }
 
             if (result->triePositions_.size()) {
-                newPaths.emplace_back(result, segmentPath);
+                newPaths.emplace_back(result, segmentPath, path.flags_);
             }
         } else {
             // make an empty one
-            newPaths.emplace_back(path.trie(), path.size() + 1, segmentPath);
+            newPaths.emplace_back(path.trie(), path.size() + 1, segmentPath,
+                                  path.flags_);
 
             newPaths.back().result_->triePositions_ =
                 traverseAlongPathOneStepBySyllables(path, syls);
@@ -617,8 +633,12 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
 }
 PinyinDictionary::PinyinDictionary()
     : d_ptr(std::make_unique<PinyinDictionaryPrivate>(this)) {
-    addEmptyDict();
-    addEmptyDict();
+    FCITX_D();
+    d->conn_ = connect<TrieDictionary::dictSizeChanged>([this](size_t size) {
+        FCITX_D();
+        d->flags_.resize(size);
+    });
+    d->flags_.resize(dictSize());
 }
 
 PinyinDictionary::~PinyinDictionary() {}
@@ -673,8 +693,8 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
 
 void PinyinDictionary::loadBinary(size_t idx, std::istream &in) {
     DATrie<float> trie;
-    uint32_t magic;
-    uint32_t version;
+    uint32_t magic = 0;
+    uint32_t version = 0;
     throw_if_io_fail(unmarshall(in, magic));
     if (magic != pinyinBinaryFormatMagic) {
         throw std::invalid_argument("Invalid pinyin magic.");
@@ -738,5 +758,14 @@ void PinyinDictionary::addWord(size_t idx, std::string_view fullPinyin,
     result.insert(result.end(), hanzi.begin(), hanzi.end());
     TrieDictionary::addWord(idx, std::string_view(result.data(), result.size()),
                             cost);
+}
+
+void PinyinDictionary::setFlags(size_t idx, PinyinDictFlags flags) {
+    FCITX_D();
+    if (idx >= dictSize()) {
+        return;
+    }
+    d->flags_.resize(dictSize());
+    d->flags_[idx] = flags;
 }
 } // namespace libime

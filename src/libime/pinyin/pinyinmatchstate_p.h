@@ -48,13 +48,13 @@ struct PinyinMatchResult {
 // reuslt.
 struct MatchedPinyinPath {
     MatchedPinyinPath(const PinyinTrie *trie, size_t size,
-                      SegmentGraphPath path)
+                      SegmentGraphPath path, PinyinDictFlags flags)
         : result_(std::make_shared<MatchedPinyinTrieNodes>(trie, size)),
-          path_(std::move(path)) {}
+          path_(std::move(path)), flags_(flags) {}
 
     MatchedPinyinPath(std::shared_ptr<MatchedPinyinTrieNodes> result,
-                      SegmentGraphPath path)
-        : result_(result), path_(std::move(path)) {}
+                      SegmentGraphPath path, PinyinDictFlags flags)
+        : result_(result), path_(std::move(path)), flags_(flags) {}
 
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(MatchedPinyinPath)
 
@@ -68,6 +68,7 @@ struct MatchedPinyinPath {
 
     std::shared_ptr<MatchedPinyinTrieNodes> result_;
     SegmentGraphPath path_;
+    PinyinDictFlags flags_;
 };
 
 // A list of all search paths

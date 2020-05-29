@@ -43,6 +43,7 @@ public:
     size_t dictSize() const;
 
     FCITX_DECLARE_SIGNAL(TrieDictionary, dictionaryChanged, void(size_t));
+    FCITX_DECLARE_SIGNAL(TrieDictionary, dictSizeChanged, void(size_t));
 
 protected:
     DATrie<float> *mutableTrie(size_t idx);

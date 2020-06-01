@@ -439,6 +439,7 @@ void TableContext::update() {
     State state = d->currentState();
 
     auto t0 = std::chrono::high_resolution_clock::now();
+    decltype(t0) t1;
     d->candidates_.clear();
 
     constexpr float max = std::numeric_limits<float>::max();
@@ -453,11 +454,12 @@ void TableContext::update() {
     }
     if (d->decoder_.decode(d->lattice_, d->graph_, nbest, state, max, min,
                            beamSize, frameSize)) {
+        t1 = std::chrono::high_resolution_clock::now();
         LIBIME_TABLE_DEBUG()
             << "Decode: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::high_resolution_clock::now() - t0)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
                    .count();
+        t0 = t1;
         std::unordered_map<std::string, size_t> dup;
 
         auto insertCandidate = [d, &dup](SentenceResult sentence) {
@@ -504,11 +506,12 @@ void TableContext::update() {
                 insertCandidate(sentence);
             }
         }
+        t1 = std::chrono::high_resolution_clock::now();
         LIBIME_TABLE_DEBUG()
             << "Insert candidate: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::high_resolution_clock::now() - t0)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
                    .count();
+        t0 = t1;
         int noSortLength =
             lastSegLength < d->dict_.tableOptions().noSortInputLength()
                 ? lastSegLength
@@ -527,10 +530,11 @@ void TableContext::update() {
                 std::rotate(d->candidates_.begin(), iter, std::next(iter));
             }
         }
+
+        t1 = std::chrono::high_resolution_clock::now();
         LIBIME_TABLE_DEBUG()
             << "Sort: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::high_resolution_clock::now() - t0)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
                    .count();
         LIBIME_TABLE_DEBUG() << "Number: " << d->candidates_.size();
     }

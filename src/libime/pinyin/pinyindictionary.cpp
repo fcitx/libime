@@ -760,6 +760,15 @@ void PinyinDictionary::addWord(size_t idx, std::string_view fullPinyin,
                             cost);
 }
 
+bool PinyinDictionary::removeWord(size_t idx, std::string_view fullPinyin,
+                                  std::string_view hanzi) {
+    auto result = PinyinEncoder::encodeFullPinyin(fullPinyin);
+    result.push_back(pinyinHanziSep);
+    result.insert(result.end(), hanzi.begin(), hanzi.end());
+    return TrieDictionary::removeWord(
+        idx, std::string_view(result.data(), result.size()));
+}
+
 void PinyinDictionary::setFlags(size_t idx, PinyinDictFlags flags) {
     FCITX_D();
     if (idx >= dictSize()) {

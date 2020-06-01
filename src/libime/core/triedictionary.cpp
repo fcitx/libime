@@ -82,4 +82,14 @@ void TrieDictionary::addWord(size_t idx, std::string_view key, float cost) {
     d->tries_[idx].set(key.data(), key.size(), cost);
     emit<TrieDictionary::dictionaryChanged>(idx);
 }
+
+bool TrieDictionary::removeWord(size_t idx, std::string_view key) {
+    FCITX_D();
+    if (d->tries_[idx].erase(key.data(), key.size())) {
+        ;
+        emit<TrieDictionary::dictionaryChanged>(idx);
+        return true;
+    }
+    return false;
+}
 } // namespace libime

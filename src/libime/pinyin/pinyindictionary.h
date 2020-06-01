@@ -48,6 +48,8 @@ public:
 
     void addWord(size_t idx, std::string_view fullPinyin,
                  std::string_view hanzi, float cost = 0.0f);
+    bool removeWord(size_t idx, std::string_view fullPinyin,
+                    std::string_view hanzi);
 
     void setFlags(size_t idx, PinyinDictFlags flags);
 

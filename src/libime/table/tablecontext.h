@@ -68,6 +68,9 @@ public:
     /// \brief Save the current selected text.
     void learn();
 
+    /// \brief Save the last selected text.
+    void learnLast();
+
     /// \brief Learn auto word from string.
     ///
     /// Depending on the tableOptions, it will try to learn the word in history.

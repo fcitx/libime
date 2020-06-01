@@ -633,7 +633,7 @@ void TableContext::learn() {
         return;
     }
 
-    if (!selected()) {
+    if (d->selected_.empty()) {
         return;
     }
 
@@ -655,6 +655,33 @@ void TableContext::learn() {
         if (!word.empty()) {
             newSentence.emplace_back(std::move(word));
         }
+    }
+    if (newSentence.size()) {
+        d->model_.history().add(newSentence);
+    }
+}
+
+void TableContext::learnLast() {
+    FCITX_D();
+    if (!d->dict_.tableOptions().learning() || d->selected_.empty()) {
+        return;
+    }
+
+    if (!d->learnWord(d->selected_.back())) {
+        return;
+    }
+
+    std::vector<std::string> newSentence;
+    std::string word;
+    for (auto &item : d->selected_.back()) {
+        if (!item.commit_) {
+            word.clear();
+            return;
+        }
+        word += item.word_.word();
+    }
+    if (!word.empty()) {
+        newSentence.emplace_back(std::move(word));
     }
     if (newSentence.size()) {
         d->model_.history().add(newSentence);

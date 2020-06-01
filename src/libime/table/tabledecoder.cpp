@@ -71,6 +71,13 @@ const std::string &TableLatticeNode::code() const {
     return d_ptr->code_;
 }
 
+size_t TableLatticeNode::codeLength() const {
+    if (!d_ptr) {
+        return 0;
+    }
+    return d_ptr->codeLength_;
+}
+
 TableLatticeNode::TableLatticeNode(
     std::string_view word, WordIndex idx, SegmentGraphPath path,
     const State &state, float cost,

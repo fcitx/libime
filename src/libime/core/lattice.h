@@ -36,6 +36,8 @@ public:
     size_t size() const { return sentence_.size(); }
 
     float score() const { return score_; }
+    void adjustScore(float adjust) { score_ += adjust; }
+    void setScore(float score) { score_ = score; }
 
     bool operator<(const SentenceResult &rhs) const {
         return score_ < rhs.score_;

@@ -7,6 +7,7 @@
 #define _FCITX_LIBIME_TABLE_TABLEDECODER_P_H_
 
 #include "tabledecoder.h"
+#include <fcitx-utils/utf8.h>
 #include <string>
 
 namespace libime {
@@ -15,9 +16,11 @@ class TableLatticeNodePrivate : public LatticeNodeData {
 public:
     TableLatticeNodePrivate(std::string_view code, uint32_t index,
                             PhraseFlag flag)
-        : code_(code), index_(index), flag_(flag) {}
+        : code_(code), codeLength_(fcitx::utf8::length(code)), index_(index),
+          flag_(flag) {}
 
     std::string code_;
+    size_t codeLength_;
     uint32_t index_;
     PhraseFlag flag_;
 };

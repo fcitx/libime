@@ -24,6 +24,7 @@ public:
     uint32_t index() const;
     PhraseFlag flag() const;
     const std::string &code() const;
+    size_t codeLength() const;
 
 private:
     std::unique_ptr<TableLatticeNodePrivate> d_ptr;

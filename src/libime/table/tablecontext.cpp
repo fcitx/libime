@@ -25,21 +25,19 @@ namespace libime {
 
 namespace {
 
-struct TableCandidateCompare {
-    TableCandidateCompare(OrderPolicy policy, int noSortInputLength,
-                          size_t codeLength)
-        : policy_(policy), noSortInputLength_(noSortInputLength),
-          codeLength_(codeLength) {}
+static size_t sentenceCodeLength(const SentenceResult &sentence) {
+    auto node = static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
+    return node->codeLength();
+}
 
-    static size_t codeLength(const SentenceResult &sentence) {
-        auto node =
-            static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
-        return fcitx::utf8::length(node->code());
-    }
+template <OrderPolicy policy>
+struct TableCandidateCompare {
+    TableCandidateCompare(int noSortInputLength)
+        : noSortInputLength_(noSortInputLength) {}
 
     // Larger index should be put ahead.
     static int64_t index(const SentenceResult &sentence) {
-        auto node =
+        const auto node =
             static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         if (node->flag() == PhraseFlag::User) {
             return node->index();
@@ -48,49 +46,45 @@ struct TableCandidateCompare {
         }
     }
 
-    bool isWithinNoSortLimit(const SentenceResult &sentence) const {
-        return static_cast<int>(codeLength(sentence)) <= noSortInputLength_ &&
-               !TableContext::isPinyin(sentence);
-    }
-
     bool operator()(const SentenceResult &lhs,
                     const SentenceResult &rhs) const {
-        bool lIsAuto = TableContext::isAuto(lhs);
-        bool rIsAuto = TableContext::isAuto(rhs);
+        const bool lIsAuto = TableContext::isAuto(lhs);
+        const bool rIsAuto = TableContext::isAuto(rhs);
         if (lIsAuto != rIsAuto) {
             return lIsAuto < rIsAuto;
         }
         // non-auto word
         if (!lIsAuto) {
-            bool lIsPinyin = TableContext::isPinyin(lhs);
-            bool rIsPinyin = TableContext::isPinyin(rhs);
-            bool lShort = isWithinNoSortLimit(lhs);
-            bool rShort = isWithinNoSortLimit(rhs);
+            const bool lIsPinyin = TableContext::isPinyin(lhs);
+            const bool rIsPinyin = TableContext::isPinyin(rhs);
+            const auto lLength = sentenceCodeLength(lhs);
+            const auto rLength = sentenceCodeLength(rhs);
+            const bool lShort =
+                static_cast<int>(lLength) <= noSortInputLength_ && !lIsPinyin;
+            const bool rShort =
+                static_cast<int>(rLength) <= noSortInputLength_ && !rIsPinyin;
             if (lShort != rShort) {
                 return lShort > rShort;
             }
-            auto lLength = codeLength(lhs);
-            auto rLength = codeLength(rhs);
             // Always sort result by code length.
             if (lLength != rLength) {
                 return lLength < rLength;
             }
 
-            auto policy = lShort ? OrderPolicy::No : policy_;
-            constexpr float pinyinPenalty = -0.5;
-
-            switch (policy) {
-            case OrderPolicy::No:
-            case OrderPolicy::Fast:
+            if (lShort) {
                 return index(lhs) > index(rhs);
-            case OrderPolicy::Freq: {
-                float lScore = (lhs.score() + (lIsPinyin ? pinyinPenalty : 0));
-                float rScore = (rhs.score() + (rIsPinyin ? pinyinPenalty : 0));
+            }
+
+            if constexpr (policy == OrderPolicy::No ||
+                          policy == OrderPolicy::Fast) {
+                return index(lhs) > index(rhs);
+            } else if constexpr (policy == OrderPolicy::Freq) {
+                float lScore = lhs.score();
+                float rScore = rhs.score();
                 if (lScore != rScore) {
                     return lScore > rScore;
                 }
                 return index(lhs) > index(rhs);
-            }
             }
             return false;
         }
@@ -99,9 +93,7 @@ struct TableCandidateCompare {
     }
 
 private:
-    OrderPolicy policy_;
-    int noSortInputLength_;
-    size_t codeLength_;
+    const int noSortInputLength_;
 };
 
 struct SelectedCode {
@@ -124,8 +116,8 @@ bool shouldReplaceCandidate(const SentenceResult &oldSentence,
     }
     // sentence size are equal, prefer shorter code.
     if (newSentence.sentence().size() == 1) {
-        auto oldCode = TableCandidateCompare::codeLength(newSentence);
-        auto newCode = TableCandidateCompare::codeLength(oldSentence);
+        auto oldCode = sentenceCodeLength(newSentence);
+        auto newCode = sentenceCodeLength(oldSentence);
 
         if (oldCode != newCode) {
             return oldCode < newCode;
@@ -480,9 +472,14 @@ void TableContext::update() {
 
         auto &graph = d->graph_;
         auto bos = &graph.start(), eos = &graph.end();
+        constexpr float pinyinPenalty = -0.5;
         for (auto &latticeNode : d->lattice_.nodes(eos)) {
             if (latticeNode.from() == bos && latticeNode.to() == eos) {
-                insertCandidate(latticeNode.toSentenceResult());
+                auto sentence = latticeNode.toSentenceResult();
+                if (TableContext::isPinyin(sentence)) {
+                    sentence.adjustScore(pinyinPenalty);
+                }
+                insertCandidate(std::move(sentence));
             }
         }
 
@@ -496,7 +493,10 @@ void TableContext::update() {
         // FIXME: add an option.
         const float minDistance = TABLE_DEFAULT_MIN_DISTANCE;
         for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
-            const auto &sentence = d->lattice_.sentence(i);
+            auto sentence = d->lattice_.sentence(i);
+            if (TableContext::isPinyin(sentence)) {
+                sentence.adjustScore(pinyinPenalty);
+            }
             auto score = sentence.score();
             if (sentence.sentence().size() >= 1) {
                 score = sentence.sentence().back()->score();
@@ -516,9 +516,21 @@ void TableContext::update() {
             lastSegLength < d->dict_.tableOptions().noSortInputLength()
                 ? lastSegLength
                 : d->dict_.tableOptions().noSortInputLength();
-        std::sort(d->candidates_.begin(), d->candidates_.end(),
-                  TableCandidateCompare(d->dict_.tableOptions().orderPolicy(),
-                                        noSortLength, lastSegLength));
+
+        switch (d->dict_.tableOptions().orderPolicy()) {
+        case OrderPolicy::No:
+            std::sort(d->candidates_.begin(), d->candidates_.end(),
+                      TableCandidateCompare<OrderPolicy::No>(noSortLength));
+            break;
+        case OrderPolicy::Fast:
+            std::sort(d->candidates_.begin(), d->candidates_.end(),
+                      TableCandidateCompare<OrderPolicy::Fast>(noSortLength));
+            break;
+        case OrderPolicy::Freq:
+            std::sort(d->candidates_.begin(), d->candidates_.end(),
+                      TableCandidateCompare<OrderPolicy::Freq>(noSortLength));
+            break;
+        }
         if (!d->candidates_.empty() && isPinyin(d->candidates_[0])) {
             auto iter =
                 std::find_if(d->candidates_.begin(), d->candidates_.end(),

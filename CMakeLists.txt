@@ -49,7 +49,6 @@ if(ENABLE_TEST)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(tools)
 add_subdirectory(data)
 
 if (ENABLE_DOC)

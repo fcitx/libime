@@ -23,8 +23,3 @@ add_executable(libime_tabledict libime_tabledict.cpp)
 target_link_libraries(libime_tabledict LibIME::Table)
 install(TARGETS libime_tabledict DESTINATION ${CMAKE_INSTALL_BINDIR})
 add_executable(LibIME::tabledict ALIAS libime_tabledict)
-
-add_executable(libime_migrate_fcitx4_table libime_migrate_fcitx4_table.cpp)
-target_link_libraries(libime_migrate_fcitx4_table LibIME::Table  Boost::iostreams)
-install(TARGETS libime_migrate_fcitx4_table DESTINATION ${CMAKE_INSTALL_BINDIR})
-add_executable(LibIME::migrate_fcitx4_table ALIAS libime_migrate_fcitx4_table)

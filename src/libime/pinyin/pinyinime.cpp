@@ -31,6 +31,7 @@ public:
     size_t partialLongWordLimit_ = 0;
     float maxDistance_ = std::numeric_limits<float>::max();
     float minPath_ = -std::numeric_limits<float>::max();
+    PinyinPreeditMode preeditMode_ = PinyinPreeditMode::RawText;
 };
 
 PinyinIME::PinyinIME(std::unique_ptr<PinyinDictionary> dict,
@@ -126,6 +127,19 @@ void PinyinIME::setPartialLongWordLimit(size_t n) {
         d->partialLongWordLimit_ = n;
         emit<PinyinIME::optionChanged>();
     }
+}
+
+void PinyinIME::setPreeditMode(PinyinPreeditMode mode) {
+    FCITX_D();
+    if (d->preeditMode_ != mode) {
+        d->preeditMode_ = mode;
+        emit<PinyinIME::optionChanged>();
+    }
+}
+
+PinyinPreeditMode PinyinIME::preeditMode() const {
+    FCITX_D();
+    return d->preeditMode_;
 }
 
 void PinyinIME::setScoreFilter(float maxDistance, float minPath) {

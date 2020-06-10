@@ -221,6 +221,9 @@ public:
     }
 
     static bool isValidInitialFinal(PinyinInitial initial, PinyinFinal final);
+    // This will use "ü" when possible.
+    static std::string initialFinalToPinyinString(PinyinInitial initial,
+                                                  PinyinFinal final);
 
     static MatchedPinyinSyllables stringToSyllables(std::string_view pinyin,
                                                     PinyinFuzzyFlags flags);

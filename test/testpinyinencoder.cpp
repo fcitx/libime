@@ -150,5 +150,15 @@ int main() {
         auto result = PinyinEncoder::encodeOneUserPinyin("nfi");
         FCITX_INFO() << PinyinEncoder::decodeFullPinyin(result);
     }
+    {
+        auto result = PinyinEncoder::initialFinalToPinyinString(
+            libime::PinyinInitial::N, libime::PinyinFinal::VE);
+        FCITX_ASSERT(result == "nüe");
+    }
+    {
+        auto result = PinyinEncoder::initialFinalToPinyinString(
+            libime::PinyinInitial::L, libime::PinyinFinal::V);
+        FCITX_ASSERT(result == "lü");
+    }
     return 0;
 }

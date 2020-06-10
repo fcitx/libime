@@ -409,6 +409,30 @@ bool PinyinEncoder::isValidInitialFinal(PinyinInitial initial,
     return false;
 }
 
+std::string PinyinEncoder::initialFinalToPinyinString(PinyinInitial initial,
+                                                      PinyinFinal final) {
+    std::string result = initialToString(initial);
+    std::string finalString;
+    switch (final) {
+    case PinyinFinal::VE:
+    case PinyinFinal::V:
+        if (initial == PinyinInitial::N || initial == PinyinInitial::L) {
+            if (final == PinyinFinal::VE) {
+                finalString = "üe";
+            } else {
+                finalString = "ü";
+            }
+            break;
+        }
+        // FALLTHROUGH
+    default:
+        finalString = finalToString(final);
+        break;
+    }
+    result.append(finalString);
+    return result;
+}
+
 static void getFuzzy(
     std::vector<std::pair<PinyinInitial,
                           std::vector<std::pair<PinyinFinal, bool>>>> &syls,

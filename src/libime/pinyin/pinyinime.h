@@ -20,6 +20,8 @@ class PinyinDecoder;
 class PinyinDictionary;
 class UserLanguageModel;
 
+enum class PinyinPreeditMode { RawText, Pinyin };
+
 /// \brief Provides shared data for PinyinContext.
 class LIBIMEPINYIN_EXPORT PinyinIME : public fcitx::ConnectableObject {
 public:
@@ -41,6 +43,8 @@ public:
                         float minPath = -std::numeric_limits<float>::max());
     void setShuangpinProfile(std::shared_ptr<const ShuangpinProfile> profile);
     std::shared_ptr<const ShuangpinProfile> shuangpinProfile() const;
+    void setPreeditMode(PinyinPreeditMode mode);
+    PinyinPreeditMode preeditMode() const;
 
     float maxDistance() const;
     float minPath() const;

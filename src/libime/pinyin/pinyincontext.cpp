@@ -13,6 +13,7 @@
 #include "pinyinmatchstate.h"
 #include <algorithm>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/utf8.h>
 #include <iostream>
 
 namespace libime {
@@ -395,7 +396,7 @@ std::string PinyinContext::preedit() const { return preeditWithCursor().first; }
 std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
     FCITX_D();
     std::string ss = selectedSentence();
-    auto len = selectedLength();
+    const auto len = selectedLength();
     auto c = cursor();
     size_t actualCursor = ss.size();
     // should not happen
@@ -418,12 +419,62 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
                     first = false;
                 }
                 auto from = (*iter)->index(), to = (*std::next(iter))->index();
-                if (c >= from + len && c < to + len) {
-                    actualCursor = resultSize + c - from - len;
-                }
+                size_t cursorInPinyin = c - from - len;
+                const size_t startPivot = resultSize;
                 auto pinyin = d->segs_.segment(from, to);
-                ss.append(pinyin.data(), pinyin.size());
-                resultSize += pinyin.size();
+                MatchedPinyinSyllables syls;
+                if (ime()->preeditMode() == PinyinPreeditMode::Pinyin) {
+                    syls = useShuangpin()
+                               ? PinyinEncoder::shuangpinToSyllables(
+                                     pinyin, *ime()->shuangpinProfile(),
+                                     PinyinFuzzyFlag::None)
+                               : PinyinEncoder::stringToSyllables(
+                                     pinyin, PinyinFuzzyFlag::None);
+                }
+                std::string actualPinyin;
+                if (!syls.empty() && !syls.front().second.empty()) {
+                    actualPinyin = PinyinEncoder::initialFinalToPinyinString(
+                        syls[0].first, syls[0].second[0].first);
+                }
+                if (!actualPinyin.empty()) {
+                    if (c >= from + len && c < to + len) {
+                        if (useShuangpin()) {
+                            switch (cursorInPinyin) {
+                            case 0:
+                                break;
+                            case 1:
+                                if (pinyin.size() == 2 &&
+                                    syls[0].first == PinyinInitial::Zero) {
+                                    actualPinyin = '_' + actualPinyin;
+                                }
+                                // Zero case, we just append one.
+                                if (syls[0].first != PinyinInitial::Zero) {
+                                    cursorInPinyin =
+                                        PinyinEncoder::initialToString(
+                                            syls[0].first)
+                                            .size();
+                                }
+                                break;
+                            default:
+                                cursorInPinyin = actualPinyin.size();
+                                break;
+                            }
+                        } else {
+                            cursorInPinyin =
+                                std::min(actualPinyin.size(), cursorInPinyin);
+                            cursorInPinyin = fcitx::utf8::ncharByteLength(
+                                actualPinyin.begin(), cursorInPinyin);
+                        }
+                    }
+                    ss.append(actualPinyin);
+                    resultSize += actualPinyin.size();
+                } else {
+                    ss.append(pinyin.data(), pinyin.size());
+                    resultSize += pinyin.size();
+                }
+                if (c >= from + len && c < to + len) {
+                    actualCursor = startPivot + cursorInPinyin;
+                }
             }
         }
     }

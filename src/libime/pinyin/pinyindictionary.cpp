@@ -347,12 +347,14 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
     }
 
     // minimumLongWordLength is to prevent algorithm runs too slow.
-    bool matchLongWord =
-        (path.path_.back() == &context.graph_.end() &&
-         context.partialLongWordLimit_ &&
-         std::max(minimumLongWordLength, context.partialLongWordLimit_) + 1 <=
-             path.path_.size() &&
-         !path.flags_.test(PinyinDictFlag::FullMatch));
+    const bool matchLongWordEnabled =
+        context.partialLongWordLimit_ &&
+        std::max(minimumLongWordLength, context.partialLongWordLimit_) + 1 <=
+            path.path_.size() &&
+        !path.flags_.test(PinyinDictFlag::FullMatch);
+
+    const bool matchLongWord =
+        (path.path_.back() == &context.graph_.end() && matchLongWordEnabled);
 
     auto foundOneWord = [&path, &prevNode, &matched,
                          &context](std::string_view encodedPinyin,
@@ -376,13 +378,17 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
             result->clear();
 
             auto &items = *result;
-            matchWordsOnTrie(path, matchLongWord,
+            matchWordsOnTrie(path, matchLongWordEnabled,
                              [&items](std::string_view encodedPinyin,
                                       std::string_view hanzi, float cost) {
                                  items.emplace_back(hanzi, cost, encodedPinyin);
                              });
         }
         for (auto &item : *result) {
+            if (!matchLongWord &&
+                item.encodedPinyin_.size() / 2 > path.size()) {
+                continue;
+            }
             foundOneWord(item.encodedPinyin_, item.word_, item.value_);
         }
     } else {

@@ -12,6 +12,7 @@
 #include "pinyinime.h"
 #include "pinyinmatchstate.h"
 #include <algorithm>
+#include <fcitx-utils/charutils.h>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
 #include <iostream>
@@ -43,6 +44,27 @@ public:
     std::vector<SentenceResult> candidates_;
     std::vector<fcitx::ScopedConnection> conn_;
 };
+
+void matchPinyinCase(std::string_view ref, std::string &actualPinyin) {
+    if (ref.size() != fcitx::utf8::length(actualPinyin)) {
+        return;
+    }
+
+    auto iter = fcitx::utf8::MakeUTF8CharIterator(actualPinyin.begin(),
+                                                  actualPinyin.end());
+    for (size_t i = 0; i < ref.size(); ++i, ++iter) {
+        if (fcitx::charutils::isupper(ref[i])) {
+            auto charRange = iter.charRange();
+            if (iter.charLength() == 1 &&
+                fcitx::charutils::islower(iter.view()[0])) {
+                *charRange.first = fcitx::charutils::toupper(*charRange.first);
+            } else if (*iter == 0x00fc) {
+                *charRange.first = 0xc3;
+                *std::next(charRange.first) = 0x9c;
+            }
+        }
+    }
+}
 
 PinyinContext::PinyinContext(PinyinIME *ime)
     : InputBuffer(fcitx::InputBufferOption::AsciiOnly),
@@ -435,6 +457,9 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
                 if (!syls.empty() && !syls.front().second.empty()) {
                     actualPinyin = PinyinEncoder::initialFinalToPinyinString(
                         syls[0].first, syls[0].second[0].first);
+                    if (!useShuangpin()) {
+                        matchPinyinCase(pinyin, actualPinyin);
+                    }
                 }
                 if (!actualPinyin.empty()) {
                     if (c >= from + len && c < to + len) {

@@ -98,10 +98,11 @@ public:
     LatticeNode *prev() const { return prev_; }
     void setPrev(LatticeNode *prev) { prev_ = prev; }
 
+    /// Return the full word till the begining of the sentence.
     std::string fullWord() const {
         size_t length = 0;
         auto pivot = this;
-        while (pivot != nullptr) {
+        while (pivot) {
             length += pivot->word().size();
             pivot = pivot->prev();
         }
@@ -109,7 +110,7 @@ public:
         std::string result;
         result.resize(length);
         pivot = this;
-        while (pivot != nullptr) {
+        while (pivot) {
             auto &word = pivot->word();
             length -= word.size();
             std::copy(word.begin(), word.end(), result.begin() + length);
@@ -123,7 +124,7 @@ public:
         SentenceResult::Sentence result;
         auto pivot = this;
         // to skip bos
-        while (pivot->prev() != nullptr) {
+        while (pivot->prev()) {
             if (pivot->to()) {
                 result.emplace_back(pivot);
             }

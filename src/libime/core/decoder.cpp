@@ -191,7 +191,7 @@ void DecoderPrivate::forwardSearch(
 
 std::string concatNBest(NBestNode *node, std::string_view sep = "") {
     std::string result;
-    while (node != nullptr) {
+    while (node) {
         result.append(node->node_->word());
         result.append(sep.data(), sep.size());
         node = node->next_;
@@ -269,14 +269,14 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
             size_t count = 0;
             // skip bos
             auto pivot = node->next_;
-            while (pivot != nullptr) {
+            while (pivot) {
                 pivot = pivot->next_;
                 count++;
             }
             SentenceResult::Sentence result;
             result.reserve(count);
             pivot = node->next_;
-            while (pivot != nullptr) {
+            while (pivot) {
                 if (pivot->node_->to()) {
                     result.emplace_back(pivot->node_);
                 }

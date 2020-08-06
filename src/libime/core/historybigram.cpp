@@ -173,9 +173,9 @@ public:
     }
 
     void dump(std::ostream &out) const {
-        for (auto &sentence : recent_) {
+        for (const auto &sentence : recent_) {
             bool first = true;
-            for (auto &s : sentence) {
+            for (const auto &s : sentence) {
                 if (first) {
                     first = false;
                 } else {
@@ -513,7 +513,7 @@ void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
         return;
     }
     std::string lookup;
-    if (sentence.size()) {
+    if (!sentence.empty()) {
         lookup = sentence.back();
     } else {
         lookup = "<s>";

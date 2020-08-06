@@ -63,7 +63,7 @@ int main() {
 
     c.type("vb");
 
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         FCITX_INFO() << candidate.toString() << candidate.score();
     }
     c.select(0);
@@ -72,7 +72,7 @@ int main() {
 
     c.type("bbh");
 
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         FCITX_INFO() << candidate.toString() << candidate.score();
     }
     c.select(0);
@@ -84,7 +84,7 @@ int main() {
     for (int i = 0; i < 2; i++) {
         c.type("vbbb");
 
-        for (auto &candidate : c.candidates()) {
+        for (const auto &candidate : c.candidates()) {
             FCITX_INFO() << candidate.toString() << candidate.score();
         }
         c.select(1);

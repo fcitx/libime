@@ -46,7 +46,7 @@ void Lattice::clear() {
 void Lattice::discardNode(
     const std::unordered_set<const SegmentGraphNode *> &nodes) {
     FCITX_D();
-    for (auto node : nodes) {
+    for (const auto *node : nodes) {
         d->lattice_.erase(node);
     }
     for (auto &p : d->lattice_) {

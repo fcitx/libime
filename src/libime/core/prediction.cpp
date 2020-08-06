@@ -41,7 +41,7 @@ Prediction::predict(const std::vector<std::string> &sentence,
     std::vector<WordNode> node;
     State state = d->model_->nullState(), outState;
     std::vector<WordNode> nodes;
-    for (auto word : sentence) {
+    for (const auto &word : sentence) {
         auto idx = d->model_->index(word);
         nodes.emplace_back(word, idx);
         d->model_->score(state, nodes.back(), outState);
@@ -68,7 +68,7 @@ Prediction::predict(const State &state,
             search = sentence.back();
         }
         search += "|";
-        auto &trie = file->predictionTrie();
+        const auto &trie = file->predictionTrie();
         trie.foreach(search, [&trie, &words,
                               maxSize](DATrie<float>::value_type, size_t len,
                                        DATrie<float>::position_type pos) {
@@ -100,9 +100,8 @@ Prediction::predict(const State &state,
         std::sort(temps.begin(), temps.end(), [](auto &lhs, auto &rhs) {
             if (lhs.first != rhs.first) {
                 return lhs.first > rhs.first;
-            } else {
-                return lhs.second < rhs.second;
             }
+            return lhs.second < rhs.second;
         });
         for (auto &temp : temps) {
             result.emplace_back(std::move(temp.second));

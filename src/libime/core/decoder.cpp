@@ -87,9 +87,9 @@ bool DecoderPrivate::buildLattice(
             path.front() != &graph.start()) {
             return;
         }
-        auto node = q->createLatticeNode(graph, model_, word.word(), word.idx(),
-                                         path, model_->nullState(), adjust,
-                                         std::move(data), dupSize == 0);
+        auto *node = q->createLatticeNode(
+            graph, model_, word.word(), word.idx(), path, model_->nullState(),
+            adjust, std::move(data), dupSize == 0);
         if (node) {
             lattice[path.back()].push_back(node);
             dupSize++;
@@ -117,7 +117,7 @@ void DecoderPrivate::forwardSearch(
     std::unordered_map<const SegmentGraphNode *,
                        std::tuple<float, LatticeNode *, State>>
         unknownIdCache;
-    auto start = &graph.start();
+    const auto *start = &graph.start();
     // forward search
     auto updateForNode = [&](const SegmentGraphBase &,
                              const SegmentGraphNode *graphNode) {
@@ -127,7 +127,7 @@ void DecoderPrivate::forwardSearch(
         }
         auto &latticeNodes = lattice[graphNode];
         for (auto &node : latticeNodes) {
-            auto from = node.from();
+            const auto *from = node.from();
             assert(graph.checkNodeInGraph(from));
             float maxScore = -std::numeric_limits<float>::max();
             LatticeNode *maxNode = nullptr;
@@ -207,7 +207,7 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
     if (nbest == 1) {
         assert(lattice[&graph.start()].size() == 1);
         assert(lattice[nullptr].size() == 1);
-        auto pos = &lattice[nullptr][0];
+        auto *pos = &lattice[nullptr][0];
         l.d_ptr->nbests_.push_back(pos->toSentenceResult());
     } else {
         struct NBestNodeLess {
@@ -221,15 +221,15 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
         std::unordered_set<std::string> dup;
         std::list<NBestNode> nbestNodePool;
 
-        auto eos = &lattice[nullptr][0];
+        auto *eos = &lattice[nullptr][0];
         auto newNBestNode = [&nbestNodePool](const LatticeNode *node) {
             nbestNodePool.emplace_back(node);
             return &nbestNodePool.back();
         };
         q.push(newNBestNode(eos));
-        auto bos = &lattice[&graph.start()][0];
+        auto *bos = &lattice[&graph.start()][0];
         while (!q.empty()) {
-            auto node = q.top();
+            auto *node = q.top();
             q.pop();
             if (bos == node->node_) {
                 auto sentence = concatNBest(node);
@@ -250,9 +250,10 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                     auto score =
                         model_->score(from.state(), *node->node_, state) +
                         node->node_->cost();
-                    if (&from != bos && score < min)
+                    if (&from != bos && score < min) {
                         continue;
-                    auto parent = newNBestNode(&from);
+                    }
+                    auto *parent = newNBestNode(&from);
                     parent->gn_ = score + node->gn_;
                     parent->fn_ = parent->gn_ + parent->node_->score();
                     parent->next_ = node;
@@ -263,12 +264,12 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
         }
 
         while (!result.empty()) {
-            auto node = result.top();
+            auto *node = result.top();
             result.pop();
             // loop twice to avoid problem
             size_t count = 0;
             // skip bos
-            auto pivot = node->next_;
+            auto *pivot = node->next_;
             while (pivot) {
                 pivot = pivot->next_;
                 count++;

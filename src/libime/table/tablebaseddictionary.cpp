@@ -28,12 +28,12 @@ namespace libime {
 
 namespace {
 
-static constexpr char keyValueSeparator = '\x01';
+constexpr char keyValueSeparator = '\x01';
 // "fc" t"ab"l"e"
-static constexpr uint32_t tableBinaryFormatMagic = 0x000fcabe;
-static constexpr uint32_t tableBinaryFormatVersion = 0x1;
-static constexpr uint32_t userTableBinaryFormatMagic = 0x356fcabe;
-static constexpr uint32_t userTableBinaryFormatVersion = 0x1;
+constexpr uint32_t tableBinaryFormatMagic = 0x000fcabe;
+constexpr uint32_t tableBinaryFormatVersion = 0x1;
+constexpr uint32_t userTableBinaryFormatMagic = 0x356fcabe;
+uint32_t userTableBinaryFormatVersion = 0x1;
 
 enum {
     STR_KEYCODE,
@@ -50,7 +50,7 @@ enum {
 
 enum class BuildPhase { PhaseConfig, PhaseRule, PhaseData };
 
-static const char *strConst[2][STR_LAST] = {
+const char *strConst[2][STR_LAST] = {
     {"键码=", "码长=", "规避字符=", "拼音=", "拼音长度=", "[数据]",
      "[组词规则]", "提示=", "构词="},
     {"KeyCode=", "Length=", "InvalidChar=", "Pinyin=", "PinyinLength=",
@@ -58,8 +58,8 @@ static const char *strConst[2][STR_LAST] = {
 
 // A better version of key + keyValueSeparator + value. It tries to avoid
 // multiple allocation.
-static inline std::string generateTableEntry(std::string_view key,
-                                             std::string_view value) {
+inline std::string generateTableEntry(std::string_view key,
+                                      std::string_view value) {
     std::string entry;
     entry.reserve(key.size() + value.size() + 1);
     entry.append(key.data(), key.size());
@@ -255,11 +255,7 @@ public:
                     matchedCode.remove_prefix(
                         fcitx::utf8::ncharByteLength(matchedCode.begin(), 1));
                 }
-                if (callback(matchedCode, view.substr(sep + 1), value, flag)) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return callback(matchedCode, view.substr(sep + 1), value, flag);
             }
             return true;
         };
@@ -286,7 +282,7 @@ public:
         singleCharLookupTrie_.clear();
         promptTrie_.clear();
     }
-    bool validate() {
+    bool validate() const {
         if (inputCode_.empty()) {
             return false;
         }
@@ -323,9 +319,9 @@ public:
         }
 
         uint32_t firstChar;
-        auto next =
+        const auto *next =
             fcitx::utf8::getNextChar(key.begin(), key.end(), &firstChar);
-        auto iter =
+        auto *iter =
             std::find(std::begin(special), std::end(special), firstChar);
         PhraseFlag flag = user ? PhraseFlag::User : PhraseFlag::None;
         if (iter != std::end(special)) {
@@ -387,20 +383,13 @@ public:
                 (mode == TableMatchMode::Exact &&
                  fcitx::utf8::length(matchedCode) ==
                      fcitx::utf8::length(code))) {
-                if (callback(matchedCode, view.substr(sep + 1), 0,
-                             PhraseFlag::Auto)) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return callback(matchedCode, view.substr(sep + 1), 0,
+                                PhraseFlag::Auto);
             }
             return true;
         };
 
-        if (!autoPhraseDict_.search(code, matchAutoPhrase)) {
-            return false;
-        }
-        return true;
+        return autoPhraseDict_.search(code, matchAutoPhrase);
     }
 };
 
@@ -442,8 +431,9 @@ void TableBasedDictionary::loadText(std::istream &in) {
         if (buf.compare(0, std::strlen(strConst[0][index]),
                         strConst[0][index]) == 0) {
             return 0;
-        } else if (buf.compare(0, std::strlen(strConst[1][index]),
-                               strConst[1][index]) == 0) {
+        }
+        if (buf.compare(0, std::strlen(strConst[1][index]),
+                        strConst[1][index]) == 0) {
             return 1;
         }
         return -1;
@@ -479,7 +469,7 @@ void TableBasedDictionary::loadText(std::istream &in) {
             } else if ((match = check_option(STR_CODELEN)) >= 0) {
                 d->codeLength_ =
                     std::stoi(buf.substr(strlen(strConst[match][STR_CODELEN])));
-            } else if ((match = check_option(STR_PINYINLEN)) >= 0) {
+            } else if (check_option(STR_PINYINLEN) >= 0) {
                 // Deprecated option.
             } else if ((match = check_option(STR_IGNORECHAR)) >= 0) {
                 const std::string ignoreChars =
@@ -545,7 +535,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     }
     out << std::endl;
     out << strConst[1][STR_CODELEN] << d->codeLength_ << std::endl;
-    if (d->ignoreChars_.size()) {
+    if (!d->ignoreChars_.empty()) {
         out << strConst[1][STR_IGNORECHAR];
         for (auto c : d->ignoreChars_) {
             out << c;
@@ -844,7 +834,7 @@ bool TableBasedDictionary::hasCustomPrompt() const noexcept {
 
 const TableRule *TableBasedDictionary::findRule(std::string_view name) const {
     FCITX_D();
-    for (auto &rule : d->rules_) {
+    for (const auto &rule : d->rules_) {
         if (rule.name() == name) {
             return &rule;
         }
@@ -909,7 +899,7 @@ bool TableBasedDictionary::insert(std::string_view key, std::string_view value,
         break;
     }
     case PhraseFlag::Prompt:
-        if (key.size()) {
+        if (!key.empty()) {
             d->promptTrie_.set(generateTableEntry(key, value), 0);
         } else {
             return false;
@@ -982,7 +972,7 @@ bool TableBasedDictionary::generate(std::string_view value,
                 iter = fcitx::utf8::nextNChar(value.begin(),
                                               valueLen - ruleEntry.character());
             }
-            auto prev = iter;
+            const auto *prev = iter;
             iter = fcitx::utf8::nextChar(iter);
             std::string_view chr(&*prev, std::distance(prev, iter));
 
@@ -1019,8 +1009,8 @@ bool TableBasedDictionary::isInputCode(uint32_t c) const {
 }
 
 bool TableBasedDictionary::isAllInputCode(std::string_view code) const {
-    auto iter = code.begin();
-    auto end = code.end();
+    const auto *iter = code.begin();
+    const auto *end = code.end();
     while (iter != end) {
         uint32_t chr;
         iter = fcitx::utf8::getNextChar(iter, end, &chr);
@@ -1049,7 +1039,7 @@ void TableBasedDictionary::statistic() const {
 
 void TableBasedDictionary::setTableOptions(TableOptions option) {
     FCITX_D();
-    d->options_ = option;
+    d->options_ = std::move(option);
     if (d->options_.autoSelectLength() < 0) {
         d->options_.setAutoSelectLength(maxLength());
     }

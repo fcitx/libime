@@ -13,7 +13,8 @@ struct ScopedNanoTimer {
     std::function<void(int)> cb;
 
     ScopedNanoTimer(std::function<void(int)> callback)
-        : t0(std::chrono::high_resolution_clock::now()), cb(callback) {}
+        : t0(std::chrono::high_resolution_clock::now()),
+          cb(std::move(callback)) {}
     ~ScopedNanoTimer(void) {
         auto t1 = std::chrono::high_resolution_clock::now();
         auto nanos =

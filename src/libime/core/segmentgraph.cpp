@@ -37,7 +37,7 @@ bool SegmentGraphBase::bfs(const SegmentGraphNode *from,
     q.push(from);
     std::unordered_set<const SegmentGraphNode *> visited;
     while (!q.empty()) {
-        auto node = q.top();
+        const auto *node = q.top();
         q.pop();
         if (!visited.count(node)) {
             visited.insert(node);
@@ -48,7 +48,7 @@ bool SegmentGraphBase::bfs(const SegmentGraphNode *from,
         if (!callback(*this, node)) {
             return false;
         }
-        for (auto &next : node->nexts()) {
+        for (const auto &next : node->nexts()) {
             q.push(&next);
         }
     }
@@ -117,7 +117,7 @@ void SegmentGraph::merge(SegmentGraph &graph,
             while (node.nextSize()) {
                 node.removeEdge(node.mutableNexts().front());
             }
-            for (auto n : newNext) {
+            for (auto *n : newNext) {
                 node.addEdge(*n);
             }
         }
@@ -129,7 +129,7 @@ void SegmentGraph::merge(SegmentGraph &graph,
     // these nodes will be discarded by resize()
     if (data().size() + 1 < graph_.size()) {
         for (size_t i = data().size() + 1; i < graph_.size(); i++) {
-            for (auto &node : nodes(i)) {
+            for (const auto &node : nodes(i)) {
                 nodeToDiscard.insert(&node);
             }
         }
@@ -137,7 +137,7 @@ void SegmentGraph::merge(SegmentGraph &graph,
 
     resize(data().size() + 1);
     for (size_t i = since; i <= size(); i++) {
-        for (auto &node : nodes(i)) {
+        for (const auto &node : nodes(i)) {
             nodeToDiscard.insert(&node);
         }
         std::swap(graph_[i], graph.graph_[i]);

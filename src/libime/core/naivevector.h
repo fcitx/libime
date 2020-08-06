@@ -44,7 +44,7 @@ struct naivevector {
             push_back(value);
         }
     }
-    naivevector(naivevector &&other) : naivevector() { swap(other); }
+    naivevector(naivevector &&other) noexcept : naivevector() { swap(other); }
 
     naivevector &operator=(naivevector other) {
         swap(other);
@@ -111,7 +111,7 @@ struct naivevector {
 
             m_end = m_start + new_size;
             if constexpr (!std::is_trivial_v<value_type>) {
-                for (auto p = m_start + old_size; p != m_end; p++) {
+                for (auto *p = m_start + old_size; p != m_end; p++) {
                     new (p) value_type();
                 }
             } else {
@@ -202,7 +202,7 @@ private:
         } else {
             auto old_bytes = size_type(reinterpret_cast<char *>(m_end) -
                                        reinterpret_cast<char *>(m_start));
-            auto new_start =
+            auto *new_start =
                 reinterpret_cast<pointer>(std::realloc(m_start, bytes));
             if (new_start) {
                 m_start = new_start;

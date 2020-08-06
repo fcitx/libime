@@ -84,9 +84,9 @@ int main() {
 
         size_t count = 1;
         std::cout << "Preedit: " << c.preedit() << std::endl;
-        for (auto &candidate : c.candidates()) {
+        for (const auto &candidate : c.candidates()) {
             std::cout << (count % 10) << ": ";
-            for (auto node : candidate.sentence()) {
+            for (const auto *node : candidate.sentence()) {
                 std::cout
                     << node->word() << " "
                     << static_cast<const TableLatticeNode *>(node)->code();

@@ -98,7 +98,7 @@ static inline const lm::ngram::State &lmState(const State &state) {
 class LanguageModelPrivate {
 public:
     LanguageModelPrivate(std::shared_ptr<const StaticLanguageModelFile> file)
-        : file_(file) {}
+        : file_(std::move(file)) {}
 
     auto *model() { return file_ ? &file_->d_func()->model_ : nullptr; }
     const auto *model() const {
@@ -117,7 +117,7 @@ LanguageModel::LanguageModel(const char *file)
 
 LanguageModel::LanguageModel(
     std::shared_ptr<const StaticLanguageModelFile> file)
-    : LanguageModelBase(), d_ptr(std::make_unique<LanguageModelPrivate>(file)) {
+    : d_ptr(std::make_unique<LanguageModelPrivate>(std::move(file))) {
     FCITX_D();
     if (d->model()) {
         lmState(d->beginState_) = d->model()->BeginSentenceState();
@@ -138,7 +138,7 @@ WordIndex LanguageModel::beginSentence() const {
     if (!d->model()) {
         return 0;
     }
-    auto &v = d->model()->GetVocabulary();
+    const auto &v = d->model()->GetVocabulary();
     return v.BeginSentence();
 }
 
@@ -147,7 +147,7 @@ WordIndex LanguageModel::endSentence() const {
     if (!d->model()) {
         return 0;
     }
-    auto &v = d->model()->GetVocabulary();
+    const auto &v = d->model()->GetVocabulary();
     return v.EndSentence();
 }
 
@@ -156,7 +156,7 @@ WordIndex LanguageModel::unknown() const {
     if (!d->model()) {
         return 0;
     }
-    auto &v = d->model()->GetVocabulary();
+    const auto &v = d->model()->GetVocabulary();
     return v.NotFound();
 }
 
@@ -165,7 +165,7 @@ WordIndex LanguageModel::index(std::string_view word) const {
     if (!d->model()) {
         return 0;
     }
-    auto &v = d->model()->GetVocabulary();
+    const auto &v = d->model()->GetVocabulary();
     return v.Index(StringPiece{word.data(), word.size()});
 }
 

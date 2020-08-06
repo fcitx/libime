@@ -26,7 +26,7 @@ public:
         setLanguageModel(lm);
         setHistoryBigram(&lm->history());
     }
-    void setLanguageModel(const LanguageModel *lm);
+    void setLanguageModel(const LanguageModel *model);
     void setHistoryBigram(const HistoryBigram *bigram);
     std::vector<std::string>
     predict(const State &state, const std::vector<std::string> &sentence = {},

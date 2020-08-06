@@ -25,8 +25,9 @@ namespace libime {
 
 namespace {
 
-static size_t sentenceCodeLength(const SentenceResult &sentence) {
-    auto node = static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
+size_t sentenceCodeLength(const SentenceResult &sentence) {
+    const auto *node =
+        static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
     return node->codeLength();
 }
 
@@ -37,13 +38,12 @@ struct TableCandidateCompare {
 
     // Larger index should be put ahead.
     static int64_t index(const SentenceResult &sentence) {
-        const auto node =
+        const auto *const node =
             static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         if (node->flag() == PhraseFlag::User) {
             return node->index();
-        } else {
-            return -static_cast<int64_t>(node->index());
         }
+        return -static_cast<int64_t>(node->index());
     }
 
     bool operator()(const SentenceResult &lhs,
@@ -123,7 +123,7 @@ bool shouldReplaceCandidate(const SentenceResult &oldSentence,
             return oldCode < newCode;
         }
 
-        auto newNode =
+        const auto *newNode =
             static_cast<const TableLatticeNode *>(newSentence.sentence()[0]);
         switch (policy) {
         case OrderPolicy::No:
@@ -159,7 +159,7 @@ public:
 
     // sort should already happened at this point.
     bool canDoAutoSelect() const {
-        if (candidates_.size() == 0) {
+        if (candidates_.empty()) {
             return false;
         }
         return !TableContext::isAuto(candidates_[0]);
@@ -198,14 +198,14 @@ public:
     }
 
     size_t selectedLength() const {
-        if (selected_.size()) {
+        if (!selected_.empty()) {
             return selected_.back().back().offset_;
         }
         return 0;
     }
 
     void cancel() {
-        if (selected_.size()) {
+        if (!selected_.empty()) {
             selected_.pop_back();
         }
     }
@@ -221,7 +221,7 @@ public:
 
     bool learnWord(const std::vector<SelectedCode> &selection) {
         if (selection.size() == 1) {
-            auto &select = selection[0];
+            const auto &select = selection[0];
             if (select.flag_ == PhraseFlag::None ||
                 select.flag_ == PhraseFlag::User) {
                 dict_.insert(select.code_, select.word_.word(),
@@ -331,8 +331,8 @@ void TableContext::select(size_t idx) {
     d->selected_.emplace_back();
 
     auto &selection = d->selected_.back();
-    for (auto &p : d->candidates_[idx].sentence()) {
-        auto node = static_cast<const TableLatticeNode *>(p);
+    for (const auto &p : d->candidates_[idx].sentence()) {
+        const auto *node = static_cast<const TableLatticeNode *>(p);
         selection.emplace_back(offset + p->to()->index(),
                                WordNode{p->word(), d->model_.index(p->word())},
                                node->code(), node->flag());
@@ -350,7 +350,7 @@ bool TableContext::typeOneChar(std::string_view chr) {
         return false;
     }
 
-    auto &option = d->dict_.tableOptions();
+    const auto &option = d->dict_.tableOptions();
     // Logic when append a new char:
     // Auto send disabled:
     // - keep append to buffer.
@@ -418,7 +418,7 @@ void TableContext::autoSelect() {
 
 void TableContext::update() {
     FCITX_D();
-    if (!size()) {
+    if (empty()) {
         return;
     }
 
@@ -473,7 +473,7 @@ void TableContext::update() {
         auto &graph = d->graph_;
         auto bos = &graph.start(), eos = &graph.end();
         constexpr float pinyinPenalty = -0.5;
-        for (auto &latticeNode : d->lattice_.nodes(eos)) {
+        for (const auto &latticeNode : d->lattice_.nodes(eos)) {
             if (latticeNode.from() == bos && latticeNode.to() == eos) {
                 auto sentence = latticeNode.toSentenceResult();
                 if (TableContext::isPinyin(sentence)) {
@@ -498,7 +498,7 @@ void TableContext::update() {
                 sentence.adjustScore(pinyinPenalty);
             }
             auto score = sentence.score();
-            if (sentence.sentence().size() >= 1) {
+            if (!sentence.sentence().empty()) {
                 score = sentence.sentence().back()->score();
             }
             // Check the limit, or if there's no candidate.
@@ -577,8 +577,8 @@ size_t TableContext::selectedLength() const {
 std::string TableContext::selectedSentence() const {
     FCITX_D();
     std::string ss;
-    for (auto &s : d->selected_) {
-        for (auto &item : s) {
+    for (const auto &s : d->selected_) {
+        for (const auto &item : s) {
             if (item.commit_) {
                 ss += item.word_.word();
             }
@@ -609,7 +609,7 @@ std::tuple<std::string, bool> TableContext::selectedSegment(size_t idx) const {
     FCITX_D();
     std::string result;
     bool commit = true;
-    for (auto &item : d->selected_[idx]) {
+    for (const auto &item : d->selected_[idx]) {
         if (!item.commit_) {
             commit = false;
         }
@@ -672,7 +672,7 @@ void TableContext::learn() {
             newSentence.emplace_back(std::move(word));
         }
     }
-    if (newSentence.size()) {
+    if (!newSentence.empty()) {
         d->model_.history().add(newSentence);
     }
 }
@@ -699,7 +699,7 @@ void TableContext::learnLast() {
     if (!word.empty()) {
         newSentence.emplace_back(std::move(word));
     }
-    if (newSentence.size()) {
+    if (!newSentence.empty()) {
         d->model_.history().add(newSentence);
     }
 }
@@ -742,17 +742,16 @@ void TableContext::learnAutoPhrase(std::string_view history) {
 std::string TableContext::candidateHint(size_t idx, bool custom) const {
     FCITX_D();
     if (d->candidates_[idx].sentence().size() == 1) {
-        auto p = d->candidates_[idx].sentence()[0];
+        const auto *p = d->candidates_[idx].sentence()[0];
         if (!p->word().empty()) {
-            auto node = static_cast<const TableLatticeNode *>(p);
+            const auto *node = static_cast<const TableLatticeNode *>(p);
             if (node->flag() == PhraseFlag::Pinyin) {
                 if (fcitx::utf8::length(p->word()) == 1) {
                     auto code = d->dict_.reverseLookup(node->word());
                     if (custom) {
                         return d->dict_.hint(code);
-                    } else {
-                        return code;
                     }
+                    return code;
                 }
             } else {
                 std::string_view code = node->code();
@@ -765,9 +764,8 @@ std::string TableContext::candidateHint(size_t idx, bool custom) const {
                 }
                 if (custom) {
                     return d->dict_.hint(code);
-                } else {
-                    return std::string{code};
                 }
+                return std::string{code};
             }
         }
     }
@@ -776,7 +774,7 @@ std::string TableContext::candidateHint(size_t idx, bool custom) const {
 
 std::string TableContext::code(const SentenceResult &sentence) {
     if (sentence.size() == 1) {
-        auto node =
+        const auto *node =
             static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         return node->code();
     }
@@ -785,7 +783,7 @@ std::string TableContext::code(const SentenceResult &sentence) {
 
 PhraseFlag TableContext::flag(const SentenceResult &sentence) {
     if (sentence.size() == 1) {
-        auto node =
+        const auto *node =
             static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
         return node->flag();
     }

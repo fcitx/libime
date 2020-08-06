@@ -18,7 +18,7 @@
 using namespace libime;
 
 void testMatch(const TableBasedDictionary &dict, std::string_view code,
-               std::set<std::string> expect, bool exact) {
+               const std::set<std::string> &expect, bool exact) {
     std::set<std::string> actual;
     dict.matchWords(code,
                     exact ? TableMatchMode::Exact : TableMatchMode::Prefix,

@@ -108,7 +108,7 @@ bool PinyinContext::typeImpl(const char *s, size_t length) {
     FCITX_D();
     if (d->maxSentenceLength_ > 0 && !d->candidates_.empty()) {
         auto size = 0;
-        for (auto &s : d->candidates_[0].sentence()) {
+        for (const auto &s : d->candidates_[0].sentence()) {
             size += s->path().size();
         }
         if (size > d->maxSentenceLength_) {
@@ -141,7 +141,7 @@ void PinyinContext::erase(size_t from, size_t to) {
     }
     InputBuffer::erase(from, to);
 
-    if (size()) {
+    if (!empty()) {
         update();
     }
 }
@@ -162,8 +162,8 @@ int PinyinContext::pinyinBeforeCursor() const {
         return -1;
     }
     c -= len;
-    if (d->candidates_.size()) {
-        for (auto &s : d->candidates_[0].sentence()) {
+    if (!d->candidates_.empty()) {
+        for (const auto &s : d->candidates_[0].sentence()) {
             for (auto iter = s->path().begin(),
                       end = std::prev(s->path().end());
                  iter < end; iter++) {
@@ -185,8 +185,8 @@ int PinyinContext::pinyinAfterCursor() const {
         return -1;
     }
     c -= len;
-    if (d->candidates_.size()) {
-        for (auto &s : d->candidates_[0].sentence()) {
+    if (!d->candidates_.empty()) {
+        for (const auto &s : d->candidates_[0].sentence()) {
             for (auto iter = s->path().begin(),
                       end = std::prev(s->path().end());
                  iter < end; iter++) {
@@ -214,7 +214,7 @@ void PinyinContext::select(size_t idx) {
     d->selected_.emplace_back();
 
     auto &selection = d->selected_.back();
-    for (auto &p : d->candidates_[idx].sentence()) {
+    for (const auto &p : d->candidates_[idx].sentence()) {
         selection.emplace_back(
             offset + p->to()->index(),
             WordNode{p->word(), d->ime_->model()->index(p->word())},
@@ -243,7 +243,7 @@ bool PinyinContext::cancelTill(size_t pos) {
 
 void PinyinContext::cancel() {
     FCITX_D();
-    if (d->selected_.size()) {
+    if (!d->selected_.empty()) {
         d->selected_.pop_back();
     }
     update();
@@ -251,11 +251,11 @@ void PinyinContext::cancel() {
 
 State PinyinContext::state() const {
     FCITX_D();
-    auto model = d->ime_->model();
+    auto *model = d->ime_->model();
     State state = model->nullState();
-    if (d->selected_.size()) {
-        for (auto &s : d->selected_) {
-            for (auto &item : s) {
+    if (!d->selected_.empty()) {
+        for (const auto &s : d->selected_) {
+            for (const auto &item : s) {
                 if (item.word_.word().empty()) {
                     continue;
                 }
@@ -270,7 +270,7 @@ State PinyinContext::state() const {
 
 void PinyinContext::update() {
     FCITX_D();
-    if (size() == 0) {
+    if (empty()) {
         clear();
         return;
     }
@@ -279,9 +279,9 @@ void PinyinContext::update() {
         d->candidates_.clear();
     } else {
         size_t start = 0;
-        auto model = d->ime_->model();
+        auto *model = d->ime_->model();
         State state = model->nullState();
-        if (d->selected_.size()) {
+        if (!d->selected_.empty()) {
             start = d->selected_.back().back().offset_;
 
             for (auto &s : d->selected_) {
@@ -323,7 +323,7 @@ void PinyinContext::update() {
             dup.insert(d->candidates_.back().toString());
         }
 
-        auto bos = &graph.start();
+        const auto *bos = &graph.start();
 
         auto beginSize = d->candidates_.size();
         for (size_t i = graph.size(); i > 0; i--) {
@@ -331,10 +331,10 @@ void PinyinContext::update() {
             float max = -std::numeric_limits<float>::max();
             auto distancePenalty = d->ime_->model()->unknownPenalty() /
                                    PINYIN_DISTANCE_PENALTY_FACTOR;
-            for (auto &graphNode : graph.nodes(i)) {
+            for (const auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
                 auto adjust = static_cast<float>(distance) * distancePenalty;
-                for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
+                for (const auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() == bos) {
                         if (!d->ime_->model()->isNodeUnknown(latticeNode)) {
                             if (latticeNode.score() < min) {
@@ -353,10 +353,10 @@ void PinyinContext::update() {
                     }
                 }
             }
-            for (auto &graphNode : graph.nodes(i)) {
+            for (const auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
                 auto adjust = static_cast<float>(distance) * distancePenalty;
-                for (auto &latticeNode : d->lattice_.nodes(&graphNode)) {
+                for (const auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() != bos &&
                         latticeNode.score() > min &&
                         latticeNode.score() + d->ime_->maxDistance() > max) {
@@ -385,7 +385,7 @@ bool PinyinContext::selected() const {
         return false;
     }
 
-    if (d->selected_.size()) {
+    if (!d->selected_.empty()) {
         if (d->selected_.back().back().offset_ == size()) {
             return true;
         }
@@ -397,8 +397,8 @@ bool PinyinContext::selected() const {
 std::string PinyinContext::selectedSentence() const {
     FCITX_D();
     std::string ss;
-    for (auto &s : d->selected_) {
-        for (auto &item : s) {
+    for (const auto &s : d->selected_) {
+        for (const auto &item : s) {
             ss += item.word_.word();
         }
     }
@@ -407,7 +407,7 @@ std::string PinyinContext::selectedSentence() const {
 
 size_t PinyinContext::selectedLength() const {
     FCITX_D();
-    if (d->selected_.size()) {
+    if (!d->selected_.empty()) {
         return d->selected_.back().back().offset_;
     }
     return 0;
@@ -428,9 +428,9 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
 
     auto resultSize = ss.size();
 
-    if (d->candidates_.size()) {
+    if (!d->candidates_.empty()) {
         bool first = true;
-        for (auto &s : d->candidates_[0].sentence()) {
+        for (const auto &s : d->candidates_[0].sentence()) {
             for (auto iter = s->path().begin(),
                       end = std::prev(s->path().end());
                  iter < end; iter++) {
@@ -470,7 +470,8 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
                             case 1:
                                 if (pinyin.size() == 2 &&
                                     syls[0].first == PinyinInitial::Zero) {
-                                    actualPinyin = '_' + actualPinyin;
+                                    actualPinyin = fcitx::stringutils::concat(
+                                        "_", actualPinyin);
                                 }
                                 // Zero case, we just append one.
                                 if (syls[0].first != PinyinInitial::Zero) {
@@ -512,8 +513,8 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
 std::vector<std::string> PinyinContext::selectedWords() const {
     FCITX_D();
     std::vector<std::string> newSentence;
-    for (auto &s : d->selected_) {
-        for (auto &item : s) {
+    for (const auto &s : d->selected_) {
+        for (const auto &item : s) {
             if (!item.word_.word().empty()) {
                 newSentence.push_back(item.word_.word());
             }
@@ -525,8 +526,8 @@ std::vector<std::string> PinyinContext::selectedWords() const {
 std::string PinyinContext::selectedFullPinyin() const {
     FCITX_D();
     std::string pinyin;
-    for (auto &s : d->selected_) {
-        for (auto &item : s) {
+    for (const auto &s : d->selected_) {
+        for (const auto &item : s) {
             if (!item.word_.word().empty()) {
                 if (!pinyin.empty()) {
                     pinyin.push_back('\'');
@@ -541,7 +542,7 @@ std::string PinyinContext::selectedFullPinyin() const {
 std::string PinyinContext::candidateFullPinyin(size_t idx) const {
     FCITX_D();
     std::string pinyin;
-    for (auto &p : d->candidates_[idx].sentence()) {
+    for (const auto &p : d->candidates_[idx].sentence()) {
         if (!p->word().empty()) {
             if (!pinyin.empty()) {
                 pinyin.push_back('\'');
@@ -568,7 +569,7 @@ void PinyinContext::learn() {
             for (auto &item : s) {
                 if (!item.word_.word().empty()) {
                     // Non pinyin word. Skip it.
-                    if (!item.encodedPinyin_.size()) {
+                    if (item.encodedPinyin_.empty()) {
                         return;
                     }
                     newSentence.push_back(item.word_.word());

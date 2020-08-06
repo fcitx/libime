@@ -101,7 +101,7 @@ public:
     /// Return the full word till the begining of the sentence.
     std::string fullWord() const {
         size_t length = 0;
-        auto pivot = this;
+        const auto *pivot = this;
         while (pivot) {
             length += pivot->word().size();
             pivot = pivot->prev();
@@ -111,7 +111,7 @@ public:
         result.resize(length);
         pivot = this;
         while (pivot) {
-            auto &word = pivot->word();
+            const auto &word = pivot->word();
             length -= word.size();
             std::copy(word.begin(), word.end(), result.begin() + length);
             pivot = pivot->prev();
@@ -122,7 +122,7 @@ public:
 
     SentenceResult toSentenceResult(float adjust = 0.0f) const {
         SentenceResult::Sentence result;
-        auto pivot = this;
+        const auto *pivot = this;
         // to skip bos
         while (pivot->prev()) {
             if (pivot->to()) {

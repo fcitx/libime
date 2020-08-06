@@ -24,7 +24,7 @@ void PinyinMatchState::clear() {
 void PinyinMatchState::discardNode(
     const std::unordered_set<const SegmentGraphNode *> &nodes) {
     FCITX_D();
-    for (auto node : nodes) {
+    for (const auto *node : nodes) {
         d->matchedPaths_.erase(node);
     }
     for (auto &p : d->matchedPaths_) {

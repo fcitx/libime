@@ -42,12 +42,11 @@ public:
 
     /// The sentence for this context, can be used as preedit.
     std::string sentence() const {
-        auto &c = candidates();
-        if (c.size()) {
+        const auto &c = candidates();
+        if (!c.empty()) {
             return selectedSentence() + c[0].toString();
-        } else {
-            return selectedSentence();
         }
+        return selectedSentence();
     }
 
     std::string preedit() const;

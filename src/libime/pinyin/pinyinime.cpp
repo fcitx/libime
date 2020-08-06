@@ -165,7 +165,7 @@ void PinyinIME::setShuangpinProfile(
     std::shared_ptr<const ShuangpinProfile> profile) {
     FCITX_D();
     if (d->spProfile_ != profile) {
-        d->spProfile_ = profile;
+        d->spProfile_ = std::move(profile);
         emit<PinyinIME::optionChanged>();
     }
 }

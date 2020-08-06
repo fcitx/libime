@@ -26,8 +26,8 @@ void testTime(PinyinDictionary &, Decoder &decoder, const char *pinyin,
                    -std::numeric_limits<float>::max(), Decoder::beamSizeDefault,
                    Decoder::frameSizeDefault, nullptr);
     for (size_t i = 0, e = lattice.sentenceSize(); i < e; i++) {
-        auto &sentence = lattice.sentence(i);
-        for (auto &p : sentence.sentence()) {
+        const auto &sentence = lattice.sentence(i);
+        for (const auto &p : sentence.sentence()) {
             std::cout << p->word() << " ";
         }
         std::cout << sentence.score() << std::endl;

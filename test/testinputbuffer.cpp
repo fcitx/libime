@@ -10,7 +10,7 @@ void test_basic(bool ascii) {
     using namespace libime;
     InputBuffer buffer(ascii ? fcitx::InputBufferOption::AsciiOnly
                              : fcitx::InputBufferOption::NoOption);
-    FCITX_ASSERT(buffer.size() == 0);
+    FCITX_ASSERT(buffer.empty());
     FCITX_ASSERT(buffer.cursor() == 0);
     FCITX_ASSERT(buffer.cursorByChar() == 0);
     buffer.type('a');
@@ -75,7 +75,7 @@ void test_utf8() {
     buffer.clear();
     FCITX_ASSERT(buffer.cursorByChar() == 0);
     FCITX_ASSERT(buffer.cursor() == 0);
-    FCITX_ASSERT(buffer.size() == 0);
+    FCITX_ASSERT(buffer.empty());
 }
 
 int main() {

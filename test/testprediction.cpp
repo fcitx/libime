@@ -25,10 +25,10 @@ int main() {
     Prediction pred;
     pred.setUserLanguageModel(&model);
     model.history().add({"你", "希望"});
-    for (auto result : pred.predict(std::vector<std::string>{"你"})) {
+    for (const auto &result : pred.predict(std::vector<std::string>{"你"})) {
         FCITX_LOG(Info) << result;
     }
-    for (auto result : pred.predict(std::vector<std::string>{"你"})) {
+    for (const auto &result : pred.predict(std::vector<std::string>{"你"})) {
         FCITX_LOG(Info) << result;
     }
 

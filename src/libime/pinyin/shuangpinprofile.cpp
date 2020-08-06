@@ -91,7 +91,7 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
     bool isDefault = false;
     while (std::getline(in, line)) {
         boost::trim_if(line, isSpaceCheck);
-        if (!line.size() || line[0] == '#') {
+        if (line.empty() || line[0] == '#') {
             continue;
         }
         std::string_view lineView(line);
@@ -232,10 +232,10 @@ void ShuangpinProfile::buildShuangpinTable() {
     auto addPinyin = [addPinyinToList](
                          std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
                          const std::string &py) {
-        auto &map = getPinyinMap();
+        const auto &map = getPinyinMap();
         auto iterPair = map.equal_range(py);
         if (iterPair.first != iterPair.second) {
-            for (auto &item :
+            for (const auto &item :
                  boost::make_iterator_range(iterPair.first, iterPair.second)) {
                 addPinyinToList(pys, item.initial(), item.final(),
                                 item.flags());
@@ -327,13 +327,13 @@ void ShuangpinProfile::buildShuangpinTable() {
                 }
             }
 
-            if (!pys.size()) {
+            if (pys.empty()) {
                 d->spTable_.erase(input);
             }
         }
     }
 
-    for (auto &p : getPinyinMap()) {
+    for (const auto &p : getPinyinMap()) {
         if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
             (!d->spTable_.count(p.pinyin()) ||
              d->zeroS_.find('*') == std::string::npos)) {

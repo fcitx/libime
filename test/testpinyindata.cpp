@@ -127,8 +127,8 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
 
 int main() {
     std::unordered_set<std::string> seen;
-    for (auto &p : getPinyinMap()) {
-        auto pinyin = p.pinyin();
+    for (const auto &p : getPinyinMap()) {
+        const auto &pinyin = p.pinyin();
         auto initial = p.initial();
         auto final = p.final();
 

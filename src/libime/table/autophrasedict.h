@@ -34,8 +34,9 @@ public:
     void insert(const std::string &entry, uint32_t value = 0);
 
     /// \brief Check if any word starting with s exists in the dictionary.
-    bool search(std::string_view s,
-                std::function<bool(std::string_view, uint32_t)> callback) const;
+    bool search(
+        std::string_view s,
+        const std::function<bool(std::string_view, uint32_t)> &callback) const;
 
     /// \brief Returns 0 if there is no such word.
     uint32_t exactSearch(std::string_view s) const;

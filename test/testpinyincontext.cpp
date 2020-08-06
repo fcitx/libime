@@ -38,33 +38,33 @@ int main() {
 
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
     c.select(40);
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
     c.cancel();
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
     c.type("shi'");
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
     int i = 0;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         if (candidate.toString() == "西安市") {
             break;
         }
@@ -74,7 +74,7 @@ int main() {
     FCITX_ASSERT(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
@@ -82,7 +82,7 @@ int main() {
     FCITX_ASSERT(c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
@@ -90,7 +90,7 @@ int main() {
     FCITX_ASSERT(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
@@ -98,12 +98,12 @@ int main() {
     FCITX_ASSERT(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
     i = 0;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         if (candidate.toString() == "子集") {
             break;
         }
@@ -113,13 +113,13 @@ int main() {
     FCITX_ASSERT(!c.selected());
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         std::cout << candidate.toString() << std::endl;
     }
 
     std::cout << "--------------------------------" << std::endl;
     i = 0;
-    for (auto &candidate : c.candidates()) {
+    for (const auto &candidate : c.candidates()) {
         if (candidate.toString() == "各自") {
             break;
         }
@@ -131,9 +131,9 @@ int main() {
     std::cout << c.preedit() << std::endl;
     c.clear();
     c.type("n");
-    for (auto &candidate : c.candidates()) {
-        for (auto node : candidate.sentence()) {
-            auto &pinyin =
+    for (const auto &candidate : c.candidates()) {
+        for (const auto *node : candidate.sentence()) {
+            const auto &pinyin =
                 static_cast<const PinyinLatticeNode *>(node)->encodedPinyin();
             std::cout << node->word();
             if (!pinyin.empty()) {

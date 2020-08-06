@@ -138,7 +138,7 @@ struct SegmentGraphNodeGreater {
 const SegmentGraphNode *prevIsSeparator(const SegmentGraph &graph,
                                         const SegmentGraphNode &node) {
     if (node.prevSize() == 1) {
-        auto &prev = node.prevs().front();
+        const auto &prev = node.prevs().front();
         auto pinyin = graph.segment(prev, node);
         if (boost::starts_with(pinyin, "\'")) {
             return &prev;
@@ -168,7 +168,7 @@ public:
         : graph_(graph), hasher_(graph), callback_(callback), ignore_(ignore),
           matchedPathsMap_(&matchedPaths) {}
 
-    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(PinyinMatchContext);
+    PinyinMatchContext(const PinyinMatchContext &) = delete;
 
     const SegmentGraph &graph_;
     PinyinSegmentGraphPathHasher hasher_;
@@ -220,7 +220,7 @@ void PinyinDictionaryPrivate::addEmptyMatch(
             graph.segment(currentNode.index(), currentNode.index() + 1),
             "\'")) {
         SegmentGraphPath vec;
-        if (auto prev = prevIsSeparator(graph, currentNode)) {
+        if (const auto *prev = prevIsSeparator(graph, currentNode)) {
             vec.push_back(prev);
         }
 
@@ -230,7 +230,7 @@ void PinyinDictionaryPrivate::addEmptyMatch(
                 &currentNode != &graph.start()) {
                 continue;
             }
-            auto &trie = *q->trie(i);
+            const auto &trie = *q->trie(i);
             currentMatches.emplace_back(&trie, 0, vec, flags_[i]);
             currentMatches.back().triePositions().emplace_back(0, 0);
         }
@@ -245,7 +245,7 @@ traverseAlongPathOneStepBySyllables(const MatchedPinyinPath &path,
         uint64_t _pos;
         size_t fuzzies;
         std::tie(_pos, fuzzies) = pr;
-        for (auto &syl : syls) {
+        for (const auto &syl : syls) {
             // make a copy
             auto pos = _pos;
             auto initial = static_cast<char>(syl.first);
@@ -283,7 +283,7 @@ traverseAlongPathOneStepBySyllables(const MatchedPinyinPath &path,
 template <typename T>
 void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
                       const T &callback) {
-    for (auto &pr : path.triePositions()) {
+    for (const auto &pr : path.triePositions()) {
         uint64_t pos;
         size_t fuzzies;
         std::tie(pos, fuzzies) = pr;
@@ -370,7 +370,7 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
 
     if (context.matchCacheMap_) {
         auto &matchCache = (*context.matchCacheMap_)[path.trie()];
-        auto result =
+        auto *result =
             matchCache.find(path.path_, context.hasher_, context.hasher_);
         if (!result) {
             result =
@@ -425,7 +425,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
     // over and don't traverse on the trie.
     if (boost::starts_with(pinyin, "\'")) {
         const auto &prevMatches = matchedPathsMap[&prevNode];
-        for (auto &match : prevMatches) {
+        for (const auto &match : prevMatches) {
             // copy the path, and append current node.
             auto path = match.path_;
             path.push_back(&currentNode);
@@ -447,7 +447,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
             : PinyinEncoder::stringToSyllables(pinyin, context.flags_);
     const MatchedPinyinPaths &prevMatchedPaths = matchedPathsMap[&prevNode];
     MatchedPinyinPaths newPaths;
-    for (auto &path : prevMatchedPaths) {
+    for (const auto &path : prevMatchedPaths) {
         // Make a copy of path so we can modify based on it.
         auto segmentPath = path.path_;
         segmentPath.push_back(&currentNode);
@@ -455,7 +455,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
         // A map from trie (dict) to a lru cache.
         if (context.nodeCacheMap_) {
             auto &nodeCache = (*context.nodeCacheMap_)[path.trie()];
-            auto p =
+            auto *p =
                 nodeCache.find(segmentPath, context.hasher_, context.hasher_);
             std::shared_ptr<MatchedPinyinTrieNodes> result;
             if (!p) {
@@ -470,7 +470,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
                 assert(result->size_ == path.size() + 1);
             }
 
-            if (result->triePositions_.size()) {
+            if (!result->triePositions_.empty()) {
                 newPaths.emplace_back(result, segmentPath, path.flags_);
             }
         } else {
@@ -481,7 +481,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
             newPaths.back().result_->triePositions_ =
                 traverseAlongPathOneStepBySyllables(path, syls);
             // if there's nothing, pop it.
-            if (!newPaths.back().triePositions().size()) {
+            if (newPaths.back().triePositions().empty()) {
                 newPaths.pop_back();
             }
         }
@@ -494,7 +494,8 @@ void PinyinDictionaryPrivate::findMatchesBetween(
             // to make lattice connect together.
             SegmentGraphPath vec;
             vec.reserve(3);
-            if (auto prevPrev = prevIsSeparator(context.graph_, prevNode)) {
+            if (const auto *prevPrev =
+                    prevIsSeparator(context.graph_, prevNode)) {
                 vec.push_back(prevPrev);
             }
             vec.push_back(&prevNode);
@@ -521,7 +522,7 @@ void PinyinDictionaryPrivate::matchNode(
     addEmptyMatch(context, currentNode, currentMatches);
 
     // Iterate all predecessor and search from them.
-    for (auto &prevNode : currentNode.prevs()) {
+    for (const auto &prevNode : currentNode.prevs()) {
         findMatchesBetween(context, prevNode, currentNode, currentMatches);
     }
 }
@@ -547,7 +548,7 @@ void PinyinDictionary::matchPrefixImpl(
                             SegmentGraphNodeGreater>;
     SegmentGraphNodeQueue q;
 
-    auto &start = graph.start();
+    const auto &start = graph.start();
     q.push(&start);
 
     // The match is done with a bfs.
@@ -558,11 +559,11 @@ void PinyinDictionary::matchPrefixImpl(
     //        -- xian ---
     // We start with start, then xi, then an and xian, then end.
     while (!q.empty()) {
-        auto currentNode = q.top();
+        const auto *currentNode = q.top();
         q.pop();
 
         // Push successors into the queue.
-        for (auto &node : currentNode->nexts()) {
+        for (const auto &node : currentNode->nexts()) {
             q.push(&node);
         }
 
@@ -578,10 +579,10 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
 
     std::list<std::pair<const PinyinTrie *, PinyinTrie::position_type>> nodes;
     for (size_t i = 0; i < dictSize(); i++) {
-        auto &trie = *this->trie(i);
+        const auto &trie = *this->trie(i);
         nodes.emplace_back(&trie, 0);
     }
-    for (size_t i = 0; i <= size && nodes.size(); i++) {
+    for (size_t i = 0; i <= size && !nodes.empty(); i++) {
         char current;
         if (i < size) {
             current = data[i];
@@ -740,7 +741,7 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
     std::string buf;
     std::ios state(nullptr);
     state.copyfmt(out);
-    auto &trie = *this->trie(idx);
+    const auto &trie = *this->trie(idx);
     trie.foreach([&trie, &buf, &out](float value, size_t _len,
                                      PinyinTrie::position_type pos) {
         trie.suffix(buf, _len, pos);

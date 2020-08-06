@@ -52,7 +52,7 @@ int main() {
     check("jiaou", PinyinFuzzyFlag::Inner);
     check("jin'an", PinyinFuzzyFlag::Inner);
 
-    for (auto syl : PinyinEncoder::stringToSyllables(
+    for (const auto &syl : PinyinEncoder::stringToSyllables(
              "niagn",
              PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
                               PinyinFuzzyFlag::NG_GN})) {
@@ -61,7 +61,7 @@ int main() {
                       << std::endl;
         }
     }
-    for (auto syl : PinyinEncoder::stringToSyllables(
+    for (const auto &syl : PinyinEncoder::stringToSyllables(
              "n",
              PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
                               PinyinFuzzyFlag::NG_GN})) {
@@ -70,7 +70,7 @@ int main() {
                       << std::endl;
         }
     }
-    for (auto syl : PinyinEncoder::stringToSyllables(
+    for (const auto &syl : PinyinEncoder::stringToSyllables(
              "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
                        PinyinFuzzyFlag::NG_GN})) {
         for (auto f : syl.second) {
@@ -123,7 +123,7 @@ int main() {
     {
         auto result =
             PinyinEncoder::stringToSyllables("z", PinyinFuzzyFlag::None);
-        for (auto p : result) {
+        for (const auto &p : result) {
             for (auto f : p.second) {
                 std::cout << PinyinEncoder::initialToString(p.first)
                           << PinyinEncoder::finalToString(f.first) << std::endl;

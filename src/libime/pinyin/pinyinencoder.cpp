@@ -83,11 +83,11 @@ std::pair<std::string_view, bool> longestMatch(Iter iter, Iter end,
         end = iter + maxPinyinLength;
     }
     auto range = std::string_view(&*iter, std::distance(iter, end));
-    auto &map = getPinyinMap();
-    for (; range.size(); range.remove_suffix(1)) {
+    const auto &map = getPinyinMap();
+    for (; !range.empty(); range.remove_suffix(1)) {
         auto iterPair = map.equal_range(range);
         if (iterPair.first != iterPair.second) {
-            for (auto &item :
+            for (const auto &item :
                  boost::make_iterator_range(iterPair.first, iterPair.second)) {
                 if (flags.test(item.flags())) {
                     // do not consider m/n/r as complete pinyin
@@ -104,7 +104,7 @@ std::pair<std::string_view, bool> longestMatch(Iter iter, Iter end,
         }
     }
 
-    if (!range.size()) {
+    if (range.empty()) {
         range = std::string_view(&*iter, 1);
     }
 
@@ -125,12 +125,12 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
     auto end = pinyin.end();
     std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>> q;
     q.push(0);
-    while (q.size()) {
+    while (!q.empty()) {
         size_t top;
         do {
             top = q.top();
             q.pop();
-        } while (q.size() && q.top() == top);
+        } while (!q.empty() && q.top() == top);
         if (top >= pinyin.size()) {
             continue;
         }
@@ -163,7 +163,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
             // also, make sure current pinyin does not end with a separator,
             // other wise, jin'an may be parsed into ji'n because, nextMatch is
             // starts with "'".
-            auto &map = getPinyinMap();
+            const auto &map = getPinyinMap();
             std::array<size_t, 2> nextSize;
             size_t nNextSize = 0;
             if (str.size() > 1 && top + str.size() < pinyin.size() &&
@@ -197,7 +197,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
 
             for (size_t i = 0; i < nNextSize; i++) {
                 if (nextSize[i] >= 4 && flags.test(PinyinFuzzyFlag::Inner)) {
-                    auto &innerSegments = getInnerSegment();
+                    const auto &innerSegments = getInnerSegment();
                     auto iter = innerSegments.find(
                         std::string{str.substr(0, nextSize[i])});
                     if (iter != innerSegments.end()) {
@@ -223,7 +223,7 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
     // assume user always type valid shuangpin first, if not keep one.
     size_t i = 0;
 
-    auto &table = sp.table();
+    const auto &table = sp.table();
     while (i < pinyin.size()) {
         auto start = i;
         while (pinyin[i] == '\'' && i < pinyin.size()) {
@@ -247,10 +247,10 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
         auto longestMatchInTable = [flags](decltype(table) t,
                                            const std::string &v) {
             auto py = v;
-            while (py.size()) {
+            while (!py.empty()) {
                 auto iter = t.find(py);
                 if (iter != t.end()) {
-                    for (auto &p : iter->second) {
+                    for (const auto &p : iter->second) {
                         if (flags.test(p.second)) {
                             return iter;
                         }
@@ -281,7 +281,7 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(std::string_view pinyin) {
     result.resize(pinyins.size() * 2);
     int idx = 0;
     for (const auto &singlePinyin : pinyins) {
-        auto &map = getPinyinMap();
+        const auto &map = getPinyinMap();
         auto iter = map.find(singlePinyin);
         if (iter == map.end() || iter->flags() != PinyinFuzzyFlag::None) {
             throw std::invalid_argument("invalid full pinyin: " +
@@ -309,7 +309,7 @@ std::vector<char> PinyinEncoder::encodeOneUserPinyin(std::string pinyin) {
             continue;
         }
         auto syls = stringToSyllables(seg, PinyinFuzzyFlag::None);
-        if (!syls.size()) {
+        if (syls.empty()) {
             return {};
         }
         result.push_back(static_cast<char>(syls[0].first));
@@ -466,7 +466,7 @@ static void getFuzzy(
             {PinyinInitial::L, PinyinInitial::N, PinyinFuzzyFlag::L_N},
         };
 
-    for (auto &initialFuzzy : initialFuzzies) {
+    for (const auto &initialFuzzy : initialFuzzies) {
         if ((syl.initial() == std::get<0>(initialFuzzy) ||
              syl.initial() == std::get<1>(initialFuzzy)) &&
             flags & std::get<2>(initialFuzzy)) {
@@ -491,7 +491,7 @@ static void getFuzzy(
             {PinyinFinal::VE, PinyinFinal::UE, PinyinFuzzyFlag::VE_UE},
         };
 
-    for (auto &finalFuzzy : finalFuzzies) {
+    for (const auto &finalFuzzy : finalFuzzies) {
         if ((syl.final() == std::get<0>(finalFuzzy) ||
              syl.final() == std::get<1>(finalFuzzy)) &&
             flags & std::get<2>(finalFuzzy)) {
@@ -539,12 +539,12 @@ PinyinEncoder::stringToSyllables(std::string_view pinyinView,
     std::string pinyin(pinyinView);
     std::transform(pinyin.begin(), pinyin.end(), pinyin.begin(),
                    fcitx::charutils::tolower);
-    auto &map = getPinyinMap();
+    const auto &map = getPinyinMap();
     // we only want {M,N,R}/Invalid instead of {M,N,R}/Zero, so we could get
     // match for everything.
     if (pinyin != "m" && pinyin != "n" && pinyin != "r") {
         auto iterPair = map.equal_range(pinyin);
-        for (auto &item :
+        for (const auto &item :
              boost::make_iterator_range(iterPair.first, iterPair.second)) {
             if (flags.test(item.flags())) {
                 getFuzzy(result, {item.initial(), item.final()}, flags);
@@ -594,7 +594,7 @@ PinyinEncoder::shuangpinToSyllables(std::string_view pinyinView,
     std::string pinyin(pinyinView);
     std::transform(pinyin.begin(), pinyin.end(), pinyin.begin(),
                    fcitx::charutils::tolower);
-    auto &table = sp.table();
+    const auto &table = sp.table();
     auto iter = table.find(pinyin);
 
     std::vector<

@@ -99,10 +99,7 @@ LatticeNode *TableDecoder::createLatticeNodeImpl(
 
 bool TableDecoder::needSort(const SegmentGraph &graph,
                             const SegmentGraphNode *) const {
-    if (graph.start().nextSize() == 1) {
-        return false;
-    }
-    return true;
+    return graph.start().nextSize() != 1;
 }
 
 LIBIMETABLE_EXPORT SegmentGraph graphForCode(std::string_view s,
@@ -114,10 +111,10 @@ LIBIMETABLE_EXPORT SegmentGraph graphForCode(std::string_view s,
     graph.addNext(0, graph.size());
     auto codeLength = fcitx::utf8::length(graph.data());
     // Rule.
-    if (dict.hasRule() && dict.tableOptions().autoRuleSet().size()) {
+    if (dict.hasRule() && !dict.tableOptions().autoRuleSet().empty()) {
         const auto &ruleSet = dict.tableOptions().autoRuleSet();
         for (const auto &ruleName : ruleSet) {
-            auto rule = dict.findRule(ruleName);
+            const auto *rule = dict.findRule(ruleName);
             if (!rule || codeLength != rule->codeLength() ||
                 !checkRuleCanBeUsedAsAutoRule(*rule)) {
                 continue;

@@ -86,11 +86,12 @@ int main(int argc, char *argv[]) {
         std::cout << "PREEDIT:  " << c.preedit() << std::endl;
         std::cout << "SENTENCE: " << c.sentence() << std::endl;
         size_t count = 1;
-        for (auto &candidate : c.candidates()) {
+        for (const auto &candidate : c.candidates()) {
             std::cout << (count % 10) << ": ";
-            for (auto node : candidate.sentence()) {
-                auto &pinyin = static_cast<const PinyinLatticeNode *>(node)
-                                   ->encodedPinyin();
+            for (const auto *node : candidate.sentence()) {
+                const auto &pinyin =
+                    static_cast<const PinyinLatticeNode *>(node)
+                        ->encodedPinyin();
                 std::cout << node->word();
                 if (!pinyin.empty()) {
                     std::cout << " " << PinyinEncoder::decodeFullPinyin(pinyin);

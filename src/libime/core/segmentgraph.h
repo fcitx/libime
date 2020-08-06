@@ -41,12 +41,12 @@ class LIBIMECORE_EXPORT SegmentGraphNode : public fcitx::Element {
     friend class SegmentGraph;
 
 public:
-    SegmentGraphNode(size_t start) : fcitx::Element(), start_(start) {}
+    SegmentGraphNode(size_t start) : start_(start) {}
     SegmentGraphNode(const SegmentGraphNode &node) = delete;
     virtual ~SegmentGraphNode() {}
 
     SegmentGraphNodeConstRange nexts() const {
-        auto &nexts = childs();
+        const auto &nexts = childs();
         return boost::make_iterator_range(
             boost::make_transform_iterator(nexts.begin(),
                                            &SegmentGraphNode::castConst),
@@ -57,7 +57,7 @@ public:
     size_t nextSize() const { return childs().size(); }
 
     SegmentGraphNodeConstRange prevs() const {
-        auto &prevs = parents();
+        const auto &prevs = parents();
         return boost::make_iterator_range(
             boost::make_transform_iterator(prevs.begin(),
                                            &SegmentGraphNode::castConst),
@@ -77,7 +77,7 @@ public:
 
 protected:
     SegmentGraphNodeRange mutablePrevs() {
-        auto &prevs = parents();
+        const auto &prevs = parents();
         return boost::make_iterator_range(
             boost::make_transform_iterator(prevs.begin(),
                                            &SegmentGraphNode::cast),
@@ -86,7 +86,7 @@ protected:
     }
 
     SegmentGraphNodeRange mutableNexts() {
-        auto &nexts = childs();
+        const auto &nexts = childs();
         return boost::make_iterator_range(
             boost::make_transform_iterator(nexts.begin(),
                                            &SegmentGraphNode::cast),
@@ -154,7 +154,7 @@ public:
 
     // A naive distance, not necessary be the shortest.
     size_t distanceToEnd(const SegmentGraphNode &node) const {
-        auto pNode = &node;
+        const auto *pNode = &node;
         const SegmentGraphNode *endNode = &end();
         size_t distance = 0;
         while (pNode != endNode) {
@@ -217,7 +217,7 @@ private:
             return callback(*this, path);
         }
         auto nexts = start.nexts();
-        for (auto &next : nexts) {
+        for (const auto &next : nexts) {
             auto idx = next.index();
             path.push_back(idx);
             if (!dfsHelper(path, next, callback)) {
@@ -235,7 +235,7 @@ class LIBIMECORE_EXPORT SegmentGraph : public SegmentGraphBase {
 public:
     SegmentGraph(std::string str = {}) : SegmentGraphBase(std::move(str)) {
         resize(data().size() + 1);
-        if (data().size()) {
+        if (!data().empty()) {
             newNode(data().size());
         }
         newNode(0);
@@ -260,9 +260,8 @@ public:
     SegmentGraphNodeConstRange nodes(size_t idx) const override {
         if (graph_[idx]) {
             return {graph_[idx].get(), graph_[idx].get() + 1};
-        } else {
-            return {};
         }
+        return {};
     }
     using SegmentGraphBase::node;
 
@@ -281,7 +280,7 @@ public:
 
     void appendNewSegment(std::string_view str) {
         // append empty string is meaningless.
-        if (!str.size()) {
+        if (str.empty()) {
             return;
         }
 
@@ -295,7 +294,7 @@ public:
 
     void appendToLastSegment(std::string_view str) {
         // append empty string is meaningless.
-        if (!str.size()) {
+        if (str.empty()) {
             return;
         }
 
@@ -326,7 +325,7 @@ public:
         }
 
         auto *pNode = &mutableNode(size());
-        auto *pStart = &start();
+        const auto *pStart = &start();
         while (pNode != pStart && pNode->index() > idx) {
             pNode = &pNode->mutablePrevs().front();
         }
@@ -365,9 +364,8 @@ private:
     SegmentGraphNodeRange mutableNodes(size_t idx) {
         if (graph_[idx]) {
             return {graph_[idx].get(), graph_[idx].get() + 1};
-        } else {
-            return {};
         }
+        return {};
     }
 
     size_t check(const SegmentGraph &graph) const;

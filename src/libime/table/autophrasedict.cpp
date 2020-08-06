@@ -71,9 +71,9 @@ void AutoPhraseDict::insert(const std::string &entry, uint32_t value) {
 
 bool AutoPhraseDict::search(
     std::string_view s,
-    std::function<bool(std::string_view, uint32_t)> callback) const {
+    const std::function<bool(std::string_view, uint32_t)> &callback) const {
     FCITX_D();
-    auto &idx = d->il_.get<1>();
+    const auto &idx = d->il_.get<1>();
     auto iter = idx.lower_bound(s);
     while (iter != idx.end() && boost::starts_with(iter->entry(), s)) {
         if (!callback(iter->entry(), iter->hit_)) {
@@ -86,7 +86,7 @@ bool AutoPhraseDict::search(
 
 uint32_t AutoPhraseDict::exactSearch(std::string_view s) const {
     FCITX_D();
-    auto &idx = d->il_.get<1>();
+    const auto &idx = d->il_.get<1>();
     auto iter = idx.find(s);
     if (iter == idx.end()) {
         return 0;
@@ -121,7 +121,7 @@ void AutoPhraseDict::save(std::ostream &out) {
     FCITX_D();
     uint32_t size = d->il_.size();
     throw_if_io_fail(marshall(out, size));
-    for (auto &phrase : d->il_ | boost::adaptors::reversed) {
+    for (const auto &phrase : d->il_ | boost::adaptors::reversed) {
         throw_if_io_fail(marshallString(out, phrase.entry_));
         throw_if_io_fail(marshall(out, phrase.hit_));
     }

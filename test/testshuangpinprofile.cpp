@@ -10,10 +10,10 @@ using namespace libime;
 
 void checkProfile(const ShuangpinProfile &profile) {
 
-    for (auto &p : profile.table()) {
+    for (const auto &p : profile.table()) {
         if (p.second.size() >= 2) {
             std::cout << p.first;
-            for (auto &py : p.second) {
+            for (const auto &py : p.second) {
                 std::cout << " " << py.first.toString() << " "
                           << static_cast<int>(py.second);
             }
@@ -22,15 +22,15 @@ void checkProfile(const ShuangpinProfile &profile) {
     }
 
     std::set<PinyinSyllable> validSyls;
-    for (auto &p : getPinyinMap()) {
+    for (const auto &p : getPinyinMap()) {
         validSyls.emplace(p.initial(), p.final());
     }
     validSyls.erase(PinyinSyllable(PinyinInitial::M, PinyinFinal::Zero));
     validSyls.erase(PinyinSyllable(PinyinInitial::N, PinyinFinal::Zero));
     validSyls.erase(PinyinSyllable(PinyinInitial::R, PinyinFinal::Zero));
 
-    for (auto &p : profile.table()) {
-        for (auto &py : p.second) {
+    for (const auto &p : profile.table()) {
+        for (const auto &py : p.second) {
             // check coverage
             if (py.second == PinyinFuzzyFlag::None) {
                 validSyls.erase(py.first);
@@ -39,10 +39,10 @@ void checkProfile(const ShuangpinProfile &profile) {
     }
 
     std::cout << "not covered" << std::endl;
-    for (auto &syl : validSyls) {
+    for (const auto &syl : validSyls) {
         std::cout << syl.toString() << std::endl;
     }
-    FCITX_ASSERT(validSyls.size() == 0);
+    FCITX_ASSERT(validSyls.empty());
 }
 
 void checkXiaoHe() {
@@ -90,7 +90,6 @@ int main() {
 
     checkXiaoHe();
 
-    std::vector<std::vector<std::string>> expectedSegments();
     // wo jiu shi xiang ce shi yi xia
     checkSegments(PinyinEncoder::parseUserShuangpin(
                       "wojquixdceuiyixw",

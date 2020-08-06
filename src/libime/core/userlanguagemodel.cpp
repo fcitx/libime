@@ -40,7 +40,8 @@ UserLanguageModel::UserLanguageModel(const char *file)
 
 UserLanguageModel::UserLanguageModel(
     std::shared_ptr<const StaticLanguageModelFile> file)
-    : LanguageModel(file), d_ptr(std::make_unique<UserLanguageModelPrivate>()) {
+    : LanguageModel(std::move(file)),
+      d_ptr(std::make_unique<UserLanguageModelPrivate>()) {
     FCITX_D();
     // resize will fill remaining with zero
     d->beginState_ = LanguageModel::beginState();
@@ -113,7 +114,7 @@ float UserLanguageModel::score(const State &state, const WordNode &word,
     } else {
         score = LanguageModel::score(state, word, out);
     }
-    auto prev = d->wordFromState(state);
+    const auto *prev = d->wordFromState(state);
     float userScore = d->history_.score(prev, &word);
     d->setWordToState(out, &word);
     return std::max(score, sum_log_prob(score + d->wa_, userScore + d->wb_));

@@ -54,7 +54,7 @@ struct MatchedPinyinPath {
 
     MatchedPinyinPath(std::shared_ptr<MatchedPinyinTrieNodes> result,
                       SegmentGraphPath path, PinyinDictFlags flags)
-        : result_(result), path_(std::move(path)), flags_(flags) {}
+        : result_(std::move(result)), path_(std::move(path)), flags_(flags) {}
 
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(MatchedPinyinPath)
 

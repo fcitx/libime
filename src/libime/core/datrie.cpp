@@ -256,9 +256,10 @@ public:
         m_array.resize(256);
         m_array[0] = node(0, -1);
 
-        for (int i = 1; i < 256; ++i)
+        for (int i = 1; i < 256; ++i) {
             m_array[i] =
                 node(i == 1 ? -255 : -(i - 1), i == 255 ? -1 : -(i + 1));
+        }
 
         m_ninfo.clear();
         m_ninfo.resize(256);
@@ -422,7 +423,7 @@ public:
             ++pos;
         }
         const auto needed = len - pos + 1 + sizeof(value_type);
-        if (pos == len && m_tail0.size() > 0) { // reuse
+        if (pos == len && !m_tail0.empty()) { // reuse
             const int offset0 = *m_tail0.rbegin();
             m_tail[offset0] = '\0';
             m_array[from].base = -offset0;
@@ -631,8 +632,9 @@ public:
         const char *const tail = &m_tail[offset] - pos;
         if (pos < len) {
             do {
-                if (key[pos] != tail[pos])
+                if (key[pos] != tail[pos]) {
                     break;
+                }
             } while (++pos < len);
             if (const int moved = pos - pos_orig) {
                 npos.offset = offset + moved;
@@ -663,7 +665,7 @@ public:
             const auto nc = static_cast<short>(last - first + 1);
             while (1) { // set candidate block
                 block &b = m_block[bi];
-                if (b.num >= nc && nc < b.reject) // explore configuration
+                if (b.num >= nc && nc < b.reject) { // explore configuration
                     for (int e = b.ehead;;) {
                         const int base = e ^ *first;
                         for (const uchar *p = first;
@@ -672,9 +674,11 @@ public:
                                 return b.ehead = e; // no conflict
                             }
                         }
-                        if ((e = -m_array[e].check) == b.ehead)
+                        if ((e = -m_array[e].check) == b.ehead) {
                             break;
+                        }
                     }
+                }
                 b.reject = nc;
                 if (b.reject < m_reject[b.num]) {
                     m_reject[b.num] = b.reject;
@@ -683,8 +687,9 @@ public:
                 if (++b.trial == MAX_TRIAL) {
                     _transfer_block(bi, m_bheadO, m_bheadC);
                 }
-                if (bi == bz)
+                if (bi == bz) {
                     break;
+                }
                 bi = bi_;
             }
         }
@@ -766,8 +771,9 @@ public:
         } else { // release empty node from empty ring
             m_array[-n.base].check = n.check;
             m_array[-n.check].base = n.base;
-            if (e == b.ehead)
+            if (e == b.ehead) {
                 b.ehead = -n.check; // set ehead
+            }
             if (bi && b.num == 1 && b.trial != MAX_TRIAL) {
                 // Open to Closed
                 _transfer_block(bi, m_bheadO, m_bheadC);
@@ -807,8 +813,9 @@ public:
             }
             b.trial = 0;
         }
-        if (b.reject < m_reject[b.num])
+        if (b.reject < m_reject[b.num]) {
             b.reject = m_reject[b.num];
+        }
         m_ninfo[e] = ninfo(); // reset ninfo; no child, no sibling
     }
     // push label to from's child
@@ -890,8 +897,9 @@ public:
             const int to = _pop_enode(base, *p, from);
             const int to_ = base_ ^ *p;
             m_ninfo[to].sibling = (p == last ? 0 : *(p + 1));
-            if (flag && to_ == to_pn)
+            if (flag && to_ == to_pn) {
                 continue; // skip newcomer (no child)
+            }
             cf(to_, to);
             node &n = m_array[to];
             node &n_ = m_array[to_];
@@ -908,10 +916,11 @@ public:
             if (!flag && to_ == to_pn) { // the address is immediately used
                 _push_sibling(from_n, to_pn ^ label_n, label_n);
                 m_ninfo[to_].child = 0; // remember to reset child
-                if (label_n)
+                if (label_n) {
                     n_.base = -1;
-                else
+                } else {
                     n_.value = value_type(0);
+                }
                 n_.check = static_cast<int>(from_n);
             } else {
                 _push_enode(to_);
@@ -994,11 +1003,11 @@ size_t DATrie<T>::size() const {
 }
 
 template <typename T>
-bool DATrie<T>::foreach(const char *key, size_t size, callback_type func,
+bool DATrie<T>::foreach(const char *prefix, size_t size, callback_type func,
                         position_type _pos) const {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t from(_pos);
-    if (d->_find(key, from, pos, size) == NO_PATH) {
+    if (d->_find(prefix, from, pos, size) == NO_PATH) {
         return true;
     }
 

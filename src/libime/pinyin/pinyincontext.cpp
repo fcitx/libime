@@ -413,9 +413,20 @@ size_t PinyinContext::selectedLength() const {
     return 0;
 }
 
-std::string PinyinContext::preedit() const { return preeditWithCursor().first; }
+std::string PinyinContext::preedit() const {
+    return preedit(ime()->preeditMode());
+}
 
 std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
+    return preeditWithCursor(ime()->preeditMode());
+}
+
+std::string PinyinContext::preedit(PinyinPreeditMode mode) const {
+    return preeditWithCursor(mode).first;
+}
+
+std::pair<std::string, size_t>
+PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
     FCITX_D();
     std::string ss = selectedSentence();
     const auto len = selectedLength();
@@ -445,7 +456,7 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
                 const size_t startPivot = resultSize;
                 auto pinyin = d->segs_.segment(from, to);
                 MatchedPinyinSyllables syls;
-                if (ime()->preeditMode() == PinyinPreeditMode::Pinyin) {
+                if (mode == PinyinPreeditMode::Pinyin) {
                     syls = useShuangpin()
                                ? PinyinEncoder::shuangpinToSyllables(
                                      pinyin, *ime()->shuangpinProfile(),

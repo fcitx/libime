@@ -622,6 +622,7 @@ PinyinEncoder::shuangpinToSyllables(std::string_view pinyinView,
 std::string
 PinyinEncoder::shuangpinToPinyin(std::string_view pinyinView,
                                  const libime::ShuangpinProfile &sp) {
+    FCITX_INFO() << pinyinView;
     assert(pinyinView.size() <= 2);
     auto syls = shuangpinToSyllables(pinyinView, sp, PinyinFuzzyFlag::None);
     if (!syls.empty() && !syls[0].second.empty() && !syls[0].second[0].second) {

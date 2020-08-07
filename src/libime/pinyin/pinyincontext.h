@@ -17,6 +17,7 @@ namespace libime {
 class PinyinIME;
 class PinyinContextPrivate;
 class LatticeNode;
+enum class PinyinPreeditMode;
 
 class LIBIMEPINYIN_EXPORT PinyinContext : public InputBuffer {
 public:
@@ -48,6 +49,12 @@ public:
         }
         return selectedSentence();
     }
+
+    std::string preedit(PinyinPreeditMode mode) const;
+
+    /// Mixed preedit (selected hanzi + pinyin).
+    std::pair<std::string, size_t>
+    preeditWithCursor(PinyinPreeditMode mode) const;
 
     std::string preedit() const;
 

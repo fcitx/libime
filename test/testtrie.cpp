@@ -4,24 +4,52 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "libime/core/datrie.h"
+#include <cmath>
+#include <cstring>
 #include <fcitx-utils/log.h>
 
 using namespace libime;
 
 int main() {
-    DATrie<int32_t> trie;
-    trie.set("aaaa", 1);
-    trie.set("aaab", 1);
-    trie.set("aaac", 1);
-    trie.set("aaad", 1);
-    trie.set("aab", 1);
-    FCITX_ASSERT(trie.size() == 5);
-    trie.erase("aaaa");
-    FCITX_ASSERT(trie.size() == 4);
-    DATrie<int32_t>::position_type pos = 0;
-    auto result = trie.traverse("aaa", pos);
-    FCITX_ASSERT(trie.isNoValue(result));
-    trie.erase(pos);
-    FCITX_ASSERT(trie.size() == 4);
+    {
+        DATrie<int32_t> trie;
+        trie.set("aaaa", 1);
+        trie.set("aaab", 1);
+        trie.set("aaac", 1);
+        trie.set("aaad", 1);
+        trie.set("aab", 1);
+        FCITX_ASSERT(trie.size() == 5);
+        trie.erase("aaaa");
+        FCITX_ASSERT(trie.size() == 4);
+        DATrie<int32_t>::position_type pos = 0;
+        auto result = trie.traverse("aaa", pos);
+        FCITX_ASSERT(trie.isNoValue(result));
+        trie.erase(pos);
+        FCITX_ASSERT(trie.size() == 4);
+    }
+
+    {
+        DATrie<float> trie;
+        trie.set("aaaa", 1);
+        trie.set("aaab", 1);
+        trie.set("aaac", 1);
+        trie.set("aaad", 1);
+        trie.set("aab", 1);
+        FCITX_ASSERT(trie.size() == 5);
+        trie.erase("aaaa");
+        FCITX_ASSERT(trie.size() == 4);
+        DATrie<float>::position_type pos = 0;
+        auto result = trie.traverse("aaa", pos);
+        auto nan1 = std::nanf("1");
+        auto nan2 = std::nanf("2");
+        // NaN != NaN, we must use memcmp to do this.
+        FCITX_ASSERT(memcmp(&nan1, &result, sizeof(float)) == 0);
+        FCITX_ASSERT(trie.isNoValue(result));
+        result = trie.traverse("aaae", pos);
+        FCITX_ASSERT(memcmp(&nan2, &result, sizeof(float)) == 0);
+        FCITX_ASSERT(trie.isNoPath(result));
+        trie.erase(pos);
+        FCITX_ASSERT(trie.size() == 4);
+    }
     return 0;
 }

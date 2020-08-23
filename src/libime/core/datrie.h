@@ -34,8 +34,8 @@ struct NaN {
 };
 template <>
 struct NaN<float> {
-    static constexpr auto N1 = 0x7f800001;
-    static constexpr auto N2 = 0x7f800002;
+    static constexpr auto N1 = 0x7fc00001;
+    static constexpr auto N2 = 0x7fc00002;
 };
 
 /**

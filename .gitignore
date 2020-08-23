@@ -1,6 +1,6 @@
 *.kdev4
 *~
-build
+build*
 test/bench.cpp
 test/cedarpp.h
 *.tar.*

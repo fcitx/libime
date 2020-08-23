@@ -397,7 +397,7 @@ public:
                 moved -= 1 + sizeof(value_type); // keep record
             }
             moved += offset;
-            for (auto i = offset; i <= moved; i += 1 + sizeof(value_type)) {
+            for (ssize_t i = offset; i <= moved; i += 1 + sizeof(value_type)) {
                 if (m_tail0.capacity() == m_tail0.size()) {
                     auto quota =
                         m_tail0.capacity() + (m_tail0.size() >= MAX_ALLOC_SIZE

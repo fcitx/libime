@@ -469,7 +469,7 @@ void HistoryBigram::load(std::istream &in) {
     throw_if_io_fail(unmarshall(in, version));
     switch (version) {
     case 1:
-        std::for_each_n(d->pools_.begin(), 2,
+        std::for_each(d->pools_.begin(),d->pools_.begin() + 1,
                         [&in](auto &pool) { pool.load(in); });
         break;
     case historyBinaryFormatVersion:

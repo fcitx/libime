@@ -9,6 +9,7 @@
 #include "historybigram.h"
 #include "lm/model.hh"
 #include "utils.h"
+#include "utils_p.h"
 
 namespace libime {
 
@@ -25,12 +26,12 @@ public:
     float wa_ = std::log10(1 - weight_), wb_ = std::log10(weight_);
 
     const WordNode *wordFromState(const State &state) const {
-        return load_data<const WordNode *>(reinterpret_cast<const char *>(
+        return loadNative<const WordNode *>(reinterpret_cast<const char *>(
             state.data() + sizeof(lm::ngram::State)));
     }
 
     void setWordToState(State &state, const WordNode *node) const {
-        return store_data<const WordNode *>(
+        return storeNative<const WordNode *>(
             reinterpret_cast<char *>(state.data() + sizeof(lm::ngram::State)),
             node);
     }

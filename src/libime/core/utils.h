@@ -19,26 +19,6 @@
 namespace libime {
 
 template <typename T>
-inline T load_data(const char *data) {
-#if defined(__arm) || defined(__arm__) || defined(__sparc)
-    T v;
-    memcpy(&v, data, sizeof(v));
-    return v;
-#else
-    return *reinterpret_cast<const T *>(data);
-#endif
-}
-
-template <typename T>
-inline void store_data(char *data, T v) {
-#if defined(__arm) || defined(__arm__) || defined(__sparc)
-    memcpy(data, &v, sizeof(v));
-#else
-    *reinterpret_cast<T *>(data) = v;
-#endif
-}
-
-template <typename T>
 typename std::enable_if<sizeof(T) == sizeof(uint32_t), std::ostream &>::type
 marshall(std::ostream &out, T data) {
     union {

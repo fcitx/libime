@@ -13,6 +13,7 @@
 #include "datrie.h"
 #include "naivevector.h"
 #include "utils.h"
+#include "utils_p.h"
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -366,7 +367,7 @@ public:
                     npos.offset = offset + moved;
                 }
                 char *const data = &tail[len + 1];
-                store_data(data, callback(load_data<value_type>(data)));
+                storeDWord(data, callback(loadDWord<value_type>(data)));
                 return;
             }
             // otherwise, insert the common prefix in tail if any
@@ -416,7 +417,7 @@ public:
                 // tail[pos] == 0, so the actual content in tail can be get rid
                 // of
                 // and tail0 is used to track those hole
-                m_array[to].value = load_data<value_type>(&tail[pos + 1]);
+                m_array[to].value = loadDWord<value_type>(&tail[pos + 1]);
             }
             from = static_cast<size_t>(
                 _follow(from, static_cast<uchar>(key[pos]), cf));
@@ -429,7 +430,7 @@ public:
             m_array[from].base = -offset0;
             m_tail0.pop_back();
             char *const data = &m_tail[offset0 + 1];
-            store_data(data, callback(0));
+            storeDWord(data, callback(0));
             return;
         }
         if (m_tail.capacity() < m_tail.size() + needed) {
@@ -453,7 +454,7 @@ public:
             npos.offset = old_length + len - pos_orig;
         }
         char *const data = &tail[len + 1];
-        store_data(data, callback(load_data<value_type>(data)));
+        storeDWord(data, callback(loadDWord<value_type>(data)));
         return;
     }
 
@@ -530,8 +531,8 @@ public:
                     t.push_back(tail_[i]);
                 } while (tail_[i++]);
                 t.resize(t.size() + sizeof(value_type));
-                store_data(&t[t.size() - sizeof(value_type)],
-                           load_data<value_type>(&tail_[i]));
+                storeDWord(&t[t.size() - sizeof(value_type)],
+                           loadDWord<value_type>(&tail_[i]));
             }
         }
         using std::swap;
@@ -562,7 +563,7 @@ public:
         const size_t len_ = std::strlen(&m_tail[-base]);
         npos.offset = static_cast<size_t>(-base) + len_;
         len += len_;
-        return load_data<int32_t>(&m_tail[-base] + len_ + 1);
+        return loadDWord<int32_t>(&m_tail[-base] + len_ + 1);
     }
     // return the next child if any
     int32_t next(npos_t &npos, size_t &len,
@@ -646,7 +647,7 @@ public:
         if (tail[pos]) {
             return CEDAR_NO_VALUE; // input < tail
         }
-        return load_data<int32_t>(&tail[len + 1]);
+        return loadDWord<int32_t>(&tail[len + 1]);
     }
 
     // explore new block to settle down

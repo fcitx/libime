@@ -18,11 +18,13 @@
 #include <vector>
 
 void usage(const char *argv0) {
-    std::cout << "Usage: " << argv0
-              << " [-f <score>] [-s <maxSize>] <source> <dest>" << std::endl
-              << "-f: Set score filter" << std::endl
-              << "-s: Set max number of prediction per word" << std::endl
-              << "-h: Show this help" << std::endl;
+    std::cout
+        << "Usage: " << argv0
+        << " [-f <score>] [-s <maxSize>] <model.lm> <source.arpa> <dest>\n"
+        << " -d <source.lm.predict> <dest>\n"
+        << " -f: Set score filter\n"
+        << " -s: Set max number of prediction per word\n"
+        << " -h: Show this help\n";
 }
 
 float score(const libime::LanguageModel &model, std::string_view w,
@@ -31,39 +33,18 @@ float score(const libime::LanguageModel &model, std::string_view w,
     return model.wordsScore(state, std::vector<std::string_view>{w, w2});
 }
 
-int main(int argc, char *argv[]) {
-    int c;
-    unsigned long maxSize = 15;
-    float filter =
-        std::log10(libime::DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY) +
-        1;
-    while ((c = getopt(argc, argv, "f:s:h")) != -1) {
-        switch (c) {
-        case 'f':
-            filter = std::stof(optarg);
-            break;
-        case 's':
-            maxSize = std::stoul(optarg);
-            break;
-        case 'h':
-            usage(argv[0]);
-            return 0;
-        default:
-            usage(argv[0]);
-            return 1;
-        }
-    }
-
+void parse(const char *modelFile, const char *arpa, const char *output,
+           float filter, unsigned long maxSize) {
     using namespace libime;
-    LanguageModel model(argv[optind]);
+    LanguageModel model(modelFile);
     DATrie<float> trie;
 
     std::ifstream fin;
     std::istream *in;
-    if (strcmp(argv[optind + 1], "-") == 0) {
+    if (strcmp(arpa, "-") == 0) {
         in = &std::cin;
     } else {
-        fin.open(argv[optind + 1], std::ios::in | std::ios::binary);
+        fin.open(arpa, std::ios::in | std::ios::binary);
         in = &fin;
     }
 
@@ -132,12 +113,85 @@ int main(int argc, char *argv[]) {
 
     std::ofstream fout;
     std::ostream *out;
-    if (strcmp(argv[optind + 2], "-") == 0) {
+    if (strcmp(output, "-") == 0) {
         out = &std::cout;
     } else {
-        fout.open(argv[optind + 2], std::ios::out | std::ios::binary);
+        fout.open(output, std::ios::out | std::ios::binary);
         out = &fout;
     }
     trie.save(*out);
+}
+
+void dump(const char *input, const char *output) {
+    using namespace libime;
+    std::ifstream fin;
+    std::istream *in;
+    if (strcmp(input, "-") == 0) {
+        in = &std::cin;
+    } else {
+        fin.open(input, std::ios::in | std::ios::binary);
+        in = &fin;
+    }
+
+    DATrie<float> trie;
+    trie.load(*in);
+
+    std::ofstream fout;
+    std::ostream *out;
+    if (strcmp(output, "-") == 0) {
+        out = &std::cout;
+    } else {
+        fout.open(output, std::ios::out | std::ios::binary);
+        out = &fout;
+    }
+    trie.foreach([out, &trie](float value, size_t len, uint64_t pos) {
+        std::string s;
+        trie.suffix(s, len, pos);
+        *out << s << " " << value << std::endl;
+        return true;
+    });
+}
+
+int main(int argc, char *argv[]) {
+    int c;
+    unsigned long maxSize = 15;
+    float filter =
+        std::log10(libime::DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY) +
+        1;
+    bool doDump = false;
+    while ((c = getopt(argc, argv, "df:s:h")) != -1) {
+        switch (c) {
+        case 'd':
+            doDump = true;
+            break;
+        case 'f':
+            filter = std::stof(optarg);
+            break;
+        case 's':
+            maxSize = std::stoul(optarg);
+            break;
+        case 'h':
+            usage(argv[0]);
+            return 0;
+        default:
+            usage(argv[0]);
+            return 1;
+        }
+    }
+
+    if (doDump) {
+        if (optind + 1 >= argc) {
+            usage(argv[0]);
+            return 1;
+        }
+        dump(argv[optind], argv[optind + 1]);
+    } else {
+        if (optind + 2 >= argc) {
+            usage(argv[0]);
+            return 1;
+        }
+        parse(argv[optind], argv[optind + 1], argv[optind + 2], filter,
+              maxSize);
+    }
     return 0;
 }

@@ -253,7 +253,7 @@ std::string DefaultLanguageModelResolver::languageModelFileNameForLanguage(
     if (language.empty() || language.find('/') != std::string::npos) {
         return {};
     }
-    auto file = fcitx::stringutils::joinPath(LIBIME_INSTALL_PKGDATADIR,
+    auto file = fcitx::stringutils::joinPath(LIBIME_INSTALL_LIBDATADIR,
                                              language + ".lm");
     if (fcitx::fs::isreg(file)) {
         return file;

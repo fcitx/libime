@@ -126,19 +126,21 @@ std::istream &unmarshallVector(std::istream &in, std::vector<T> &data) {
 }
 
 void usage(const char *extra = nullptr) {
-    std::cout << "Usage: " << argv0
-              << " [-o <dict>] [-p <history>] [-b <base>] [-U] [-n] [-B] [-X] "
-                 "<source>"
-              << std::endl
-              << "<source>: the source file of the dictionary." << std::endl
-              << "          If the given path is relative, " << std::endl
-              << "-d: output file path" << std::endl
-              << "-p: history file path" << std::endl
-              << "-b: base file of a libime main dict" << std::endl
-              << "-X: locate non-abstract path by only path instead of Xdg path"
-              << std::endl
-              << "-U: overwrite instead of merge." << std::endl
-              << "-h: Show this help" << std::endl;
+    std::cout
+        << "Usage: " << argv0
+        << " [-o <dict>/-O] [-p <history>/-P] [-b <base>/-B] [-U] [-B] [-X] "
+           "<source>"
+        << std::endl
+        << "<source>: the source file of the dictionary." << std::endl
+        << "          If the given path is relative, " << std::endl
+        << "-o: output dict file path" << std::endl
+        << "-p: history file path" << std::endl
+        << "-b: base file of a libime main dict" << std::endl
+        << "-B: generate full data without base file" << std::endl
+        << "-X: locate non-abstract path by only path instead of Xdg path"
+        << std::endl
+        << "-U: overwrite instead of merge with existing data." << std::endl
+        << "-h: Show this help" << std::endl;
     if (extra) {
         std::cout << extra << std::endl;
     }

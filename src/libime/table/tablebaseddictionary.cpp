@@ -538,7 +538,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     if (!d->ignoreChars_.empty()) {
         out << strConst[1][STR_IGNORECHAR];
         for (auto c : d->ignoreChars_) {
-            out << c;
+            out << fcitx::utf8::UCS4ToUTF8(c);
         }
         out << std::endl;
     }

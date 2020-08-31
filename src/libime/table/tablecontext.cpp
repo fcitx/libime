@@ -556,6 +556,7 @@ void TableContext::update() {
     if (d->dict_.tableOptions().autoSelect()) {
         if (d->hasOnlyOneAutoselectChoice() &&
             lastSegLength <= d->dict_.maxLength() &&
+            d->dict_.tableOptions().autoSelectLength() &&
             !lengthLessThanLimit(lastSegLength,
                                  d->dict_.tableOptions().autoSelectLength())) {
             autoSelect();

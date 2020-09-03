@@ -22,7 +22,6 @@
 #include "utils.h"
 #include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm.hpp>
 #include <cmath>
@@ -183,7 +182,7 @@ public:
     }
 
     void dump(std::ostream &out) const {
-        for (auto &sentence : recent_ | boost::adaptors::reversed) {
+        for (auto &sentence : recent_) {
             bool first = true;
             for (auto &s : sentence) {
                 if (first) {

@@ -10,6 +10,10 @@ set(LIBIME_SINGLE_FILE_TEST
     testshuangpinprofile
     testtrie
     testautophrasedict
+    testdecoder
+    testpinyincontext
+    testpinyindictionary
+    testprediction
     )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
@@ -19,24 +23,14 @@ foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
              COMMAND ${TESTCASE})
 endforeach()
 
+add_executable(triebench triebench.cpp)
+target_link_libraries(triebench LibIME::Core)
+
 add_executable(testmodel testmodel.cpp)
 target_link_libraries(testmodel LibIME::Core)
 
-add_executable(testprediction testprediction.cpp)
-target_link_libraries(testprediction LibIME::Core)
-
 add_executable(testpinyinime testpinyinime.cpp)
 target_link_libraries(testpinyinime LibIME::Pinyin)
-
-add_executable(testpinyindictionary testpinyindictionary.cpp)
-target_link_libraries(testpinyindictionary LibIME::Pinyin)
-add_executable(testpinyincontext testpinyincontext.cpp)
-target_link_libraries(testpinyincontext LibIME::Pinyin)
-
-add_executable(triebench triebench.cpp)
-target_link_libraries(triebench LibIME::Core)
-add_executable(testdecoder testdecoder.cpp)
-target_link_libraries(testdecoder LibIME::Pinyin)
 
 add_executable(testtableime testtableime.cpp)
 target_link_libraries(testtableime LibIME::Table)

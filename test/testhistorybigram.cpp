@@ -18,10 +18,11 @@
  */
 
 #include "libime/core/historybigram.h"
+#include <boost/range/irange.hpp>
 #include <fcitx-utils/log.h>
 #include <sstream>
 
-int main() {
+void testBasic() {
     using namespace libime;
     HistoryBigram history;
     history.setUnknownPenalty(std::log10(1.0f / 8192));
@@ -104,12 +105,69 @@ int main() {
                   << history.score("", "跑步") + history.score("跑步", "起来")
                   << std::endl;
     }
+    FCITX_ASSERT(!history.isUnknown("跑步"));
     history.forget("跑步");
+    FCITX_ASSERT(history.isUnknown("跑步"));
     std::cout << "paobuqilai "
               << history.score("", "跑") + history.score("跑", "不") +
                      history.score("不", "起来")
               << " "
               << history.score("", "跑步") + history.score("跑步", "起来")
               << std::endl;
+}
+
+void testOverflow() {
+    using namespace libime;
+    HistoryBigram history;
+    constexpr auto total = 100000;
+    for (auto i : boost::irange(0, total)) {
+        history.add({std::to_string(i)});
+    }
+    std::stringstream dump;
+    history.dump(dump);
+    int i, expect = total - 1;
+    while (dump >> i) {
+        FCITX_ASSERT(i == expect);
+        --expect;
+    }
+}
+
+void testPredict() {
+    using namespace libime;
+    HistoryBigram history;
+    constexpr auto total = 10000;
+    for (auto i : boost::irange(0, total)) {
+        history.add({std::to_string(i), std::to_string(i + 1)});
+    }
+
+    {
+        std::unordered_set<std::string> result;
+        history.fillPredict(result, {std::to_string(5)}, 10);
+        FCITX_ASSERT(result ==
+                     std::unordered_set<std::string>{std::to_string(6)});
+    }
+
+    {
+        std::unordered_set<std::string> result;
+        history.add({std::to_string(5), std::to_string(7)});
+        history.add({std::to_string(5), std::to_string(4)});
+        history.add({std::to_string(5), std::to_string(3)});
+        history.add({std::to_string(5), std::to_string(6)});
+        history.fillPredict(result, {std::to_string(5)}, 3);
+        FCITX_ASSERT(result.size() == 3) << result;
+        result.clear();
+        history.fillPredict(result, {std::to_string(5)}, 0);
+        FCITX_ASSERT(result ==
+                     std::unordered_set<std::string>{
+                         std::to_string(6), std::to_string(7),
+                         std::to_string(3), std::to_string(4)})
+            << result;
+    }
+}
+
+int main() {
+    testBasic();
+    testOverflow();
+    testPredict();
     return 0;
 }

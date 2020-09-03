@@ -58,6 +58,7 @@ public:
     void add(const SentenceResult &sentence);
     void add(const std::vector<std::string> &sentence);
 
+    /// Fill the prediction based on current sentence.
     void fillPredict(std::unordered_set<std::string> &words,
                      const std::vector<std::string> &sentence,
                      size_t maxSize) const;

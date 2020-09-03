@@ -48,12 +48,15 @@ set(LIBIME_SRCS
     triedictionary.cpp
     )
 
+ecm_setup_version(PROJECT
+                  VARIABLE_PREFIX IMECore
+                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMECoreConfigVersion.cmake"
+                  SOVERSION 0)
+
 add_library(IMECore SHARED ${LIBIME_SRCS})
 set_target_properties(IMECore
-                      PROPERTIES VERSION 0.1
-                      SOVERSION 0
-                      COMPILE_FLAGS "-fvisibility=hidden"
-                      LINK_FLAGS "-Wl,--no-undefined"
+                      PROPERTIES VERSION ${IMECore_VERSION}
+                      SOVERSION ${IMECore_SOVERSION}
                       EXPORT_NAME Core
 )
 target_include_directories(IMECore PUBLIC
@@ -67,10 +70,6 @@ install(TARGETS IMECore EXPORT LibIMECoreTargets LIBRARY DESTINATION "${CMAKE_IN
 install(FILES ${LIBIME_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/core")
 
 add_library(LibIME::Core ALIAS IMECore)
-
-ecm_setup_version(PROJECT
-                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMECoreConfigVersion.cmake"
-                  SOVERSION 0)
 
 configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/LibIMECoreConfig.cmake.in"
                               "${CMAKE_CURRENT_BINARY_DIR}/LibIMECoreConfig.cmake"

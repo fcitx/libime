@@ -23,12 +23,15 @@ set(LIBIME_PINYIN_SRCS
     shuangpinprofile.cpp
     )
 
+ecm_setup_version(PROJECT
+                  VARIABLE_PREFIX IMEPinyin
+                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMEPinyinConfigVersion.cmake"
+                  SOVERSION 0)
+
 add_library(IMEPinyin SHARED ${LIBIME_PINYIN_SRCS})
-set_target_properties(IMEPinyin
-                      PROPERTIES VERSION 0.1
-                      SOVERSION 0
-                      COMPILE_FLAGS "-fvisibility=hidden"
-                      LINK_FLAGS "-Wl,--no-undefined"
+set_target_properties(IMEPinyin PROPERTIES
+                      VERSION ${IMEPinyin_VERSION}
+                      SOVERSION ${IMEPinyin_SOVERSION}
                       EXPORT_NAME Pinyin
 )
 target_include_directories(IMEPinyin PUBLIC
@@ -42,10 +45,6 @@ install(TARGETS IMEPinyin EXPORT LibIMEPinyinTargets LIBRARY DESTINATION "${CMAK
 install(FILES ${LIBIME_PINYIN_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/pinyin")
 
 add_library(LibIME::Pinyin ALIAS IMEPinyin)
-
-ecm_setup_version(PROJECT
-                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMEPinyinConfigVersion.cmake"
-                  SOVERSION 0)
 
 configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/LibIMEPinyinConfig.cmake.in"
                               "${CMAKE_CURRENT_BINARY_DIR}/LibIMEPinyinConfig.cmake"

@@ -8,9 +8,11 @@
 #include "config.h"
 #include "libime/core/historybigram.h"
 #include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
 #include "libime/table/tablebaseddictionary.h"
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
+#include <endian.h>
 #include <fcitx-utils/charutils.h>
 #include <fcitx-utils/standardpath.h>
 #include <fcntl.h>
@@ -113,18 +115,6 @@ constexpr const char mbSuffix[] = ".mb";
 
 std::string_view argv0;
 
-template <typename T>
-std::istream &unmarshallNative(std::istream &in, T &data) {
-    in.read(reinterpret_cast<char *>(&data), sizeof(data));
-    return in;
-}
-
-template <typename T>
-std::istream &unmarshallVector(std::istream &in, std::vector<T> &data) {
-    in.read(reinterpret_cast<char *>(data.data()), sizeof(T) * data.size());
-    return in;
-}
-
 void usage(const char *extra = nullptr) {
     std::cout
         << "Usage: " << argv0
@@ -132,9 +122,10 @@ void usage(const char *extra = nullptr) {
            "<source>"
         << std::endl
         << "<source>: the source file of the dictionary." << std::endl
-        << "          If the given path is relative, " << std::endl
         << "-o: output dict file path" << std::endl
+        << "-O: Skip dict file." << std::endl
         << "-p: history file path" << std::endl
+        << "-P: Skip history file" << std::endl
         << "-b: base file of a libime main dict" << std::endl
         << "-B: generate full data without base file" << std::endl
         << "-X: locate non-abstract path by only path instead of Xdg path"
@@ -189,51 +180,51 @@ void loadSource(
     std::istream in(&buffer);
 
     uint32_t codeStrLength;
-    throw_if_io_fail(unmarshallNative(in, codeStrLength));
+    throw_if_io_fail(unmarshallLE(in, codeStrLength));
     //先读取码表的信息
     bool isOldVersion = 1;
     if (!codeStrLength) {
         uint8_t version;
-        throw_if_io_fail(unmarshallNative(in, version));
+        throw_if_io_fail(unmarshall(in, version));
         isOldVersion = (version < INTERNAL_VERSION);
-        throw_if_io_fail(unmarshallNative(in, codeStrLength));
+        throw_if_io_fail(unmarshallLE(in, codeStrLength));
     }
     std::vector<char> codeString;
     codeString.resize(codeStrLength + 1);
     throw_if_io_fail(unmarshallVector(in, codeString));
 
     uint8_t len;
-    throw_if_io_fail(unmarshallNative(in, len));
+    throw_if_io_fail(unmarshall(in, len));
     if (len == 0 || len > MAX_CODE_LENGTH) {
         throw std::runtime_error("Invalid code length");
     }
 
     uint8_t pylen = 0;
     if (!isOldVersion) {
-        throw_if_io_fail(unmarshallNative(in, pylen));
+        throw_if_io_fail(unmarshall(in, pylen));
     }
 
     info.length = len;
     info.code.assign(codeString.data(), codeStrLength);
 
     uint32_t invalidCharLength;
-    throw_if_io_fail(unmarshallNative(in, invalidCharLength));
+    throw_if_io_fail(unmarshallLE(in, invalidCharLength));
     std::vector<char> invalidChar;
     invalidChar.resize(invalidCharLength + 1);
     throw_if_io_fail(unmarshallVector(in, invalidChar));
     info.ignoreChars.assign(invalidChar.data(), invalidCharLength);
 
     uint8_t hasRule;
-    throw_if_io_fail(unmarshallNative(in, hasRule));
+    throw_if_io_fail(unmarshall(in, hasRule));
     std::string rule;
     if (hasRule) {
         std::stringstream ss;
         for (size_t i = 1; i < len; i++) {
             uint8_t ruleFlag;
-            throw_if_io_fail(unmarshallNative(in, ruleFlag));
+            throw_if_io_fail(unmarshall(in, ruleFlag));
             ss << (ruleFlag ? 'a' : 'e');
             uint8_t ruleLength;
-            throw_if_io_fail(unmarshallNative(in, ruleLength));
+            throw_if_io_fail(unmarshall(in, ruleLength));
             ss << static_cast<uint32_t>(ruleLength) << '=';
 
             for (size_t j = 0; j < len; j++) {
@@ -241,11 +232,11 @@ void loadSource(
                     ss << '+';
                 }
                 uint8_t ruleIndex;
-                throw_if_io_fail(unmarshallNative(in, ruleFlag));
+                throw_if_io_fail(unmarshall(in, ruleFlag));
                 ss << (ruleFlag ? 'p' : 'n');
-                throw_if_io_fail(unmarshallNative(in, ruleIndex));
+                throw_if_io_fail(unmarshall(in, ruleIndex));
                 ss << static_cast<uint32_t>(ruleIndex);
-                throw_if_io_fail(unmarshallNative(in, ruleIndex));
+                throw_if_io_fail(unmarshall(in, ruleIndex));
                 ss << static_cast<uint32_t>(ruleIndex);
             }
             ss << std::endl;
@@ -271,7 +262,7 @@ void loadSource(
     }
 
     uint32_t nRecords;
-    throw_if_io_fail(unmarshallNative(in, nRecords));
+    throw_if_io_fail(unmarshallLE(in, nRecords));
 
     if (!isOldVersion) {
         len = pylen;
@@ -285,7 +276,7 @@ void loadSource(
         if (codeBuffer.back() != 0) {
             throw std::runtime_error("Invalid data in source file.");
         }
-        throw_if_io_fail(unmarshallNative(in, hzLength));
+        throw_if_io_fail(unmarshallLE(in, hzLength));
         std::vector<char> hzBuffer;
         hzBuffer.resize(hzLength);
         throw_if_io_fail(unmarshallVector(in, hzBuffer));
@@ -295,7 +286,7 @@ void loadSource(
 
         uint8_t recordType = RECORDTYPE_NORMAL;
         if (!isOldVersion) {
-            throw_if_io_fail(unmarshallNative(in, recordType));
+            throw_if_io_fail(unmarshall(in, recordType));
 
             switch (recordType) {
             case RECORDTYPE_PINYIN:
@@ -312,8 +303,8 @@ void loadSource(
 
         uint32_t index;
         uint32_t freq;
-        throw_if_io_fail(unmarshallNative(in, freq));
-        throw_if_io_fail(unmarshallNative(in, index));
+        throw_if_io_fail(unmarshallLE(in, freq));
+        throw_if_io_fail(unmarshallLE(in, index));
 
         recordCallback(info, static_cast<RecordType>(recordType),
                        codeBuffer.data(), hzBuffer.data(), freq);

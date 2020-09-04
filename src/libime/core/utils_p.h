@@ -9,7 +9,9 @@
 
 #include <cstdint>
 #include <endian.h>
+#include <iostream>
 #include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -49,6 +51,18 @@ inline void storeDWord(char *data, T v) {
     c.v = v;
     c.i = htole32(c.i);
     memcpy(data, &c, sizeof(c));
+}
+
+static inline std::istream &unmarshallLE(std::istream &in, uint32_t &data) {
+    in.read(reinterpret_cast<char *>(&data), sizeof(data));
+    data = le32toh(data);
+    return in;
+}
+
+static inline std::istream &unmarshallVector(std::istream &in,
+                                             std::vector<char> &data) {
+    in.read(reinterpret_cast<char *>(data.data()), sizeof(char) * data.size());
+    return in;
 }
 
 } // namespace libime

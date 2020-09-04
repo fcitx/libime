@@ -294,12 +294,12 @@ int main(int argc, char *argv[]) {
         try {
             boost::iostreams::stream_buffer<
                 boost::iostreams::file_descriptor_source>
-                buffer(dictFD.fd(), boost::iostreams::file_descriptor_flags::
-                                        never_close_handle);
+                buffer(historyFD.fd(), boost::iostreams::file_descriptor_flags::
+                                           never_close_handle);
             std::istream in(&buffer);
             history.load(in);
         } catch (const std::exception &e) {
-            std::cout << "Failed to load dict file: " << e.what();
+            std::cout << "Failed to load history file: " << e.what();
             return 1;
         }
     }

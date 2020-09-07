@@ -38,6 +38,7 @@ enum class PinyinFuzzyFlag {
     Z_ZH = 1 << 12,    // 4
     VE_UE = 1 << 13,
     Inner = 1 << 14,
+    InnerShort = 1 << 15,
 };
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;

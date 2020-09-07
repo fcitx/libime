@@ -196,7 +196,9 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
             }
 
             for (size_t i = 0; i < nNextSize; i++) {
-                if (nextSize[i] >= 3 && flags.test(PinyinFuzzyFlag::Inner)) {
+                if ((nextSize[i] >= 4 && flags.test(PinyinFuzzyFlag::Inner)) ||
+                    (nextSize[i] == 3 &&
+                     flags.test(PinyinFuzzyFlag::InnerShort))) {
                     const auto &innerSegments = getInnerSegment();
                     auto iter = innerSegments.find(
                         std::string{str.substr(0, nextSize[i])});

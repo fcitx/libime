@@ -51,6 +51,8 @@ int main() {
     check("kuai", PinyinFuzzyFlag::Inner);
     check("jiaou", PinyinFuzzyFlag::Inner);
     check("jin'an", PinyinFuzzyFlag::Inner);
+    check("qie", PinyinFuzzyFlag::Inner);
+    check("qi'e", PinyinFuzzyFlag::Inner);
 
     for (const auto &syl : PinyinEncoder::stringToSyllables(
              "niagn",

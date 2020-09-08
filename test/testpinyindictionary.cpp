@@ -11,54 +11,58 @@
 #include <fcitx-utils/log.h>
 #include <sstream>
 
-constexpr char testPinyin[] = "ni'hui";
-constexpr char testHanzi[] = "倪辉";
+using namespace libime;
+
+constexpr char testPinyin1[] = "ni'hui";
+constexpr char testHanzi1[] = "倪辉";
+
+constexpr char testPinyin2[] = "xiao'qi'e";
+constexpr char testHanzi2[] = "小企鹅";
+
+bool searchWord(const PinyinDictionary &dict, const char *data, size_t size,
+                std::string_view expectedPinyin,
+                std::string_view expectedHanzi) {
+    bool seenWord = false;
+    dict.matchWords(data, size,
+                    [&seenWord, expectedHanzi,
+                     expectedPinyin](std::string_view encodedPinyin,
+                                     std::string_view hanzi, float cost) {
+                        std::cout
+                            << PinyinEncoder::decodeFullPinyin(encodedPinyin)
+                            << " " << hanzi << " " << cost << std::endl;
+                        if (hanzi == expectedHanzi &&
+                            PinyinEncoder::decodeFullPinyin(encodedPinyin) ==
+                                expectedPinyin) {
+                            seenWord = true;
+                        }
+                        return true;
+                    });
+    return seenWord;
+}
 
 int main() {
-    using namespace libime;
     PinyinDictionary dict;
     dict.load(PinyinDictionary::SystemDict,
               LIBIME_BINARY_DIR "/data/dict.converted", PinyinDictFormat::Text);
 
     // add a manual dict
     std::stringstream ss;
-    ss << testHanzi << " " << testPinyin << " 0.0";
+    ss << testHanzi1 << " " << testPinyin1 << " 0.0" << std::endl
+       << testHanzi2 << " " << testPinyin2 << std::endl;
     dict.load(PinyinDictionary::UserDict, ss, PinyinDictFormat::Text);
     // dict.dump(std::cout);
     char c[] = {static_cast<char>(PinyinInitial::N), 0,
                 static_cast<char>(PinyinInitial::H), 0};
+    char c2[] = {static_cast<char>(PinyinInitial::X),    0,
+                 static_cast<char>(PinyinInitial::Q),    0,
+                 static_cast<char>(PinyinInitial::Zero), 0};
 
-    bool seenWord = false;
-    dict.matchWords(
-        c, sizeof(c),
-        [&seenWord](std::string_view encodedPinyin, std::string_view hanzi,
-                    float cost) {
-            std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin) << " "
-                      << hanzi << " " << cost << std::endl;
-            if (hanzi == testHanzi &&
-                PinyinEncoder::decodeFullPinyin(encodedPinyin) == testPinyin) {
-                seenWord = true;
-            }
-            return true;
-        });
-    FCITX_ASSERT(seenWord);
+    FCITX_ASSERT(searchWord(dict, c, sizeof(c), testPinyin1, testHanzi1));
+    FCITX_ASSERT(searchWord(dict, c2, sizeof(c2), testPinyin2, testHanzi2));
 
     // Remove the word and check again.
-    dict.removeWord(PinyinDictionary::UserDict, testPinyin, testHanzi);
-    seenWord = false;
-    dict.matchWords(
-        c, sizeof(c),
-        [&seenWord](std::string_view encodedPinyin, std::string_view hanzi,
-                    float cost) {
-            std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin) << " "
-                      << hanzi << " " << cost << std::endl;
-            if (hanzi == testHanzi &&
-                PinyinEncoder::decodeFullPinyin(encodedPinyin) == testPinyin) {
-                seenWord = true;
-            }
-            return true;
-        });
-    FCITX_ASSERT(!seenWord);
+    dict.removeWord(PinyinDictionary::UserDict, testPinyin1, testHanzi1);
+    FCITX_ASSERT(!searchWord(dict, c, sizeof(c), testPinyin1, testHanzi1));
 
     dict.save(0, LIBIME_BINARY_DIR "/test/testpinyindictionary.dict",
               PinyinDictFormat::Binary);

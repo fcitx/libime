@@ -685,10 +685,14 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
         boost::trim_if(buf, isSpaceCheck);
         std::vector<std::string> tokens;
         boost::split(tokens, buf, isSpaceCheck);
-        if (tokens.size() == 3) {
+        if (tokens.size() == 3 || tokens.size() == 2) {
             const std::string &hanzi = tokens[0];
             std::string_view pinyin = tokens[1];
-            float prob = std::stof(tokens[2]);
+            float prob = 0.0F;
+            if (tokens.size() == 3) {
+                prob = std::stof(tokens[2]);
+            }
+
             auto result = PinyinEncoder::encodeFullPinyin(pinyin);
             result.push_back(pinyinHanziSep);
             result.insert(result.end(), hanzi.begin(), hanzi.end());

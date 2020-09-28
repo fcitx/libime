@@ -38,11 +38,7 @@ void checkProfile(const ShuangpinProfile &profile) {
         }
     }
 
-    std::cout << "not covered" << std::endl;
-    for (const auto &syl : validSyls) {
-        std::cout << syl.toString() << std::endl;
-    }
-    FCITX_ASSERT(validSyls.empty());
+    FCITX_ASSERT(validSyls.empty()) << validSyls;
 }
 
 void checkXiaoHe() {
@@ -79,30 +75,7 @@ void checkSegments(const libime::SegmentGraph &graph,
     FCITX_ASSERT(segments.empty()) << "Remaining segments: " << segments;
 }
 
-int main() {
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::ABC));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziguang));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Zhongwenzhixing));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::PinyinJiajia));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe));
-
-    checkXiaoHe();
-
-    // wo jiu shi xiang ce shi yi xia
-    checkSegments(PinyinEncoder::parseUserShuangpin(
-                      "wojquixdceuiyixw",
-                      ShuangpinProfile(ShuangpinBuiltinProfile::MS),
-                      PinyinFuzzyFlag::None),
-                  {{"wo", "jq", "ui", "xd", "ce", "ui", "yi", "xw"}});
-
-    checkSegments(PinyinEncoder::parseUserShuangpin(
-                      "aaaierorilah",
-                      ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma),
-                      PinyinFuzzyFlag::None),
-                  {{"aa", "ai", "er", "or", "il", "ah"}});
-
+void checkSimpleParsing() {
     struct {
         const char *qp;
         const char *sp;
@@ -175,6 +148,276 @@ int main() {
     FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("zu", zrm) == "zu");
     FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("he", zrm) == "he");
     FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("zi", zrm) == "zi");
+}
+
+void checkAdvanceParsing() {
+    std::string csp = R"RAW_TEXT(
+[方案]
+方案名称=自定义
+
+[零声母标识]
+=
+
+[声母]
+# 双拼编码就是它本身的声母不必列出
+ch=u
+ch=;
+sh=i
+zh=o
+zh=v
+
+[韵母]
+# 双拼编码就是它本身的韵母不必列出
+iu=q
+ian=w
+uan=r
+in=t
+ua=a
+ua=m
+ie=y
+ou=o
+uo=p
+uo=b
+a=a
+ia=l
+ong=l
+ei=s
+eng=d
+ing=f
+ang=g
+iang=g
+ai=h
+ao=j
+iao=j
+en=k
+iong=l
+ue=;
+ve=;
+uang=z
+uai=x
+un=c
+ui=;
+v=v
+an=n
+
+[音节]
+e=ee
+e=e;
+er=er
+ei=ei
+eng=eg
+en=en
+ou=ou
+o=oh
+o=o;
+ai=ai
+ao=ao
+a=ah
+a=a;
+ang=ag
+an=an
+shi=is
+shi=ih
+shen=ak
+shen=it
+zhen=ot
+chen=ut
+hen=hd
+ken=kd
+zhong=os
+chong=us
+kong=ks
+jiong=js
+de=dk
+ce=cy
+se=sy
+re=ry
+ze=zy
+te=ty
+ge=gi
+li=ld
+ji=jd
+yi=ei
+ni=nz
+mi=mz
+pi=pe
+zhi=oh
+biao=bb
+niao=nb
+nao=nb
+miao=mb
+mao=mb
+diao=db
+ting=tp
+bing=bp
+ying=ep
+qing=qp
+xing=xp
+yin=ek
+xin=xk
+bin=bk
+yu=eu
+yao=ej
+chao=ub
+yong=el
+chu=uf
+shu=if
+zhu=of
+ku=kf
+hu=hf
+guang=gf
+wei=wi
+fei=fi
+xiang=xh
+qiang=qh
+bang=bm
+yang=eg
+fang=fh
+tang=tm
+rang=rh
+tian=tk
+bian=bl
+qian=qn
+xian=xn
+fa=fj
+fa=f;
+wa=wj
+wa=w;
+za=zm
+zuan=zm
+xuan=xm
+suan=sm
+duan=dm
+guan=gm
+quan=qm
+yuan=em
+tuan=tm
+zhuan=vm
+mo=mq
+mo=mc
+po=pb
+po=pc
+po=pq
+chou=uq
+zhou=oq
+shou=iq
+lou=lq
+kou=kq
+mou=mq
+hou=hq
+you=eo
+you=yq
+hua=ha
+hua=ht
+kua=ka
+kua=kt
+shua=it
+zhua=ot
+gua=ga
+guai=gh
+han=hw
+kan=kw
+yan=yw
+chan=uw
+shan=iw
+zhan=ow
+jia=ja
+pia=pa
+dia=dx
+dia=dl
+jie=je
+mie=me
+nie=ne
+lie=lz
+pie=pz
+mu=mv
+lu=lv
+nu=nv
+dui=d;
+tui=t;
+rui=r;
+rui=rv
+sui=s;
+sui=sv
+cui=c;
+cui=cv
+gui=g;
+zui=z;
+zui=zv
+hui=hv
+chui=uv
+shui=iv
+zhui=ov
+kui=kv
+qiu=qo
+xiu=xo
+lue=lb
+yue=yb
+yue=e;
+jue=jb
+men=md
+er=eh
+nai=nx
+mai=mx
+chai=ux
+shai=ix
+zhai=ox
+pai=px
+lai=lx
+bei=b;
+tun=t;
+run=r;
+qun=q;
+zun=z;
+xun=x;
+cun=c;
+gun=g;
+sun=s;
+dun=d;
+zeng=zk
+ceng=ck
+deng=dv
+leng=lk
+geng=gk
+yan=en
+)RAW_TEXT";
+    std::stringstream ss(csp);
+    ShuangpinProfile profile(ss);
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("fj", profile) == "fa");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("wj", profile) == "wa");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("zm", profile) == "za");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("bm", profile) == "bang");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("tm", profile) == "tang");
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("tk", profile) == "tian");
+    checkProfile(profile);
+}
+
+int main() {
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma));
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS));
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::ABC));
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziguang));
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Zhongwenzhixing));
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::PinyinJiajia));
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe));
+
+    checkXiaoHe();
+
+    // wo jiu shi xiang ce shi yi xia
+    checkSegments(PinyinEncoder::parseUserShuangpin(
+                      "wojquixdceuiyixw",
+                      ShuangpinProfile(ShuangpinBuiltinProfile::MS),
+                      PinyinFuzzyFlag::None),
+                  {{"wo", "jq", "ui", "xd", "ce", "ui", "yi", "xw"}});
+
+    checkSegments(PinyinEncoder::parseUserShuangpin(
+                      "aaaierorilah",
+                      ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma),
+                      PinyinFuzzyFlag::None),
+                  {{"aa", "ai", "er", "or", "il", "ah"}});
+
+    checkSimpleParsing();
+    checkAdvanceParsing();
 
     return 0;
 }

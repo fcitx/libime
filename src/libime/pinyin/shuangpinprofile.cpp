@@ -24,6 +24,8 @@ public:
     std::string zeroS_ = "o";
     std::unordered_multimap<char, PinyinFinal> finalMap_;
     std::unordered_multimap<char, PinyinInitial> initialMap_;
+    std::unordered_multimap<std::string, std::pair<PinyinInitial, PinyinFinal>>
+        initialFinalMap_;
     std::set<PinyinFinal> finalSet_;
     ShuangpinProfile::ValidInputSetType validInputs_;
     ShuangpinProfile::TableType spTable_;
@@ -113,31 +115,47 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
             continue;
         }
 
+        auto tolowerInPlace = [](std::string &s) {
+            std::transform(s.begin(), s.end(), s.begin(),
+                           [](char c) { return fcitx::charutils::tolower(c); });
+        };
+
         if (lineView[0] == '=' && lineView.size() > 1) {
             d->zeroS_ = std::string(lineView.substr(1));
-            std::transform(d->zeroS_.begin(), d->zeroS_.end(),
-                           d->zeroS_.begin(),
-                           [](char c) { return fcitx::charutils::tolower(c); });
+            tolowerInPlace(d->zeroS_);
             continue;
         }
 
         auto equal = lineView.find('=');
         // no '=', or equal at first char, or len(substr after equal) != 1
-        if (equal == std::string_view::npos || equal == 0 ||
-            equal + 2 != line.size()) {
+        if (equal == std::string_view::npos || equal == 0) {
             continue;
         }
-        std::string pinyin{lineView.substr(0, equal)};
-        auto key = fcitx::charutils::tolower(lineView[equal + 1]);
-        auto final = PinyinEncoder::stringToFinal(pinyin);
-        if (final == PinyinFinal::Invalid) {
-            auto initial = PinyinEncoder::stringToInitial(pinyin);
-            if (initial == PinyinInitial::Invalid) {
-                continue;
+
+        if (equal + 2 == line.size()) {
+            std::string pinyin{lineView.substr(0, equal)};
+            auto key = fcitx::charutils::tolower(lineView[equal + 1]);
+            if (auto final = PinyinEncoder::stringToFinal(pinyin);
+                final != PinyinFinal::Invalid) {
+                d->finalMap_.emplace(key, final);
+            } else if (auto initial = PinyinEncoder::stringToInitial(pinyin);
+                       initial != PinyinInitial::Invalid) {
+                d->initialMap_.emplace(key, initial);
             }
-            d->initialMap_.emplace(key, initial);
-        } else {
-            d->finalMap_.emplace(key, final);
+        } else if (equal + 3 == line.size()) {
+            std::string pinyin{lineView.substr(0, equal)};
+            std::string key{lineView.substr(equal + 1)};
+            tolowerInPlace(key);
+            try {
+                auto result = PinyinEncoder::encodeFullPinyin(pinyin);
+                if (result.size() != 2) {
+                    continue;
+                }
+                d->initialFinalMap_.emplace(
+                    key, std::make_pair(static_cast<PinyinInitial>(result[0]),
+                                        static_cast<PinyinFinal>(result[1])));
+            } catch (...) {
+            }
         }
     }
 
@@ -152,11 +170,17 @@ void ShuangpinProfile::buildShuangpinTable() {
     for (char c = 'a'; c <= 'z'; c++) {
         d->validInputs_.insert(c);
     }
-    for (auto &p : d->initialMap_) {
+    for (const auto &p : d->initialMap_) {
         d->validInputs_.insert(p.first);
     }
-    for (auto &p : d->finalMap_) {
+    for (const auto &p : d->finalMap_) {
         d->validInputs_.insert(p.first);
+    }
+
+    for (const auto &p : d->initialFinalMap_) {
+        for (auto c : p.first) {
+            d->validInputs_.insert(c);
+        }
     }
 
     std::set<char> initialChars;
@@ -168,6 +192,7 @@ void ShuangpinProfile::buildShuangpinTable() {
     }
 
     // Collect all initial and final chars.
+    // Add single char initial to initialChars.
     for (auto c = PinyinEncoder::firstInitial; c <= PinyinEncoder::lastInitial;
          c++) {
         const auto &initialString =
@@ -176,12 +201,13 @@ void ShuangpinProfile::buildShuangpinTable() {
             initialChars.insert(initialString[0]);
         }
     }
-
+    // Add char in map to initialChars.
     for (auto &p : d->initialMap_) {
         initialChars.insert(p.first);
     }
 
     // Collect all final chars.
+    // Add single char final to finalChars.
     std::set<char> finalChars;
     for (auto c = PinyinEncoder::firstFinal; c <= PinyinEncoder::lastFinal;
          c++) {
@@ -191,7 +217,7 @@ void ShuangpinProfile::buildShuangpinTable() {
             finalChars.insert(finalString[0]);
         }
     }
-
+    // Add final in map to finalChars
     for (auto &p : d->finalMap_) {
         finalChars.insert(p.first);
     }
@@ -281,6 +307,7 @@ void ShuangpinProfile::buildShuangpinTable() {
         }
     }
 
+    // Enumerate the combinition of initial + final
     for (auto c1 : initialChars) {
         for (auto c2 : finalChars) {
             std::string input{c1, c2};
@@ -333,6 +360,15 @@ void ShuangpinProfile::buildShuangpinTable() {
         }
     }
 
+    // Populate initial final map.
+    for (const auto &p : d->initialFinalMap_) {
+        auto &pys = d->spTable_[p.first];
+        auto py = PinyinEncoder::initialToString(p.second.first) +
+                  PinyinEncoder::finalToString(p.second.second);
+        addPinyin(pys, py);
+    }
+
+    // Add non-existent 2 char pinyin to the map.
     for (const auto &p : getPinyinMap()) {
         if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
             (!d->spTable_.count(p.pinyin()) ||
@@ -342,6 +378,7 @@ void ShuangpinProfile::buildShuangpinTable() {
         }
     }
 
+    // Add partial pinyin to the table.
     for (char c : d->validInputs_) {
         std::string input{c};
         auto &pys = d->spTable_[input];

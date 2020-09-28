@@ -22,6 +22,12 @@ namespace libime {
 static const std::string emptyString;
 
 fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
+                                     PinyinFuzzyFlags fuzzy) {
+    log << fuzzy.toInteger();
+    return log;
+}
+
+fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
                                      PinyinInitial initial) {
     log << PinyinEncoder::initialToString(initial);
     return log;
@@ -30,6 +36,12 @@ fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
 fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
                                      PinyinFinal final) {
     log << PinyinEncoder::finalToString(final);
+    return log;
+}
+
+fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
+                                     PinyinSyllable syl) {
+    log << syl.toString();
     return log;
 }
 

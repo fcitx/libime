@@ -44,6 +44,10 @@ enum class PinyinFuzzyFlag {
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;
 
+LIBIMEPINYIN_EXPORT
+fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
+                                     PinyinFuzzyFlags final);
+
 enum class PinyinInitial : char {
     Invalid = 0,
     B = 'A',
@@ -179,6 +183,10 @@ private:
     PinyinFinal final_;
 };
 
+LIBIMEPINYIN_EXPORT
+fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
+                                     PinyinSyllable syl);
+
 using MatchedPinyinSyllables = std::vector<
     std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>;
 
@@ -190,6 +198,12 @@ public:
                                            const ShuangpinProfile &sp,
                                            PinyinFuzzyFlags flags);
 
+    /**
+     * @brief Encode a quote separated pinyin string.
+     *
+     * @param pinyin pinyin string, like ni'hao
+     * @return encoded pinyin.
+     */
     static std::vector<char> encodeFullPinyin(std::string_view pinyin);
     static std::vector<char> encodeOneUserPinyin(std::string pinyin);
 

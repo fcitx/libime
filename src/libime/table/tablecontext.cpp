@@ -502,7 +502,7 @@ void TableContext::update() {
                 score = sentence.sentence().back()->score();
             }
             // Check the limit, or if there's no candidate.
-            if (min - score < minDistance || candidates().size() == 0) {
+            if (min - score < minDistance || candidates().empty()) {
                 insertCandidate(sentence);
             }
         }

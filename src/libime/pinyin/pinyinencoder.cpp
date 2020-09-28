@@ -9,6 +9,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
+#include <boost/container/static_vector.hpp>
 #include <fcitx-utils/charutils.h>
 #include <queue>
 #include <sstream>
@@ -440,10 +441,8 @@ static void getFuzzy(
                           std::vector<std::pair<PinyinFinal, bool>>>> &syls,
     PinyinSyllable syl, PinyinFuzzyFlags flags) {
     // ng/gn is already handled by table
-    PinyinInitial initials[2] = {syl.initial(), PinyinInitial::Invalid};
-    PinyinFinal finals[2] = {syl.final(), PinyinFinal::Invalid};
-    int initialSize = 1;
-    int finalSize = 1;
+    boost::container::static_vector<PinyinInitial, 2> initials{syl.initial()};
+    boost::container::static_vector<PinyinFinal, 10> finals{syl.final()};
 
     // for {s,z,c} we also want them to match {sh,zh,ch}
     if (syl.final() == PinyinFinal::Invalid) {
@@ -472,10 +471,9 @@ static void getFuzzy(
         if ((syl.initial() == std::get<0>(initialFuzzy) ||
              syl.initial() == std::get<1>(initialFuzzy)) &&
             flags & std::get<2>(initialFuzzy)) {
-            initials[1] = syl.initial() == std::get<0>(initialFuzzy)
-                              ? std::get<1>(initialFuzzy)
-                              : std::get<0>(initialFuzzy);
-            initialSize = 2;
+            initials.push_back(syl.initial() == std::get<0>(initialFuzzy)
+                                   ? std::get<1>(initialFuzzy)
+                                   : std::get<0>(initialFuzzy));
             break;
         }
     }
@@ -497,16 +495,39 @@ static void getFuzzy(
         if ((syl.final() == std::get<0>(finalFuzzy) ||
              syl.final() == std::get<1>(finalFuzzy)) &&
             flags & std::get<2>(finalFuzzy)) {
-            finals[1] = syl.final() == std::get<0>(finalFuzzy)
-                            ? std::get<1>(finalFuzzy)
-                            : std::get<0>(finalFuzzy);
-            finalSize = 2;
+            finals.push_back(syl.final() == std::get<0>(finalFuzzy)
+                                 ? std::get<1>(finalFuzzy)
+                                 : std::get<0>(finalFuzzy));
             break;
         }
     }
 
-    for (int i = 0; i < initialSize; i++) {
-        for (int j = 0; j < finalSize; j++) {
+    // "aeo"
+
+    const static std::vector<std::tuple<PinyinFinal, PinyinFinal>>
+        partialFinals = {
+            {PinyinFinal::A, PinyinFinal::AN},
+            {PinyinFinal::A, PinyinFinal::ANG},
+            {PinyinFinal::A, PinyinFinal::AI},
+            {PinyinFinal::A, PinyinFinal::AO},
+            {PinyinFinal::E, PinyinFinal::EI},
+            {PinyinFinal::E, PinyinFinal::EN},
+            {PinyinFinal::E, PinyinFinal::ENG},
+            {PinyinFinal::E, PinyinFinal::ER},
+            {PinyinFinal::O, PinyinFinal::OU},
+            {PinyinFinal::O, PinyinFinal::ONG},
+        };
+    if (initials.size() == 1 && initials[0] == PinyinInitial::Zero &&
+        flags.test(PinyinFuzzyFlag::PartialFinal)) {
+        for (const auto &partialFinal : partialFinals) {
+            if (syl.final() == std::get<0>(partialFinal)) {
+                finals.push_back(std::get<1>(partialFinal));
+            }
+        }
+    }
+
+    for (size_t i = 0; i < initials.size(); i++) {
+        for (size_t j = 0; j < finals.size(); j++) {
             auto initial = initials[i];
             auto final = finals[j];
             if ((i == 0 && j == 0) || final == PinyinFinal::Invalid ||
@@ -598,6 +619,12 @@ PinyinEncoder::shuangpinToSyllables(std::string_view pinyinView,
                    fcitx::charutils::tolower);
     const auto &table = sp.table();
     auto iter = table.find(pinyin);
+
+    // Don't match partial final if our shuangpin is full size.
+    if (pinyinView.size() > 1) {
+        // This option is somewhat meaningless in full Shuangpin.
+        flags = flags.unset(PinyinFuzzyFlag::PartialFinal);
+    }
 
     std::vector<
         std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>

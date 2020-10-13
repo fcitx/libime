@@ -8,7 +8,7 @@
 #include <fcitx-utils/log.h>
 using namespace libime;
 
-void checkProfile(const ShuangpinProfile &profile) {
+void checkProfile(const ShuangpinProfile &profile, bool hasSemicolon) {
 
     for (const auto &p : profile.table()) {
         if (p.second.size() >= 2) {
@@ -36,6 +36,18 @@ void checkProfile(const ShuangpinProfile &profile) {
                 validSyls.erase(py.first);
             }
         }
+    }
+
+    std::set<char> initials = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+                               'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+                               's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+    if (hasSemicolon) {
+        initials.insert(';');
+    }
+
+    for (auto c : profile.validInitial()) {
+        FCITX_ASSERT(initials.count(c))
+            << " " << c << " " << profile.validInitial();
     }
 
     FCITX_ASSERT(validSyls.empty()) << validSyls;
@@ -201,6 +213,7 @@ v=v
 an=n
 
 [音节]
+ju=jv
 e=ee
 e=e;
 er=er
@@ -389,17 +402,20 @@ yan=en
     FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("bm", profile) == "bang");
     FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("tm", profile) == "tang");
     FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("tk", profile) == "tian");
-    checkProfile(profile);
+    FCITX_ASSERT(PinyinEncoder::shuangpinToPinyin("jv", profile) == "ju");
+    checkProfile(profile, true);
 }
 
 int main() {
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::ABC));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziguang));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Zhongwenzhixing));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::PinyinJiajia));
-    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe));
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma), false);
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS), false);
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::ABC), false);
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziguang), false);
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Zhongwenzhixing),
+                 false);
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::PinyinJiajia),
+                 false);
+    checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe), false);
 
     checkXiaoHe();
 

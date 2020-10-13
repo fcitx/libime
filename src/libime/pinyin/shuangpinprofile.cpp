@@ -28,6 +28,7 @@ public:
         initialFinalMap_;
     std::set<PinyinFinal> finalSet_;
     ShuangpinProfile::ValidInputSetType validInputs_;
+    ShuangpinProfile::ValidInputSetType validInitials_;
     ShuangpinProfile::TableType spTable_;
 };
 
@@ -229,9 +230,11 @@ void ShuangpinProfile::buildShuangpinTable() {
             if (flags == PinyinFuzzyFlag::None) {
 
                 auto iter = pys.find(s);
+                // We replace fuzzy with non-fuzzy.
                 if (iter != pys.end() &&
                     iter->second != PinyinFuzzyFlag::None) {
                     pys.erase(s);
+                    iter = pys.end();
                 }
                 if (iter == pys.end()) {
                     pys.emplace(s, flags);
@@ -408,6 +411,11 @@ void ShuangpinProfile::buildShuangpinTable() {
             d->spTable_.erase(input);
         }
     }
+
+    for (const auto &sp : d->spTable_) {
+        assert(sp.first.size() >= 1 && sp.first.size() <= 2);
+        d->validInitials_.insert(sp.first[0]);
+    }
 }
 
 const ShuangpinProfile::TableType &ShuangpinProfile::table() const {
@@ -419,5 +427,11 @@ const ShuangpinProfile::ValidInputSetType &
 ShuangpinProfile::validInput() const {
     FCITX_D();
     return d->validInputs_;
+}
+
+const ShuangpinProfile::ValidInputSetType &
+ShuangpinProfile::validInitial() const {
+    FCITX_D();
+    return d->validInitials_;
 }
 } // namespace libime

@@ -43,6 +43,7 @@ public:
 
     const TableType &table() const;
     const ValidInputSetType &validInput() const;
+    const ValidInputSetType &validInitial() const;
 
 private:
     void buildShuangpinTable();

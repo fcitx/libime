@@ -28,6 +28,7 @@ void checkProfile(const ShuangpinProfile &profile, bool hasSemicolon) {
     validSyls.erase(PinyinSyllable(PinyinInitial::M, PinyinFinal::Zero));
     validSyls.erase(PinyinSyllable(PinyinInitial::N, PinyinFinal::Zero));
     validSyls.erase(PinyinSyllable(PinyinInitial::R, PinyinFinal::Zero));
+    validSyls.erase(PinyinSyllable(PinyinInitial::Zero, PinyinFinal::NG));
 
     for (const auto &p : profile.table()) {
         for (const auto &py : p.second) {
@@ -137,7 +138,6 @@ void checkSimpleParsing() {
                           "ing=Y\n"
                           "iong=S\n"
                           "iu=Q\n"
-                          "ng=G\n"
                           "ong=S\n"
                           "ou=B\n"
                           "ua=W\n"

@@ -21,7 +21,7 @@
 #include <string_view>
 #include <unordered_map>
 
-std::array<std::string, 412> PYFA = {
+static const std::array<std::string, 412> PYFA = {
     "AA", "AB", "AC", "AD", "AE", "AF", "AH", "AI", "AJ", "AU", "AV", "AW",
     "AX", "AY", "AZ", "Aa", "Ac", "Ad", "Ae", "BA", "BB", "BC", "BD", "BE",
     "BF", "BG", "BH", "BI", "BJ", "BU", "BV", "BW", "BZ", "Bc", "Bd", "Be",
@@ -36,9 +36,9 @@ std::array<std::string, 412> PYFA = {
     "IF", "IH", "II", "IJ", "IU", "IV", "IW", "IZ", "Ic", "Id", "Ie", "JJ",
     "JK", "JL", "JM", "JN", "JO", "JP", "JQ", "JR", "JS", "JW", "JZ", "Jb",
     "Jd", "KA", "KB", "KC", "KD", "KE", "KG", "KH", "KI", "KJ", "KL", "KN",
-    "KO", "KP", "KQ", "KT", "KV", "KW", "L",  "M",  "N",  "O",  "OA", "OB",
+    "KO", "KP", "KQ", "KT", "KV", "KW", "L ", "M ", "N ", "O ", "OA", "OB",
     "OC", "OD", "OE", "OF", "OG", "OH", "OI", "OJ", "OL", "OM", "ON", "OO",
-    "OP", "OQ", "OS", "OU", "OV", "OW", "OZ", "Ob", "Oe", "Of", "Og", "P",
+    "OP", "OQ", "OS", "OU", "OV", "OW", "OZ", "Ob", "Oe", "Of", "Og", "P ",
     "PA", "PB", "PC", "PD", "PE", "PF", "PG", "PH", "PI", "PJ", "PL", "PN",
     "PO", "PP", "PQ", "PS", "PT", "PV", "PW", "QA", "QB", "QC", "QD", "QE",
     "QF", "QG", "QI", "QJ", "QK", "QL", "QM", "QN", "QO", "QP", "QQ", "QS",
@@ -49,7 +49,7 @@ std::array<std::string, 412> PYFA = {
     "TF", "TG", "TH", "TI", "TU", "TV", "TW", "TX", "TY", "TZ", "Ta", "Tc",
     "Td", "Te", "UA", "UB", "UC", "UD", "UE", "UF", "UG", "UH", "UI", "UU",
     "UV", "UW", "UX", "UY", "UZ", "Ua", "Uc", "Ud", "Ue", "VA", "VC", "VD",
-    "VG", "VH", "VI", "VT", "VV", "VW", "W",  "X",  "Y",  "Z",  "aA", "aB",
+    "VG", "VH", "VI", "VT", "VV", "VW", "W ", "X ", "Y ", "Z ", "aA", "aB",
     "aC", "aD", "aE", "aF", "aG", "aH", "aI", "aJ", "aK", "aL", "aN", "aO",
     "aQ", "aS", "aU", "aV", "aW", "aZ", "ac", "ad", "ae", "bA", "bB", "bC",
     "bD", "bE", "bF", "bH", "bI", "bJ", "bU", "bV", "bW", "bY", "bZ", "ba",
@@ -59,7 +59,7 @@ std::array<std::string, 412> PYFA = {
     "f ", "g ", "h ", "i ",
 };
 
-const std::unordered_map<char, std::string> consonantMapTable = {
+static const std::unordered_map<char, std::string> consonantMapTable = {
     {'A', "a"},   {'B', "ai"},   {'C', "an"},   {'D', "ang"}, {'E', "ao"},
     {'F', "e"},   {'G', "ei"},   {'H', "en"},   {'I', "eng"}, {'J', "i"},
     {'K', "ia"},  {'L', "ian"},  {'M', "iang"}, {'N', "iao"}, {'O', "ie"},
@@ -69,7 +69,7 @@ const std::unordered_map<char, std::string> consonantMapTable = {
     {'e', "uo"},  {'f', "v"},    {'g', "ve"},   {' ', ""},
 };
 
-const std::unordered_map<char, std::string> syllabaryMapTable = {
+static const std::unordered_map<char, std::string> syllabaryMapTable = {
     {'A', "zh"}, {'B', "z"},   {'C', "y"},  {'D', "x"},  {'E', "w"},
     {'F', "t"},  {'G', "sh"},  {'H', "s"},  {'I', "r"},  {'J', "q"},
     {'K', "p"},  {'L', "ou"},  {'M', "o"},  {'N', "ng"}, {'O', "n"},
@@ -163,7 +163,7 @@ std::string decodeFcitx4Pinyin(const T &code) {
     return stringutils::join(pys, '\'');
 }
 
-std::string_view argv0;
+static std::string_view argv0;
 
 void usage(const char *extra = nullptr) {
     std::cout

@@ -19,8 +19,8 @@ set(LIBIME_TABLE_SRCS
 
 ecm_setup_version(PROJECT
                   VARIABLE_PREFIX IMETable
-                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMETableConfigVersion.cmake"
-                  SOVERSION 0)
+                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMETableConfigVersion.cmake")
+set(IMETable_SOVERSION 0)
 
 add_library(IMETable SHARED ${LIBIME_TABLE_SRCS})
 set_target_properties(IMETable
@@ -28,6 +28,7 @@ set_target_properties(IMETable
                       SOVERSION ${IMETable_SOVERSION}
                       EXPORT_NAME Table
 )
+
 target_include_directories(IMETable PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>

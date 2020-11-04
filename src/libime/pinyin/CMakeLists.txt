@@ -25,8 +25,8 @@ set(LIBIME_PINYIN_SRCS
 
 ecm_setup_version(PROJECT
                   VARIABLE_PREFIX IMEPinyin
-                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMEPinyinConfigVersion.cmake"
-                  SOVERSION 0)
+                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMEPinyinConfigVersion.cmake")
+set(IMEPinyin_SOVERSION 0)
 
 add_library(IMEPinyin SHARED ${LIBIME_PINYIN_SRCS})
 set_target_properties(IMEPinyin PROPERTIES

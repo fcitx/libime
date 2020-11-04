@@ -50,8 +50,9 @@ set(LIBIME_SRCS
 
 ecm_setup_version(PROJECT
                   VARIABLE_PREFIX IMECore
-                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMECoreConfigVersion.cmake"
-                  SOVERSION 0)
+                  PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMECoreConfigVersion.cmake")
+# the cmake if will
+set(IMECore_SOVERSION 0)
 
 add_library(IMECore SHARED ${LIBIME_SRCS})
 set_target_properties(IMECore

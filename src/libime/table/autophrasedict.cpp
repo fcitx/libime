@@ -59,12 +59,15 @@ void AutoPhraseDict::insert(const std::string &entry, uint32_t value) {
     auto &il = d->il_;
     auto p = il.push_front(AutoPhrase{entry, value});
 
+    auto iter = p.first;
     if (!p.second) {
         il.relocate(il.begin(), p.first);
-        if (value == 0) {
-            il.modify(il.begin(), [](AutoPhrase &phrase) { phrase.hit_ += 1; });
-        }
-    } else if (il.size() > d->maxItems_) {
+        iter = il.begin();
+    }
+    if (value == 0) {
+        il.modify(iter, [](AutoPhrase &phrase) { phrase.hit_ += 1; });
+    }
+    if (il.size() > d->maxItems_) {
         il.pop_back();
     }
 }

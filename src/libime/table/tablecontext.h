@@ -52,6 +52,7 @@ public:
     bool selected() const;
     size_t selectedSize() const;
     std::tuple<std::string, bool> selectedSegment(size_t idx) const;
+    std::string selectedCode(size_t idx) const;
     size_t selectedSegmentLength(size_t idx) const;
 
     /// \brief A simple preedit implementation.
@@ -75,6 +76,12 @@ public:
     ///
     /// Depending on the tableOptions, it will try to learn the word in history.
     void learnAutoPhrase(std::string_view history);
+
+    /// \brief Learn auto word from string
+    ///
+    /// Similar to its overload, but with hint of given code.
+    void learnAutoPhrase(std::string_view history,
+                         const std::vector<std::string> &hints);
 
     const TableBasedDictionary &dict() const;
     TableBasedDictionary &mutableDict();

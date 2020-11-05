@@ -391,6 +391,41 @@ public:
 
         return autoPhraseDict_.search(code, matchAutoPhrase);
     }
+
+    bool validateHints(std::vector<std::string> &hints,
+                       const TableRule &rule) const {
+        if (hints.size() <= 1) {
+            return false;
+        }
+
+        for (const auto &ruleEntry : rule.entries()) {
+            // skip rule entry like p00.
+            if (ruleEntry.isPlaceHolder()) {
+                continue;
+            }
+
+            if (ruleEntry.character() > hints.size()) {
+                return false;
+            }
+
+            size_t index;
+            if (ruleEntry.flag() == TableRuleEntryFlag::FromFront) {
+                index = ruleEntry.character() - 1;
+            } else {
+                index = hints.size() - ruleEntry.character();
+            }
+            assert(index < hints.size());
+
+            // Don't use hint for table with phrase key, or the requested length
+            // longer.
+            if (phraseKey_ ||
+                fcitx::utf8::length(hints[index]) < ruleEntry.encodingIndex()) {
+                hints[index] = std::string();
+            }
+        }
+
+        return true;
+    }
 };
 
 TableBasedDictionary::TableBasedDictionary()
@@ -912,7 +947,7 @@ bool TableBasedDictionary::insert(std::string_view key, std::string_view value,
         }
         break;
     case PhraseFlag::Auto: {
-        auto entry = generateTableEntry(key, value);
+        const auto entry = generateTableEntry(key, value);
         auto hit = d->autoPhraseDict_.exactSearch(entry);
         if (tableOptions().saveAutoPhraseAfter() >= 1 &&
             static_cast<uint32_t>(tableOptions().saveAutoPhraseAfter()) <=
@@ -920,7 +955,7 @@ bool TableBasedDictionary::insert(std::string_view key, std::string_view value,
             d->autoPhraseDict_.erase(entry);
             insert(key, value, PhraseFlag::User, false);
         } else {
-            d->autoPhraseDict_.insert(generateTableEntry(key, value));
+            d->autoPhraseDict_.insert(entry);
         }
     } break;
     case PhraseFlag::Invalid:
@@ -931,6 +966,12 @@ bool TableBasedDictionary::insert(std::string_view key, std::string_view value,
 
 bool TableBasedDictionary::generate(std::string_view value,
                                     std::string &key) const {
+    return generateWithHint(value, {}, key);
+}
+
+bool TableBasedDictionary::generateWithHint(
+    std::string_view value, const std::vector<std::string> &hints_,
+    std::string &key) const {
     FCITX_D();
     if (!hasRule() || value.empty()) {
         return false;
@@ -942,6 +983,15 @@ bool TableBasedDictionary::generate(std::string_view value,
         return false;
     }
 
+    for (const auto &code : hints_) {
+        if (!fcitx::utf8::validate(code)) {
+            return false;
+        }
+    }
+
+    auto hints = hints_;
+    hints.resize(valueLen);
+
     std::string newKey;
     for (const auto &rule : d->rules_) {
         // check rule can be applied
@@ -949,6 +999,13 @@ bool TableBasedDictionary::generate(std::string_view value,
                valueLen == rule.phraseLength()) ||
               (rule.flag() == TableRuleFlag::LengthLongerThan &&
                valueLen >= rule.phraseLength()))) {
+            continue;
+        }
+
+        auto hints = hints_;
+        hints.resize(valueLen);
+        // Fill hints first.
+        if (!d->validateHints(hints, rule)) {
             continue;
         }
 
@@ -965,18 +1022,23 @@ bool TableBasedDictionary::generate(std::string_view value,
                 break;
             }
 
+            size_t index;
             if (ruleEntry.flag() == TableRuleEntryFlag::FromFront) {
-                iter = fcitx::utf8::nextNChar(value.begin(),
-                                              ruleEntry.character() - 1);
+                index = ruleEntry.character() - 1;
             } else {
-                iter = fcitx::utf8::nextNChar(value.begin(),
-                                              valueLen - ruleEntry.character());
+                index = valueLen - ruleEntry.character();
             }
+            iter = fcitx::utf8::nextNChar(value.begin(), index);
             const auto *prev = iter;
             iter = fcitx::utf8::nextChar(iter);
             std::string_view chr(&*prev, std::distance(prev, iter));
 
-            std::string entry = reverseLookup(chr, PhraseFlag::ConstructPhrase);
+            std::string entry;
+            if (!hints[index].empty()) {
+                entry = hints[index];
+            } else {
+                entry = reverseLookup(chr, PhraseFlag::ConstructPhrase);
+            }
             if (entry.empty()) {
                 success = false;
                 break;

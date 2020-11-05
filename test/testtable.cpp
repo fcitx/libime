@@ -72,8 +72,16 @@ void testWubi() {
         FCITX_ASSERT(table.generate("统计局", key2));
         FCITX_ASSERT(key == key2);
         FCITX_ASSERT(table.generate("你好", key2));
-        std::cout << key2 << std::endl;
-        FCITX_ASSERT(key2 == "wqvb");
+        FCITX_ASSERT(key2 == "wqvb") << key2;
+        std::string key3;
+        FCITX_ASSERT(table.generateWithHint("你好", {"abcd", "efgh"}, key3));
+        FCITX_ASSERT(key3 == "abef");
+        FCITX_ASSERT(table.generateWithHint("你好", {"abcd"}, key3));
+        FCITX_ASSERT(key3 == "abvb");
+        FCITX_ASSERT(table.generateWithHint("你好", {"", "abcd"}, key3));
+        FCITX_ASSERT(key3 == "wqab");
+        FCITX_ASSERT(table.generateWithHint("你好", {"", "a"}, key3));
+        FCITX_ASSERT(key3 == "wqvb");
         FCITX_ASSERT(table.insert("你好"));
         testMatch(table, "wqvb", {"你好"}, false);
         testMatch(table, "wqvb", {"你好"}, true);

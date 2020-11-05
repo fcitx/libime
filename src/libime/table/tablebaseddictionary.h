@@ -66,6 +66,9 @@ public:
                 bool verifyWithRule = false);
     bool insert(std::string_view value, PhraseFlag flag = PhraseFlag::None);
     bool generate(std::string_view value, std::string &key) const;
+    bool generateWithHint(std::string_view value,
+                          const std::vector<std::string> &codeHint,
+                          std::string &key) const;
 
     bool isInputCode(uint32_t c) const;
     bool isAllInputCode(std::string_view code) const;

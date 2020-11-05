@@ -33,6 +33,7 @@ private:
 };
 
 int main() {
+    fcitx::Log::setLogRule("*=5");
     TestLmResolver lmresolver(LIBIME_BINARY_DIR "/data/sc.lm");
     auto lm = lmresolver.languageModelFileForLanguage("zh_CN");
     TableBasedDictionary dict;
@@ -79,8 +80,12 @@ int main() {
     c.learn();
     c.clear();
     c.learnAutoPhrase("好耶");
+    FCITX_ASSERT(c.dict().wordExists("vbbb", "好耶") ==
+                 libime::PhraseFlag::Auto);
+    c.learnAutoPhrase("好耶", {"ky", "cy"});
+    FCITX_ASSERT(c.dict().wordExists("kycy", "好耶") ==
+                 libime::PhraseFlag::Auto);
 
-    fcitx::Log::setLogRule("*=5");
     for (int i = 0; i < 2; i++) {
         c.type("vbbb");
 

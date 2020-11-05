@@ -619,6 +619,15 @@ std::tuple<std::string, bool> TableContext::selectedSegment(size_t idx) const {
     return {std::move(result), commit};
 }
 
+std::string TableContext::selectedCode(size_t idx) const {
+    FCITX_D();
+    std::string result;
+    for (const auto &item : d->selected_[idx]) {
+        result += item.code_;
+    }
+    return result;
+}
+
 size_t TableContext::selectedSegmentLength(size_t idx) const {
     FCITX_D();
     size_t prev = 0;
@@ -706,6 +715,11 @@ void TableContext::learnLast() {
 }
 
 void TableContext::learnAutoPhrase(std::string_view history) {
+    return learnAutoPhrase(history, {});
+}
+
+void TableContext::learnAutoPhrase(std::string_view history,
+                                   const std::vector<std::string> &hints) {
     FCITX_D();
     if (!d->dict_.tableOptions().learning() ||
         !fcitx::utf8::validate(history) ||
@@ -723,9 +737,10 @@ void TableContext::learnAutoPhrase(std::string_view history) {
                          d->dict_.tableOptions().autoPhraseLength())) {
             continue;
         }
+        // Make a substring from current char.
         auto word =
             history.substr(std::distance(history.begin(), charBegin.first));
-        if (!d->dict_.generate(word, code)) {
+        if (!d->dict_.generateWithHint(word, hints, code)) {
             continue;
         }
         auto wordFlag = d->dict_.wordExists(code, word);

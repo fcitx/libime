@@ -729,7 +729,10 @@ void TableContext::learnAutoPhrase(std::string_view history,
 
     auto range = fcitx::utf8::MakeUTF8CharRange(history);
     std::string code;
-    for (auto iter = std::begin(range); iter != std::end(range); iter++) {
+
+    std::vector<std::string> currentHints;
+    size_t i = 0;
+    for (auto iter = std::begin(range); iter != std::end(range); iter++, i++) {
         auto charBegin = iter.charRange();
         auto length = fcitx::utf8::length(charBegin.first, history.end());
         if (length < 2 ||
@@ -740,7 +743,12 @@ void TableContext::learnAutoPhrase(std::string_view history,
         // Make a substring from current char.
         auto word =
             history.substr(std::distance(history.begin(), charBegin.first));
-        if (!d->dict_.generateWithHint(word, hints, code)) {
+        auto begin = hints.end();
+        if (hints.size() > i) {
+            begin = std::next(hints.begin(), i);
+        }
+        currentHints.assign(begin, hints.end());
+        if (!d->dict_.generateWithHint(word, currentHints, code)) {
             continue;
         }
         auto wordFlag = d->dict_.wordExists(code, word);

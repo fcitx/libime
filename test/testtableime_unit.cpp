@@ -85,6 +85,11 @@ int main() {
     c.learnAutoPhrase("好耶", {"ky", "cy"});
     FCITX_ASSERT(c.dict().wordExists("kycy", "好耶") ==
                  libime::PhraseFlag::Auto);
+    c.learnAutoPhrase("萌豚萌", {"mbsd", "tdk,", "mbsd"});
+    FCITX_ASSERT(c.dict().wordExists("mtmb", "萌豚萌") ==
+                 libime::PhraseFlag::Auto);
+    FCITX_ASSERT(c.dict().wordExists("tdmb", "豚萌") ==
+                 libime::PhraseFlag::Auto);
 
     for (int i = 0; i < 2; i++) {
         c.type("vbbb");

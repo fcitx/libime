@@ -40,7 +40,7 @@ public:
     }
 
     template <typename... Args>
-    value_type *insert(const key_type &key, Args &&... args) {
+    value_type *insert(const key_type &key, Args &&...args) {
         auto iter = dict_.find(key);
         if (iter == dict_.end()) {
             if (size() >= sz_) {

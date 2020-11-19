@@ -184,7 +184,7 @@ struct naivevector {
     void push_back(value_type &&__x) { emplace_back(std::move(__x)); }
 
     template <typename... _Args>
-    void emplace_back(_Args &&... __args) {
+    void emplace_back(_Args &&...__args) {
         if (m_end == m_cap) {
             reserve(capacity() ? (2 * capacity()) : 32);
         }

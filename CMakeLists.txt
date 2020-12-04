@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
-set(LibIME_VERSION 1.0.2)
-project(libime VERSION ${LibIME_VERSION})
+project(libime VERSION 1.0.2)
+set(LibIME_VERSION ${PROJECT_VERSION})
 
 find_package(ECM 1.0 REQUIRED)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})

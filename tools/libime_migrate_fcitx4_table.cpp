@@ -12,13 +12,18 @@
 #include "libime/table/tablebaseddictionary.h"
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
-#include <endian.h>
 #include <fcitx-utils/charutils.h>
 #include <fcitx-utils/standardpath.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <istream>
 #include <sstream>
+
+#if defined(__linux__) || defined(__GLIBC__)
+#include <endian.h>
+#else
+#include <sys/endian.h>
+#endif
 
 using namespace libime;
 using namespace fcitx;

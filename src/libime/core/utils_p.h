@@ -8,10 +8,15 @@
 #define _LIBIME_LIBIME_CORE_UTILS_P_H_
 
 #include <cstdint>
-#include <endian.h>
 #include <iostream>
 #include <utility>
 #include <vector>
+
+#if defined(__linux__) || defined(__GLIBC__)
+#include <endian.h>
+#else
+#include <sys/endian.h>
+#endif
 
 namespace libime {
 

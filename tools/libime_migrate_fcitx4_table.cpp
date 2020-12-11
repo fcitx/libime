@@ -15,7 +15,11 @@
 #include <fcitx-utils/charutils.h>
 #include <fcitx-utils/standardpath.h>
 #include <fcntl.h>
+#if __GNUC__ < 8
+#include <experimental/filesystem>
+#else
 #include <filesystem>
+#endif
 #include <istream>
 #include <sstream>
 
@@ -83,7 +87,11 @@ struct MigrationCommonOption {
             if (useXdgPath) {
                 return stringutils::joinPath("table", path);
             } else {
+#if __GNUC__ < 8
+                return std::experimental::filesystem::absolute(path);
+#else
                 return std::filesystem::absolute(path);
+#endif
             }
         }
         return path;

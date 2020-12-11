@@ -16,7 +16,11 @@
 #include <fcitx-utils/cutf8.h>
 #include <fcitx-utils/standardpath.h>
 #include <fcntl.h>
+#if __GNUC__ < 8
+#include <experimental/filesystem>
+#else
 #include <filesystem>
+#endif
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
@@ -344,7 +348,11 @@ int main(int argc, char *argv[]) {
             if (dictFile[0] == '/') {
                 outputDictFile = dictFile;
             } else {
+#if __GNUC__ < 8
+                outputDictFile = std::experimental::filesystem::absolute(dictFile);
+#else
                 outputDictFile = std::filesystem::absolute(dictFile);
+#endif
             }
         }
         StandardPath::global().safeSave(
@@ -366,7 +374,11 @@ int main(int argc, char *argv[]) {
             if (historyFile[0] == '/') {
                 outputHistoryFile = historyFile;
             } else {
+#if __GNUC__ < 8
+                outputHistoryFile = std::experimental::filesystem::absolute(historyFile);
+#else
                 outputHistoryFile = std::filesystem::absolute(historyFile);
+#endif
             }
         }
         StandardPath::global().safeSave(

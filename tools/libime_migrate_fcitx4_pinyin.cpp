@@ -16,10 +16,15 @@
 #include <fcitx-utils/cutf8.h>
 #include <fcitx-utils/standardpath.h>
 #include <fcntl.h>
-#include <filesystem>
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
+
+#if __GNUC__ <= 7
+#include <boost/filesystem.hpp>
+#else
+#include <filesystem>
+#endif
 
 static const std::array<std::string, 412> PYFA = {
     "AA", "AB", "AC", "AD", "AE", "AF", "AH", "AI", "AJ", "AU", "AV", "AW",
@@ -344,7 +349,11 @@ int main(int argc, char *argv[]) {
             if (dictFile[0] == '/') {
                 outputDictFile = dictFile;
             } else {
+#if __GNUC__ <= 7
+                outputDictFile = boost::filesystem::absolute(dictFile).string();
+#else
                 outputDictFile = std::filesystem::absolute(dictFile);
+#endif
             }
         }
         StandardPath::global().safeSave(
@@ -366,7 +375,12 @@ int main(int argc, char *argv[]) {
             if (historyFile[0] == '/') {
                 outputHistoryFile = historyFile;
             } else {
+#if __GNUC__ <= 7
+                outputHistoryFile =
+                    boost::filesystem::absolute(historyFile).string();
+#else
                 outputHistoryFile = std::filesystem::absolute(historyFile);
+#endif
             }
         }
         StandardPath::global().safeSave(

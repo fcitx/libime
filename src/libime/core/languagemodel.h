@@ -9,6 +9,7 @@
 #include "datrie.h"
 #include "libimecore_export.h"
 #include <fcitx-utils/macros.h>
+#include <limits>
 #include <memory>
 #include <string_view>
 #include <vector>

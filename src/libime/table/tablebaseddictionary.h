@@ -40,6 +40,8 @@ class TableRule;
 class LIBIMETABLE_EXPORT TableBasedDictionary
     : public Dictionary,
       public fcitx::ConnectableObject {
+    friend class TableContextPrivate;
+
 public:
     TableBasedDictionary();
     virtual ~TableBasedDictionary();

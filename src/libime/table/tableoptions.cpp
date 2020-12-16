@@ -15,7 +15,9 @@ public:
     uint32_t pinyinKey_ = '\0';
     bool autoSelect_ = false;
     int autoSelectLength_ = 0;
+    std::string autoSelectRegex_;
     int noMatchAutoSelectLength_ = 0;
+    std::string noMatchAutoSelectRegex_;
     bool commitRawInput_ = false;
     std::set<uint32_t> endKey_;
     uint32_t matchingKey_ = false;
@@ -45,8 +47,12 @@ FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, uint32_t, noSortInputLength,
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, autoSelect, setAutoSelect);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, autoSelectLength,
                               setAutoSelectLength);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::string, autoSelectRegex,
+                              setAutoSelectRegex);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, int, noMatchAutoSelectLength,
                               setNoMatchAutoSelectLength);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::string, noMatchAutoSelectRegex,
+                              setNoMatchAutoSelectRegex);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, commitRawInput,
                               setCommitRawInput);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::set<uint32_t>, endKey,

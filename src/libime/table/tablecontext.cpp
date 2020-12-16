@@ -11,7 +11,7 @@
 #include "libime/core/userlanguagemodel.h"
 #include "libime/core/utils.h"
 #include "log.h"
-#include "tablebaseddictionary.h"
+#include "tablebaseddictionary_p.h"
 #include "tabledecoder.h"
 #include "tableoptions.h"
 #include "tablerule.h"
@@ -245,6 +245,39 @@ public:
         return dict_.insert(word, PhraseFlag::User);
     }
 
+    bool checkAutoSelect() const {
+        auto lastSegLength = fcitx::utf8::length(graph_.data());
+        // Check by length
+        if (dict_.tableOptions().autoSelectLength() &&
+            !lengthLessThanLimit(lastSegLength,
+                                 dict_.tableOptions().autoSelectLength())) {
+            return true;
+        }
+
+        // Check by regex.
+        return dict_.d_func()->autoSelectRegex_ &&
+               boost::regex_match(graph_.data(),
+                                  *dict_.d_func()->autoSelectRegex_,
+                                  boost::regex_constants::match_default);
+    }
+
+    bool checkNoMatchAutoSelect() const {
+        auto lastSegLength = fcitx::utf8::length(graph_.data());
+        // Check by length
+        if (dict_.tableOptions().noMatchAutoSelectLength() &&
+            !lengthLessThanLimit(
+                lastSegLength,
+                dict_.tableOptions().noMatchAutoSelectLength())) {
+            return true;
+        }
+
+        // Check by regex.
+        return dict_.d_func()->noMatchAutoSelectRegex_ &&
+               boost::regex_match(graph_.data(),
+                                  *dict_.d_func()->noMatchAutoSelectRegex_,
+                                  boost::regex_constants::match_default);
+    }
+
     TableBasedDictionary &dict_;
     UserLanguageModel &model_;
     TableDecoder decoder_;
@@ -371,12 +404,8 @@ bool TableContext::typeOneChar(std::string_view chr) {
         // It means "last segement + chr" has no match, so
         // we just select lastSeg instead.
         doAutoSelect =
-            doAutoSelect ||
-            (d->dict_.tableOptions().noMatchAutoSelectLength() &&
-             !lengthLessThanLimit(
-                 lastSegLength,
-                 d->dict_.tableOptions().noMatchAutoSelectLength()) &&
-             !d->dict_.hasMatchingWords(lastSeg, chr));
+            doAutoSelect || (d->checkNoMatchAutoSelect() &&
+                             !d->dict_.hasMatchingWords(lastSeg, chr));
     }
 
     if (doAutoSelect) {
@@ -549,16 +578,12 @@ void TableContext::update() {
             << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
                    .count();
         LIBIME_TABLE_DEBUG() << "Number: " << d->candidates_.size();
-    }
-
+    };
     // Run auto select for the second pass.
     // if number of candidate is 1, do auto select.
     if (d->dict_.tableOptions().autoSelect()) {
         if (d->hasOnlyOneAutoselectChoice() &&
-            lastSegLength <= d->dict_.maxLength() &&
-            d->dict_.tableOptions().autoSelectLength() &&
-            !lengthLessThanLimit(lastSegLength,
-                                 d->dict_.tableOptions().autoSelectLength())) {
+            lastSegLength <= d->dict_.maxLength() && d->checkAutoSelect()) {
             autoSelect();
         }
     }

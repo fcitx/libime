@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "tablebaseddictionary.h"
 #include "autophrasedict.h"
 #include "constants.h"
 #include "libime/core/datrie.h"
 #include "libime/core/lattice.h"
 #include "log.h"
+#include "tablebaseddictionary_p.h"
 #include "tabledecoder_p.h"
 #include "tableoptions.h"
 #include "tablerule.h"
@@ -120,313 +120,287 @@ void saveTrieToText(const DATrie<uint32_t> &trie, std::ostream &out) {
 }
 } // namespace
 
-class TableBasedDictionaryPrivate
-    : public fcitx::QPtrHolder<TableBasedDictionary> {
-public:
-    std::vector<TableRule> rules_;
-    std::set<uint32_t> inputCode_;
-    std::set<uint32_t> ignoreChars_;
-    uint32_t pinyinKey_ = 0;
-    uint32_t promptKey_ = 0;
-    uint32_t phraseKey_ = 0;
-    uint32_t codeLength_ = 0;
-    DATrie<uint32_t> phraseTrie_; // base dictionary
-    DATrie<uint32_t> userTrie_;   // base dictionary
-    uint32_t phraseTrieIndex_ = 0;
-    uint32_t userTrieIndex_ = 0;
-    DATrie<int32_t> singleCharTrie_; // reverse lookup from single character
-    DATrie<int32_t> singleCharConstTrie_; // lookup char for new phrase
-    DATrie<int32_t> singleCharLookupTrie_;
-    DATrie<uint32_t> promptTrie_; // lookup for prompt;
-    AutoPhraseDict autoPhraseDict_{TABLE_AUTOPHRASE_SIZE};
-    TableOptions options_;
-
-    TableBasedDictionaryPrivate(TableBasedDictionary *q) : QPtrHolder(q) {}
-
-    FCITX_DEFINE_SIGNAL_PRIVATE(TableBasedDictionary, tableOptionsChanged);
-
-    std::pair<DATrie<uint32_t> *, uint32_t *> trieByFlag(PhraseFlag flag) {
-        switch (flag) {
-        case PhraseFlag::None:
-        case PhraseFlag::Pinyin:
-            return {&phraseTrie_, &phraseTrieIndex_};
-            break;
-        case PhraseFlag::User:
-            return {&userTrie_, &userTrieIndex_};
-            break;
-        default:
-            return {nullptr, nullptr};
-        }
+std::pair<DATrie<uint32_t> *, uint32_t *>
+TableBasedDictionaryPrivate::trieByFlag(PhraseFlag flag) {
+    switch (flag) {
+    case PhraseFlag::None:
+    case PhraseFlag::Pinyin:
+        return {&phraseTrie_, &phraseTrieIndex_};
+        break;
+    case PhraseFlag::User:
+        return {&userTrie_, &userTrieIndex_};
+        break;
+    default:
+        return {nullptr, nullptr};
     }
+}
 
-    std::pair<const DATrie<uint32_t> *, const uint32_t *>
-    trieByFlag(PhraseFlag flag) const {
-        switch (flag) {
-        case PhraseFlag::None:
-        case PhraseFlag::Pinyin:
-            return {&phraseTrie_, &phraseTrieIndex_};
-            break;
-        case PhraseFlag::User:
-            return {&userTrie_, &userTrieIndex_};
-            break;
-        default:
-            return {nullptr, nullptr};
-        }
+std::pair<const DATrie<uint32_t> *, const uint32_t *>
+TableBasedDictionaryPrivate::trieByFlag(PhraseFlag flag) const {
+    switch (flag) {
+    case PhraseFlag::None:
+    case PhraseFlag::Pinyin:
+        return {&phraseTrie_, &phraseTrieIndex_};
+        break;
+    case PhraseFlag::User:
+        return {&userTrie_, &userTrieIndex_};
+        break;
+    default:
+        return {nullptr, nullptr};
     }
+}
 
-    bool insert(std::string_view key, std::string_view value, PhraseFlag flag) {
-        DATrie<uint32_t> *trie;
-        uint32_t *index;
+bool TableBasedDictionaryPrivate::insert(std::string_view key,
+                                         std::string_view value,
+                                         PhraseFlag flag) {
+    DATrie<uint32_t> *trie;
+    uint32_t *index;
 
-        auto pair = trieByFlag(flag);
-        trie = pair.first;
-        index = pair.second;
+    auto pair = trieByFlag(flag);
+    trie = pair.first;
+    index = pair.second;
 
-        auto entry = generateTableEntry(key, value);
-        if (flag == PhraseFlag::Pinyin) {
-            entry = fcitx::utf8::UCS4ToUTF8(pinyinKey_) + entry;
-        }
-        auto searchResult = trie->exactMatchSearch(entry);
-        // Always insert to user even it is dup.
-        if (trie->isValid(searchResult) && flag != PhraseFlag::User) {
-            return false;
-        }
-        trie->set(entry, *index);
-        *index += 1;
-        return true;
+    auto entry = generateTableEntry(key, value);
+    if (flag == PhraseFlag::Pinyin) {
+        entry = fcitx::utf8::UCS4ToUTF8(pinyinKey_) + entry;
     }
+    auto searchResult = trie->exactMatchSearch(entry);
+    // Always insert to user even it is dup.
+    if (trie->isValid(searchResult) && flag != PhraseFlag::User) {
+        return false;
+    }
+    trie->set(entry, *index);
+    *index += 1;
+    return true;
+}
 
-    auto matchTrie(std::string_view code, TableMatchMode mode, PhraseFlag flag,
-                   const TableMatchCallback &callback) const {
-        auto range = fcitx::utf8::MakeUTF8CharRange(code);
-        std::vector<DATrie<uint32_t>::position_type> positions;
-        positions.push_back(0);
-        const auto &trie = *trieByFlag(flag).first;
-        // BFS on trie.
-        for (auto iter = std::begin(range), end = std::end(range); iter != end;
-             iter++) {
-            decltype(positions) newPositions;
+bool TableBasedDictionaryPrivate::matchTrie(
+    std::string_view code, TableMatchMode mode, PhraseFlag flag,
+    const TableMatchCallback &callback) const {
+    auto range = fcitx::utf8::MakeUTF8CharRange(code);
+    std::vector<DATrie<uint32_t>::position_type> positions;
+    positions.push_back(0);
+    const auto &trie = *trieByFlag(flag).first;
+    // BFS on trie.
+    for (auto iter = std::begin(range), end = std::end(range); iter != end;
+         iter++) {
+        decltype(positions) newPositions;
 
-            for (auto position : positions) {
-                if (flag != PhraseFlag::Pinyin &&
-                    *iter == options_.matchingKey() && options_.matchingKey()) {
-                    for (auto code : inputCode_) {
-                        auto curPos = position;
-                        auto strCode = fcitx::utf8::UCS4ToUTF8(code);
-                        auto result = trie.traverse(strCode, curPos);
-                        if (!trie.isNoPath(result)) {
-                            newPositions.push_back(curPos);
-                        }
-                    }
-                } else {
-                    auto charRange = iter.charRange();
-                    std::string_view chr(
-                        &*charRange.first,
-                        std::distance(charRange.first, charRange.second));
+        for (auto position : positions) {
+            if (flag != PhraseFlag::Pinyin && *iter == options_.matchingKey() &&
+                options_.matchingKey()) {
+                for (auto code : inputCode_) {
                     auto curPos = position;
-                    auto result = trie.traverse(chr, curPos);
+                    auto strCode = fcitx::utf8::UCS4ToUTF8(code);
+                    auto result = trie.traverse(strCode, curPos);
                     if (!trie.isNoPath(result)) {
                         newPositions.push_back(curPos);
                     }
                 }
-            }
-
-            positions = std::move(newPositions);
-        }
-
-        auto matchWord = [&trie, &code, callback, flag,
-                          mode](uint32_t value, size_t len,
-                                DATrie<int32_t>::position_type pos) {
-            std::string entry;
-            trie.suffix(entry, code.size() + len, pos);
-            auto sep = entry.find(keyValueSeparator, code.size());
-            if (sep == std::string::npos) {
-                return true;
-            }
-
-            auto view = std::string_view(entry);
-            auto matchedCode = view.substr(0, sep);
-            if (mode == TableMatchMode::Prefix ||
-                (mode == TableMatchMode::Exact &&
-                 fcitx::utf8::length(matchedCode) ==
-                     fcitx::utf8::length(code))) {
-                // Remove pinyinKey.
-                if (flag == PhraseFlag::Pinyin) {
-                    matchedCode.remove_prefix(
-                        fcitx::utf8::ncharByteLength(matchedCode.begin(), 1));
-                }
-                return callback(matchedCode, view.substr(sep + 1), value, flag);
-            }
-            return true;
-        };
-
-        for (auto position : positions) {
-            if (!trie.foreach(matchWord, position)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    void reset() {
-        pinyinKey_ = promptKey_ = phraseKey_ = 0;
-        phraseTrieIndex_ = userTrieIndex_ = 0;
-        codeLength_ = 0;
-        inputCode_.clear();
-        ignoreChars_.clear();
-        rules_.clear();
-        rules_.shrink_to_fit();
-        phraseTrie_.clear();
-        singleCharTrie_.clear();
-        singleCharConstTrie_.clear();
-        singleCharLookupTrie_.clear();
-        promptTrie_.clear();
-    }
-    bool validate() const {
-        if (inputCode_.empty()) {
-            return false;
-        }
-        if (inputCode_.count(pinyinKey_)) {
-            return false;
-        }
-        if (inputCode_.count(promptKey_)) {
-            return false;
-        }
-        if (inputCode_.count(phraseKey_)) {
-            return false;
-        }
-        return true;
-    }
-
-    void parseDataLine(std::string_view buf, bool user) {
-        uint32_t special[3] = {pinyinKey_, phraseKey_, promptKey_};
-        PhraseFlag specialFlag[] = {PhraseFlag::Pinyin,
-                                    PhraseFlag::ConstructPhrase,
-                                    PhraseFlag::Prompt};
-        auto spacePos = buf.find_first_of(" \n\r\f\v\t");
-        if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
-            return;
-        }
-        auto wordPos = buf.find_first_not_of(" \n\r\f\v\t", spacePos);
-        if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
-            return;
-        }
-
-        auto key = std::string_view(buf).substr(0, spacePos);
-        auto value = std::string_view(buf).substr(wordPos);
-        if (key.empty() || value.empty()) {
-            return;
-        }
-
-        uint32_t firstChar;
-        const auto *next =
-            fcitx::utf8::getNextChar(key.begin(), key.end(), &firstChar);
-        auto *iter =
-            std::find(std::begin(special), std::end(special), firstChar);
-        PhraseFlag flag = user ? PhraseFlag::User : PhraseFlag::None;
-        if (iter != std::end(special)) {
-            // Reject flag for user.
-            if (user) {
-                return;
-            }
-            flag = specialFlag[iter - std::begin(special)];
-            key = key.substr(std::distance(key.begin(), next));
-        }
-
-        q_func()->insert(key, value, flag);
-    }
-    bool matchWordsInternal(std::string_view code, TableMatchMode mode,
-                            bool onlyChecking,
-                            const TableMatchCallback &callback) const {
-        auto t0 = std::chrono::high_resolution_clock::now();
-
-        if (!matchTrie(code, mode, PhraseFlag::None, callback)) {
-            return false;
-        }
-
-        LIBIME_TABLE_DEBUG() << "Match trie: " << millisecondsTill(t0);
-
-        if (pinyinKey_) {
-            auto pinyinCode = fcitx::utf8::UCS4ToUTF8(pinyinKey_);
-            pinyinCode.append(code.begin(), code.end());
-            // Apply following heuristic for pinyin.
-            auto pinyinMode = TableMatchMode::Exact;
-            int codeLength = fcitx::utf8::length(code);
-            if (onlyChecking || codeLength >= options_.autoSelectLength() ||
-                static_cast<size_t>(codeLength) > codeLength_ ||
-                codeLength >= options_.noMatchAutoSelectLength()) {
-                pinyinMode = TableMatchMode::Prefix;
-            }
-            if (!matchTrie(pinyinCode, pinyinMode, PhraseFlag::Pinyin,
-                           callback)) {
-                return false;
-            }
-        }
-
-        LIBIME_TABLE_DEBUG() << "Match pinyin: " << millisecondsTill(t0);
-
-        if (!matchTrie(code, mode, PhraseFlag::User, callback)) {
-            return false;
-        }
-
-        LIBIME_TABLE_DEBUG() << "Match user: " << millisecondsTill(t0);
-        auto matchAutoPhrase = [mode, code, &callback](std::string_view entry,
-                                                       int32_t) {
-            auto sep = entry.find(keyValueSeparator, code.size());
-            if (sep == std::string::npos) {
-                return true;
-            }
-
-            auto view = std::string_view(entry);
-            auto matchedCode = view.substr(0, sep);
-            if (mode == TableMatchMode::Prefix ||
-                (mode == TableMatchMode::Exact &&
-                 fcitx::utf8::length(matchedCode) ==
-                     fcitx::utf8::length(code))) {
-                return callback(matchedCode, view.substr(sep + 1), 0,
-                                PhraseFlag::Auto);
-            }
-            return true;
-        };
-
-        return autoPhraseDict_.search(code, matchAutoPhrase);
-    }
-
-    bool validateHints(std::vector<std::string> &hints,
-                       const TableRule &rule) const {
-        if (hints.size() <= 1) {
-            return false;
-        }
-
-        for (const auto &ruleEntry : rule.entries()) {
-            // skip rule entry like p00.
-            if (ruleEntry.isPlaceHolder()) {
-                continue;
-            }
-
-            if (ruleEntry.character() > hints.size()) {
-                return false;
-            }
-
-            size_t index;
-            if (ruleEntry.flag() == TableRuleEntryFlag::FromFront) {
-                index = ruleEntry.character() - 1;
             } else {
-                index = hints.size() - ruleEntry.character();
-            }
-            assert(index < hints.size());
-
-            // Don't use hint for table with phrase key, or the requested length
-            // longer.
-            if (phraseKey_ ||
-                fcitx::utf8::length(hints[index]) < ruleEntry.encodingIndex()) {
-                hints[index] = std::string();
+                auto charRange = iter.charRange();
+                std::string_view chr(
+                    &*charRange.first,
+                    std::distance(charRange.first, charRange.second));
+                auto curPos = position;
+                auto result = trie.traverse(chr, curPos);
+                if (!trie.isNoPath(result)) {
+                    newPositions.push_back(curPos);
+                }
             }
         }
 
-        return true;
+        positions = std::move(newPositions);
     }
-};
+
+    auto matchWord = [&trie, &code, callback, flag,
+                      mode](uint32_t value, size_t len,
+                            DATrie<int32_t>::position_type pos) {
+        std::string entry;
+        trie.suffix(entry, code.size() + len, pos);
+        auto sep = entry.find(keyValueSeparator, code.size());
+        if (sep == std::string::npos) {
+            return true;
+        }
+
+        auto view = std::string_view(entry);
+        auto matchedCode = view.substr(0, sep);
+        if (mode == TableMatchMode::Prefix ||
+            (mode == TableMatchMode::Exact &&
+             fcitx::utf8::length(matchedCode) == fcitx::utf8::length(code))) {
+            // Remove pinyinKey.
+            if (flag == PhraseFlag::Pinyin) {
+                matchedCode.remove_prefix(
+                    fcitx::utf8::ncharByteLength(matchedCode.begin(), 1));
+            }
+            return callback(matchedCode, view.substr(sep + 1), value, flag);
+        }
+        return true;
+    };
+
+    for (auto position : positions) {
+        if (!trie.foreach(matchWord, position)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void TableBasedDictionaryPrivate::reset() {
+    pinyinKey_ = promptKey_ = phraseKey_ = 0;
+    phraseTrieIndex_ = userTrieIndex_ = 0;
+    codeLength_ = 0;
+    inputCode_.clear();
+    ignoreChars_.clear();
+    rules_.clear();
+    rules_.shrink_to_fit();
+    phraseTrie_.clear();
+    singleCharTrie_.clear();
+    singleCharConstTrie_.clear();
+    singleCharLookupTrie_.clear();
+    promptTrie_.clear();
+}
+bool TableBasedDictionaryPrivate::validate() const {
+    if (inputCode_.empty()) {
+        return false;
+    }
+    if (inputCode_.count(pinyinKey_)) {
+        return false;
+    }
+    if (inputCode_.count(promptKey_)) {
+        return false;
+    }
+    if (inputCode_.count(phraseKey_)) {
+        return false;
+    }
+    return true;
+}
+
+void TableBasedDictionaryPrivate::parseDataLine(std::string_view buf,
+                                                bool user) {
+    uint32_t special[3] = {pinyinKey_, phraseKey_, promptKey_};
+    PhraseFlag specialFlag[] = {PhraseFlag::Pinyin, PhraseFlag::ConstructPhrase,
+                                PhraseFlag::Prompt};
+    auto spacePos = buf.find_first_of(" \n\r\f\v\t");
+    if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
+        return;
+    }
+    auto wordPos = buf.find_first_not_of(" \n\r\f\v\t", spacePos);
+    if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
+        return;
+    }
+
+    auto key = std::string_view(buf).substr(0, spacePos);
+    auto value = std::string_view(buf).substr(wordPos);
+    if (key.empty() || value.empty()) {
+        return;
+    }
+
+    uint32_t firstChar;
+    const auto *next =
+        fcitx::utf8::getNextChar(key.begin(), key.end(), &firstChar);
+    auto *iter = std::find(std::begin(special), std::end(special), firstChar);
+    PhraseFlag flag = user ? PhraseFlag::User : PhraseFlag::None;
+    if (iter != std::end(special)) {
+        // Reject flag for user.
+        if (user) {
+            return;
+        }
+        flag = specialFlag[iter - std::begin(special)];
+        key = key.substr(std::distance(key.begin(), next));
+    }
+
+    q_func()->insert(key, value, flag);
+}
+bool TableBasedDictionaryPrivate::matchWordsInternal(
+    std::string_view code, TableMatchMode mode, bool onlyChecking,
+    const TableMatchCallback &callback) const {
+    auto t0 = std::chrono::high_resolution_clock::now();
+
+    if (!matchTrie(code, mode, PhraseFlag::None, callback)) {
+        return false;
+    }
+
+    LIBIME_TABLE_DEBUG() << "Match trie: " << millisecondsTill(t0);
+
+    if (pinyinKey_) {
+        auto pinyinCode = fcitx::utf8::UCS4ToUTF8(pinyinKey_);
+        pinyinCode.append(code.begin(), code.end());
+        // Apply following heuristic for pinyin.
+        auto pinyinMode = TableMatchMode::Exact;
+        int codeLength = fcitx::utf8::length(code);
+        if (onlyChecking || codeLength >= options_.autoSelectLength() ||
+            static_cast<size_t>(codeLength) > codeLength_ ||
+            codeLength >= options_.noMatchAutoSelectLength()) {
+            pinyinMode = TableMatchMode::Prefix;
+        }
+        if (!matchTrie(pinyinCode, pinyinMode, PhraseFlag::Pinyin, callback)) {
+            return false;
+        }
+    }
+
+    LIBIME_TABLE_DEBUG() << "Match pinyin: " << millisecondsTill(t0);
+
+    if (!matchTrie(code, mode, PhraseFlag::User, callback)) {
+        return false;
+    }
+
+    LIBIME_TABLE_DEBUG() << "Match user: " << millisecondsTill(t0);
+    auto matchAutoPhrase = [mode, code, &callback](std::string_view entry,
+                                                   int32_t) {
+        auto sep = entry.find(keyValueSeparator, code.size());
+        if (sep == std::string::npos) {
+            return true;
+        }
+
+        auto view = std::string_view(entry);
+        auto matchedCode = view.substr(0, sep);
+        if (mode == TableMatchMode::Prefix ||
+            (mode == TableMatchMode::Exact &&
+             fcitx::utf8::length(matchedCode) == fcitx::utf8::length(code))) {
+            return callback(matchedCode, view.substr(sep + 1), 0,
+                            PhraseFlag::Auto);
+        }
+        return true;
+    };
+
+    return autoPhraseDict_.search(code, matchAutoPhrase);
+}
+
+bool TableBasedDictionaryPrivate::validateHints(std::vector<std::string> &hints,
+                                                const TableRule &rule) const {
+    if (hints.size() <= 1) {
+        return false;
+    }
+
+    for (const auto &ruleEntry : rule.entries()) {
+        // skip rule entry like p00.
+        if (ruleEntry.isPlaceHolder()) {
+            continue;
+        }
+
+        if (ruleEntry.character() > hints.size()) {
+            return false;
+        }
+
+        size_t index;
+        if (ruleEntry.flag() == TableRuleEntryFlag::FromFront) {
+            index = ruleEntry.character() - 1;
+        } else {
+            index = hints.size() - ruleEntry.character();
+        }
+        assert(index < hints.size());
+
+        // Don't use hint for table with phrase key, or the requested length
+        // longer.
+        if (phraseKey_ ||
+            fcitx::utf8::length(hints[index]) < ruleEntry.encodingIndex()) {
+            hints[index] = std::string();
+        }
+    }
+
+    return true;
+}
 
 TableBasedDictionary::TableBasedDictionary()
     : d_ptr(std::make_unique<TableBasedDictionaryPrivate>(this)) {
@@ -1110,6 +1084,21 @@ void TableBasedDictionary::setTableOptions(TableOptions option) {
     }
     if (d->options_.autoPhraseLength() < 0) {
         d->options_.setAutoPhraseLength(maxLength());
+    }
+    d->autoSelectRegex_.reset();
+    d->noMatchAutoSelectRegex_.reset();
+    try {
+        if (!d->options_.autoSelectRegex().empty()) {
+            d->autoSelectRegex_.emplace(d->options_.autoSelectRegex());
+        }
+    } catch (...) {
+    }
+    try {
+        if (!d->options_.noMatchAutoSelectRegex().empty()) {
+            d->noMatchAutoSelectRegex_.emplace(
+                d->options_.noMatchAutoSelectRegex());
+        }
+    } catch (...) {
     }
 }
 

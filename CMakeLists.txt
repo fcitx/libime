@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(libime VERSION 1.0.2)
+project(libime VERSION 1.0.3)
 set(LibIME_VERSION ${PROJECT_VERSION})
 
 find_package(ECM 1.0 REQUIRED)
@@ -29,7 +29,7 @@ include(ECMUninstallTarget)
 find_package(Fcitx5Utils REQUIRED)
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
 
-find_package(Boost 1.61 REQUIRED COMPONENTS iostreams filesystem)
+find_package(Boost 1.61 REQUIRED COMPONENTS iostreams filesystem regex)
 set(LIBIME_INSTALL_PKGDATADIR "${CMAKE_INSTALL_FULL_DATADIR}/libime")
 set(LIBIME_INSTALL_LIBDATADIR "${CMAKE_INSTALL_FULL_LIBDIR}/libime")
 

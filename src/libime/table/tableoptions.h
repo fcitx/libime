@@ -33,8 +33,11 @@ public:
     FCITX_DECLARE_PROPERTY(uint32_t, noSortInputLength, setNoSortInputLength);
     FCITX_DECLARE_PROPERTY(bool, autoSelect, setAutoSelect);
     FCITX_DECLARE_PROPERTY(int, autoSelectLength, setAutoSelectLength);
+    FCITX_DECLARE_PROPERTY(std::string, autoSelectRegex, setAutoSelectRegex);
     FCITX_DECLARE_PROPERTY(int, noMatchAutoSelectLength,
                            setNoMatchAutoSelectLength);
+    FCITX_DECLARE_PROPERTY(std::string, noMatchAutoSelectRegex,
+                           setNoMatchAutoSelectRegex);
     FCITX_DECLARE_PROPERTY(bool, commitRawInput, setCommitRawInput);
     FCITX_DECLARE_PROPERTY(std::set<uint32_t>, endKey, setEndKey);
     FCITX_DECLARE_PROPERTY(uint32_t, matchingKey, setMatchingKey);

@@ -699,7 +699,7 @@ int main(int argc, char *argv[]) {
             withBaseOption.skipHistory = withoutBaseOption.skipHistory = true;
             break;
         case 'p':
-            withBaseOption.historyFile = withoutBaseOption.historyFile = true;
+            withBaseOption.historyFile = withoutBaseOption.historyFile = optarg;
             break;
         case 'U':
             withBaseOption.merge = false;

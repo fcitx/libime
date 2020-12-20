@@ -46,6 +46,8 @@ public:
     void load(std::istream &in);
     void save(std::ostream &out);
 
+    bool empty() const;
+
 private:
     std::unique_ptr<AutoPhraseDictPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(AutoPhraseDict);

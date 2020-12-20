@@ -486,7 +486,7 @@ public:
         return 0;
     }
 
-    bool foreach(callback_type callback, npos_t root = npos_t()) const {
+    bool foreach(const callback_type &callback, npos_t root = npos_t()) const {
         decorder_type b;
         size_t p(0);
         npos_t from = root;
@@ -1001,6 +1001,11 @@ void DATrie<T>::update(const char *key, size_t len,
 template <typename T>
 size_t DATrie<T>::size() const {
     return d->num_keys();
+}
+
+template <typename T>
+bool DATrie<T>::empty() const {
+    return d->foreach([](value_type, size_t, position_type) { return false; });
 }
 
 template <typename T>

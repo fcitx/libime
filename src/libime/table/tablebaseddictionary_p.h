@@ -28,8 +28,9 @@ public:
     uint32_t promptKey_ = 0;
     uint32_t phraseKey_ = 0;
     uint32_t codeLength_ = 0;
-    DATrie<uint32_t> phraseTrie_; // base dictionary
-    DATrie<uint32_t> userTrie_;   // base dictionary
+    DATrie<uint32_t> phraseTrie_;   // base dictionary
+    DATrie<uint32_t> userTrie_;     // user dictionary
+    DATrie<uint32_t> deletionTrie_; // mask over base dictionary
     uint32_t phraseTrieIndex_ = 0;
     uint32_t userTrieIndex_ = 0;
     DATrie<int32_t> singleCharTrie_; // reverse lookup from single character
@@ -58,7 +59,10 @@ public:
     void reset();
     bool validate() const;
 
-    void parseDataLine(std::string_view buf, bool user);
+    FCITX_NODISCARD
+    std::optional<std::tuple<std::string, std::string, PhraseFlag>>
+    parseDataLine(std::string_view buf, bool user);
+    void insertDataLine(std::string_view buf, bool user);
     bool matchWordsInternal(std::string_view code, TableMatchMode mode,
                             bool onlyChecking,
                             const TableMatchCallback &callback) const;

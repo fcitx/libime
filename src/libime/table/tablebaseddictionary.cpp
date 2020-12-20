@@ -33,7 +33,7 @@ constexpr char keyValueSeparator = '\x01';
 constexpr uint32_t tableBinaryFormatMagic = 0x000fcabe;
 constexpr uint32_t tableBinaryFormatVersion = 0x1;
 constexpr uint32_t userTableBinaryFormatMagic = 0x356fcabe;
-uint32_t userTableBinaryFormatVersion = 0x1;
+uint32_t userTableBinaryFormatVersion = 0x2;
 
 enum {
     STR_KEYCODE,
@@ -55,6 +55,9 @@ const char *strConst[2][STR_LAST] = {
      "[组词规则]", "提示=", "构词="},
     {"KeyCode=", "Length=", "InvalidChar=", "Pinyin=", "PinyinLength=",
      "[Data]", "[Rule]", "Prompt=", "ConstructPhrase="}};
+
+constexpr std::string_view UserDictAutoMark = "[Auto]";
+constexpr std::string_view UserDictDeleteMark = "[Delete]";
 
 // A better version of key + keyValueSeparator + value. It tries to avoid
 // multiple allocation.
@@ -165,7 +168,7 @@ bool TableBasedDictionaryPrivate::insert(std::string_view key,
         entry = fcitx::utf8::UCS4ToUTF8(pinyinKey_) + entry;
     }
     auto searchResult = trie->exactMatchSearch(entry);
-    // Always insert to user even it is dup.
+    // Always insert to user even it is dup because we need to update the index.
     if (trie->isValid(searchResult) && flag != PhraseFlag::User) {
         return false;
     }
@@ -259,6 +262,9 @@ void TableBasedDictionaryPrivate::reset() {
     singleCharConstTrie_.clear();
     singleCharLookupTrie_.clear();
     promptTrie_.clear();
+    userTrie_.clear();
+    autoPhraseDict_.clear();
+    deletionTrie_.clear();
 }
 bool TableBasedDictionaryPrivate::validate() const {
     if (inputCode_.empty()) {
@@ -276,24 +282,24 @@ bool TableBasedDictionaryPrivate::validate() const {
     return true;
 }
 
-void TableBasedDictionaryPrivate::parseDataLine(std::string_view buf,
-                                                bool user) {
+std::optional<std::tuple<std::string, std::string, PhraseFlag>>
+TableBasedDictionaryPrivate::parseDataLine(std::string_view buf, bool user) {
     uint32_t special[3] = {pinyinKey_, phraseKey_, promptKey_};
     PhraseFlag specialFlag[] = {PhraseFlag::Pinyin, PhraseFlag::ConstructPhrase,
                                 PhraseFlag::Prompt};
     auto spacePos = buf.find_first_of(" \n\r\f\v\t");
     if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
-        return;
+        return {};
     }
     auto wordPos = buf.find_first_not_of(" \n\r\f\v\t", spacePos);
     if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
-        return;
+        return {};
     }
 
     auto key = std::string_view(buf).substr(0, spacePos);
     auto value = std::string_view(buf).substr(wordPos);
     if (key.empty() || value.empty()) {
-        return;
+        return {};
     }
 
     uint32_t firstChar;
@@ -304,20 +310,42 @@ void TableBasedDictionaryPrivate::parseDataLine(std::string_view buf,
     if (iter != std::end(special)) {
         // Reject flag for user.
         if (user) {
-            return;
+            return {};
         }
         flag = specialFlag[iter - std::begin(special)];
         key = key.substr(std::distance(key.begin(), next));
     }
 
-    q_func()->insert(key, value, flag);
+    return std::tuple<std::string, std::string, PhraseFlag>{key, value, flag};
 }
+
+void TableBasedDictionaryPrivate::insertDataLine(std::string_view buf,
+                                                 bool user) {
+    if (auto data = parseDataLine(buf, user)) {
+        auto &[key, value, flag] = *data;
+
+        q_func()->insert(key, value, flag);
+    }
+}
+
 bool TableBasedDictionaryPrivate::matchWordsInternal(
     std::string_view code, TableMatchMode mode, bool onlyChecking,
     const TableMatchCallback &callback) const {
     auto t0 = std::chrono::high_resolution_clock::now();
 
-    if (!matchTrie(code, mode, PhraseFlag::None, callback)) {
+    if (!matchTrie(code, mode, PhraseFlag::None,
+                   [&callback, this](std::string_view code,
+                                     std::string_view word, uint32_t index,
+                                     PhraseFlag flag) {
+                       if (!deletionTrie_.empty()) {
+                           auto entry = generateTableEntry(code, word);
+                           if (deletionTrie_.isValid(
+                                   deletionTrie_.exactMatchSearch(entry))) {
+                               return true;
+                           }
+                       }
+                       return callback(code, word, index, flag);
+                   })) {
         return false;
     }
 
@@ -525,7 +553,7 @@ void TableBasedDictionary::loadText(std::istream &in) {
             break;
         }
         case BuildPhase::PhaseData:
-            d->parseDataLine(buf, false);
+            d->insertDataLine(buf, false);
             break;
         }
     }
@@ -739,18 +767,26 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
             throw std::invalid_argument("Invalid user table magic.");
         }
         throw_if_io_fail(unmarshall(in, version));
-        if (version != userTableBinaryFormatVersion) {
+        if (version < 1 || version > userTableBinaryFormatVersion) {
             throw std::invalid_argument("Invalid user table version.");
         }
         d->userTrie_ = decltype(d->userTrie_)(in);
         d->userTrieIndex_ = maxValue(d->userTrie_);
         d->autoPhraseDict_ =
             decltype(d->autoPhraseDict_)(TABLE_AUTOPHRASE_SIZE, in);
+        // Version 2 introduced new deletion trie.
+        if (version == userTableBinaryFormatVersion) {
+            d->deletionTrie_ = decltype(d->deletionTrie_)(in);
+        } else {
+            d->deletionTrie_ = decltype(d->deletionTrie_)();
+        }
         break;
     case TableFormat::Text: {
         std::string buf;
         auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
-        bool inAuto = false;
+        enum class UserDictState { Phrase, Auto, Delete };
+
+        UserDictState state = UserDictState::Phrase;
         while (!in.eof()) {
             if (!std::getline(in, buf)) {
                 break;
@@ -761,14 +797,19 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
                 continue;
             }
             boost::trim_if(buf, isSpaceCheck);
-            if (buf == "[Auto]") {
-                inAuto = true;
+            if (buf == UserDictAutoMark) {
+                state = UserDictState::Auto;
+                continue;
+            } else if (buf == UserDictDeleteMark) {
+                state = UserDictState::Delete;
                 continue;
             }
 
-            if (!inAuto) {
-                d->parseDataLine(buf, true);
-            } else {
+            switch (state) {
+            case UserDictState::Phrase:
+                d->insertDataLine(buf, true);
+                break;
+            case UserDictState::Auto: {
                 auto tokens = fcitx::stringutils::split(buf, " \n\t\r\v\f");
                 if (tokens.size() != 3 || !isAllInputCode(tokens[0])) {
                     continue;
@@ -780,6 +821,14 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
                 } catch (const std::exception &) {
                     continue;
                 }
+            } break;
+            case UserDictState::Delete: {
+                if (auto data = d->parseDataLine(buf, true)) {
+                    auto &[key, value, flag] = *data;
+                    auto entry = generateTableEntry(key, value);
+                    d->deletionTrie_.set(entry, 0);
+                }
+            } break;
             }
         }
         break;
@@ -805,24 +854,31 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
         throw_if_io_fail(out);
         d->autoPhraseDict_.save(out);
         throw_if_io_fail(out);
+        d->deletionTrie_.save(out);
+        throw_if_io_fail(out);
         break;
     case TableFormat::Text: {
         saveTrieToText(d->userTrie_, out);
-        if (d->options_.autoPhraseLength() <= 2) {
-            break;
+
+        if (d->options_.autoPhraseLength() > 2 && !d->autoPhraseDict_.empty()) {
+            out << UserDictAutoMark << std::endl;
+            std::vector<std::tuple<std::string, std::string, int32_t>>
+                autoEntries;
+            d->autoPhraseDict_.search(
+                "", [&autoEntries](std::string_view entry, int hit) {
+                    auto sep = entry.find(keyValueSeparator);
+                    autoEntries.emplace_back(entry.substr(0, sep),
+                                             entry.substr(sep + 1), hit);
+                    return true;
+                });
+            for (auto &t : autoEntries | boost::adaptors::reversed) {
+                out << std::get<0>(t) << " " << std::get<1>(t) << " "
+                    << std::get<2>(t) << std::endl;
+            }
         }
-        out << "[Auto]" << std::endl;
-        std::vector<std::tuple<std::string, std::string, int32_t>> autoEntries;
-        d->autoPhraseDict_.search(
-            "", [&autoEntries](std::string_view entry, int hit) {
-                auto sep = entry.find(keyValueSeparator);
-                autoEntries.emplace_back(entry.substr(0, sep),
-                                         entry.substr(sep + 1), hit);
-                return true;
-            });
-        for (auto &t : autoEntries | boost::adaptors::reversed) {
-            out << std::get<0>(t) << " " << std::get<1>(t) << " "
-                << std::get<2>(t) << std::endl;
+        if (!d->deletionTrie_.empty()) {
+            out << UserDictDeleteMark << std::endl;
+            saveTrieToText(d->deletionTrie_, out);
         }
         break;
     }
@@ -838,7 +894,7 @@ bool TableBasedDictionary::hasRule() const noexcept {
 
 bool TableBasedDictionary::hasCustomPrompt() const noexcept {
     FCITX_D();
-    return d->promptTrie_.size();
+    return !d->promptTrie_.empty();
 }
 
 const TableRule *TableBasedDictionary::findRule(std::string_view name) const {
@@ -1171,7 +1227,8 @@ PhraseFlag TableBasedDictionary::wordExists(std::string_view code,
         return PhraseFlag::User;
     }
     value = d->phraseTrie_.exactMatchSearch(entry);
-    if (d->phraseTrie_.isValid(value)) {
+    if (d->phraseTrie_.isValid(value) &&
+        !d->deletionTrie_.isValid(d->deletionTrie_.exactMatchSearch(entry))) {
         return PhraseFlag::None;
     }
 
@@ -1187,6 +1244,12 @@ void TableBasedDictionary::removeWord(std::string_view code,
     auto entry = generateTableEntry(code, word);
     d->autoPhraseDict_.erase(entry);
     d->userTrie_.erase(entry);
+    auto value = d->phraseTrie_.exactMatchSearch(entry);
+    FCITX_INFO() << "Remove: " << code << " " << word;
+    if (d->phraseTrie_.isValid(value) &&
+        !d->deletionTrie_.isValid(d->deletionTrie_.exactMatchSearch(entry))) {
+        d->deletionTrie_.set(entry, 0);
+    }
 }
 
 std::string TableBasedDictionary::reverseLookup(std::string_view word,

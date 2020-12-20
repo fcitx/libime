@@ -70,6 +70,7 @@ public:
     void save(std::ostream &stream);
 
     size_t size() const;
+    bool empty() const;
 
     // retrive the string via len and pos
     void suffix(std::string &s, size_t len, position_type pos) const;

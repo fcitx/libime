@@ -86,7 +86,6 @@ void TrieDictionary::addWord(size_t idx, std::string_view key, float cost) {
 bool TrieDictionary::removeWord(size_t idx, std::string_view key) {
     FCITX_D();
     if (d->tries_[idx].erase(key.data(), key.size())) {
-        ;
         emit<TrieDictionary::dictionaryChanged>(idx);
         return true;
     }

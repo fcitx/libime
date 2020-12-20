@@ -108,6 +108,11 @@ void AutoPhraseDict::clear() {
     d->il_.clear();
 }
 
+bool AutoPhraseDict::empty() const {
+    FCITX_D();
+    return d->il_.empty();
+}
+
 void AutoPhraseDict::load(std::istream &in) {
     uint32_t size = 0;
     throw_if_io_fail(unmarshall(in, size));

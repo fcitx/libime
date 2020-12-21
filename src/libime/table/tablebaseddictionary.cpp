@@ -1247,7 +1247,6 @@ void TableBasedDictionary::removeWord(std::string_view code,
     d->autoPhraseDict_.erase(entry);
     d->userTrie_.erase(entry);
     auto value = d->phraseTrie_.exactMatchSearch(entry);
-    FCITX_INFO() << "Remove: " << code << " " << word;
     if (d->phraseTrie_.isValid(value) &&
         !d->deletionTrie_.isValid(d->deletionTrie_.exactMatchSearch(entry))) {
         d->deletionTrie_.set(entry, 0);

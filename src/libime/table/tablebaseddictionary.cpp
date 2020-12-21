@@ -927,10 +927,12 @@ bool TableBasedDictionary::insert(std::string_view key, std::string_view value,
     auto valueLength = fcitx::utf8::lengthValidated(value);
     if (keyLength == fcitx::utf8::INVALID_LENGTH ||
         valueLength == fcitx::utf8::INVALID_LENGTH ||
-        (flag != PhraseFlag::Pinyin && !isValidLength(keyLength))) {
+        (d->codeLength_ && flag != PhraseFlag::Pinyin &&
+         !isValidLength(keyLength))) {
         return false;
     }
-    if (flag != PhraseFlag::Pinyin && !isAllInputCode(key)) {
+    if (!d->inputCode_.empty() && flag != PhraseFlag::Pinyin &&
+        !isAllInputCode(key)) {
         return false;
     }
 

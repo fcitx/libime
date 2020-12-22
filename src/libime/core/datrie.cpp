@@ -314,28 +314,26 @@ public:
     }
 
     template <typename U>
-    inline void update(const char *key, U &&callback) {
-        update(key, std::strlen(key),
-               std::forward<decltype(callback)>(callback));
+    inline void update(const char *key, const U &callback) {
+        update(key, std::strlen(key), callback);
     }
 
     template <typename U>
-    inline void update(const char *key, size_t len, U &&callback) {
+    inline void update(const char *key, size_t len, const U &callback) {
         npos_t from;
         size_t pos(0);
-        update(key, from, pos, len, std::forward<decltype(callback)>(callback));
+        update(key, from, pos, len, callback);
     }
 
     template <typename U>
     inline void update(const char *key, npos_t &from, size_t &pos, size_t len,
-                       U &&callback) {
-        update(key, from, pos, len, std::forward<decltype(callback)>(callback),
-               [](const int, const int) {});
+                       const U &callback) {
+        update(key, from, pos, len, callback, [](const int, const int) {});
     }
 
     template <typename U, typename T>
     void update(const char *key, npos_t &npos, size_t &pos, size_t len,
-                U &&callback, T &&cf) {
+                const U &callback, const T &cf) {
         if (!len && !npos) {
             throw std::invalid_argument("failed to insert zero-length key");
         }
@@ -591,7 +589,7 @@ public:
     }
     // follow/create edge
     template <typename T>
-    int _follow(uint32_t &from, const uchar label, T cf) {
+    int _follow(uint32_t &from, const uchar label, const T &cf) {
         int to = 0;
         const int base = m_array[from].base;
         if (base < 0 || m_array[to = base ^ label].check < 0) {
@@ -872,7 +870,7 @@ public:
     // resolve conflict on base_n ^ label_n = base_p ^ label_p
     template <typename T>
     int _resolve(uint32_t &from_n, const int base_n, const uchar label_n,
-                 T cf) {
+                 const T &cf) {
         // examine siblings of conflicted nodes
         const int to_pn = base_n ^ label_n;
         const int from_p = m_array[to_pn].check;

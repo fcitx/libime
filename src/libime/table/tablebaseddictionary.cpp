@@ -860,7 +860,7 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
     case TableFormat::Text: {
         saveTrieToText(d->userTrie_, out);
 
-        if (d->options_.autoPhraseLength() > 2 && !d->autoPhraseDict_.empty()) {
+        if (!d->autoPhraseDict_.empty()) {
             out << UserDictAutoMark << std::endl;
             std::vector<std::tuple<std::string, std::string, int32_t>>
                 autoEntries;

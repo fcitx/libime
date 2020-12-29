@@ -171,7 +171,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
             // check fuzzy seg
             // pinyin may end with aegimnoruv
             // and may start with abcdefghjklmnopqrstwxyz.
-            // the interection is aegmnor, while for m, it only 'm', so don't
+            // the intersection is aegmnor, while for m, it only 'm', so don't
             // consider it
             // also, make sure current pinyin does not end with a separator,
             // other wise, jin'an may be parsed into ji'n because, nextMatch is
@@ -220,6 +220,13 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
                         result.addNext(top + iter->second.first.size(),
                                        top + nextSize[i]);
                     }
+                } else if (nextSize[i] == 2 &&
+                           flags.test(PinyinFuzzyFlag::InnerShort) &&
+                           str.substr(0, 2) == "ng") {
+                    // Handle ng -> n'g, the condition is so simple so we don't
+                    // make it go through the inner segment lookup.
+                    result.addNext(top, top + 1);
+                    result.addNext(top + 1, top + 2);
                 }
             }
         }

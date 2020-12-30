@@ -253,10 +253,20 @@ std::string DefaultLanguageModelResolver::languageModelFileNameForLanguage(
     if (language.empty() || language.find('/') != std::string::npos) {
         return {};
     }
-    auto file = fcitx::stringutils::joinPath(LIBIME_INSTALL_LIBDATADIR,
-                                             language + ".lm");
-    if (fcitx::fs::isreg(file)) {
-        return file;
+
+    const char *modelDirs = getenv("LIBIME_MODEL_DIRS");
+    std::vector<std::string> dirs;
+    if (modelDirs && modelDirs[0]) {
+        dirs = fcitx::stringutils::split(modelDirs, ":");
+    } else {
+        dirs.push_back(LIBIME_INSTALL_LIBDATADIR);
+    }
+
+    for (const auto &dir : dirs) {
+        auto file = fcitx::stringutils::joinPath(dir, language + ".lm");
+        if (fcitx::fs::isreg(file)) {
+            return file;
+        }
     }
     return {};
 }

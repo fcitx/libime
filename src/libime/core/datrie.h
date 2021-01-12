@@ -72,7 +72,7 @@ public:
     size_t size() const;
     bool empty() const;
 
-    // retrive the string via len and pos
+    // retrieve the string via len and pos
     void suffix(std::string &s, size_t len, position_type pos) const;
 
     // result will be NO_VALUE

@@ -295,6 +295,7 @@ const PinyinMap &getPinyinMap() {
         {"suang", PinyinInitial::S, PinyinFinal::UAN,
          PinyinFuzzyFlag::UAN_UANG},
         {"suan", PinyinInitial::S, PinyinFinal::UAN, PinyinFuzzyFlag::None},
+        {"suai", PinyinInitial::SH, PinyinFinal::UAI, PinyinFuzzyFlag::S_SH},
         {"sua", PinyinInitial::SH, PinyinFinal::UA, PinyinFuzzyFlag::S_SH},
         {"su", PinyinInitial::S, PinyinFinal::U, PinyinFuzzyFlag::None},
         {"sou", PinyinInitial::S, PinyinFinal::OU, PinyinFuzzyFlag::None},

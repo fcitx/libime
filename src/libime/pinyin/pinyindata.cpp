@@ -687,7 +687,7 @@ const PinyinMap &getPinyinMap() {
          {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::NG_GN}},
         {"cuang", PinyinInitial::CH, PinyinFinal::UANG, PinyinFuzzyFlag::C_CH},
         {"cuan", PinyinInitial::C, PinyinFinal::UAN, PinyinFuzzyFlag::None},
-        {"cuai", PinyinInitial::CH, PinyinFinal::UAI, PinyinFuzzyFlag::None},
+        {"cuai", PinyinInitial::CH, PinyinFinal::UAI, PinyinFuzzyFlag::C_CH},
         {"cu", PinyinInitial::C, PinyinFinal::U, PinyinFuzzyFlag::None},
         {"cou", PinyinInitial::C, PinyinFinal::OU, PinyinFuzzyFlag::None},
         {"cogn", PinyinInitial::C, PinyinFinal::ONG, PinyinFuzzyFlag::NG_GN},

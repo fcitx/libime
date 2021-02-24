@@ -84,7 +84,6 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
             result.erase(std::next(result.begin()));
         } else if (boost::algorithm::starts_with(result, "c")) {
             result.insert(std::next(result.begin()), 'h');
-            ;
         }
     }
 
@@ -93,7 +92,6 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
             result.erase(std::next(result.begin()));
         } else if (boost::algorithm::starts_with(result, "s")) {
             result.insert(std::next(result.begin()), 'h');
-            ;
         }
     }
 
@@ -102,7 +100,6 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
             result.erase(std::next(result.begin()));
         } else if (boost::algorithm::starts_with(result, "z")) {
             result.insert(std::next(result.begin()), 'h');
-            ;
         }
     }
 

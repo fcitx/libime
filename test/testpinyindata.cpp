@@ -141,7 +141,8 @@ int main() {
                 ((static_cast<int16_t>(initial) - PinyinEncoder::firstInitial) *
                  (PinyinEncoder::lastFinal - PinyinEncoder::firstFinal + 1)) +
                 (static_cast<int16_t>(final) - PinyinEncoder::firstFinal);
-            FCITX_ASSERT(PinyinEncoder::isValidInitialFinal(initial, final));
+            FCITX_ASSERT(PinyinEncoder::isValidInitialFinal(initial, final))
+                << " " << encode;
             std::cout << encode << "," << std::endl;
         }
     }

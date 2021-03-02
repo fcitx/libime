@@ -88,6 +88,7 @@ getInnerSegment() {
             {"dia", {"di", "a"}},       {"dao", {"da", "o"}},
             {"cuo", {"cu", "o"}},       {"cao", {"ca", "o"}},
             {"bie", {"bi", "e"}},       {"bao", {"ba", "o"}},
+            {"nia", {"ni", "a"}},
 
             {"xiao", {"xi", "ao"}},     {"xiang", {"xi", "ang"}},
             {"xian", {"xi", "an"}},     {"jiao", {"ji", "ao"}},
@@ -432,6 +433,7 @@ const PinyinMap &getPinyinMap() {
         {"niu", PinyinInitial::N, PinyinFinal::IU, PinyinFuzzyFlag::None},
         {"nign", PinyinInitial::N, PinyinFinal::ING, PinyinFuzzyFlag::NG_GN},
         {"ning", PinyinInitial::N, PinyinFinal::ING, PinyinFuzzyFlag::None},
+        {"nia", PinyinInitial::N, PinyinFinal::IA, PinyinFuzzyFlag::None},
         {"nin", PinyinInitial::N, PinyinFinal::IN, PinyinFuzzyFlag::None},
         {"nie", PinyinInitial::N, PinyinFinal::IE, PinyinFuzzyFlag::None},
         {"niao", PinyinInitial::N, PinyinFinal::IAO, PinyinFuzzyFlag::None},

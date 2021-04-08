@@ -74,7 +74,7 @@ bool DecoderPrivate::buildLattice(
             std::pair<const SegmentGraphNode *, const SegmentGraphNode *>>>
         frames;
 
-    auto dictMatchCallback = [this, &graph, &lattice, &frames, q, frameSize](
+    auto dictMatchCallback = [this, &graph, &frames, q, frameSize](
                                  const SegmentGraphPath &path, WordNode &word,
                                  float adjust,
                                  std::unique_ptr<LatticeNodeData> data) {

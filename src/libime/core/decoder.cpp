@@ -67,6 +67,7 @@ bool DecoderPrivate::buildLattice(
                                  {nullptr, &graph.start()}, state, 0));
     }
 
+    // std::vector is used here to make sure std::make_heap works.
     std::unordered_map<
         std::pair<const SegmentGraphNode *, const SegmentGraphNode *>,
         std::vector<std::unique_ptr<LatticeNode>>,
@@ -94,24 +95,30 @@ bool DecoderPrivate::buildLattice(
         }
 
         frame.emplace_back(node);
-        if (applyFrameSize) {
-            // Make a maximum heap.
-            auto scoreGreaterThan = [this](const auto &lhs, const auto &rhs) {
-                return model_->singleWordScore(lhs->word()) + lhs->cost() >
-                       model_->singleWordScore(rhs->word()) + rhs->cost();
-            };
-            // Just reach the limit, initialize the heap.
-            if (frame.size() == frameSize) {
-                std::make_heap(frame.begin(), frame.end(), scoreGreaterThan);
-            } else if (frame.size() == frameSize + 1) {
-                // Take a short cut, check if node score greater than minimum
-                if (scoreGreaterThan(node, frame[0])) {
-                    std::push_heap(frame.begin(), frame.end(),
-                                   scoreGreaterThan);
-                    std::pop_heap(frame.begin(), frame.end(), scoreGreaterThan);
-                }
-                frame.pop_back();
+        if (!applyFrameSize) {
+            return;
+        }
+        // Make a maximum heap.
+        auto scoreGreaterThan = [](const auto &lhs, const auto &rhs) {
+            return lhs->score() > rhs->score();
+        };
+        // Just reach the limit, initialize the heap.
+        if (frame.size() == frameSize) {
+            for (auto &n : frame) {
+                // Cache the score here.
+                n->setScore(model_->singleWordScore(n->word()) + n->cost());
             }
+            std::make_heap(frame.begin(), frame.end(), scoreGreaterThan);
+        } else if (frame.size() == frameSize + 1) {
+            // Cache the score here.
+            node->setScore(model_->singleWordScore(node->word()) +
+                           node->cost());
+            // Take a short cut, check if node score greater than minimum
+            if (scoreGreaterThan(node, frame[0])) {
+                std::push_heap(frame.begin(), frame.end(), scoreGreaterThan);
+                std::pop_heap(frame.begin(), frame.end(), scoreGreaterThan);
+            }
+            frame.pop_back();
         }
     };
 

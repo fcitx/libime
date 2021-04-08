@@ -68,12 +68,13 @@ bool DecoderPrivate::buildLattice(
     }
 
     std::unordered_map<
-        std::pair<const SegmentGraphNode *, const SegmentGraphNode *>, size_t,
+        std::pair<const SegmentGraphNode *, const SegmentGraphNode *>,
+        std::vector<std::unique_ptr<LatticeNode>>,
         boost::hash<
             std::pair<const SegmentGraphNode *, const SegmentGraphNode *>>>
-        dupPath;
+        frames;
 
-    auto dictMatchCallback = [this, &graph, &lattice, &dupPath, q, frameSize](
+    auto dictMatchCallback = [this, &graph, &lattice, &frames, q, frameSize](
                                  const SegmentGraphPath &path, WordNode &word,
                                  float adjust,
                                  std::unique_ptr<LatticeNodeData> data) {
@@ -82,21 +83,46 @@ bool DecoderPrivate::buildLattice(
             word.setIdx(idx);
         }
         assert(path.front());
-        size_t &dupSize = dupPath[std::make_pair(path.front(), path.back())];
-        if ((frameSize && (dupSize > frameSize)) &&
-            path.front() != &graph.start()) {
-            return;
-        }
+        auto &frame = frames[std::make_pair(path.front(), path.back())];
+        const bool applyFrameSize =
+            path.front() != &graph.start() && frameSize > 0;
         auto *node = q->createLatticeNode(
             graph, model_, word.word(), word.idx(), path, model_->nullState(),
-            adjust, std::move(data), dupSize == 0);
-        if (node) {
-            lattice[path.back()].push_back(node);
-            dupSize++;
+            adjust, std::move(data), frame.empty());
+        if (!node) {
+            return;
+        }
+
+        frame.emplace_back(node);
+        if (applyFrameSize) {
+            // Make a maximum heap.
+            auto scoreGreaterThan = [this](const auto &lhs, const auto &rhs) {
+                return model_->singleWordScore(lhs->word()) + lhs->cost() >
+                       model_->singleWordScore(rhs->word()) + rhs->cost();
+            };
+            // Just reach the limit, initialize the heap.
+            if (frame.size() == frameSize) {
+                std::make_heap(frame.begin(), frame.end(), scoreGreaterThan);
+            } else if (frame.size() == frameSize + 1) {
+                // Take a short cut, check if node score greater than minimum
+                if (scoreGreaterThan(node, frame[0])) {
+                    std::push_heap(frame.begin(), frame.end(),
+                                   scoreGreaterThan);
+                    std::pop_heap(frame.begin(), frame.end(), scoreGreaterThan);
+                }
+                frame.pop_back();
+            }
         }
     };
 
     dict_->matchPrefix(graph, dictMatchCallback, ignore, helper);
+
+    for (auto &[path, nodes] : frames) {
+        auto &latticeUnit = lattice[path.second];
+        for (auto &node : nodes) {
+            latticeUnit.push_back(std::move(node));
+        }
+    }
     if (!lattice.count(&graph.end())) {
         return false;
     }

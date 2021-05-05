@@ -127,7 +127,7 @@ bool DecoderPrivate::buildLattice(
     for (auto &[path, nodes] : frames) {
         auto &latticeUnit = lattice[path.second];
         for (auto &node : nodes) {
-            latticeUnit.push_back(std::move(node));
+            latticeUnit.push_back(node.release());
         }
     }
     if (!lattice.count(&graph.end())) {

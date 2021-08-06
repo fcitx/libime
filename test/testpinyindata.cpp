@@ -25,6 +25,9 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
         if (boost::algorithm::ends_with(result, "v")) {
             result.back() = 'u';
         }
+        if (boost::algorithm::ends_with(result, "ve")) {
+            result[result.size() - 2] = 'u';
+        }
     }
 
     if (flags & PinyinFuzzyFlag::VE_UE) {

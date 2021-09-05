@@ -9,6 +9,7 @@
 #include "constants.h"
 #include "lattice.h"
 #include "lm/model.hh"
+#include <cmath>
 #include <fcitx-utils/fs.h>
 #include <fstream>
 #include <type_traits>

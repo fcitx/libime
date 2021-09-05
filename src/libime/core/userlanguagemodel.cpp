@@ -10,6 +10,7 @@
 #include "lm/model.hh"
 #include "utils.h"
 #include "utils_p.h"
+#include <cmath>
 
 namespace libime {
 

@@ -6,6 +6,7 @@
 
 #include "libime/core/historybigram.h"
 #include <boost/range/irange.hpp>
+#include <cmath>
 #include <fcitx-utils/log.h>
 #include <sstream>
 

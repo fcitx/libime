@@ -62,6 +62,7 @@ ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
     case ShuangpinBuiltinProfile::PinyinJiajia:
         c = SPMap_C_PinyinJiaJia;
         s = SPMap_S_PinyinJiaJia;
+        d->zeroS_ = "o*";
         break;
     case ShuangpinBuiltinProfile::Xiaohe:
         d->zeroS_ = "*";

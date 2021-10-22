@@ -45,8 +45,7 @@ const std::vector<bool> &getEncodedInitialFinal() {
             687, 148, 147, 146, 145, 709, 713, 4,   712, 707, 696, 695, 697,
             565, 569, 570, 568, 563, 552, 547, 545, 544, 540, 692, 691, 689,
             688, 686, 684, 23,  21,  19,  8,   1,   0,   832, 831, 830, 829,
-            828, 230,
-        };
+            828, 230, 20};
         a.resize(900);
         std::fill(a.begin(), a.end(), false);
         for (auto i : encodedInitialFinalSet) {
@@ -120,7 +119,7 @@ getInnerSegment() {
             {"duan", {"du", "an"}},     {"diao", {"di", "ao"}},
             {"dian", {"di", "an"}},     {"cuan", {"cu", "an"}},
             {"chuang", {"chu", "ang"}}, {"chuan", {"chu", "an"}},
-            {"chuai", {"chu", "ai"}},
+            {"chuai", {"chu", "ai"}},   {"biang", {"bi", "ang"}},
         };
 
     return innerSegment;
@@ -745,10 +744,9 @@ const PinyinMap &getPinyinMap() {
         {"biao", PinyinInitial::B, PinyinFinal::IAO, PinyinFuzzyFlag::None},
         {"biagn",
          PinyinInitial::B,
-         PinyinFinal::IAN,
-         {PinyinFuzzyFlag::IAN_IANG, PinyinFuzzyFlag::NG_GN}},
-        {"biang", PinyinInitial::B, PinyinFinal::IAN,
-         PinyinFuzzyFlag::IAN_IANG},
+         PinyinFinal::IANG,
+         {PinyinFuzzyFlag::NG_GN}},
+        {"biang", PinyinInitial::B, PinyinFinal::IANG, PinyinFuzzyFlag::None},
         {"bian", PinyinInitial::B, PinyinFinal::IAN, PinyinFuzzyFlag::None},
         {"bi", PinyinInitial::B, PinyinFinal::I, PinyinFuzzyFlag::None},
         {"begn", PinyinInitial::B, PinyinFinal::ENG, PinyinFuzzyFlag::NG_GN},

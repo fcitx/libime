@@ -26,10 +26,26 @@ class PinyinDictionary;
 
 using PinyinTrie = typename TrieDictionary::TrieType;
 
-enum class PinyinDictFlag { NoFlag = 0, FullMatch = (1 << 1) };
+/**
+ * Flag for a given sub dictionary in PinyinDictionary.
+ */
+enum class PinyinDictFlag {
+    /// No Flag
+    NoFlag = 0,
+    /// The dictionary can only be used to search the whole match sentence
+    FullMatch = (1 << 1),
+    /**
+     * The dictionary is disabled and should be skipped for matching.
+     * @since 1.0.10
+     */
+    Disabled = (1 << 2)
+};
 
 using PinyinDictFlags = fcitx::Flags<PinyinDictFlag>;
 
+/**
+ * PinyinDictionary is a set of dictionaries for Pinyin.
+ */
 class LIBIMEPINYIN_EXPORT PinyinDictionary : public TrieDictionary {
 public:
     explicit PinyinDictionary();

@@ -47,14 +47,20 @@ void TrieDictionary::addEmptyDict() {
     emit<TrieDictionary::dictSizeChanged>(d->tries_.size());
 }
 
-void TrieDictionary::removeAll() {
+void TrieDictionary::removeFrom(size_t idx) {
     FCITX_D();
-    for (auto i = UserDict + 1; i < d->tries_.size(); i++) {
+    if (idx < UserDict + 1 || idx >= d->tries_.size()) {
+        return;
+    }
+
+    for (auto i = idx; i < d->tries_.size(); i++) {
         emit<TrieDictionary::dictionaryChanged>(i);
     }
-    d->tries_.erase(d->tries_.begin() + UserDict + 1, d->tries_.end());
+    d->tries_.erase(d->tries_.begin() + idx, d->tries_.end());
     emit<TrieDictionary::dictSizeChanged>(d->tries_.size());
 }
+
+void TrieDictionary::removeAll() { removeFrom(UserDict + 1); }
 
 void TrieDictionary::clear(size_t idx) {
     FCITX_D();

@@ -34,6 +34,14 @@ public:
     // Remove all dictionary except system and user.
     void removeAll();
 
+    /**
+     * Remove all dictionary from given index.
+     *
+     * @param idx the index need to be within [UserDict + 1, dictSize())
+     * @since 1.0.10
+     */
+    void removeFrom(size_t idx);
+
     // Clear dictionary.
     void clear(size_t idx);
 

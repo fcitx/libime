@@ -230,6 +230,9 @@ void PinyinDictionaryPrivate::addEmptyMatch(
                 &currentNode != &graph.start()) {
                 continue;
             }
+            if (flags_[i].test(PinyinDictFlag::Disabled)) {
+                continue;
+            }
             const auto &trie = *q->trie(i);
             currentMatches.emplace_back(&trie, 0, vec, flags_[i]);
             currentMatches.back().triePositions().emplace_back(0, 0);
@@ -577,8 +580,12 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
         return;
     }
 
+    FCITX_D();
     std::list<std::pair<const PinyinTrie *, PinyinTrie::position_type>> nodes;
     for (size_t i = 0; i < dictSize(); i++) {
+        if (d->flags_[i].test(PinyinDictFlag::Disabled)) {
+            continue;
+        }
         const auto &trie = *this->trie(i);
         nodes.emplace_back(&trie, 0);
     }

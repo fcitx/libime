@@ -664,7 +664,7 @@ void TableBasedDictionary::loadBinary(std::istream &in) {
     throw_if_io_fail(unmarshall(in, d->promptKey_));
     throw_if_io_fail(unmarshall(in, d->phraseKey_));
     throw_if_io_fail(unmarshall(in, d->codeLength_));
-    uint32_t size;
+    uint32_t size = 0;
 
     throw_if_io_fail(unmarshall(in, size));
     d->inputCode_.clear();
@@ -759,7 +759,7 @@ void TableBasedDictionary::loadUser(const char *filename, TableFormat format) {
 
 void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
     FCITX_D();
-    uint32_t magic, version;
+    uint32_t magic = 0, version = 0;
     switch (format) {
     case TableFormat::Binary:
         throw_if_io_fail(unmarshall(in, magic));

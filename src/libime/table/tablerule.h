@@ -148,7 +148,7 @@ public:
           entries_(std::move(_entries)) {}
 
     explicit TableRule(std::istream &in) {
-        uint32_t size;
+        uint32_t size = 0;
         throw_if_io_fail(unmarshall(in, flag_));
         throw_if_io_fail(unmarshall(in, phraseLength_));
         throw_if_io_fail(unmarshall(in, size));

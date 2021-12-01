@@ -373,6 +373,8 @@ HistoryBigram::HistoryBigram()
     FCITX_D();
     const float p = 1.0 / (1 + HISTORY_BIGRAM_ALPHA_VALUE);
     constexpr std::array<int, 3> poolSize = {128, 8192, 65536};
+    d->pools_.reserve(poolSize.size());
+    d->poolWeight_.reserve(poolSize.size());
     for (auto size : poolSize) {
         d->pools_.emplace_back(size);
         float portion = 1.0f;

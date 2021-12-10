@@ -293,6 +293,24 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
         }
     }
 
+    if (pinyin.size() >= 4 && flags.test(PinyinFuzzyFlag::PartialSp)) {
+        size_t i = 0;
+        while (i < pinyin.size()) {
+            size_t start = i;
+            while (pinyin[i] == '\'' && i < pinyin.size()) {
+                i++;
+            }
+            // This is already handled above.
+            if (start != i) {
+                continue;
+            }
+            if (!result.ensureNode(i).isChild(&result.ensureNode(i + 1))) {
+                result.addNext(i, i + 1);
+            }
+            i = i + 1;
+        }
+    }
+
     return result;
 }
 

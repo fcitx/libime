@@ -40,6 +40,12 @@ enum class PinyinFuzzyFlag {
     Inner = 1 << 14,
     InnerShort = 1 << 15,
     PartialFinal = 1 << 16,
+    /**
+     * Enable matching partial shuangpin
+     *
+     * @since 1.0.10
+     */
+    PartialSp = 1 << 17,
 };
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;

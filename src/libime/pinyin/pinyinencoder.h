@@ -43,7 +43,7 @@ enum class PinyinFuzzyFlag {
     /**
      * Enable matching partial shuangpin
      *
-     * @since 1.0.10
+     * @since 1.0.11
      */
     PartialSp = 1 << 17,
 };

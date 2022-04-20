@@ -285,6 +285,7 @@ public:
     SegmentGraph graph_;
     std::vector<SentenceResult> candidates_;
     std::vector<std::vector<SelectedCode>> selected_;
+    size_t autoSelectIndex_ = 0;
 };
 
 TableContext::TableContext(TableBasedDictionary &dict, UserLanguageModel &model)
@@ -420,6 +421,11 @@ bool TableContext::typeOneChar(std::string_view chr) {
     return true;
 }
 
+void TableContext::setAutoSelectIndex(size_t index) {
+    FCITX_D();
+    d->autoSelectIndex_ = index;
+}
+
 void TableContext::autoSelect() {
     FCITX_D();
     if (selected()) {
@@ -427,7 +433,12 @@ void TableContext::autoSelect() {
     }
 
     if (d->canDoAutoSelect()) {
-        select(0);
+        auto selectIndex = d->autoSelectIndex_;
+        d->autoSelectIndex_ = 0;
+        if (selectIndex >= candidates().size()) {
+            selectIndex = 0;
+        }
+        select(selectIndex);
     } else {
         if (currentCode().empty()) {
             return;
@@ -447,6 +458,7 @@ void TableContext::autoSelect() {
 
 void TableContext::update() {
     FCITX_D();
+    d->autoSelectIndex_ = 0;
     if (empty()) {
         return;
     }

@@ -90,6 +90,11 @@ public:
     UserLanguageModel &mutableModel();
     void autoSelect();
 
+    /// Set the auto select index, usually, this is the candidate cursor index.
+    ///
+    /// \since 1.0.12
+    void setAutoSelectIndex(size_t index);
+
 protected:
     bool typeImpl(const char *s, size_t length) override;
 

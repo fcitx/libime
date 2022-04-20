@@ -7,7 +7,7 @@
 #define _FCITX_LIBIME_PINYIN_CONSTANTS_H_
 
 namespace libime {
-constexpr float PINYIN_DISTANCE_PENALTY_FACTOR = 3;
+constexpr float PINYIN_DISTANCE_PENALTY_FACTOR = 1.8;
 }
 
 #endif // _FCITX_LIBIME_PINYIN_CONSTANTS_H_

@@ -14,7 +14,7 @@ using namespace libime;
 
 static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
     auto result = str;
-    if (flags & PinyinFuzzyFlag::NG_GN) {
+    if (flags & PinyinFuzzyFlag::CommonTypo) {
         if (boost::algorithm::ends_with(result, "gn")) {
             result[result.size() - 2] = 'n';
             result[result.size() - 1] = 'g';

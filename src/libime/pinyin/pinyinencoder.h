@@ -23,7 +23,7 @@ class ShuangpinProfile;
 
 enum class PinyinFuzzyFlag {
     None = 0,
-    NG_GN = 1 << 0,
+    CommonTypo = 1 << 0,
     V_U = 1 << 1,
     AN_ANG = 1 << 2,   // 0
     EN_ENG = 1 << 3,   // 1

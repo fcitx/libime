@@ -59,7 +59,7 @@ int main() {
     for (const auto &syl : PinyinEncoder::stringToSyllables(
              "niagn",
              PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
-                              PinyinFuzzyFlag::NG_GN})) {
+                              PinyinFuzzyFlag::CommonTypo})) {
         for (auto f : syl.second) {
             FCITX_INFO() << PinyinSyllable(syl.first, f.first).toString();
         }
@@ -67,14 +67,14 @@ int main() {
     for (const auto &syl : PinyinEncoder::stringToSyllables(
              "n",
              PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
-                              PinyinFuzzyFlag::NG_GN})) {
+                              PinyinFuzzyFlag::CommonTypo})) {
         for (auto f : syl.second) {
             FCITX_INFO() << PinyinSyllable(syl.first, f.first).toString();
         }
     }
     for (const auto &syl : PinyinEncoder::stringToSyllables(
              "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
-                       PinyinFuzzyFlag::NG_GN})) {
+                       PinyinFuzzyFlag::CommonTypo})) {
         for (auto f : syl.second) {
             FCITX_INFO() << PinyinSyllable(syl.first, f.first).toString();
         }

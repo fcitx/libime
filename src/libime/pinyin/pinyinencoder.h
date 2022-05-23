@@ -46,7 +46,6 @@ enum class PinyinFuzzyFlag {
      * @since 1.0.11
      */
     PartialSp = 1 << 17,
-    ION_IONG = 1 << 18,
 };
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;

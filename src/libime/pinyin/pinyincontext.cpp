@@ -245,6 +245,13 @@ void PinyinContext::cancel() {
     FCITX_D();
     if (!d->selected_.empty()) {
         d->selected_.pop_back();
+
+        // There is no point to reuse any existing matching state.
+        // For example, cancel from (tao zi) tao zi to  tao zi tao zi.
+        // Even if they share the same prefix, the start state won't be same.
+        d->lattice_.clear();
+        d->matchState_.clear();
+        d->segs_ = SegmentGraph();
     }
     update();
 }

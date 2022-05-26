@@ -60,6 +60,8 @@ int main(int argc, char *argv[]) {
             c.backspace();
         } else if (word == "reset") {
             c.clear();
+        } else if (word == "cancel") {
+            c.cancel();
         } else if (word.size() == 1 &&
                    (('a' <= word[0] && word[0] <= 'z') ||
                     (!c.userInput().empty() && word[0] == '\''))) {

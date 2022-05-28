@@ -19,6 +19,9 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
             result[result.size() - 2] = 'n';
             result[result.size() - 1] = 'g';
         }
+        if (boost::algorithm::ends_with(result, "ion")) {
+            result.push_back('g');
+        }
     }
 
     if (flags & PinyinFuzzyFlag::V_U) {

@@ -17,7 +17,7 @@
 #include <vector>
 
 namespace libime {
-struct PinyinHash : std::unary_function<std::string_view, std::size_t> {
+struct PinyinHash {
     std::size_t operator()(std::string_view const &val) const {
         return boost::hash_range(val.begin(), val.end());
     }

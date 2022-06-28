@@ -32,6 +32,9 @@ target_link_libraries(triebench LibIME::Core)
 add_executable(testmodel testmodel.cpp)
 target_link_libraries(testmodel LibIME::Core)
 
+add_executable(testusermodel testusermodel.cpp)
+target_link_libraries(testusermodel LibIME::Core)
+
 add_executable(testpinyinime testpinyinime.cpp)
 target_link_libraries(testpinyinime LibIME::Pinyin)
 

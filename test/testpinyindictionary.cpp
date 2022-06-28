@@ -43,7 +43,7 @@ bool searchWord(const PinyinDictionary &dict, const char *data, size_t size,
 int main() {
     PinyinDictionary dict;
     dict.load(PinyinDictionary::SystemDict,
-              LIBIME_BINARY_DIR "/data/dict.converted", PinyinDictFormat::Text);
+              LIBIME_BINARY_DIR "/data/dict_sc.txt", PinyinDictFormat::Text);
 
     // add a manual dict
     std::stringstream ss;

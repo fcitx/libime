@@ -25,6 +25,7 @@ foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
 endforeach()
 
 add_dependencies(testdecoder dict lm)
+add_dependencies(testpinyindictionary dict)
 
 add_executable(triebench triebench.cpp)
 target_link_libraries(triebench LibIME::Core)

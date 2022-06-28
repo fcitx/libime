@@ -24,7 +24,7 @@ foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
              COMMAND ${TESTCASE})
 endforeach()
 
-add_dependencies(testdecoder opengram-dict opengram-lm)
+add_dependencies(testdecoder dict lm)
 
 add_executable(triebench triebench.cpp)
 target_link_libraries(triebench LibIME::Core)

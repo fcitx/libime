@@ -1,54 +1,45 @@
-find_package(PythonInterp 3 REQUIRED)
-set(OPENGRAM_LM_TAR "lm_sc.3gm.arpa-20140820.tar.bz2")
+set(LM_TAR "lm_sc.arpa-20220628.tar.xz")
 # Use our own file server for convenience.
-set(OPENGRAM_LM_URL "https://download.fcitx-im.org/data/${OPENGRAM_LM_TAR}")
+set(LM_URL "https://download.fcitx-im.org/data/${LM_TAR}")
 
-fcitx5_download(opengram-lm-download ${OPENGRAM_LM_URL} ${OPENGRAM_LM_TAR}
-                751bab7c55ea93a2cedfb0fbb7eb09f67d4da9c2c55496e5f31eb8580f1d1e2f)
-fcitx5_extract(opengram-lm-extract ${OPENGRAM_LM_TAR} DEPENDS opengram-lm-download
-               OUTPUT lm_sc.3gm.arpa)
+fcitx5_download(lm-download ${LM_URL} ${LM_TAR}
+                35478fcaf1a96c103206678bc741c68256ec102df9a3b7df824cfe72ea97cf04)
+fcitx5_extract(lm-extract ${LM_TAR} DEPENDS lm-download
+               OUTPUT lm_sc.arpa)
 
-set(OPENGRAM_LM_SRC "${CMAKE_CURRENT_BINARY_DIR}/kenlm_sc.arpa")
-set(OPENGRAM_LM_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.lm")
-set(OPENGRAM_LM_PREDICT_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.lm.predict")
+set(LM_SRC "${CMAKE_CURRENT_BINARY_DIR}/lm_sc.arpa")
+set(LM_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.lm")
+set(LM_PREDICT_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.lm.predict")
 add_custom_command(
-  OUTPUT "${OPENGRAM_LM_SRC}"
-  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/lm_sc.3gm.arpa" ${CMAKE_CURRENT_SOURCE_DIR}/convert_open_gram_arpa.py
-  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/convert_open_gram_arpa.py "${CMAKE_CURRENT_BINARY_DIR}/lm_sc.3gm.arpa" > "${OPENGRAM_LM_SRC}")
-add_custom_command(
-  OUTPUT "${OPENGRAM_LM_OUTPUT}"
-  DEPENDS "${OPENGRAM_LM_SRC}" LibIME::slm_build_binary
-  COMMAND LibIME::slm_build_binary -s -a 22 -q 8 trie "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_OUTPUT}")
-add_custom_target(opengram-lm ALL DEPENDS "${OPENGRAM_LM_OUTPUT}")
+  OUTPUT "${LM_OUTPUT}"
+  DEPENDS "${LM_SRC}" LibIME::slm_build_binary
+  COMMAND LibIME::slm_build_binary -s -a 22 -q 8 trie "${LM_SRC}" "${LM_OUTPUT}")
+add_custom_target(lm ALL DEPENDS "${LM_OUTPUT}")
 
 add_custom_command(
-  OUTPUT "${OPENGRAM_LM_PREDICT_OUTPUT}"
-  DEPENDS "${OPENGRAM_LM_SRC}" opengram-lm LibIME::prediction
-  COMMAND LibIME::prediction "${OPENGRAM_LM_OUTPUT}" "${OPENGRAM_LM_SRC}" "${OPENGRAM_LM_PREDICT_OUTPUT}")
-add_custom_target(opengram-lm-predict ALL DEPENDS "${OPENGRAM_LM_PREDICT_OUTPUT}")
+  OUTPUT "${LM_PREDICT_OUTPUT}"
+  DEPENDS "${LM_SRC}" lm LibIME::prediction
+  COMMAND LibIME::prediction "${LM_OUTPUT}" "${LM_SRC}" "${LM_PREDICT_OUTPUT}")
+add_custom_target(lm-predict ALL DEPENDS "${LM_PREDICT_OUTPUT}")
 
-install(FILES "${OPENGRAM_LM_OUTPUT}" RENAME zh_CN.lm DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
-install(FILES "${OPENGRAM_LM_PREDICT_OUTPUT}" RENAME zh_CN.lm.predict DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
+install(FILES "${LM_OUTPUT}" RENAME zh_CN.lm DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
+install(FILES "${LM_PREDICT_OUTPUT}" RENAME zh_CN.lm.predict DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
 
-set(OPENGRAM_DICT_TAR "dict.utf8-20211021.tar.xz")
-set(OPENGRAM_DICT_URL "https://download.fcitx-im.org/data/${OPENGRAM_DICT_TAR}")
+set(DICT_TAR "dict_sc.txt-20220628.tar.xz")
+set(DICT_URL "https://download.fcitx-im.org/data/${DICT_TAR}")
 
-fcitx5_download(opengram-dict-download ${OPENGRAM_DICT_URL} ${OPENGRAM_DICT_TAR}
-               300597e6f7f79f788480fd665de8a07bfe90227048b5a7e39f40f43a62a981df)
-fcitx5_extract(opengram-dict-extract ${OPENGRAM_DICT_TAR} DEPENDS opengram-dict-download
-               OUTPUT dict.utf8)
-set(OPENGRAM_DICT_SRC "${CMAKE_CURRENT_BINARY_DIR}/dict.converted")
-set(OPENGRAM_DICT_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.dict")
+fcitx5_download(dict-download ${DICT_URL} ${DICT_TAR}
+               d0fc77543cc763cacb986d6e650827bd6050579584273f6216ab58672480f17c)
+fcitx5_extract(dict-extract ${DICT_TAR} DEPENDS dict-download
+               OUTPUT dict_sc.txt)
+set(DICT_SRC "${CMAKE_CURRENT_BINARY_DIR}/dict_sc.txt")
+set(DICT_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.dict")
 add_custom_command(
-  OUTPUT "${OPENGRAM_DICT_SRC}"
-  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/dict.utf8" ${CMAKE_CURRENT_SOURCE_DIR}/convert_open_gram_dict.py
-  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/convert_open_gram_dict.py "${CMAKE_CURRENT_BINARY_DIR}/dict.utf8" > "${OPENGRAM_DICT_SRC}")
-add_custom_command(
-  OUTPUT "${OPENGRAM_DICT_OUTPUT}"
-  DEPENDS "${OPENGRAM_DICT_SRC}" LibIME::pinyindict
-  COMMAND LibIME::pinyindict "${OPENGRAM_DICT_SRC}" "${OPENGRAM_DICT_OUTPUT}")
-add_custom_target(opengram-dict ALL DEPENDS "${OPENGRAM_DICT_OUTPUT}")
-install(FILES "${OPENGRAM_DICT_OUTPUT}" DESTINATION "${LIBIME_INSTALL_PKGDATADIR}")
+  OUTPUT "${DICT_OUTPUT}"
+  DEPENDS "${DICT_SRC}" LibIME::pinyindict
+  COMMAND LibIME::pinyindict "${DICT_SRC}" "${DICT_OUTPUT}")
+add_custom_target(dict ALL DEPENDS "${DICT_OUTPUT}")
+install(FILES "${DICT_OUTPUT}" DESTINATION "${LIBIME_INSTALL_PKGDATADIR}")
 
 set(TABLE_DICT_URL "https://download.fcitx-im.org/data/table.tar.gz")
 set(TABLE_DICT_TAR "table.tar.gz")

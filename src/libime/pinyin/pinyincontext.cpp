@@ -16,7 +16,6 @@
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
 #include <iostream>
-#include <unordered_set>
 
 namespace libime {
 
@@ -29,10 +28,10 @@ struct SelectedPinyin {
     std::string encodedPinyin_;
 };
 
-class PinyinContextPrivate : public fcitx::QPtrHolder<PinyinContext> {
+class PinyinContextPrivate {
 public:
     PinyinContextPrivate(PinyinContext *q, PinyinIME *ime)
-        : QPtrHolder(q), ime_(ime), matchState_(q) {}
+        : ime_(ime), matchState_(q) {}
 
     std::vector<std::vector<SelectedPinyin>> selected_;
 
@@ -43,58 +42,7 @@ public:
     Lattice lattice_;
     PinyinMatchState matchState_;
     std::vector<SentenceResult> candidates_;
-    std::unordered_set<std::string> candidatesDup_;
-    std::optional<size_t> partialSentenceIndex_ = std::nullopt;
     std::vector<fcitx::ScopedConnection> conn_;
-
-    void clearCandidates() {
-        candidates_.clear();
-        candidatesDup_.clear();
-        partialSentenceIndex_ = std::nullopt;
-    }
-
-    void updatePartialSentence() {
-        FCITX_Q();
-        // Add a partial sentence result based on cursor position.
-        const auto currentCursor = q->cursor();
-        const auto start = q->selectedLength();
-        std::optional<SentenceResult> partial;
-        if (currentCursor > start && currentCursor < q->size() &&
-            lattice_.sentenceSize()) {
-            auto sentence = lattice_.sentence(0).sentence();
-            while (!sentence.empty() &&
-                   sentence.back()->to()->index() + start > currentCursor) {
-                sentence.pop_back();
-            }
-            if (!sentence.empty()) {
-                partial = SentenceResult(sentence, sentence.back()->score());
-            }
-        }
-
-        if (!partial || candidatesDup_.count(partial->toString())) {
-            // If new partial sentence is a dup to current candidates
-            // we still need to remove the old one.
-            if (!partialSentenceIndex_) {
-                return;
-            } else {
-                candidates_.erase(candidates_.begin() +
-                                  partialSentenceIndex_.value());
-                partialSentenceIndex_ = std::nullopt;
-            }
-        } else {
-            // If new partial sentence need to be added
-            // we can either replace old once, or maybe need to insert a new
-            // one.
-            if (partialSentenceIndex_) {
-                candidates_[*partialSentenceIndex_] = std::move(*partial);
-            } else {
-                candidates_.insert(candidates_.begin() +
-                                       lattice_.sentenceSize(),
-                                   std::move(*partial));
-                partialSentenceIndex_ = lattice_.sentenceSize();
-            }
-        }
-    }
 };
 
 void matchPinyinCase(std::string_view ref, std::string &actualPinyin) {
@@ -184,7 +132,6 @@ void PinyinContext::erase(size_t from, size_t to) {
     if (from == 0 && to >= size()) {
         FCITX_D();
         d->candidates_.clear();
-        d->partialSentenceIndex_ = std::nullopt;
         d->selected_.clear();
         d->lattice_.clear();
         d->matchState_.clear();
@@ -200,13 +147,10 @@ void PinyinContext::erase(size_t from, size_t to) {
 }
 
 void PinyinContext::setCursor(size_t pos) {
-    FCITX_D();
     auto cancelled = cancelTill(pos);
     InputBuffer::setCursor(pos);
     if (cancelled) {
         update();
-    } else {
-        d->updatePartialSentence();
     }
 }
 
@@ -339,12 +283,14 @@ void PinyinContext::update() {
     }
 
     if (selected()) {
-        d->clearCandidates();
+        d->candidates_.clear();
     } else {
-        const size_t start = selectedLength();
+        size_t start = 0;
         auto *model = d->ime_->model();
         State state = model->nullState();
         if (!d->selected_.empty()) {
+            start = d->selected_.back().back().offset_;
+
             for (auto &s : d->selected_) {
                 for (auto &item : s) {
                     if (item.word_.word().empty()) {
@@ -377,10 +323,11 @@ void PinyinContext::update() {
                                    d->ime_->minPath(), d->ime_->beamSize(),
                                    d->ime_->frameSize(), &d->matchState_);
 
-        d->clearCandidates();
+        d->candidates_.clear();
+        std::unordered_set<std::string> dup;
         for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
             d->candidates_.push_back(d->lattice_.sentence(i));
-            d->candidatesDup_.insert(d->candidates_.back().toString());
+            dup.insert(d->candidates_.back().toString());
         }
 
         const auto *bos = &graph.start();
@@ -404,12 +351,12 @@ void PinyinContext::update() {
                                 max = latticeNode.score();
                             }
                         }
-                        if (d->candidatesDup_.count(latticeNode.word())) {
+                        if (dup.count(latticeNode.word())) {
                             continue;
                         }
                         d->candidates_.push_back(
                             latticeNode.toSentenceResult(adjust));
-                        d->candidatesDup_.insert(latticeNode.word());
+                        dup.insert(latticeNode.word());
                     }
                 }
             }
@@ -421,7 +368,7 @@ void PinyinContext::update() {
                         latticeNode.score() > min &&
                         latticeNode.score() + d->ime_->maxDistance() > max) {
                         auto fullWord = latticeNode.fullWord();
-                        if (d->candidatesDup_.count(fullWord)) {
+                        if (dup.count(fullWord)) {
                             continue;
                         }
                         d->candidates_.push_back(
@@ -430,8 +377,6 @@ void PinyinContext::update() {
                 }
             }
         }
-
-        d->updatePartialSentence();
         std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
                   std::greater<SentenceResult>());
     }

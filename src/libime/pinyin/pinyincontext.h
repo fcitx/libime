@@ -34,7 +34,9 @@ public:
     void setMaxSentenceLength(int length);
 
     const std::vector<SentenceResult> &candidates() const;
+    const std::vector<SentenceResult> &candidatesToCursor() const;
     void select(size_t idx);
+    void selectCandidatesToCursor(size_t idx);
     void cancel();
     bool cancelTill(size_t pos);
 
@@ -75,6 +77,9 @@ public:
 
     /// Get the full pinyin string of certain candidate.
     std::string candidateFullPinyin(size_t i) const;
+
+    /// Get the full pinyin string of certain candidate.
+    std::string candidateFullPinyin(const SentenceResult &candidate) const;
 
     /// Add the selected part to history if selected() == true.
     void learn();

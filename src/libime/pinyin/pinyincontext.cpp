@@ -28,10 +28,10 @@ struct SelectedPinyin {
     std::string encodedPinyin_;
 };
 
-class PinyinContextPrivate {
+class PinyinContextPrivate : public fcitx::QPtrHolder<PinyinContext> {
 public:
     PinyinContextPrivate(PinyinContext *q, PinyinIME *ime)
-        : ime_(ime), matchState_(q) {}
+        : QPtrHolder(q), ime_(ime), matchState_(q) {}
 
     std::vector<std::vector<SelectedPinyin>> selected_;
 
@@ -42,7 +42,80 @@ public:
     Lattice lattice_;
     PinyinMatchState matchState_;
     std::vector<SentenceResult> candidates_;
+    mutable bool candidatesToCursorNeedUpdate_ = true;
+    mutable std::vector<SentenceResult> candidatesToCursor_;
     std::vector<fcitx::ScopedConnection> conn_;
+
+    void clearCandidates() {
+        candidates_.clear();
+        candidatesToCursor_.clear();
+        candidatesToCursorNeedUpdate_ = false;
+    }
+
+    void updateCandidatesToCursor() const {
+        FCITX_Q();
+        if (!candidatesToCursorNeedUpdate_) {
+            return;
+        }
+        candidatesToCursorNeedUpdate_ = false;
+        auto start = q->selectedLength();
+        auto currentCursor = q->cursor();
+        candidatesToCursor_.clear();
+        std::unordered_set<std::string> dup;
+        for (const auto &candidate : candidates_) {
+            const auto &sentence = candidate.sentence();
+            if (sentence.size() <= 1) {
+                auto text = candidate.toString();
+                if (dup.count(text)) {
+                    continue;
+                }
+                candidatesToCursor_.push_back(candidate);
+                dup.insert(std::move(text));
+            } else {
+                auto newSentence = sentence;
+                while (!newSentence.empty() &&
+                       newSentence.back()->to()->index() + start >
+                           currentCursor) {
+                    newSentence.pop_back();
+                }
+                if (!newSentence.empty()) {
+                    SentenceResult partial(newSentence,
+                                           newSentence.back()->score());
+                    auto text = partial.toString();
+                    if (dup.count(text)) {
+                        continue;
+                    }
+                    candidatesToCursor_.push_back(partial);
+                    dup.insert(std::move(text));
+                }
+            }
+        }
+    }
+
+    void select(const SentenceResult &sentence) {
+        FCITX_Q();
+        auto offset = q->selectedLength();
+
+        selected_.emplace_back();
+
+        auto &selection = selected_.back();
+        for (const auto &p : sentence.sentence()) {
+            selection.emplace_back(
+                offset + p->to()->index(),
+                WordNode{p->word(), ime_->model()->index(p->word())},
+                static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
+        }
+        // add some special code for handling separator at the end
+        auto remain = std::string_view(q->userInput()).substr(offset);
+        if (!remain.empty()) {
+            if (std::all_of(remain.begin(), remain.end(),
+                            [](char c) { return c == '\''; })) {
+                selection.emplace_back(q->size(), WordNode("", 0), "");
+            }
+        }
+
+        q->update();
+    }
 };
 
 void matchPinyinCase(std::string_view ref, std::string &actualPinyin) {
@@ -131,7 +204,7 @@ void PinyinContext::erase(size_t from, size_t to) {
     // check if erase everything
     if (from == 0 && to >= size()) {
         FCITX_D();
-        d->candidates_.clear();
+        d->clearCandidates();
         d->selected_.clear();
         d->lattice_.clear();
         d->matchState_.clear();
@@ -147,10 +220,16 @@ void PinyinContext::erase(size_t from, size_t to) {
 }
 
 void PinyinContext::setCursor(size_t pos) {
+    FCITX_D();
+    auto oldCursor = cursor();
     auto cancelled = cancelTill(pos);
     InputBuffer::setCursor(pos);
     if (cancelled) {
         update();
+    } else {
+        if (cursor() != oldCursor) {
+            d->candidatesToCursorNeedUpdate_ = true;
+        }
     }
 }
 
@@ -205,31 +284,27 @@ const std::vector<SentenceResult> &PinyinContext::candidates() const {
     return d->candidates_;
 }
 
+const std::vector<SentenceResult> &PinyinContext::candidatesToCursor() const {
+    FCITX_D();
+    if (cursor() == selectedLength() || cursor() == size()) {
+        return d->candidates_;
+    }
+    d->updateCandidatesToCursor();
+    return d->candidatesToCursor_;
+}
+
 void PinyinContext::select(size_t idx) {
     FCITX_D();
-    assert(idx < d->candidates_.size());
+    const auto &candidates = this->candidates();
+    assert(idx < candidates.size());
+    d->select(candidates[idx]);
+}
 
-    auto offset = selectedLength();
-
-    d->selected_.emplace_back();
-
-    auto &selection = d->selected_.back();
-    for (const auto &p : d->candidates_[idx].sentence()) {
-        selection.emplace_back(
-            offset + p->to()->index(),
-            WordNode{p->word(), d->ime_->model()->index(p->word())},
-            static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
-    }
-    // add some special code for handling separator at the end
-    auto remain = std::string_view(userInput()).substr(selectedLength());
-    if (!remain.empty()) {
-        if (std::all_of(remain.begin(), remain.end(),
-                        [](char c) { return c == '\''; })) {
-            selection.emplace_back(size(), WordNode("", 0), "");
-        }
-    }
-
-    update();
+void PinyinContext::selectCandidatesToCursor(size_t idx) {
+    FCITX_D();
+    const auto &candidates = this->candidatesToCursor();
+    assert(idx < candidates.size());
+    d->select(candidates[idx]);
 }
 
 bool PinyinContext::cancelTill(size_t pos) {
@@ -283,7 +358,7 @@ void PinyinContext::update() {
     }
 
     if (selected()) {
-        d->candidates_.clear();
+        d->clearCandidates();
     } else {
         size_t start = 0;
         auto *model = d->ime_->model();
@@ -323,7 +398,7 @@ void PinyinContext::update() {
                                    d->ime_->minPath(), d->ime_->beamSize(),
                                    d->ime_->frameSize(), &d->matchState_);
 
-        d->candidates_.clear();
+        d->clearCandidates();
         std::unordered_set<std::string> dup;
         for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
             d->candidates_.push_back(d->lattice_.sentence(i));
@@ -379,6 +454,7 @@ void PinyinContext::update() {
         }
         std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
                   std::greater<SentenceResult>());
+        d->candidatesToCursorNeedUpdate_ = true;
     }
 
     if (cursor() < selectedLength()) {
@@ -559,8 +635,14 @@ std::string PinyinContext::selectedFullPinyin() const {
 
 std::string PinyinContext::candidateFullPinyin(size_t idx) const {
     FCITX_D();
+    return candidateFullPinyin(d->candidates_[idx]);
+}
+
+std::string
+PinyinContext::candidateFullPinyin(const SentenceResult &candidate) const {
+    FCITX_D();
     std::string pinyin;
-    for (const auto &p : d->candidates_[idx].sentence()) {
+    for (const auto &p : candidate.sentence()) {
         if (!p->word().empty()) {
             if (!pinyin.empty()) {
                 pinyin.push_back('\'');

@@ -78,8 +78,8 @@ int main() {
         std::cout << candidate.toString() << std::endl;
     }
     std::cout << "--------------------------------" << std::endl;
-    c.select(1);
-    FCITX_ASSERT(c.selected());
+    c.select(0);
+    FCITX_ASSERT(c.selected()) << c.sentence() << " " << c.preedit();
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     for (const auto &candidate : c.candidates()) {
@@ -118,15 +118,8 @@ int main() {
     }
 
     std::cout << "--------------------------------" << std::endl;
-    i = 0;
-    for (const auto &candidate : c.candidates()) {
-        if (candidate.toString() == "各自") {
-            break;
-        }
-        i++;
-    }
-    c.select(i);
-    FCITX_ASSERT(c.selected());
+    c.select(0);
+    FCITX_ASSERT(c.selected()) << c.sentence() << " " << c.preedit();
     std::cout << c.sentence() << std::endl;
     std::cout << c.preedit() << std::endl;
     c.clear();

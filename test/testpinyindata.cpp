@@ -22,9 +22,6 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
         if (boost::algorithm::ends_with(result, "ion")) {
             result.push_back('g');
         }
-    }
-
-    if (flags & PinyinFuzzyFlag::V_U) {
         if (boost::algorithm::ends_with(result, "v")) {
             result.back() = 'u';
         }

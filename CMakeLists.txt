@@ -25,6 +25,7 @@ include(ECMSetupVersion)
 include(ECMGenerateHeaders)
 include(ECMGeneratePkgConfigFile)
 include(ECMUninstallTarget)
+include(CheckLibraryExists)
 
 find_package(Fcitx5Utils REQUIRED)
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")

@@ -13,8 +13,20 @@ add_library(kenlm STATIC ${KENLM_SRCS})
 target_include_directories(kenlm PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/kenlm>)
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=3 PRIVATE -DNDEBUG)
 target_link_libraries(kenlm PUBLIC Boost::boost)
-set_target_properties(kenlm PROPERTIES
-                      COMPILE_FLAGS "-fPIC")
+set_target_properties(kenlm PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+if(UNIX)
+  check_library_exists(rt clock_gettime "clock_gettime from librt" HAVE_CLOCKGETTIME_RT)
+  if (HAVE_CLOCKGETTIME_RT)
+    target_link_libraries(kenlm PUBLIC rt)
+  else()
+    check_library_exists(c clock_gettime "clock_gettime from the libc" HAVE_CLOCKGETTIME)
+  endif()
+
+  if (HAVE_CLOCKGETTIME_RT OR HAVE_CLOCKGETTIME)
+    target_compile_definitions(kenlm PRIVATE -DHAVE_CLOCKGETTIME)
+  endif()
+endif()
 
 set(LIBIME_HDRS
     datrie.h

@@ -174,10 +174,40 @@ void testSaveAndLoad() {
     FCITX_ASSERT(dump1.str() == dump2.str());
 }
 
+void testSaveAndLoadText() {
+    using namespace libime;
+    HistoryBigram history;
+    constexpr auto total = 100000;
+    for (auto i : boost::irange(0, total)) {
+        history.add({std::to_string(i)});
+    }
+    std::stringstream dump;
+    history.dump(dump);
+    int i, expect = total - 1;
+    while (dump >> i) {
+        FCITX_ASSERT(i == expect);
+        --expect;
+    }
+
+    std::stringstream dump1;
+    std::stringstream dump2;
+    std::stringstream ss;
+    history.dump(ss);
+
+    HistoryBigram history2;
+    history2.loadText(ss);
+
+    history.dump(dump1);
+    history2.dump(dump2);
+
+    FCITX_ASSERT(dump1.str() == dump2.str());
+}
+
 int main() {
     testBasic();
     testOverflow();
     testPredict();
     testSaveAndLoad();
+    testSaveAndLoadText();
     return 0;
 }

@@ -25,21 +25,29 @@ add_custom_target(lm-predict ALL DEPENDS "${LM_PREDICT_OUTPUT}")
 install(FILES "${LM_OUTPUT}" RENAME zh_CN.lm DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
 install(FILES "${LM_PREDICT_OUTPUT}" RENAME zh_CN.lm.predict DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
 
-set(DICT_TAR "dict_sc.txt-20220628.tar.xz")
+set(DICT_TAR "dict-20220706.tar.xz")
 set(DICT_URL "https://download.fcitx-im.org/data/${DICT_TAR}")
 
 fcitx5_download(dict-download ${DICT_URL} ${DICT_TAR}
-               d0fc77543cc763cacb986d6e650827bd6050579584273f6216ab58672480f17c)
+               bcd791fff783afb40c1c8e92db3f83734f8b93c9c6ae2c15e1ea8778b9070779)
 fcitx5_extract(dict-extract ${DICT_TAR} DEPENDS dict-download
-               OUTPUT dict_sc.txt)
+               OUTPUT dict_sc.txt dict_extb.txt)
+
 set(DICT_SRC "${CMAKE_CURRENT_BINARY_DIR}/dict_sc.txt")
 set(DICT_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.dict")
 add_custom_command(
   OUTPUT "${DICT_OUTPUT}"
   DEPENDS "${DICT_SRC}" LibIME::pinyindict
   COMMAND LibIME::pinyindict "${DICT_SRC}" "${DICT_OUTPUT}")
-add_custom_target(dict ALL DEPENDS "${DICT_OUTPUT}")
-install(FILES "${DICT_OUTPUT}" DESTINATION "${LIBIME_INSTALL_PKGDATADIR}")
+
+set(DICT_EXTB_SRC "${CMAKE_CURRENT_BINARY_DIR}/dict_extb.txt")
+set(DICT_EXTB_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/extb.dict")
+add_custom_command(
+  OUTPUT "${DICT_EXTB_OUTPUT}"
+  DEPENDS "${DICT_EXTB_SRC}" LibIME::pinyindict
+  COMMAND LibIME::pinyindict "${DICT_EXTB_SRC}" "${DICT_EXTB_OUTPUT}")
+add_custom_target(dict ALL DEPENDS "${DICT_OUTPUT}" "${DICT_EXTB_OUTPUT}")
+install(FILES "${DICT_OUTPUT}" "${DICT_EXTB_OUTPUT}" DESTINATION "${LIBIME_INSTALL_PKGDATADIR}")
 
 set(TABLE_DICT_URL "https://download.fcitx-im.org/data/table.tar.gz")
 set(TABLE_DICT_TAR "table.tar.gz")

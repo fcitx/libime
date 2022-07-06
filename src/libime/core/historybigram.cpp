@@ -164,10 +164,12 @@ public:
         std::vector<std::string> lines;
         while (std::getline(in, buf)) {
             lines.emplace_back(buf);
-            if (lines.size() >= maxSize_) break;
+            if (lines.size() >= maxSize_)
+                break;
         }
-        for(auto &line : lines | boost::adaptors::reversed) {
-            std::vector<std::string> sentence = fcitx::stringutils::split(line, " ");
+        for (auto &line : lines | boost::adaptors::reversed) {
+            std::vector<std::string> sentence =
+                fcitx::stringutils::split(line, " ");
             add(sentence);
         }
     }

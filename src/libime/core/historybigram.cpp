@@ -14,6 +14,7 @@
 #include <boost/range/algorithm.hpp>
 #include <cmath>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/stringutils.h>
 
 namespace libime {
 
@@ -153,6 +154,20 @@ public:
                 throw_if_io_fail(unmarshallString(in, buffer));
                 sentence.emplace_back(std::move(buffer));
             }
+            add(sentence);
+        }
+    }
+
+    void loadText(std::istream &in) {
+        clear();
+        std::string buf;
+        std::vector<std::string> lines;
+        while (std::getline(in, buf)) {
+            lines.emplace_back(buf);
+            if (lines.size() >= maxSize_) break;
+        }
+        for(auto &line : lines | boost::adaptors::reversed) {
+            std::vector<std::string> sentence = fcitx::stringutils::split(line, " ");
             add(sentence);
         }
     }
@@ -481,6 +496,11 @@ void HistoryBigram::load(std::istream &in) {
         throw std::invalid_argument("Invalid history version.");
     }
     }
+}
+
+void HistoryBigram::loadText(std::istream &in) {
+    FCITX_D();
+    boost::range::for_each(d->pools_, [&in](auto &pool) { pool.loadText(in); });
 }
 
 void HistoryBigram::save(std::ostream &out) {

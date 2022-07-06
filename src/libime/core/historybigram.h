@@ -26,6 +26,7 @@ public:
     FCITX_DECLARE_VIRTUAL_DTOR_MOVE(HistoryBigram);
 
     void load(std::istream &in);
+    void loadText(std::istream &in);
     void save(std::ostream &out);
     void dump(std::ostream &out);
     void clear();

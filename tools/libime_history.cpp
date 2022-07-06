@@ -10,15 +10,20 @@
 #include <iostream>
 
 void usage(const char *argv0) {
-    std::cout << "Usage: " << argv0 << " <source> <dest>" << std::endl
+    std::cout << "Usage: " << argv0 << " [-c] <source> <dest>" << std::endl
+              << "-c: Compile text to binary" << std::endl
               << "-h: Show this help" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
 
+    bool compile = false;
     int c;
-    while ((c = getopt(argc, argv, "h")) != -1) {
+    while ((c = getopt(argc, argv, "ch")) != -1) {
         switch (c) {
+        case 'c':
+            compile = true;
+            break;
         case 'h':
             usage(argv[0]);
             return 0;
@@ -36,7 +41,11 @@ int main(int argc, char *argv[]) {
     HistoryBigram history;
 
     std::ifstream in(argv[optind], std::ios::in | std::ios::binary);
-    history.load(in);
+    if (compile) {
+        history.loadText(in);
+    } else {
+        history.load(in);
+    }
 
     std::ofstream fout;
     std::ostream *out;
@@ -46,6 +55,10 @@ int main(int argc, char *argv[]) {
         fout.open(argv[optind + 1], std::ios::out | std::ios::binary);
         out = &fout;
     }
-    history.dump(*out);
+    if (compile) {
+        history.save(*out);
+    } else {
+        history.dump(*out);
+    }
     return 0;
 }

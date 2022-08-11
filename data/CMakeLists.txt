@@ -1,9 +1,9 @@
-set(LM_TAR "lm_sc.arpa-20220630.tar.xz")
+set(LM_TAR "lm_sc.arpa-20220810.tar.xz")
 # Use our own file server for convenience.
 set(LM_URL "https://download.fcitx-im.org/data/${LM_TAR}")
 
 fcitx5_download(lm-download ${LM_URL} ${LM_TAR}
-                8d3b0fa8fa16b93d0d4590f02da04029c271364b5925c1c902845c374a2a00bf)
+                49ea0e7459301e07fcfffb79117f326ceba198946cc5a34677d59f69550e86b1)
 fcitx5_extract(lm-extract ${LM_TAR} DEPENDS lm-download
                OUTPUT lm_sc.arpa)
 
@@ -25,11 +25,11 @@ add_custom_target(lm-predict ALL DEPENDS "${LM_PREDICT_OUTPUT}")
 install(FILES "${LM_OUTPUT}" RENAME zh_CN.lm DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
 install(FILES "${LM_PREDICT_OUTPUT}" RENAME zh_CN.lm.predict DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
 
-set(DICT_TAR "dict-20220706.tar.xz")
+set(DICT_TAR "dict-20220810.tar.xz")
 set(DICT_URL "https://download.fcitx-im.org/data/${DICT_TAR}")
 
 fcitx5_download(dict-download ${DICT_URL} ${DICT_TAR}
-               bcd791fff783afb40c1c8e92db3f83734f8b93c9c6ae2c15e1ea8778b9070779)
+               fb1b1697d4480a63a32d36aaac446f7819862d9443fd6775663600b45604bb1b)
 fcitx5_extract(dict-extract ${DICT_TAR} DEPENDS dict-download
                OUTPUT dict_sc.txt dict_extb.txt)
 

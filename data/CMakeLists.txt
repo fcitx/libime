@@ -3,7 +3,7 @@ set(LM_TAR "lm_sc.arpa-20220810.tar.xz")
 set(LM_URL "https://download.fcitx-im.org/data/${LM_TAR}")
 
 fcitx5_download(lm-download ${LM_URL} ${LM_TAR}
-                d731c4084d8fd803e2d6d66752a1bdcf0389636f46c67a9ef3ccdea197f7dc59)
+                a11bc97d275adaf195f9bac854368ae06cdb4a0fe1eecf59db5ae580615db4fa)
 fcitx5_extract(lm-extract ${LM_TAR} DEPENDS lm-download
                OUTPUT lm_sc.arpa)
 
@@ -29,7 +29,7 @@ set(DICT_TAR "dict-20220810.tar.xz")
 set(DICT_URL "https://download.fcitx-im.org/data/${DICT_TAR}")
 
 fcitx5_download(dict-download ${DICT_URL} ${DICT_TAR}
-               cf45c9d375d999b9a859f0d04dc92bd4e4bc3c1a4d4e5624f1f802047d718b71)
+               971752f413188007e8d19158c11b85c955e25d7b321ec2275c4b3af6d8a85d26)
 fcitx5_extract(dict-extract ${DICT_TAR} DEPENDS dict-download
                OUTPUT dict_sc.txt dict_extb.txt)
 

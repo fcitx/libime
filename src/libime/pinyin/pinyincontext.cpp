@@ -182,7 +182,10 @@ bool PinyinContext::typeImpl(const char *s, size_t length) {
     if (d->maxSentenceLength_ > 0 && !d->candidates_.empty()) {
         auto size = 0;
         for (const auto &s : d->candidates_[0].sentence()) {
-            size += s->path().size();
+            // This is pinyin length + 1
+            auto segLength = s->path().size();
+            size +=
+                std::max(static_cast<decltype(segLength)>(1), segLength) - 1;
         }
         if (size > d->maxSentenceLength_) {
             return false;

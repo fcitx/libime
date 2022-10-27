@@ -56,9 +56,11 @@ public:
 
     /// Mixed preedit (selected hanzi + pinyin).
     std::pair<std::string, size_t>
-    preeditWithCursor(PinyinPreeditMode mode) const;
+    preeditWithCursor(PinyinPreeditMode mode,
+                      bool useSpaceSeperator = true) const;
 
     std::string preedit() const;
+    std::string preeditCommitString() const;
 
     /// Mixed preedit (selected hanzi + pinyin).
     std::pair<std::string, size_t> preeditWithCursor() const;

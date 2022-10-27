@@ -503,6 +503,10 @@ std::string PinyinContext::preedit() const {
     return preedit(ime()->preeditMode());
 }
 
+std::string PinyinContext::preeditCommitString() const {
+    return preeditWithCursor(ime()->preeditMode(), false).first;
+}
+
 std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
     return preeditWithCursor(ime()->preeditMode());
 }
@@ -512,7 +516,8 @@ std::string PinyinContext::preedit(PinyinPreeditMode mode) const {
 }
 
 std::pair<std::string, size_t>
-PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
+PinyinContext::preeditWithCursor(PinyinPreeditMode mode,
+                                 bool useSpaceSeperator /* = true */) const {
     FCITX_D();
     std::string ss = selectedSentence();
     const auto len = selectedLength();
@@ -532,8 +537,10 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                       end = std::prev(s->path().end());
                  iter < end; iter++) {
                 if (!first) {
-                    ss += " ";
-                    resultSize += 1;
+                    if (useSpaceSeperator) {
+                        ss += " ";
+                        resultSize += 1;
+                    }
                 } else {
                     first = false;
                 }

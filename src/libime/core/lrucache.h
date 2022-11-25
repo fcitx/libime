@@ -12,21 +12,17 @@
 namespace libime {
 
 // A simple LRU cache.
-template <typename K, typename V>
+template <typename K, typename V, typename H = boost::hash<K>>
 class LRUCache {
+public:
     typedef K key_type;
     typedef V value_type;
     // we use boost's unordered_map is for the heterogeneous lookup
     // functionality.
-    typedef boost::unordered_map<K,
-                                 std::pair<V, typename std::list<K>::iterator>>
+    typedef boost::unordered_map<
+        K, std::pair<V, typename std::list<K>::iterator>, H>
         dict_type;
-    dict_type dict_;
-    std::list<K> order_;
-    // Maximum size of the cache.
-    size_t sz_;
 
-public:
     LRUCache(size_t sz = 80) : sz_(sz) {}
 
     size_t size() const { return dict_.size(); }
@@ -108,6 +104,12 @@ private:
         }
         return &i->second.first;
     }
+
+private:
+    dict_type dict_;
+    std::list<K> order_;
+    // Maximum size of the cache.
+    size_t sz_;
 };
 } // namespace libime
 

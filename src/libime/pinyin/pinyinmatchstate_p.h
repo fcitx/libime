@@ -71,6 +71,20 @@ struct MatchedPinyinPath {
     PinyinDictFlags flags_;
 };
 
+// This need to be keep sync with PinyinSegmentGraphPathHasher
+class PinyinStringHasher {
+public:
+    size_t operator()(const std::string &s) const {
+        boost::hash<char> hasher;
+
+        size_t seed = 0;
+        for (char c : s) {
+            boost::hash_combine(seed, hasher(c));
+        }
+        return seed;
+    }
+};
+
 // A list of all search paths
 typedef std::vector<MatchedPinyinPath> MatchedPinyinPaths;
 
@@ -82,12 +96,14 @@ typedef std::unordered_map<const SegmentGraphNode *, MatchedPinyinPaths>
 // PinyinTrieNode
 typedef std::unordered_map<
     const PinyinTrie *,
-    LRUCache<std::string, std::shared_ptr<MatchedPinyinTrieNodes>>>
+    LRUCache<std::string, std::shared_ptr<MatchedPinyinTrieNodes>,
+             PinyinStringHasher>>
     PinyinTrieNodeCache;
 
 // A cache for PinyinMatchResult.
 typedef std::unordered_map<
-    const PinyinTrie *, LRUCache<std::string, std::vector<PinyinMatchResult>>>
+    const PinyinTrie *,
+    LRUCache<std::string, std::vector<PinyinMatchResult>, PinyinStringHasher>>
     PinyinMatchResultCache;
 
 class PinyinMatchStatePrivate {

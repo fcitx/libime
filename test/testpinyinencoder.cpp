@@ -138,6 +138,20 @@ int main() {
             }
         }
     }
+
+    bool hasException = false;
+    try {
+        PinyinEncoder::encodeFullPinyin("lue");
+    } catch (const std::invalid_argument &) {
+        hasException = true;
+    }
+    FCITX_ASSERT(hasException);
+
+    {
+        auto result = PinyinEncoder::encodeFullPinyinWithFlags(
+            "lue", PinyinFuzzyFlag::VE_UE);
+        FCITX_ASSERT(PinyinEncoder::decodeFullPinyin(result) == "lve");
+    }
     {
         auto result = PinyinEncoder::encodeOneUserPinyin("nihao");
         FCITX_ASSERT(PinyinEncoder::decodeFullPinyin(result) == "ni'hao");

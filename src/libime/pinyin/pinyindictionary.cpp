@@ -700,7 +700,8 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
                 prob = std::stof(tokens[2]);
             }
 
-            auto result = PinyinEncoder::encodeFullPinyin(pinyin);
+            auto result = PinyinEncoder::encodeFullPinyinWithFlags(
+                pinyin, PinyinFuzzyFlag::VE_UE);
             result.push_back(pinyinHanziSep);
             result.insert(result.end(), hanzi.begin(), hanzi.end());
             trie.set(result.data(), result.size(), prob);
@@ -771,7 +772,8 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
 
 void PinyinDictionary::addWord(size_t idx, std::string_view fullPinyin,
                                std::string_view hanzi, float cost) {
-    auto result = PinyinEncoder::encodeFullPinyin(fullPinyin);
+    auto result = PinyinEncoder::encodeFullPinyinWithFlags(
+        fullPinyin, PinyinFuzzyFlag::VE_UE);
     result.push_back(pinyinHanziSep);
     result.insert(result.end(), hanzi.begin(), hanzi.end());
     TrieDictionary::addWord(idx, std::string_view(result.data(), result.size()),
@@ -780,7 +782,8 @@ void PinyinDictionary::addWord(size_t idx, std::string_view fullPinyin,
 
 bool PinyinDictionary::removeWord(size_t idx, std::string_view fullPinyin,
                                   std::string_view hanzi) {
-    auto result = PinyinEncoder::encodeFullPinyin(fullPinyin);
+    auto result = PinyinEncoder::encodeFullPinyinWithFlags(
+        fullPinyin, PinyinFuzzyFlag::VE_UE);
     result.push_back(pinyinHanziSep);
     result.insert(result.end(), hanzi.begin(), hanzi.end());
     return TrieDictionary::removeWord(

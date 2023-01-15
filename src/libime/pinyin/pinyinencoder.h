@@ -212,6 +212,17 @@ public:
      * @return encoded pinyin.
      */
     static std::vector<char> encodeFullPinyin(std::string_view pinyin);
+    /**
+     * @brief Encode a quote separated pinyin string.
+     *
+     * @param pinyin pinyin string, like ni'hao
+     * @param flags fuzzy flags that is acceptable
+     * @return encoded pinyin.
+     *
+     * @since 1.0.17
+     */
+    static std::vector<char> encodeFullPinyinWithFlags(std::string_view pinyin,
+                                                       PinyinFuzzyFlags flags);
     static std::vector<char> encodeOneUserPinyin(std::string pinyin);
 
     static std::string shuangpinToPinyin(std::string_view pinyin,

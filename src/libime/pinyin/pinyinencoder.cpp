@@ -315,6 +315,12 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
 }
 
 std::vector<char> PinyinEncoder::encodeFullPinyin(std::string_view pinyin) {
+    return encodeFullPinyinWithFlags(pinyin, PinyinFuzzyFlag::None);
+}
+
+std::vector<char>
+PinyinEncoder::encodeFullPinyinWithFlags(std::string_view pinyin,
+                                         PinyinFuzzyFlags flags) {
     std::vector<std::string> pinyins;
     boost::split(pinyins, pinyin, boost::is_any_of("'"));
     std::vector<char> result;
@@ -323,7 +329,7 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(std::string_view pinyin) {
     for (const auto &singlePinyin : pinyins) {
         const auto &map = getPinyinMap();
         auto iter = map.find(singlePinyin);
-        if (iter == map.end() || iter->flags() != PinyinFuzzyFlag::None) {
+        if (iter == map.end() || !flags.test(iter->flags())) {
             throw std::invalid_argument("invalid full pinyin: " +
                                         std::string{pinyin});
         }

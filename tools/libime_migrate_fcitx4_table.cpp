@@ -24,12 +24,6 @@
 #include <filesystem>
 #endif
 
-#if defined(__linux__) || defined(__GLIBC__)
-#include <endian.h>
-#else
-#include <sys/endian.h>
-#endif
-
 using namespace libime;
 using namespace fcitx;
 

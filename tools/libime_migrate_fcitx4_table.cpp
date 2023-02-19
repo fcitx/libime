@@ -189,7 +189,7 @@ void loadSource(
 
     uint32_t codeStrLength;
     throw_if_io_fail(unmarshallLE(in, codeStrLength));
-    //先读取码表的信息
+    // 先读取码表的信息
     bool isOldVersion = 1;
     if (!codeStrLength) {
         uint8_t version;

@@ -482,13 +482,13 @@ std::string PinyinEncoder::initialFinalToPinyinString(PinyinInitial initial,
 static void getFuzzy(
     std::vector<std::pair<PinyinInitial,
                           std::vector<std::pair<PinyinFinal, bool>>>> &syls,
-    PinyinSyllable syl, PinyinFuzzyFlags flags) {
+    PinyinSyllable syl, PinyinFuzzyFlags flags, bool isSp) {
     // ng/gn is already handled by table
     boost::container::static_vector<PinyinInitial, 2> initials{syl.initial()};
     boost::container::static_vector<PinyinFinal, 10> finals{syl.final()};
 
-    // for {s,z,c} we also want them to match {sh,zh,ch}
-    if (syl.final() == PinyinFinal::Invalid) {
+    // for full pinyin {s,z,c} we also want them to match {sh,zh,ch}
+    if (syl.final() == PinyinFinal::Invalid && !isSp) {
         if (syl.initial() == PinyinInitial::C) {
             flags |= PinyinFuzzyFlag::C_CH;
         }
@@ -613,14 +613,16 @@ PinyinEncoder::stringToSyllables(std::string_view pinyinView,
         for (const auto &item :
              boost::make_iterator_range(iterPair.first, iterPair.second)) {
             if (flags.test(item.flags())) {
-                getFuzzy(result, {item.initial(), item.final()}, flags);
+                getFuzzy(result, {item.initial(), item.final()}, flags,
+                         /*isSp=*/false);
             }
         }
     }
 
     auto iter = initialMap.right.find(std::string{pinyin});
     if (initialMap.right.end() != iter) {
-        getFuzzy(result, {iter->second, PinyinFinal::Invalid}, flags);
+        getFuzzy(result, {iter->second, PinyinFinal::Invalid}, flags,
+                 /*isSp=*/false);
     }
 
     if (result.empty()) {
@@ -675,7 +677,8 @@ PinyinEncoder::shuangpinToSyllables(std::string_view pinyinView,
     if (iter != table.end()) {
         for (const auto &p : iter->second) {
             if (flags.test(p.second)) {
-                getFuzzy(result, {p.first.initial(), p.first.final()}, flags);
+                getFuzzy(result, {p.first.initial(), p.first.final()}, flags,
+                         /*isSp=*/true);
             }
         }
     }

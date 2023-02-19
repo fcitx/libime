@@ -107,6 +107,14 @@ void checkSimpleParsing() {
             << " " << matchedQp << " " << matchedSp;
     }
 
+    {
+        auto partialSp = PinyinEncoder::shuangpinToSyllables(
+            "z", zrm, PinyinFuzzyFlag::None);
+        MatchedPinyinSyllables expected{
+            {PinyinInitial::Z, {{PinyinFinal::Invalid, false}}}};
+        FCITX_ASSERT(partialSp == expected) << partialSp;
+    }
+
     std::string zrmText = "[方案]\n"
                           "方案名称=自定义\n"
                           "\n"

@@ -10,9 +10,9 @@
 
 struct ScopedNanoTimer {
     std::chrono::high_resolution_clock::time_point t0;
-    std::function<void(int)> cb;
+    std::function<void(int64_t)> cb;
 
-    ScopedNanoTimer(std::function<void(int)> callback)
+    ScopedNanoTimer(std::function<void(int64_t)> callback)
         : t0(std::chrono::high_resolution_clock::now()),
           cb(std::move(callback)) {}
     ~ScopedNanoTimer(void) {

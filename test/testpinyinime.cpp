@@ -27,7 +27,7 @@
 using namespace libime;
 
 int main(int argc, char *argv[]) {
-    auto printTime = [](int t) {
+    auto printTime = [](int64_t t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
     };
     fcitx::Log::setLogRule("libime=5");
@@ -78,6 +78,8 @@ int main(int argc, char *argv[]) {
             }
         } else if (word == "all") {
             printAll = true;
+        } else if (word == "quit") {
+            break;
         }
         if (c.selected()) {
             std::cout << "COMMIT:   " << c.preedit() << std::endl;

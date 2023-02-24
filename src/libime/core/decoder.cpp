@@ -20,6 +20,8 @@
 
 namespace libime {
 
+constexpr int MAX_BACKWARD_SEARCH_SIZE = 10000;
+
 struct NBestNode {
     NBestNode(const LatticeNode *node) : node_(node) {}
 
@@ -27,7 +29,14 @@ struct NBestNode {
     // for nbest
     float gn_ = 0.0f;
     float fn_ = -std::numeric_limits<float>::max();
-    NBestNode *next_ = nullptr;
+    std::shared_ptr<NBestNode> next_;
+};
+
+template <typename T>
+struct NBestNodeLess {
+    bool operator()(const T &lhs, const T &rhs) const {
+        return lhs->fn_ < rhs->fn_;
+    }
 };
 
 class DecoderPrivate {
@@ -227,7 +236,7 @@ std::string concatNBest(NBestNode *node, std::string_view sep = "") {
     while (node) {
         result.append(node->node_->word());
         result.append(sep.data(), sep.size());
-        node = node->next_;
+        node = node->next_.get();
     }
     return result;
 }
@@ -237,35 +246,31 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
     auto &lattice = l.d_ptr->lattice_;
     State state;
     // backward search
-    if (nbest == 1) {
-        assert(lattice[&graph.start()].size() == 1);
-        assert(lattice[nullptr].size() == 1);
-        auto *pos = &lattice[nullptr][0];
-        l.d_ptr->nbests_.push_back(pos->toSentenceResult());
-    } else {
-        struct NBestNodeLess {
-            bool operator()(const NBestNode *lhs, const NBestNode *rhs) const {
-                return lhs->fn_ < rhs->fn_;
-            }
-        };
-        std::priority_queue<NBestNode *, std::vector<NBestNode *>,
-                            NBestNodeLess>
-            q, result;
+    assert(lattice[&graph.start()].size() == 1);
+    assert(lattice[nullptr].size() == 1);
+    auto *pos = &lattice[nullptr][0];
+    l.d_ptr->nbests_.push_back(pos->toSentenceResult());
+    if (nbest > 1) {
         std::unordered_set<std::string> dup;
-        std::list<NBestNode> nbestNodePool;
+        dup.insert(l.d_ptr->nbests_[0].toString());
+        using PriorityQueueType =
+            std::priority_queue<std::shared_ptr<NBestNode>,
+                                std::vector<std::shared_ptr<NBestNode>>,
+                                NBestNodeLess<std::shared_ptr<NBestNode>>>;
+        PriorityQueueType q, result;
 
         auto *eos = &lattice[nullptr][0];
-        auto newNBestNode = [&nbestNodePool](const LatticeNode *node) {
-            nbestNodePool.emplace_back(node);
-            return &nbestNodePool.back();
+        auto newNBestNode = [](const LatticeNode *node) {
+            return std::make_shared<NBestNode>(node);
         };
         q.push(newNBestNode(eos));
+        int acc = 0;
         auto *bos = &lattice[&graph.start()][0];
         while (!q.empty()) {
-            auto *node = q.top();
+            std::shared_ptr<NBestNode> node = q.top();
             q.pop();
             if (bos == node->node_) {
-                auto sentence = concatNBest(node);
+                auto sentence = concatNBest(node.get());
                 if (dup.count(sentence)) {
                     continue;
                 }
@@ -279,6 +284,9 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                 }
                 dup.insert(sentence);
             } else {
+                if (acc >= MAX_BACKWARD_SEARCH_SIZE) {
+                    continue;
+                }
                 for (auto &from : lattice[node->node_->from()]) {
                     auto score =
                         model_->score(from.state(), *node->node_, state) +
@@ -286,23 +294,29 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                     if (&from != bos && score < min) {
                         continue;
                     }
-                    auto *parent = newNBestNode(&from);
+                    std::shared_ptr<NBestNode> parent = newNBestNode(&from);
                     parent->gn_ = score + node->gn_;
                     parent->fn_ = parent->gn_ + parent->node_->score();
                     parent->next_ = node;
 
-                    q.push(parent);
+                    if (eos->score() - node->gn_ <= max) {
+                        q.push(std::move(parent));
+                        acc++;
+                        if (acc >= MAX_BACKWARD_SEARCH_SIZE) {
+                            break;
+                        }
+                    }
                 }
             }
         }
 
         while (!result.empty()) {
-            auto *node = result.top();
+            auto node = result.top();
             result.pop();
             // loop twice to avoid problem
             size_t count = 0;
             // skip bos
-            auto *pivot = node->next_;
+            auto pivot = node->next_;
             while (pivot) {
                 pivot = pivot->next_;
                 count++;

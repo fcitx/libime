@@ -11,9 +11,9 @@
 #include "constants.h"
 #include "tablebaseddictionary.h"
 #include "tableoptions.h"
-#include <boost/regex.hpp>
 #include <cstdint>
 #include <optional>
+#include <regex>
 #include <set>
 #include <vector>
 
@@ -39,8 +39,8 @@ public:
     DATrie<uint32_t> promptTrie_; // lookup for prompt;
     AutoPhraseDict autoPhraseDict_{TABLE_AUTOPHRASE_SIZE};
     TableOptions options_;
-    std::optional<boost::regex> autoSelectRegex_;
-    std::optional<boost::regex> noMatchAutoSelectRegex_;
+    std::optional<std::regex> autoSelectRegex_;
+    std::optional<std::regex> noMatchAutoSelectRegex_;
 
     TableBasedDictionaryPrivate(TableBasedDictionary *q) : QPtrHolder(q) {}
 

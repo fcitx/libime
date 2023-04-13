@@ -20,6 +20,7 @@
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
+#include <regex>
 
 namespace libime {
 
@@ -256,9 +257,9 @@ public:
 
         // Check by regex.
         return dict_.d_func()->autoSelectRegex_ &&
-               boost::regex_match(graph_.data(),
-                                  *dict_.d_func()->autoSelectRegex_,
-                                  boost::regex_constants::match_default);
+               std::regex_match(graph_.data(),
+                                *dict_.d_func()->autoSelectRegex_,
+                                std::regex_constants::match_default);
     }
 
     bool checkNoMatchAutoSelect() const {
@@ -273,9 +274,9 @@ public:
 
         // Check by regex.
         return dict_.d_func()->noMatchAutoSelectRegex_ &&
-               boost::regex_match(graph_.data(),
-                                  *dict_.d_func()->noMatchAutoSelectRegex_,
-                                  boost::regex_constants::match_default);
+               std::regex_match(graph_.data(),
+                                *dict_.d_func()->noMatchAutoSelectRegex_,
+                                std::regex_constants::match_default);
     }
 
     TableBasedDictionary &dict_;

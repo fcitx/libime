@@ -58,7 +58,14 @@ public:
         callback_type;
     typedef std::function<value_type(value_type)> updater_type;
 
-    enum { NO_VALUE = NaN<value_type>::N1, NO_PATH = NaN<value_type>::N2 };
+    /*
+     * The actual value may be different on different CPU, use isNoValue
+     * isNoPath, or isValid instead.
+     */
+    enum {
+        NO_VALUE LIBIMECORE_DEPRECATED = NaN<value_type>::N1,
+        NO_PATH LIBIMECORE_DEPRECATED = NaN<value_type>::N2
+    };
     DATrie();
     DATrie(const char *filename);
     DATrie(std::istream &in);

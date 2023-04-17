@@ -17,12 +17,45 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <fstream>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
 namespace libime {
+
+namespace {
+
+template <typename value_type>
+union DecoderUnion {
+    int32_t result;
+    value_type result_value;
+};
+
+template <typename V>
+int32_t decodeValue(V raw) {
+    DecoderUnion<V> decoder;
+    decoder.result_value = raw;
+    return decoder.result;
+}
+
+template <typename T>
+struct NanValue {
+    static inline const int32_t NO_VALUE = -1;
+    static inline const int32_t NO_PATH = -2;
+};
+
+template <>
+struct NanValue<float> {
+    static_assert(std::numeric_limits<float>::has_quiet_NaN,
+                  "Require support for quiet NaN.");
+    static inline const int32_t NO_VALUE = decodeValue(std::nanf("1"));
+    static inline const int32_t NO_PATH = decodeValue(std::nanf("2"));
+};
+
+} // namespace
 
 #if 0
 template<typename T>
@@ -39,17 +72,12 @@ public:
     typedef typename base_type::position_type position_type;
     typedef typename base_type::updater_type updater_type;
     typedef typename base_type::callback_type callback_type;
+    typedef DecoderUnion<V> decorder_type;
 
-    union decorder_type {
-        int32_t result;
-        value_type result_value;
-    };
+    static inline const int32_t CEDAR_NO_VALUE = NanValue<V>::NO_VALUE;
+    static inline const int32_t CEDAR_NO_PATH = NanValue<V>::NO_PATH;
 
-    enum error_code {
-        CEDAR_NO_VALUE = base_type::NO_VALUE,
-        CEDAR_NO_PATH = base_type::NO_PATH
-    };
-    static const int MAX_ALLOC_SIZE = 1 << 16; // must be divisible by 256
+    static constexpr int MAX_ALLOC_SIZE = 1 << 16; // must be divisible by 256
     typedef value_type result_type;
     typedef uint8_t uchar;
     static_assert(sizeof(value_type) <= sizeof(int32_t),
@@ -1011,7 +1039,8 @@ bool DATrie<T>::foreach(const char *prefix, size_t size, callback_type func,
                         position_type _pos) const {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t from(_pos);
-    if (d->_find(prefix, from, pos, size) == NO_PATH) {
+    if (d->_find(prefix, from, pos, size) ==
+        DATriePrivate<value_type>::CEDAR_NO_PATH) {
         return true;
     }
 
@@ -1065,8 +1094,8 @@ typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key,
     typename DATriePrivate<value_type>::npos_t npos;
     typename DATriePrivate<T>::decorder_type decoder;
     decoder.result = d->_find(key, npos, pos, len);
-    if (decoder.result == NO_PATH) {
-        decoder.result = NO_VALUE;
+    if (decoder.result == DATriePrivate<value_type>::CEDAR_NO_PATH) {
+        decoder.result = DATriePrivate<value_type>::CEDAR_NO_VALUE;
     }
     return decoder.result_value;
 }
@@ -1095,14 +1124,14 @@ template <typename T>
 bool DATrie<T>::isNoPath(value_type v) {
     typename DATriePrivate<T>::decorder_type d;
     d.result_value = v;
-    return d.result == NO_PATH;
+    return d.result == DATriePrivate<value_type>::CEDAR_NO_PATH;
 }
 
 template <typename T>
 bool DATrie<T>::isNoValue(value_type v) {
     typename DATriePrivate<T>::decorder_type d;
     d.result_value = v;
-    return d.result == NO_VALUE;
+    return d.result == DATriePrivate<value_type>::CEDAR_NO_VALUE;
 }
 
 template <typename T>

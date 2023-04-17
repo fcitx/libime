@@ -43,16 +43,16 @@ int32_t decodeValue(V raw) {
 
 template <typename T>
 struct NanValue {
-    static inline const int32_t NO_VALUE = -1;
-    static inline const int32_t NO_PATH = -2;
+    static inline int32_t NO_VALUE() { return -1; };
+    static inline int32_t NO_PATH() { return -2; }
 };
 
 template <>
 struct NanValue<float> {
     static_assert(std::numeric_limits<float>::has_quiet_NaN,
                   "Require support for quiet NaN.");
-    static inline const int32_t NO_VALUE = decodeValue(std::nanf("1"));
-    static inline const int32_t NO_PATH = decodeValue(std::nanf("2"));
+    static inline int32_t NO_VALUE() { return decodeValue(std::nanf("1")); }
+    static inline int32_t NO_PATH() { return decodeValue(std::nanf("2")); }
 };
 
 } // namespace
@@ -74,8 +74,8 @@ public:
     typedef typename base_type::callback_type callback_type;
     typedef DecoderUnion<V> decorder_type;
 
-    static inline const int32_t CEDAR_NO_VALUE = NanValue<V>::NO_VALUE;
-    static inline const int32_t CEDAR_NO_PATH = NanValue<V>::NO_PATH;
+    static inline const int32_t CEDAR_NO_VALUE = NanValue<V>::NO_VALUE();
+    static inline const int32_t CEDAR_NO_PATH = NanValue<V>::NO_PATH();
 
     static constexpr int MAX_ALLOC_SIZE = 1 << 16; // must be divisible by 256
     typedef value_type result_type;

@@ -700,11 +700,16 @@ void PinyinDictionary::loadText(size_t idx, std::istream &in) {
                 prob = std::stof(tokens[2]);
             }
 
-            auto result = PinyinEncoder::encodeFullPinyinWithFlags(
-                pinyin, PinyinFuzzyFlag::VE_UE);
-            result.push_back(pinyinHanziSep);
-            result.insert(result.end(), hanzi.begin(), hanzi.end());
-            trie.set(result.data(), result.size(), prob);
+            try {
+                auto result = PinyinEncoder::encodeFullPinyinWithFlags(
+                    pinyin, PinyinFuzzyFlag::VE_UE);
+                result.push_back(pinyinHanziSep);
+                result.insert(result.end(), hanzi.begin(), hanzi.end());
+                trie.set(result.data(), result.size(), prob);
+            } catch (const std::invalid_argument &e) {
+                LIBIME_ERROR()
+                    << "Failed to parse line: " << buf << ", skipping.";
+            }
         }
     }
     *mutableTrie(idx) = std::move(trie);

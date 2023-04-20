@@ -150,6 +150,7 @@ inline int millisecondsTill(T t0) {
 
 LIBIMECORE_EXPORT FCITX_DECLARE_LOG_CATEGORY(libime_logcategory);
 #define LIBIME_DEBUG() FCITX_LOGC(::libime::libime_logcategory, Debug)
+#define LIBIME_ERROR() FCITX_LOGC(::libime::libime_logcategory, Error)
 } // namespace libime
 
 #endif // LIBIME_UTILS_H

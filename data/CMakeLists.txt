@@ -1,9 +1,9 @@
-set(LM_TAR "lm_sc.arpa-20220810.tar.xz")
+set(LM_TAR "lm_sc.arpa-20230712.tar.xz")
 # Use our own file server for convenience.
 set(LM_URL "https://download.fcitx-im.org/data/${LM_TAR}")
 
 fcitx5_download(lm-download ${LM_URL} ${LM_TAR}
-                a11bc97d275adaf195f9bac854368ae06cdb4a0fe1eecf59db5ae580615db4fa)
+                badd62c16c6373787a0fda8f09cd452d12f60d5868856f651ceecf1a07baba32)
 fcitx5_extract(lm-extract ${LM_TAR} DEPENDS lm-download
                OUTPUT lm_sc.arpa)
 

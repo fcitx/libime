@@ -11,6 +11,7 @@
 #include <libime/core/inputbuffer.h>
 #include <libime/core/lattice.h>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 namespace libime {
@@ -34,7 +35,24 @@ public:
     void setMaxSentenceLength(int length);
 
     const std::vector<SentenceResult> &candidates() const;
+
+    /**
+     * Return the set of candidates, useful for deduplication.
+     *
+     * @see PinyinContext::candidates
+     * @since 1.0.18
+     */
+    const std::unordered_set<std::string> &candidateSet() const;
+
     const std::vector<SentenceResult> &candidatesToCursor() const;
+
+    /**
+     * Return the set of candidates to current cursor.
+     *
+     * @see PinyinContext::candidatesToCursor
+     * @since 1.0.18
+     */
+    const std::unordered_set<std::string> &candidatesToCursorSet() const;
     void select(size_t idx);
     void selectCandidatesToCursor(size_t idx);
     void cancel();

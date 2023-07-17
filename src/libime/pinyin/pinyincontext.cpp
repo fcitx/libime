@@ -16,6 +16,7 @@
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
 #include <iostream>
+#include <unordered_set>
 
 namespace libime {
 
@@ -42,14 +43,18 @@ public:
     Lattice lattice_;
     PinyinMatchState matchState_;
     std::vector<SentenceResult> candidates_;
+    std::unordered_set<std::string> candidatesSet_;
     mutable bool candidatesToCursorNeedUpdate_ = true;
     mutable std::vector<SentenceResult> candidatesToCursor_;
+    mutable std::unordered_set<std::string> candidatesToCursorSet_;
     std::vector<fcitx::ScopedConnection> conn_;
 
     void clearCandidates() {
         candidates_.clear();
         candidatesToCursor_.clear();
         candidatesToCursorNeedUpdate_ = false;
+        candidatesSet_.clear();
+        candidatesToCursorSet_.clear();
     }
 
     void updateCandidatesToCursor() const {
@@ -61,16 +66,16 @@ public:
         auto start = q->selectedLength();
         auto currentCursor = q->cursor();
         candidatesToCursor_.clear();
-        std::unordered_set<std::string> dup;
+        candidatesToCursorSet_.clear();
         for (const auto &candidate : candidates_) {
             const auto &sentence = candidate.sentence();
             if (sentence.size() <= 1) {
                 auto text = candidate.toString();
-                if (dup.count(text)) {
+                if (candidatesToCursorSet_.count(text)) {
                     continue;
                 }
                 candidatesToCursor_.push_back(candidate);
-                dup.insert(std::move(text));
+                candidatesToCursorSet_.insert(std::move(text));
             } else {
                 auto newSentence = sentence;
                 while (!newSentence.empty() &&
@@ -82,11 +87,11 @@ public:
                     SentenceResult partial(newSentence,
                                            newSentence.back()->score());
                     auto text = partial.toString();
-                    if (dup.count(text)) {
+                    if (candidatesToCursorSet_.count(text)) {
                         continue;
                     }
                     candidatesToCursor_.push_back(partial);
-                    dup.insert(std::move(text));
+                    candidatesToCursorSet_.insert(std::move(text));
                 }
             }
         }
@@ -287,6 +292,11 @@ const std::vector<SentenceResult> &PinyinContext::candidates() const {
     return d->candidates_;
 }
 
+const std::unordered_set<std::string> &PinyinContext::candidateSet() const {
+    FCITX_D();
+    return d->candidatesSet_;
+}
+
 const std::vector<SentenceResult> &PinyinContext::candidatesToCursor() const {
     FCITX_D();
     if (cursor() == selectedLength() || cursor() == size()) {
@@ -294,6 +304,16 @@ const std::vector<SentenceResult> &PinyinContext::candidatesToCursor() const {
     }
     d->updateCandidatesToCursor();
     return d->candidatesToCursor_;
+}
+
+const std::unordered_set<std::string> &
+PinyinContext::candidatesToCursorSet() const {
+    FCITX_D();
+    if (cursor() == selectedLength() || cursor() == size()) {
+        return d->candidatesSet_;
+    }
+    d->updateCandidatesToCursor();
+    return d->candidatesToCursorSet_;
 }
 
 void PinyinContext::select(size_t idx) {
@@ -402,10 +422,9 @@ void PinyinContext::update() {
                                    d->ime_->frameSize(), &d->matchState_);
 
         d->clearCandidates();
-        std::unordered_set<std::string> dup;
         for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
             d->candidates_.push_back(d->lattice_.sentence(i));
-            dup.insert(d->candidates_.back().toString());
+            d->candidatesSet_.insert(d->candidates_.back().toString());
         }
 
         const auto *bos = &graph.start();
@@ -429,12 +448,12 @@ void PinyinContext::update() {
                                 max = latticeNode.score();
                             }
                         }
-                        if (dup.count(latticeNode.word())) {
+                        if (d->candidatesSet_.count(latticeNode.word())) {
                             continue;
                         }
                         d->candidates_.push_back(
                             latticeNode.toSentenceResult(adjust));
-                        dup.insert(latticeNode.word());
+                        d->candidatesSet_.insert(latticeNode.word());
                     }
                 }
             }
@@ -446,11 +465,12 @@ void PinyinContext::update() {
                         latticeNode.score() > min &&
                         latticeNode.score() + d->ime_->maxDistance() > max) {
                         auto fullWord = latticeNode.fullWord();
-                        if (dup.count(fullWord)) {
+                        if (d->candidatesSet_.count(fullWord)) {
                             continue;
                         }
                         d->candidates_.push_back(
                             latticeNode.toSentenceResult(adjust));
+                        d->candidatesSet_.insert(fullWord);
                     }
                 }
             }
@@ -643,7 +663,6 @@ std::string PinyinContext::candidateFullPinyin(size_t idx) const {
 
 std::string
 PinyinContext::candidateFullPinyin(const SentenceResult &candidate) const {
-    FCITX_D();
     std::string pinyin;
     for (const auto &p : candidate.sentence()) {
         if (!p->word().empty()) {

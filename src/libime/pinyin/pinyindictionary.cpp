@@ -272,7 +272,7 @@ traverseAlongPathOneStepBySyllables(const MatchedPinyinPath &path,
                 for (auto final : finals) {
                     updateNext(final, pos);
                 }
-            } else {
+            } else if (!path.flags_.test(PinyinDictFlag::FullMatch)) {
                 for (char test = PinyinEncoder::firstFinal;
                      test <= PinyinEncoder::lastFinal; test++) {
                     updateNext(std::make_pair(test, true), pos);

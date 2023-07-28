@@ -16,6 +16,7 @@
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
 #include <iostream>
+#include <iterator>
 #include <unordered_set>
 
 namespace libime {
@@ -547,9 +548,9 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
 
     if (!d->candidates_.empty()) {
         bool first = true;
-        for (const auto &s : d->candidates_[0].sentence()) {
-            for (auto iter = s->path().begin(),
-                      end = std::prev(s->path().end());
+        for (const auto &node : d->candidates_[0].sentence()) {
+            for (auto iter = node->path().begin(),
+                      end = std::prev(node->path().end());
                  iter < end; iter++) {
                 if (!first) {
                     ss += " ";
@@ -563,6 +564,10 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                 auto pinyin = d->segs_.segment(from, to);
                 MatchedPinyinSyllables syls;
                 if (mode == PinyinPreeditMode::Pinyin) {
+                    // The reason that we don't use fuzzy flag from option is
+                    // that we'd like to keep the preedit as is. Otherwise,
+                    // "qign" would be displayed as "qing", which would be
+                    // confusing to user about what is actually being typed.
                     syls = useShuangpin()
                                ? PinyinEncoder::shuangpinToSyllables(
                                      pinyin, *ime()->shuangpinProfile(),
@@ -572,8 +577,47 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                 }
                 std::string actualPinyin;
                 if (!syls.empty() && !syls.front().second.empty()) {
+                    std::string_view candidatePinyin =
+                        static_cast<const PinyinLatticeNode *>(node)
+                            ->encodedPinyin();
+                    auto nthPinyin = std::distance(node->path().begin(), iter);
+                    PinyinInitial bestInitial = syls[0].first;
+                    PinyinFinal bestFinal = syls[0].second[0].first;
+
+                    // Try to match the candidate syllables from all possible
+                    // none-fuzzy possible syls.
+                    if (static_cast<size_t>(nthPinyin * 2 + 2) <=
+                        candidatePinyin.size()) {
+                        auto candidateInitial = static_cast<PinyinInitial>(
+                            candidatePinyin[nthPinyin * 2]);
+                        auto candidateFinal = static_cast<PinyinFinal>(
+                            candidatePinyin[nthPinyin * 2 + 1]);
+
+                        bool found = false;
+                        for (const auto &initial : syls) {
+                            for (const auto &[final, fuzzy] : initial.second) {
+                                if (fuzzy) {
+                                    continue;
+                                }
+                                if (candidateInitial == initial.first &&
+                                    (final == PinyinFinal::Invalid ||
+                                     candidateFinal == final)) {
+                                    bestInitial = initial.first;
+                                    if (final != PinyinFinal::Invalid) {
+                                        bestFinal = final;
+                                    }
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (found) {
+                                break;
+                            }
+                        }
+                    }
+
                     actualPinyin = PinyinEncoder::initialFinalToPinyinString(
-                        syls[0].first, syls[0].second[0].first);
+                        bestInitial, bestFinal);
                     if (!useShuangpin()) {
                         matchPinyinCase(pinyin, actualPinyin);
                     }
@@ -664,13 +708,13 @@ std::string PinyinContext::candidateFullPinyin(size_t idx) const {
 std::string
 PinyinContext::candidateFullPinyin(const SentenceResult &candidate) const {
     std::string pinyin;
-    for (const auto &p : candidate.sentence()) {
-        if (!p->word().empty()) {
+    for (const auto &node : candidate.sentence()) {
+        if (!node->word().empty()) {
             if (!pinyin.empty()) {
                 pinyin.push_back('\'');
             }
             pinyin += PinyinEncoder::decodeFullPinyin(
-                static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
+                static_cast<const PinyinLatticeNode *>(node)->encodedPinyin());
         }
     }
     return pinyin;

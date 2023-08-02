@@ -623,7 +623,7 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                     }
                 }
                 if (!actualPinyin.empty()) {
-                    if (c >= from + len && c < to + len) {
+                    if (c > from + len && c <= to + len) {
                         if (useShuangpin()) {
                             switch (cursorInPinyin) {
                             case 0:
@@ -659,7 +659,7 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                     ss.append(pinyin.data(), pinyin.size());
                     resultSize += pinyin.size();
                 }
-                if (c >= from + len && c < to + len) {
+                if (c > from + len && c <= to + len) {
                     actualCursor = startPivot + cursorInPinyin;
                 }
             }

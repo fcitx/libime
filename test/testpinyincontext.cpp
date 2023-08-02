@@ -12,6 +12,7 @@
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinime.h"
 #include "testdir.h"
+#include <array>
 #include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
@@ -134,6 +135,37 @@ int main() {
             }
         }
         std::cout << std::endl;
+    }
+
+    std::cout << "--------------------------------" << std::endl;
+    {
+        c.clear();
+        c.type("nvedai");
+        std::array<size_t, 7> expectedCursor = {0, 1, 3, 4, 6, 7, 8};
+        for (size_t i = 0; i <= c.size(); i++) {
+            c.setCursor(i);
+            size_t actualCursor =
+                c.preeditWithCursor(PinyinPreeditMode::Pinyin).second;
+            FCITX_ASSERT(actualCursor == expectedCursor[i])
+                << "Raw Cursor: " << i << " Cursor: " << actualCursor
+                << " Expected: " << expectedCursor[i];
+        }
+        FCITX_ASSERT(c.preedit(PinyinPreeditMode::Pinyin) == "nüe dai");
+    }
+
+    {
+        c.clear();
+        c.type("xi'an");
+        std::array<size_t, 6> expectedCursor = {0, 1, 2, 4, 6, 7};
+        for (size_t i = 0; i <= c.size(); i++) {
+            c.setCursor(i);
+            size_t actualCursor =
+                c.preeditWithCursor(PinyinPreeditMode::RawText).second;
+            FCITX_ASSERT(actualCursor == expectedCursor[i])
+                << "Raw Cursor: " << i << " Cursor: " << actualCursor
+                << " Expected: " << expectedCursor[i];
+        }
+        FCITX_ASSERT(c.preedit(PinyinPreeditMode::RawText) == "xi ' an");
     }
 
     return 0;

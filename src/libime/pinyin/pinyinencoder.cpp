@@ -93,7 +93,8 @@ template <typename Iter>
 std::pair<std::string_view, bool> longestMatch(Iter iter, Iter end,
                                                PinyinFuzzyFlags flags) {
     if (*iter == 'i' || *iter == 'u' || *iter == 'v') {
-        return std::make_pair(std::string_view(&*iter, std::distance(iter, end)), false);
+        return std::make_pair(
+            std::string_view(&*iter, std::distance(iter, end)), false);
     }
     if (std::distance(iter, end) > maxPinyinLength) {
         end = iter + maxPinyinLength;

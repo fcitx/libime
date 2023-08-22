@@ -7,54 +7,71 @@
 #include "libime/core/lattice.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include <fcitx-utils/log.h>
+#include <string>
+#include <vector>
 
 using namespace libime;
 
-void dfs(const SegmentGraph &segs) {
+void dfs(const SegmentGraph &segs,
+         const std::vector<std::string> &expectedMatch = {}) {
     FCITX_ASSERT(segs.checkGraph());
 
-    auto callback = [](const SegmentGraphBase &segs,
-                       const std::vector<size_t> &path) {
-        size_t s = 0;
-        for (auto e : path) {
-            FCITX_INFO() << segs.segment(s, e) << " ";
-            s = e;
+    bool checked = false;
+    auto callback = [&checked,
+                     &expectedMatch](const SegmentGraphBase &segs,
+                                     const std::vector<size_t> &path) {
+        size_t start = 0;
+        std::vector<std::string> result;
+        for (auto end : path) {
+            result.push_back(std::string(segs.segment(start, end)));
+            start = end;
         }
-        FCITX_INFO();
+        if (!checked && !expectedMatch.empty()) {
+            if (result == expectedMatch) {
+                checked = true;
+            }
+        }
+        FCITX_INFO() << result;
         return true;
     };
 
     segs.dfs(callback);
+    FCITX_ASSERT(checked || expectedMatch.empty())
+        << segs.data() << " " << expectedMatch;
 }
 
-void check(std::string py, PinyinFuzzyFlags flags) {
-    dfs(PinyinEncoder::parseUserPinyin(std::move(py), flags));
+void check(std::string py, PinyinFuzzyFlags flags,
+           const std::vector<std::string> &expectedMatch) {
+    dfs(PinyinEncoder::parseUserPinyin(std::move(py), flags), expectedMatch);
 }
 
 int main() {
-    check("wa'nan'''", PinyinFuzzyFlag::None);
-    check("lvenu", PinyinFuzzyFlag::None);
-    check("woaizuguotiananmen", PinyinFuzzyFlag::None);
-    check("wanan", PinyinFuzzyFlag::None);
-    check("biiiiiilp", PinyinFuzzyFlag::None);
-    check("zhm", PinyinFuzzyFlag::None);
-    check("zzhzhhzhzh", PinyinFuzzyFlag::None);
-    check("shuou", PinyinFuzzyFlag::None);
-    check("tanan", PinyinFuzzyFlag::None);
-    check("lven", PinyinFuzzyFlag::None);
-    check("ananananana", PinyinFuzzyFlag::None);
-    check("wa'nan", PinyinFuzzyFlag::None);
-    check("xian", PinyinFuzzyFlag::None);
-    check("xian", PinyinFuzzyFlag::Inner);
-    check("xi'an", PinyinFuzzyFlag::Inner);
-    check("kuai", PinyinFuzzyFlag::None);
-    check("kuai", PinyinFuzzyFlag::Inner);
-    check("jiaou", PinyinFuzzyFlag::Inner);
-    check("jin'an", PinyinFuzzyFlag::Inner);
-    check("qie", PinyinFuzzyFlag::Inner);
-    check("qie", PinyinFuzzyFlag::InnerShort);
-    check("qi'e", PinyinFuzzyFlag::Inner);
-    check("nng", PinyinFuzzyFlag::InnerShort);
+    check("wa'nan'''", PinyinFuzzyFlag::None, {"wa", "'", "nan", "'''"});
+    check("lvenu", PinyinFuzzyFlag::None, {"lve", "nu"});
+    check("woaizuguotiananmen", PinyinFuzzyFlag::None,
+          {"wo", "ai", "zu", "guo", "tian", "an", "men"});
+    check("wanan", PinyinFuzzyFlag::None, {"wan", "an"});
+    check("biiiiiilp", PinyinFuzzyFlag::None, {"bi", "iiiiilp"});
+    check("zhm", PinyinFuzzyFlag::None, {"zh", "m"});
+    check("zzhzhhzhzh", PinyinFuzzyFlag::None,
+          {"z", "zh", "zh", "h", "zh", "zh"});
+    check("shuou", PinyinFuzzyFlag::None, {"shu", "ou"});
+    check("tanan", PinyinFuzzyFlag::None, {"tan", "an"});
+    check("lven", PinyinFuzzyFlag::None, {"lv", "en"});
+    check("ananananana", PinyinFuzzyFlag::None,
+          {"an", "an", "an", "an", "an", "a"});
+    check("wa'nan", PinyinFuzzyFlag::None, {"wa", "'", "nan"});
+    check("xian", PinyinFuzzyFlag::None, {"xian"});
+    check("xian", PinyinFuzzyFlag::Inner, {"xi", "an"});
+    check("xi'an", PinyinFuzzyFlag::Inner, {"xi", "'", "an"});
+    check("kuai", PinyinFuzzyFlag::None, {"kuai"});
+    check("kuai", PinyinFuzzyFlag::Inner, {"ku", "ai"});
+    check("jiaou", PinyinFuzzyFlag::Inner, {"jia", "ou"});
+    check("jin'an", PinyinFuzzyFlag::Inner, {"jin", "'", "an"});
+    check("qie", PinyinFuzzyFlag::Inner, {"qie"});
+    check("qie", PinyinFuzzyFlag::InnerShort, {"qi", "e"});
+    check("qi'e", PinyinFuzzyFlag::Inner, {"qi", "'", "e"});
+    check("nng", PinyinFuzzyFlag::InnerShort, {"n", "ng"});
 
     for (const auto &syl : PinyinEncoder::stringToSyllables(
              "niagn",
@@ -88,23 +105,23 @@ int main() {
     }
     {
         // xiang o n
-        check("xian", PinyinFuzzyFlag::None);
+        check("xian", PinyinFuzzyFlag::None, {"xian"});
 
         // xian gong
-        check("xiangong", PinyinFuzzyFlag::None);
+        check("xiangong", PinyinFuzzyFlag::None, {"xian", "gong"});
 
         // xiang o n
-        check("xiangon", PinyinFuzzyFlag::None);
+        check("xiangon", PinyinFuzzyFlag::None, {"xiang", "o", "n"});
 
         // yan d
-        check("yand", PinyinFuzzyFlag::None);
+        check("yand", PinyinFuzzyFlag::None, {"yan", "d"});
         // hua c o
-        check("huaco", PinyinFuzzyFlag::None);
+        check("huaco", PinyinFuzzyFlag::None, {"hua", "c", "o"});
         // hua c o
-        check("xion", PinyinFuzzyFlag::None);
-        check("xiana", PinyinFuzzyFlag::None);
+        check("xion", PinyinFuzzyFlag::None, {"xi", "o", "n"});
+        check("xiana", PinyinFuzzyFlag::None, {"xian", "a"});
 
-        check("Nihao", PinyinFuzzyFlag::None);
+        check("Nihao", PinyinFuzzyFlag::None, {"Ni", "hao"});
     }
 
     {
@@ -114,19 +131,19 @@ int main() {
                 PinyinEncoder::parseUserPinyin("z", PinyinFuzzyFlag::None);
             graph.merge(graph2);
         }
-        dfs(graph);
+        dfs(graph, {"z"});
         {
             auto graph2 =
                 PinyinEncoder::parseUserPinyin("zn", PinyinFuzzyFlag::None);
             graph.merge(graph2);
         }
-        dfs(graph);
+        dfs(graph, {"z", "n"});
         {
             auto graph2 =
                 PinyinEncoder::parseUserPinyin("z", PinyinFuzzyFlag::None);
             graph.merge(graph2);
         }
-        dfs(graph);
+        dfs(graph, {"z"});
     }
     {
         auto result =
@@ -183,6 +200,7 @@ int main() {
         FCITX_ASSERT(result == "lü");
     }
 
-    check("zhunipingan", PinyinFuzzyFlag::Inner);
+    check("zhunipingan", PinyinFuzzyFlag::Inner, {"zhu", "ni", "ping", "an"});
+    check("zhunipingan", PinyinFuzzyFlag::Inner, {"zhu", "ni", "pin", "gan"});
     return 0;
 }

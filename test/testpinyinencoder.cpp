@@ -182,5 +182,7 @@ int main() {
             libime::PinyinInitial::L, libime::PinyinFinal::V);
         FCITX_ASSERT(result == "lü");
     }
+
+    check("zhunipingan", PinyinFuzzyFlag::Inner);
     return 0;
 }

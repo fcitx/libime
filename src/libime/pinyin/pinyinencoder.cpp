@@ -89,12 +89,17 @@ static const auto finalMap = makeBimap<PinyinFinal, std::string>({
 
 static const int maxPinyinLength = 6;
 
+struct LongestMatchResult {
+    bool valid;
+    std::string_view match;
+    bool isCompletePinyin;
+};
+
 template <typename Iter>
-std::pair<std::string_view, bool> longestMatch(Iter iter, Iter end,
-                                               PinyinFuzzyFlags flags) {
+LongestMatchResult longestMatch(Iter iter, Iter end, PinyinFuzzyFlags flags) {
     if (*iter == 'i' || *iter == 'u' || *iter == 'v') {
-        return std::make_pair(
-            std::string_view(&*iter, std::distance(iter, end)), false);
+        return {false, std::string_view(&*iter, std::distance(iter, end)),
+                false};
     }
     if (std::distance(iter, end) > maxPinyinLength) {
         end = iter + maxPinyinLength;
@@ -108,24 +113,23 @@ std::pair<std::string_view, bool> longestMatch(Iter iter, Iter end,
                  boost::make_iterator_range(iterPair.first, iterPair.second)) {
                 if (flags.test(item.flags())) {
                     // do not consider m/n/r as complete pinyin
-                    return std::make_pair(
-                        range, (range != "m" && range != "n" && range != "r"));
+                    return {true, range,
+                            (range != "m" && range != "n" && range != "r")};
                 }
             }
         }
         if (range.size() <= 2) {
             auto iter = initialMap.right.find(std::string{range});
             if (iter != initialMap.right.end()) {
-                return std::make_pair(range, false);
+                return {true, range, false};
             }
         }
     }
 
-    if (range.empty()) {
-        range = std::string_view(&*iter, 1);
-    }
+    assert(range.empty());
+    range = std::string_view(&*iter, 1);
 
-    return std::make_pair(range, false);
+    return {false, range, false};
 }
 
 std::string PinyinSyllable::toString() const {
@@ -163,12 +167,10 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
             }
             continue;
         }
-        std::string_view str;
-        bool isCompletePinyin;
-        std::tie(str, isCompletePinyin) = longestMatch(iter, end, flags);
+        auto [valid, str, isCompletePinyin] = longestMatch(iter, end, flags);
 
         // it's not complete a pinyin, no need to try
-        if (!isCompletePinyin) {
+        if (!valid || !isCompletePinyin) {
             result.addNext(top, top + str.size());
             q.push(top + str.size());
         } else {
@@ -183,6 +185,8 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
             const auto &map = getPinyinMap();
             std::array<size_t, 2> nextSize;
             size_t nNextSize = 0;
+            // Check if we can do fuzzy segement, e.g.
+            // zhuni -> zhu ni
             if (str.size() > 1 && top + str.size() < pinyin.size() &&
                 pinyin[top + str.size()] != '\'' &&
                 (str.back() == 'a' || str.back() == 'e' || str.back() == 'g' ||
@@ -192,16 +196,27 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
                 auto nextMatch = longestMatch(iter + str.size(), end, flags);
                 auto nextMatchAlt =
                     longestMatch(iter + str.size() - 1, end, flags);
-                auto matchSize = str.size() + nextMatch.first.size();
-                auto matchSizeAlt = str.size() - 1 + nextMatchAlt.first.size();
-                if (std::make_pair(matchSize, nextMatch.second) >=
-                    std::make_pair(matchSizeAlt, nextMatchAlt.second)) {
+                auto matchSize = str.size() + nextMatch.match.size();
+                auto matchSizeAlt = str.size() - 1 + nextMatchAlt.match.size();
+
+                // comparator is (validPinyin, wholeMatchSize, isCompletePinyin)
+                // validPinyin means it's at least some pinyin, instead of
+                // things startsWith i,u,v. Since longestMatch will now treat
+                // string startsWith iuv a whole segment, we need to compare
+                // validity before the length.
+                // Always prefer longer match and complete pinyin match.
+                std::tuple<bool, size_t, bool> compare(
+                    nextMatch.valid, matchSize, nextMatch.isCompletePinyin);
+                std::tuple<bool, size_t, bool> compareAlt(
+                    nextMatchAlt.valid, matchSizeAlt,
+                    nextMatchAlt.isCompletePinyin);
+
+                if (compare >= compareAlt) {
                     result.addNext(top, top + str.size());
                     q.push(top + str.size());
                     nextSize[nNextSize++] = str.size();
                 }
-                if (std::make_pair(matchSize, nextMatch.second) <=
-                    std::make_pair(matchSizeAlt, nextMatchAlt.second)) {
+                if (compare <= compareAlt) {
                     result.addNext(top, top + str.size() - 1);
                     q.push(top + str.size() - 1);
                     nextSize[nNextSize++] = str.size() - 1;

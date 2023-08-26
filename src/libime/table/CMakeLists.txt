@@ -37,7 +37,7 @@ target_include_directories(IMETable PUBLIC
 target_link_libraries(IMETable PUBLIC Fcitx5::Utils Boost::boost LibIME::Core)
 
 install(TARGETS IMETable EXPORT LibIMETableTargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(FILES ${LIBIME_TABLE_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/table")
+install(FILES ${LIBIME_TABLE_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/table" COMPONENT header)
 
 add_library(LibIME::Table ALIAS IMETable)
 

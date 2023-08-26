@@ -80,7 +80,7 @@ target_include_directories(IMECore PUBLIC
 target_link_libraries(IMECore PUBLIC Fcitx5::Utils Boost::boost PRIVATE kenlm)
 
 install(TARGETS IMECore EXPORT LibIMECoreTargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(FILES ${LIBIME_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/core")
+install(FILES ${LIBIME_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/core" COMPONENT header)
 
 add_library(LibIME::Core ALIAS IMECore)
 

@@ -42,7 +42,7 @@ target_include_directories(IMEPinyin PUBLIC
 target_link_libraries(IMEPinyin PUBLIC Fcitx5::Utils Boost::boost LibIME::Core)
 
 install(TARGETS IMEPinyin EXPORT LibIMEPinyinTargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(FILES ${LIBIME_PINYIN_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/pinyin")
+install(FILES ${LIBIME_PINYIN_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/pinyin" COMPONENT header)
 
 add_library(LibIME::Pinyin ALIAS IMEPinyin)
 

@@ -56,7 +56,7 @@ public:
                   const std::unordered_set<const SegmentGraphNode *> &ignore,
                   size_t beamSize) const;
     void backwardSearch(const SegmentGraph &graph, Lattice &l, size_t nbest,
-                        float max, float min) const;
+                        float max, float min, size_t beamSize) const;
 
     const Dictionary *dict_;
     const LanguageModelBase *model_;
@@ -242,7 +242,8 @@ std::string concatNBest(NBestNode *node, std::string_view sep = "") {
 }
 
 void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
-                                    size_t nbest, float max, float min) const {
+                                    size_t nbest, float max, float min,
+                                    size_t beamSize) const {
     auto &lattice = l.d_ptr->lattice_;
     State state;
     // backward search
@@ -287,7 +288,15 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                 if (acc >= MAX_BACKWARD_SEARCH_SIZE) {
                     continue;
                 }
-                for (auto &from : lattice[node->node_->from()]) {
+                auto searchSize = beamSize;
+                if (searchSize) {
+                    searchSize = std::min(searchSize,
+                                          lattice[node->node_->from()].size());
+                } else {
+                    searchSize = lattice[node->node_->from()].size();
+                }
+                for (auto &from : lattice[node->node_->from()] |
+                                      boost::adaptors::sliced(0, searchSize)) {
                     auto score =
                         model_->score(from.state(), *node->node_, state) +
                         node->node_->cost();
@@ -374,7 +383,7 @@ bool Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     LIBIME_DEBUG() << "Build Lattice: " << millisecondsTill(t0);
     d->forwardSearch(this, graph, l, ignore, beamSize);
     LIBIME_DEBUG() << "Forward Search: " << millisecondsTill(t0);
-    d->backwardSearch(graph, l, nbest, max, min);
+    d->backwardSearch(graph, l, nbest, max, min, beamSize);
     LIBIME_DEBUG() << "Backward Search: " << millisecondsTill(t0);
     return true;
 }

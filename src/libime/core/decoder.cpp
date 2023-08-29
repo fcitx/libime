@@ -308,7 +308,7 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                     parent->fn_ = parent->gn_ + parent->node_->score();
                     parent->next_ = node;
 
-                    if (eos->score() - node->gn_ <= max) {
+                    if (eos->score() - parent->gn_ <= max) {
                         q.push(std::move(parent));
                         acc++;
                         if (acc >= MAX_BACKWARD_SEARCH_SIZE) {

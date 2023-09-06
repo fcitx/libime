@@ -8,6 +8,7 @@
 #include "constants.h"
 #include "libime/core/datrie.h"
 #include "libime/core/lattice.h"
+#include "libime/table/tablebaseddictionary.h"
 #include "log.h"
 #include "tablebaseddictionary_p.h"
 #include "tabledecoder_p.h"
@@ -22,6 +23,7 @@
 #include <fcitx-utils/utf8.h>
 #include <fstream>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <unordered_set>
 
@@ -46,16 +48,17 @@ enum {
     STR_RULE,
     STR_PROMPT,
     STR_CONSTRUCTPHRASE,
+    STR_PHRASE,
     STR_LAST
 };
 
-enum class BuildPhase { PhaseConfig, PhaseRule, PhaseData };
+enum class BuildPhase { PhaseConfig, PhaseRule, PhaseData, PhasePhrase };
 
 const char *strConst[2][STR_LAST] = {
     {"键码=", "码长=", "规避字符=", "拼音=", "拼音长度=", "[数据]",
-     "[组词规则]", "提示=", "构词="},
+     "[组词规则]", "提示=", "构词=", "[词组]"},
     {"KeyCode=", "Length=", "InvalidChar=", "Pinyin=", "PinyinLength=",
-     "[Data]", "[Rule]", "Prompt=", "ConstructPhrase="}};
+     "[Data]", "[Rule]", "Prompt=", "ConstructPhrase=", "[Phrase]"}};
 
 constexpr std::string_view UserDictAutoMark = "[Auto]";
 constexpr std::string_view UserDictDeleteMark = "[Delete]";
@@ -553,12 +556,21 @@ void TableBasedDictionary::loadText(std::istream &in) {
             break;
         }
         case BuildPhase::PhaseData:
+            if (check_option(STR_PHRASE) >= 0) {
+                phase = BuildPhase::PhasePhrase;
+                if (!hasRule()) {
+                    throw std::invalid_argument("file has phrase section but no rule");
+                }
+            }
             d->insertDataLine(buf, false);
+            break;
+        case BuildPhase::PhasePhrase:
+            insert(buf, PhraseFlag::None);
             break;
         }
     }
 
-    if (phase != BuildPhase::PhaseData) {
+    if (phase != BuildPhase::PhaseData && phase != BuildPhase::PhasePhrase) {
         throw_if_fail(in.bad(), std::ios_base::failure("io failed"));
         throw std::invalid_argument("file format is invalid");
     }

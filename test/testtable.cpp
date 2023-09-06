@@ -12,6 +12,7 @@
 #include <fcitx-utils/log.h>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unistd.h>
 
@@ -54,6 +55,7 @@ void testWubi() {
         std::string key;
         FCITX_ASSERT(!table.generate("你好", key));
         FCITX_ASSERT(table.generate("统计局", key));
+        FCITX_ASSERT(table.wordExists("xynn", "统计局") == PhraseFlag::Invalid);
         FCITX_ASSERT(key == "xynn");
 
         FCITX_ASSERT(table.insert("wq", "你"));
@@ -214,11 +216,64 @@ void testRule() {
     FCITX_ASSERT(ex);
 }
 
+void testPhraseSection() {
+
+    std::string test = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
+                       "Length=4\n"
+                       "Pinyin=@\n"
+                       "[Rule]\n"
+                       "e2=p11+p12+p21+p22\n"
+                       "e3=p11+p21+p31+p32\n"
+                       "a4=p11+p21+p31+n11\n"
+                       "[Data]\n"
+                       "xycq 统\n"
+                       "yfh 计\n"
+                       "nnkd 局\n"
+                       "[Phrase]\n"
+                       "统计局";
+
+    std::stringstream ss(test);
+
+    try {
+        libime::TableBasedDictionary table;
+        table.load(ss, libime::TableFormat::Text);
+        FCITX_ASSERT(table.hasRule());
+        FCITX_ASSERT(table.hasPinyin());
+        FCITX_ASSERT(table.wordExists("xynn", "统计局") == PhraseFlag::None);
+    } catch (std::ios_base::failure &e) {
+        std::cout << e.what() << std::endl;
+    }
+}
+void testInvalidPhraseSection() {
+
+    std::string test = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
+                       "Length=4\n"
+                       "Pinyin=@\n"
+                       "[Data]\n"
+                       "xycq 统\n"
+                       "yfh 计\n"
+                       "nnkd 局\n"
+                       "[Phrase]\n"
+                       "统计局";
+
+    std::stringstream ss(test);
+    bool ex = false;
+    try {
+        libime::TableBasedDictionary table;
+        table.load(ss, libime::TableFormat::Text);
+    } catch (const std::invalid_argument&) {
+        ex = true;
+    }
+    FCITX_ASSERT(ex);
+}
+
 int main() {
     testRule();
     testWubi();
     testCangjie();
     testCangjiePhrase();
+    testPhraseSection();
+    testInvalidPhraseSection();
 
     return 0;
 }

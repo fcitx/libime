@@ -16,6 +16,7 @@ set(LIBIME_SINGLE_FILE_TEST
     testpinyindictionary
     testprediction
     testtableime_unit
+    testtablerule
     )
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})

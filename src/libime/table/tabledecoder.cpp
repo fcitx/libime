@@ -33,7 +33,7 @@ bool checkRuleCanBeUsedAsAutoRule(const TableRule &rule) {
         while (iter != end) {
             if (iter->character() == currentChar) {
                 if (iter->flag() == TableRuleEntryFlag::FromFront &&
-                    iter->encodingIndex() == currentIndex) {
+                    iter->index() == currentIndex) {
                     currentIndex++;
                 } else {
                     // reset to invalid.
@@ -125,8 +125,7 @@ LIBIMETABLE_EXPORT SegmentGraph graphForCode(std::string_view s,
                  rule->entries() |
                      boost::adaptors::filtered(isNotPlaceHolder)) {
                 auto &charSize = charSizes[entry.character() - 1];
-                charSize =
-                    std::max(charSize, static_cast<int>(entry.encodingIndex()));
+                charSize = std::max(charSize, entry.index());
             }
 
             int lastIndex = 0;

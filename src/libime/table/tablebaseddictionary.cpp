@@ -23,6 +23,7 @@
 #include <fstream>
 #include <set>
 #include <string>
+#include <unordered_set>
 
 namespace libime {
 
@@ -422,7 +423,8 @@ bool TableBasedDictionaryPrivate::validateHints(std::vector<std::string> &hints,
         // Don't use hint for table with phrase key, or the requested length
         // longer.
         if (phraseKey_ ||
-            fcitx::utf8::length(hints[index]) < ruleEntry.encodingIndex()) {
+            fcitx::utf8::length(hints[index]) <
+                static_cast<size_t>(std::abs(ruleEntry.index()))) {
             hints[index] = std::string();
         }
     }
@@ -462,7 +464,6 @@ void TableBasedDictionary::loadText(std::istream &in) {
     d->reset();
 
     std::string buf;
-    size_t lineNumber = 0;
 
     auto check_option = [&buf](int index) {
         if (buf.compare(0, std::strlen(strConst[0][index]),
@@ -482,7 +483,6 @@ void TableBasedDictionary::loadText(std::istream &in) {
         if (!std::getline(in, buf)) {
             break;
         }
-        lineNumber++;
 
         // Validate everything first, so it's easier to process.
         if (!fcitx::utf8::validate(buf)) {
@@ -1042,6 +1042,7 @@ bool TableBasedDictionary::generateWithHint(
         }
 
         bool success = true;
+        std::set<std::pair<size_t, int>> usedChar;
         for (const auto &ruleEntry : rule.entries()) {
             std::string_view::const_iterator iter;
             // skip rule entry like p00.
@@ -1075,14 +1076,29 @@ bool TableBasedDictionary::generateWithHint(
                 success = false;
                 break;
             }
+
             auto length = fcitx::utf8::lengthValidated(entry);
+            auto codeIndex = ruleEntry.index();
             if (length == fcitx::utf8::INVALID_LENGTH ||
-                length < ruleEntry.encodingIndex()) {
+                length < static_cast<size_t>(std::abs(codeIndex))) {
                 continue;
             }
 
-            auto entryStart = fcitx::utf8::nextNChar(
-                entry.begin(), ruleEntry.encodingIndex() - 1);
+            if (codeIndex > 0) {
+                // code index starts with 1.
+                codeIndex -= 1;
+            } else {
+                codeIndex = static_cast<int>(length) + codeIndex;
+            }
+
+            auto charIndex = std::make_pair(index, codeIndex);
+            // Avoid same code being referenced twice.
+            // This helps for the case like: p11 and p1z point to the same code character.
+            if (usedChar.count(charIndex)) {
+                continue;
+            }
+            usedChar.insert(charIndex);
+            auto entryStart = fcitx::utf8::nextNChar(entry.begin(), codeIndex);
             auto entryEnd = fcitx::utf8::nextChar(entryStart);
 
             newKey.append(entryStart, entryEnd);

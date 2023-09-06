@@ -15,6 +15,7 @@ set(LIBIME_TABLE_SRCS
     tabledecoder.cpp
     autophrasedict.cpp
     log.cpp
+    tablerule.cpp
     )
 
 ecm_setup_version(PROJECT

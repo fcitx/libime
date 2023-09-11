@@ -15,6 +15,7 @@
 #include <cmath>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
+#include <iterator>
 
 namespace libime {
 
@@ -215,6 +216,13 @@ public:
     std::list<std::vector<std::string>> add(const R &sentence) {
         std::list<std::vector<std::string>> popedSentence;
         if (sentence.empty()) {
+            return popedSentence;
+        }
+        // Validate data.
+        if (std::any_of(std::begin(sentence), std::end(sentence),
+                        [](const std::string &word) {
+                            return word.find('\0') != std::string::npos;
+                        })) {
             return popedSentence;
         }
         while (recent_.size() >= maxSize_) {

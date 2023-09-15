@@ -4,8 +4,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include "libime/core/utils.h"
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinencoder.h"
+#include <fcitx-utils/log.h>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
@@ -13,6 +15,7 @@
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0 << " [-d] <source> <dest>" << std::endl
               << "-d: Dump binary to text" << std::endl
+              << "-v: Show debug message" << std::endl
               << "-h: Show this help" << std::endl;
 }
 
@@ -20,10 +23,13 @@ int main(int argc, char *argv[]) {
 
     bool dump = false;
     int c;
-    while ((c = getopt(argc, argv, "dh")) != -1) {
+    while ((c = getopt(argc, argv, "dhv")) != -1) {
         switch (c) {
         case 'd':
             dump = true;
+            break;
+        case 'v':
+            fcitx::Log::setLogRule("libime=5");
             break;
         case 'h':
             usage(argv[0]);
@@ -41,8 +47,10 @@ int main(int argc, char *argv[]) {
     using namespace libime;
     PinyinDictionary dict;
 
+    auto t0 = std::chrono::high_resolution_clock::now();
     dict.load(PinyinDictionary::SystemDict, argv[optind],
               dump ? PinyinDictFormat::Binary : PinyinDictFormat::Text);
+    LIBIME_DEBUG() << "Load pinyin dict: " << millisecondsTill(t0);
 
     std::ofstream fout;
     std::ostream *out;

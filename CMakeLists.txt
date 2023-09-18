@@ -26,6 +26,9 @@ include(ECMGenerateHeaders)
 include(ECMGeneratePkgConfigFile)
 include(ECMUninstallTarget)
 include(CheckLibraryExists)
+find_package(PkgConfig REQUIRED)
+
+pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET "libzstd")
 
 find_package(Fcitx5Utils REQUIRED)
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")

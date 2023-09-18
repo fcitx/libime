@@ -59,6 +59,9 @@ public:
     void reset();
     bool validate() const;
 
+    void loadBinary(std::istream &in);
+    void loadUserBinary(std::istream &in, uint32_t version);
+
     FCITX_NODISCARD
     std::optional<std::tuple<std::string, std::string, PhraseFlag>>
     parseDataLine(std::string_view buf, bool user);

@@ -9,11 +9,12 @@
 #include "libime/core/lattice.h"
 #include "libime/core/lrucache.h"
 #include "libime/core/utils.h"
-#include "pinyindata.h"
+#include "libime/core/zstd.h"
 #include "pinyindecoder_p.h"
 #include "pinyinencoder.h"
 #include "pinyinmatchstate_p.h"
 #include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered_map.hpp>
 #include <cmath>
@@ -31,7 +32,7 @@ static const float invalidPinyinCost = -100.0f;
 static const char pinyinHanziSep = '!';
 
 static constexpr uint32_t pinyinBinaryFormatMagic = 0x000fc613;
-static constexpr uint32_t pinyinBinaryFormatVersion = 0x1;
+static constexpr uint32_t pinyinBinaryFormatVersion = 0x2;
 
 struct PinyinSegmentGraphPathHasher {
     PinyinSegmentGraphPathHasher(const SegmentGraph &graph) : graph_(graph) {}
@@ -304,9 +305,10 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
                         std::string_view view(s);
                         auto encodedPinyin = view.substr(0, separator);
                         auto hanzi = view.substr(separator + 1);
-                        float overLengthCost =
-                            fuzzyCost *
+                        const size_t lengthDiff =
                             (encodedPinyin.size() / 2 - path.size());
+                        float overLengthCost = fuzzyCost * lengthDiff;
+
                         callback(encodedPinyin, hanzi,
                                  value + extraCost + overLengthCost);
                     }
@@ -724,10 +726,29 @@ void PinyinDictionary::loadBinary(size_t idx, std::istream &in) {
         throw std::invalid_argument("Invalid pinyin magic.");
     }
     throw_if_io_fail(unmarshall(in, version));
-    if (version != pinyinBinaryFormatVersion) {
-        throw std::invalid_argument("Invalid pinyin version.");
+    switch (version) {
+    case 0x1:
+        trie.load(in);
+        break;
+    case pinyinBinaryFormatVersion: {
+        boost::iostreams::filtering_istreambuf compressBuf;
+        compressBuf.push(ZSTDDecompressor());
+        compressBuf.push(in);
+        std::istream compressIn(&compressBuf);
+
+        trie.load(compressIn);
+        // We don't want to read any data, but only trigger the zstd footer
+        // handling, which validates CRC.
+        compressIn.peek();
+        if (compressIn.bad()) {
+            throw std::invalid_argument("Failed to load dict data");
+        }
+        break;
     }
-    trie.load(in);
+    default:
+        throw std::invalid_argument("Invalid pinyin version.");
+        break;
+    }
     *mutableTrie(idx) = std::move(trie);
 }
 
@@ -744,11 +765,17 @@ void PinyinDictionary::save(size_t idx, std::ostream &out,
     case PinyinDictFormat::Text:
         saveText(idx, out);
         break;
-    case PinyinDictFormat::Binary:
+    case PinyinDictFormat::Binary: {
         throw_if_io_fail(marshall(out, pinyinBinaryFormatMagic));
         throw_if_io_fail(marshall(out, pinyinBinaryFormatVersion));
-        mutableTrie(idx)->save(out);
-        break;
+
+        boost::iostreams::filtering_streambuf<boost::iostreams::output>
+            compressBuf;
+        compressBuf.push(ZSTDCompressor());
+        compressBuf.push(out);
+        std::ostream compressOut(&compressBuf);
+        mutableTrie(idx)->save(compressOut);
+    } break;
     default:
         throw std::invalid_argument("invalid format type");
     }

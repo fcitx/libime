@@ -261,7 +261,7 @@ void testInvalidPhraseSection() {
     try {
         libime::TableBasedDictionary table;
         table.load(ss, libime::TableFormat::Text);
-    } catch (const std::invalid_argument&) {
+    } catch (const std::invalid_argument &) {
         ex = true;
     }
     FCITX_ASSERT(ex);

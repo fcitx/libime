@@ -7,8 +7,10 @@
 #include "constants.h"
 #include "datrie.h"
 #include "utils.h"
+#include "zstd.h"
 #include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm.hpp>
@@ -16,11 +18,14 @@
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <iterator>
+#include <ostream>
+#include <stdexcept>
+#include <string>
 
 namespace libime {
 
 static constexpr uint32_t historyBinaryFormatMagic = 0x000fc315;
-static constexpr uint32_t historyBinaryFormatVersion = 0x2;
+static constexpr uint32_t historyBinaryFormatVersion = 0x3;
 
 struct WeightedTrie {
     using TrieType = DATrie<int32_t>;
@@ -499,9 +504,25 @@ void HistoryBigram::load(std::istream &in) {
         std::for_each(d->pools_.begin(), d->pools_.begin() + 2,
                       [&in](auto &pool) { pool.load(in); });
         break;
-    case historyBinaryFormatVersion:
+    case 2:
         boost::range::for_each(d->pools_, [&in](auto &pool) { pool.load(in); });
         break;
+    case historyBinaryFormatVersion: {
+        boost::iostreams::filtering_istreambuf compressBuf;
+        compressBuf.push(ZSTDDecompressor());
+        compressBuf.push(in);
+        std::istream compressIn(&compressBuf);
+
+        boost::range::for_each(
+            d->pools_, [&compressIn](auto &pool) { pool.load(compressIn); });
+        // We don't want to read any data, but only trigger the zstd footer
+        // handling, which validates CRC.
+        compressIn.peek();
+        if (compressIn.bad()) {
+            throw std::invalid_argument("Failed to validate the history data");
+        }
+        break;
+    }
     default: {
         throw std::invalid_argument("Invalid history version.");
     }
@@ -517,7 +538,13 @@ void HistoryBigram::save(std::ostream &out) {
     FCITX_D();
     throw_if_io_fail(marshall(out, historyBinaryFormatMagic));
     throw_if_io_fail(marshall(out, historyBinaryFormatVersion));
-    boost::range::for_each(d->pools_, [&out](auto &pool) { pool.save(out); });
+    boost::iostreams::filtering_streambuf<boost::iostreams::output> compressBuf;
+    compressBuf.push(ZSTDCompressor());
+    compressBuf.push(out);
+    std::ostream compressOut(&compressBuf);
+
+    boost::range::for_each(
+        d->pools_, [&compressOut](auto &pool) { pool.save(compressOut); });
 }
 
 void HistoryBigram::dump(std::ostream &out) {

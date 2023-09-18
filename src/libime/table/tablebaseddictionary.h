@@ -106,7 +106,7 @@ private:
     void loadText(std::istream &in);
     void loadBinary(std::istream &in);
     void saveText(std::ostream &out);
-    void saveBinary(std::ostream &out);
+    void saveBinary(std::ostream &origOut);
 
     void
     matchPrefixImpl(const SegmentGraph &graph,

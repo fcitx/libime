@@ -39,7 +39,7 @@ target_include_directories(IMEPinyin PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_FULL_INCLUDEDIR}/LibIME>)
 
-target_link_libraries(IMEPinyin PUBLIC Fcitx5::Utils Boost::boost LibIME::Core)
+target_link_libraries(IMEPinyin PUBLIC Fcitx5::Utils Boost::boost LibIME::Core PRIVATE Boost::iostreams PkgConfig::ZSTD)
 
 install(TARGETS IMEPinyin EXPORT LibIMEPinyinTargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(FILES ${LIBIME_PINYIN_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/pinyin" COMPONENT header)

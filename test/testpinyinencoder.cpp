@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/lattice.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include <fcitx-utils/log.h>
 #include <string>

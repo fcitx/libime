@@ -22,6 +22,7 @@
 #include <chrono>
 #include <cstring>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
 #include <fstream>
 #include <istream>
@@ -78,6 +79,27 @@ inline std::string generateTableEntry(std::string_view key,
     return entry;
 }
 
+void maybeUnescapeValue(std::string &value) {
+    if (value.size() >= 2 && fcitx::stringutils::startsWith(value, '"') &&
+        fcitx::stringutils::endsWith(value, '"')) {
+        if (auto unescape = fcitx::stringutils::unescapeForValue(value)) {
+            value = unescape.value();
+        }
+    }
+}
+
+std::string maybeEscapeValue(std::string_view value) {
+    auto escaped = fcitx::stringutils::escapeForValue(value);
+    if (escaped.size() != value.size()) {
+        if (fcitx::stringutils::startsWith(escaped, "\"") &&
+            fcitx::stringutils::endsWith(escaped, "\"")) {
+            return escaped;
+        }
+        return fcitx::stringutils::concat("\"", escaped, "\"");
+    }
+    return std::string{value};
+}
+
 void updateReverseLookupEntry(DATrie<int32_t> &trie, std::string_view key,
                               std::string_view value,
                               DATrie<int32_t> *reverseTrie) {
@@ -125,7 +147,8 @@ void saveTrieToText(const DATrie<uint32_t> &trie, std::ostream &out) {
         return std::get<uint32_t>(lhs) < std::get<uint32_t>(rhs);
     });
     for (auto &item : temp) {
-        out << std::get<0>(item) << " " << std::get<1>(item) << std::endl;
+        out << std::get<0>(item) << " " << maybeEscapeValue(std::get<1>(item))
+            << std::endl;
     }
 }
 
@@ -317,7 +340,9 @@ TableBasedDictionaryPrivate::parseDataLine(std::string_view buf, bool user) {
     }
 
     auto key = std::string_view(buf).substr(0, spacePos);
-    auto value = std::string_view(buf).substr(wordPos);
+    std::string value{std::string_view(buf).substr(wordPos)};
+    maybeUnescapeValue(value);
+
     if (key.empty() || value.empty()) {
         return {};
     }
@@ -336,7 +361,8 @@ TableBasedDictionaryPrivate::parseDataLine(std::string_view buf, bool user) {
         key = key.substr(std::distance(key.begin(), next));
     }
 
-    return std::tuple<std::string, std::string, PhraseFlag>{key, value, flag};
+    return std::tuple<std::string, std::string, PhraseFlag>{
+        key, std::move(value), flag};
 }
 
 void TableBasedDictionaryPrivate::insertDataLine(std::string_view buf,
@@ -636,6 +662,7 @@ void TableBasedDictionary::loadText(std::istream &in) {
             d->insertDataLine(buf, false);
             break;
         case BuildPhase::PhasePhrase:
+            maybeUnescapeValue(buf);
             insert(buf, PhraseFlag::None);
             break;
         }
@@ -695,7 +722,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
                 }
                 std::string_view ref(buf);
                 out << promptString << ref.substr(sep + 1) << " "
-                    << ref.substr(0, sep) << std::endl;
+                    << maybeEscapeValue(ref.substr(0, sep)) << std::endl;
                 return true;
             });
     }
@@ -711,7 +738,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
                 }
                 std::string_view ref(buf);
                 out << phraseString << ref.substr(sep + 1) << " "
-                    << ref.substr(0, sep) << std::endl;
+                    << maybeEscapeValue(ref.substr(0, sep)) << std::endl;
                 return true;
             });
     }
@@ -881,6 +908,7 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
                     continue;
                 }
                 try {
+                    maybeUnescapeValue(tokens[1]);
                     int32_t hit = std::stoi(tokens[2]);
                     d->autoPhraseDict_.insert(
                         generateTableEntry(tokens[0], tokens[1]), hit);
@@ -945,8 +973,8 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
                     return true;
                 });
             for (auto &t : autoEntries | boost::adaptors::reversed) {
-                out << std::get<0>(t) << " " << std::get<1>(t) << " "
-                    << std::get<2>(t) << std::endl;
+                out << std::get<0>(t) << " " << maybeEscapeValue(std::get<1>(t))
+                    << " " << std::get<2>(t) << std::endl;
             }
         }
         if (!d->deletionTrie_.empty()) {

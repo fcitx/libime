@@ -267,6 +267,46 @@ void testInvalidPhraseSection() {
     FCITX_ASSERT(ex);
 }
 
+void testEscape() {
+    std::string test = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
+                       "Length=4\n"
+                       "Pinyin=@\n"
+                       "[Rule]\n"
+                       "e2=p11+p12+p21+p22\n"
+                       "e3=p11+p21+p31+p32\n"
+                       "a4=p11+p21+p31+n11\n"
+                       "[Data]\n"
+                       "xycq 统\n"
+                       "yfh 计\n"
+                       "nnkd 局\n"
+                       "aaaa \"工 \"\n"
+                       "f \"\n"
+                       "[Phrase]\n"
+                       "\"统计局\"";
+
+    std::string expect = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
+                         "Length=4\n"
+                         "Pinyin=@\n"
+                         "[Rule]\n"
+                         "e2=p11+p12+p21+p22\n"
+                         "e3=p11+p21+p31+p32\n"
+                         "a4=p11+p21+p31+n11\n"
+                         "[Data]\n"
+                         "xycq 统\n"
+                         "yfh 计\n"
+                         "nnkd 局\n"
+                         "aaaa \"工 \"\n"
+                         "f \"\\\"\"\n"
+                         "xynn 统计局\n";
+
+    std::stringstream ss(test);
+    libime::TableBasedDictionary table;
+    table.load(ss, libime::TableFormat::Text);
+    std::stringstream out;
+    table.save(out, TableFormat::Text);
+    FCITX_ASSERT(out.str() == expect) << out.str();
+}
+
 int main() {
     testRule();
     testWubi();
@@ -274,6 +314,7 @@ int main() {
     testCangjiePhrase();
     testPhraseSection();
     testInvalidPhraseSection();
+    testEscape();
 
     return 0;
 }

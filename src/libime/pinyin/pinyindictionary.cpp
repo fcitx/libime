@@ -9,7 +9,7 @@
 #include "libime/core/lattice.h"
 #include "libime/core/lrucache.h"
 #include "libime/core/utils.h"
-#include "libime/core/zstd.h"
+#include "libime/core/zstdfilter.h"
 #include "pinyindecoder_p.h"
 #include "pinyinencoder.h"
 #include "pinyinmatchstate_p.h"

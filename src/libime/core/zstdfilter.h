@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#ifndef LIBIME_ZSTD_H
-#define LIBIME_ZSTD_H
+#ifndef LIBIME_ZSTDFILTER_H
+#define LIBIME_ZSTDFILTER_H
 
 #include <boost/iostreams/filter/symmetric.hpp>
 #include <boost/iostreams/pipeline.hpp>
@@ -175,4 +175,4 @@ BOOST_IOSTREAMS_PIPABLE(ZSTDDecompressor, 0)
 
 } // namespace libime
 
-#endif // #ifndef BOOST_IOSTREAMS_ZSTD_HPP_INCLUDED
+#endif

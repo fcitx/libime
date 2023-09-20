@@ -7,7 +7,7 @@
 #include "constants.h"
 #include "datrie.h"
 #include "utils.h"
-#include "zstd.h"
+#include "zstdfilter.h"
 #include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>

@@ -9,7 +9,7 @@
 #include "constants.h"
 #include "libime/core/datrie.h"
 #include "libime/core/lattice.h"
-#include "libime/core/zstd.h"
+#include "libime/core/zstdfilter.h"
 #include "log.h"
 #include "tablebaseddictionary_p.h"
 #include "tabledecoder_p.h"

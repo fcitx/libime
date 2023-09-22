@@ -48,6 +48,7 @@ public:
     FCITX_DECLARE_PROPERTY(std::unordered_set<std::string>, autoRuleSet,
                            setAutoRuleSet);
     FCITX_DECLARE_PROPERTY(std::string, languageCode, setLanguageCode);
+    FCITX_DECLARE_PROPERTY(bool, sortByCodeLength, setSortByCodeLength);
 
 private:
     std::unique_ptr<TableOptionsPrivate> d_ptr;

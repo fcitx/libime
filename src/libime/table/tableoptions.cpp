@@ -34,6 +34,8 @@ public:
     bool displayCustomPromptSymbol_ = false;
 
     std::string languageCode_;
+
+    bool sortByCodeLength_ = true;
 };
 
 TableOptions::TableOptions() : d_ptr(std::make_unique<TableOptionsPrivate>()) {}
@@ -69,4 +71,5 @@ FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::string, languageCode,
                               setLanguageCode);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::unordered_set<std::string>,
                               autoRuleSet, setAutoRuleSet);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, sortByCodeLength, setSortByCodeLength);
 } // namespace libime

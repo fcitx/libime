@@ -34,8 +34,8 @@ size_t sentenceCodeLength(const SentenceResult &sentence) {
 
 template <OrderPolicy policy>
 struct TableCandidateCompare {
-    TableCandidateCompare(int noSortInputLength)
-        : noSortInputLength_(noSortInputLength) {}
+    TableCandidateCompare(int noSortInputLength, bool sortByCodeLength)
+        : noSortInputLength_(noSortInputLength), sortByCodeLength_(sortByCodeLength) {}
 
     // Larger index should be put ahead.
     static int64_t index(const SentenceResult &sentence) {
@@ -68,7 +68,7 @@ struct TableCandidateCompare {
                 return lShort > rShort;
             }
             // Always sort result by code length.
-            if (lLength != rLength) {
+            if (sortByCodeLength_ && lLength != rLength) {
                 return lLength < rLength;
             }
 
@@ -95,6 +95,7 @@ struct TableCandidateCompare {
 
 private:
     const int noSortInputLength_;
+    const bool sortByCodeLength_;
 };
 
 struct SelectedCode {
@@ -562,15 +563,15 @@ void TableContext::update() {
         switch (d->dict_.tableOptions().orderPolicy()) {
         case OrderPolicy::No:
             std::sort(d->candidates_.begin(), d->candidates_.end(),
-                      TableCandidateCompare<OrderPolicy::No>(noSortLength));
+                      TableCandidateCompare<OrderPolicy::No>(noSortLength, d->dict_.tableOptions().sortByCodeLength()));
             break;
         case OrderPolicy::Fast:
             std::sort(d->candidates_.begin(), d->candidates_.end(),
-                      TableCandidateCompare<OrderPolicy::Fast>(noSortLength));
+                      TableCandidateCompare<OrderPolicy::Fast>(noSortLength, d->dict_.tableOptions().sortByCodeLength()));
             break;
         case OrderPolicy::Freq:
             std::sort(d->candidates_.begin(), d->candidates_.end(),
-                      TableCandidateCompare<OrderPolicy::Freq>(noSortLength));
+                      TableCandidateCompare<OrderPolicy::Freq>(noSortLength, d->dict_.tableOptions().sortByCodeLength()));
             break;
         }
         if (!d->candidates_.empty() && isPinyin(d->candidates_[0])) {

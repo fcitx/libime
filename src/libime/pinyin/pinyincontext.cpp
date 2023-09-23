@@ -753,7 +753,7 @@ bool PinyinContext::learnWord() {
     if (d->selected_.empty()) {
         return false;
     }
-    // don't learn single character.
+    // don't learn existing word.
     if (d->selected_.size() == 1 && d->selected_[0].size() == 1) {
         return false;
     }

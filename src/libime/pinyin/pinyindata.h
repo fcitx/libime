@@ -17,23 +17,23 @@
 #include <vector>
 
 namespace libime {
-struct PinyinHash {
+struct LIBIMEPINYIN_EXPORT PinyinHash {
     std::size_t operator()(std::string_view const &val) const {
         return boost::hash_range(val.begin(), val.end());
     }
 };
 
-class PinyinEntry {
+class LIBIMEPINYIN_EXPORT PinyinEntry {
 public:
     PinyinEntry(const char *pinyin, PinyinInitial initial, PinyinFinal final,
                 PinyinFuzzyFlags flags)
         : pinyin_(pinyin), initial_(initial), final_(final), flags_(flags) {}
 
     std::string_view pinyinView() const { return pinyin_; }
-    const std::string &pinyin() const { return pinyin_; }
-    PinyinInitial initial() const { return initial_; }
-    PinyinFinal final() const { return final_; }
-    PinyinFuzzyFlags flags() const { return flags_; }
+    constexpr const std::string &pinyin() const { return pinyin_; }
+    constexpr PinyinInitial initial() const { return initial_; }
+    constexpr PinyinFinal final() const { return final_; }
+    constexpr PinyinFuzzyFlags flags() const { return flags_; }
 
 private:
     std::string pinyin_;
@@ -51,6 +51,8 @@ using PinyinMap = boost::multi_index_container<
 
 LIBIMEPINYIN_EXPORT
 const PinyinMap &getPinyinMap();
+LIBIMEPINYIN_EXPORT
+const PinyinMap &getPinyinMapV2();
 LIBIMEPINYIN_EXPORT const std::vector<bool> &getEncodedInitialFinal();
 
 LIBIMEPINYIN_EXPORT const

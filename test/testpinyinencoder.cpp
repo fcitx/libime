@@ -201,5 +201,7 @@ int main() {
 
     check("zhunipingan", PinyinFuzzyFlag::Inner, {"zhu", "ni", "ping", "an"});
     check("zhunipingan", PinyinFuzzyFlag::Inner, {"zhu", "ni", "pin", "gan"});
+    check("zhuna", PinyinFuzzyFlag::Inner, {"zhu", "na"});
+    check("zhuna", PinyinFuzzyFlag::Inner, {"zhun", "a"});
     return 0;
 }

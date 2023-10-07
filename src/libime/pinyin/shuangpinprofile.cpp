@@ -262,7 +262,7 @@ void ShuangpinProfile::buildShuangpinTable() {
     auto addPinyin = [addPinyinToList](
                          std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
                          const std::string &py) {
-        const auto &map = getPinyinMap();
+        const auto &map = getPinyinMapV2();
         auto iterPair = map.equal_range(py);
         if (iterPair.first != iterPair.second) {
             for (const auto &item :
@@ -373,7 +373,7 @@ void ShuangpinProfile::buildShuangpinTable() {
     }
 
     // Add non-existent 2 char pinyin to the map.
-    for (const auto &p : getPinyinMap()) {
+    for (const auto &p : getPinyinMapV2()) {
         if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
             (!d->spTable_.count(p.pinyin()) ||
              d->zeroS_.find('*') == std::string::npos)) {

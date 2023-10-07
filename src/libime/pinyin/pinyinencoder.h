@@ -47,6 +47,12 @@ enum class PinyinFuzzyFlag {
      * @since 1.0.11
      */
     PartialSp = 1 << 17,
+    /**
+     * Enable typo that may cause ambiguity.
+     *
+     * @since 1.1.3
+     */
+    AdvancedTypo = 1 << 18,
 };
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;

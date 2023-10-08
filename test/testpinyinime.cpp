@@ -10,6 +10,7 @@
 #include "libime/pinyin/pinyincontext.h"
 #include "libime/pinyin/pinyindecoder.h"
 #include "libime/pinyin/pinyindictionary.h"
+#include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/pinyinime.h"
 #include "libime/pinyin/shuangpinprofile.h"
 #include "testdir.h"
@@ -46,7 +47,7 @@ int main(int argc, char *argv[]) {
         std::fstream fin(argv[2], std::ios::in | std::ios::binary);
         ime.model()->history().load(fin);
     }
-    ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
+    ime.setFuzzyFlags({PinyinFuzzyFlag::Inner, PinyinFuzzyFlag::CommonTypo, PinyinFuzzyFlag::AdvancedTypo});
     ime.setScoreFilter(1.0f);
     ime.setShuangpinProfile(
         std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::Xiaohe));

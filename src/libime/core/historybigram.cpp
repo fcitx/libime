@@ -473,7 +473,7 @@ float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
     auto bf = d->bigramFreq(prev, cur);
     auto uf1 = d->unigramFreq(cur);
 
-    float bigramWeight = d->useOnlyUnigram_ ? 0.0f : 0.68f;
+    float bigramWeight = d->useOnlyUnigram_ ? 0.0f : 0.8f;
     // add 0.5 to avoid div 0
     float pr = 0.0f;
     pr += bigramWeight * float(bf) / float(uf0 + d->poolWeight_[0] / 2);

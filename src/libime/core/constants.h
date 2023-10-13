@@ -15,7 +15,7 @@ constexpr float DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY =
 // -38... is log10(2^-127)
 constexpr float HISTORY_BIGRAM_ALPHA_VALUE = 1.0f;
 constexpr float MIN_FLOAT_LOG10 = -38.23080944932561;
-constexpr float DEFAULT_USER_LANGUAGE_MODEL_USER_WEIGHT = 0.3f;
+constexpr float DEFAULT_USER_LANGUAGE_MODEL_USER_WEIGHT = 0.2f;
 } // namespace libime
 
 #endif // _FCITX_LIBIME_CORE_CONSTANTS_H_

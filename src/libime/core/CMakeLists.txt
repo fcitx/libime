@@ -43,6 +43,7 @@ set(LIBIME_HDRS
     prediction.h
     triedictionary.h
     utils.h
+    zstdfilter.h
     ${CMAKE_CURRENT_BINARY_DIR}/libimecore_export.h
     )
 

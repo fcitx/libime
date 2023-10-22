@@ -155,5 +155,6 @@ int main() {
             std::cout << encode << "," << std::endl;
         }
     }
+    FCITX_ASSERT(getPinyinMapV2().count("zhaung"));
     return 0;
 }

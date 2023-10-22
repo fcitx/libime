@@ -981,12 +981,15 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
             } else if (boost::algorithm::ends_with(result, "uan")) {
                 result[result.size() - 3] = 'a';
                 result[result.size() - 2] = 'u';
-            } else if (boost::algorithm::ends_with(result, "uang")) {
-                result[result.size() - 4] = 'a';
-                result[result.size() - 3] = 'u';
             } else if (boost::algorithm::ends_with(result, "van")) {
                 result[result.size() - 3] = 'a';
                 result[result.size() - 2] = 'v';
+            }
+        } else if (pass == 3) {
+            // this conflicts with "ng" rule, so need a separate pass.
+            if (boost::algorithm::ends_with(result, "uang")) {
+                result[result.size() - 4] = 'a';
+                result[result.size() - 3] = 'u';
             } else if (boost::algorithm::ends_with(result, "vang")) {
                 result[result.size() - 4] = 'a';
                 result[result.size() - 3] = 'v';
@@ -1228,6 +1231,7 @@ const PinyinMap &getPinyinMapV2() {
         applyFuzzy(filtered, PinyinFuzzyFlag::CommonTypo, 0);
         applyFuzzy(filtered, PinyinFuzzyFlag::CommonTypo, 1);
         applyFuzzy(filtered, PinyinFuzzyFlag::CommonTypo, 2);
+        applyFuzzy(filtered, PinyinFuzzyFlag::CommonTypo, 3);
         applyFuzzy(filtered, PinyinFuzzyFlag::AdvancedTypo, 0);
         applyFuzzy(filtered, PinyinFuzzyFlag::AdvancedTypo, 1);
         applyFuzzy(filtered, PinyinFuzzyFlag::AdvancedTypo, 2);

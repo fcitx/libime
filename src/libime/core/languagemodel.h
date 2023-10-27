@@ -6,9 +6,9 @@
 #ifndef _FCITX_LIBIME_CORE_LANGUAGEMODEL_H_
 #define _FCITX_LIBIME_CORE_LANGUAGEMODEL_H_
 
-#include "datrie.h"
 #include "libimecore_export.h"
 #include <fcitx-utils/macros.h>
+#include <libime/core/datrie.h>
 #include <limits>
 #include <memory>
 #include <string_view>

@@ -6,10 +6,10 @@
 #ifndef _FCITX_LIBIME_CORE_DICTIONARY_H_
 #define _FCITX_LIBIME_CORE_DICTIONARY_H_
 
-#include "lattice.h"
 #include "libimecore_export.h"
-#include "segmentgraph.h"
 #include <functional>
+#include <libime/core/lattice.h>
+#include <libime/core/segmentgraph.h>
 #include <string_view>
 
 namespace libime {

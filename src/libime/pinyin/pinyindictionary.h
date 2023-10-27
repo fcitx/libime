@@ -58,6 +58,9 @@ public:
     // Match the word by encoded pinyin.
     void matchWords(const char *data, size_t size,
                     PinyinMatchCallback callback) const;
+    // Match the word by encoded pinyin.
+    void matchWordsPrefix(const char *data, size_t size,
+                    PinyinMatchCallback callback) const;
 
     void save(size_t idx, const char *filename, PinyinDictFormat format);
     void save(size_t idx, std::ostream &out, PinyinDictFormat format);

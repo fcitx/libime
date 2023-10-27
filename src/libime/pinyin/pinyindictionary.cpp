@@ -659,6 +659,42 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
     }
 }
 
+void PinyinDictionary::matchWordsPrefix(const char *data, size_t size,
+                                        PinyinMatchCallback callback) const {
+    if (!PinyinEncoder::isValidUserPinyin(data, size)) {
+        return;
+    }
+
+    FCITX_D();
+    std::list<std::pair<const PinyinTrie *, PinyinTrie::position_type>> nodes;
+    for (size_t i = 0; i < dictSize(); i++) {
+        if (d->flags_[i].test(PinyinDictFlag::Disabled)) {
+            continue;
+        }
+        const auto &trie = *this->trie(i);
+        nodes.emplace_back(&trie, 0);
+    }
+    for (size_t i = 0; i < size && !nodes.empty(); i++) {
+        searchOneStep(nodes, data[i]);
+    }
+
+    for (auto &node : nodes) {
+        node.first->foreach(
+            [&node, &callback, size](PinyinTrie::value_type value, size_t len,
+                                     uint64_t pos) {
+                std::string s;
+                node.first->suffix(s, len + size, pos);
+
+                std::string_view view(s);
+                if (auto sep = view.find(pinyinHanziSep, size); sep != std::string::npos) {
+                    return callback(view.substr(0, sep), view.substr(sep + 1),
+                                    value);
+                }
+            },
+            node.second);
+    }
+}
+
 PinyinDictionary::PinyinDictionary()
     : d_ptr(std::make_unique<PinyinDictionaryPrivate>(this)) {
     FCITX_D();

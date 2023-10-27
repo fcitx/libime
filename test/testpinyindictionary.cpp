@@ -40,6 +40,27 @@ bool searchWord(const PinyinDictionary &dict, const char *data, size_t size,
     return seenWord;
 }
 
+bool searchWordPrefix(const PinyinDictionary &dict, const char *data, size_t size,
+                std::string_view expectedPinyin,
+                std::string_view expectedHanzi) {
+    bool seenWord = false;
+    dict.matchWordsPrefix(data, size,
+                    [&seenWord, expectedHanzi,
+                     expectedPinyin](std::string_view encodedPinyin,
+                                     std::string_view hanzi, float cost) {
+                        std::cout
+                            << PinyinEncoder::decodeFullPinyin(encodedPinyin)
+                            << " " << hanzi << " " << cost << std::endl;
+                        if (hanzi == expectedHanzi &&
+                            PinyinEncoder::decodeFullPinyin(encodedPinyin) ==
+                                expectedPinyin) {
+                            seenWord = true;
+                        }
+                        return true;
+                    });
+    return seenWord;
+}
+
 int main() {
     PinyinDictionary dict;
     dict.load(PinyinDictionary::SystemDict,
@@ -59,10 +80,14 @@ int main() {
 
     FCITX_ASSERT(searchWord(dict, c, sizeof(c), testPinyin1, testHanzi1));
     FCITX_ASSERT(searchWord(dict, c2, sizeof(c2), testPinyin2, testHanzi2));
+    // Search x q as prefix and see we we can find xiao qi e.
+    FCITX_ASSERT(searchWordPrefix(dict, c2, 4, testPinyin2, testHanzi2));
 
     // Remove the word and check again.
     dict.removeWord(PinyinDictionary::UserDict, testPinyin1, testHanzi1);
     FCITX_ASSERT(!searchWord(dict, c, sizeof(c), testPinyin1, testHanzi1));
+    FCITX_ASSERT(!searchWordPrefix(dict, c, 2, testPinyin1, testHanzi1));
+
 
     dict.save(0, LIBIME_BINARY_DIR "/test/testpinyindictionary.dict",
               PinyinDictFormat::Binary);

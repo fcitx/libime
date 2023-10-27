@@ -21,15 +21,17 @@
 #include <fstream>
 #include <iomanip>
 #include <queue>
+#include <string>
 #include <string_view>
 #include <type_traits>
 
 namespace libime {
 
-static const float fuzzyCost = std::log10(0.5f);
-static const size_t minimumLongWordLength = 3;
-static const float invalidPinyinCost = -100.0f;
-static const char pinyinHanziSep = '!';
+namespace {
+const float fuzzyCost = std::log10(0.5f);
+const size_t minimumLongWordLength = 3;
+const float invalidPinyinCost = -100.0f;
+const char pinyinHanziSep = '!';
 
 static constexpr uint32_t pinyinBinaryFormatMagic = 0x000fc613;
 static constexpr uint32_t pinyinBinaryFormatVersion = 0x2;
@@ -146,6 +148,47 @@ const SegmentGraphNode *prevIsSeparator(const SegmentGraph &graph,
         }
     }
     return nullptr;
+}
+
+inline void searchOneStep(
+    std::list<std::pair<const PinyinTrie *, PinyinTrie::position_type>> &nodes,
+    char current) {
+    std::list<std::pair<const PinyinTrie *, PinyinTrie::position_type>>
+        extraNodes;
+    auto iter = nodes.begin();
+    while (iter != nodes.end()) {
+        if (current != 0) {
+            PinyinTrie::value_type result;
+            result = iter->first->traverse(&current, 1, iter->second);
+
+            if (PinyinTrie::isNoPath(result)) {
+                nodes.erase(iter++);
+            } else {
+                iter++;
+            }
+        } else {
+            bool changed = false;
+            for (char test = PinyinEncoder::firstFinal;
+                 test <= PinyinEncoder::lastFinal; test++) {
+                decltype(extraNodes)::value_type p = *iter;
+                auto result = p.first->traverse(&test, 1, p.second);
+                if (!PinyinTrie::isNoPath(result)) {
+                    extraNodes.push_back(p);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                *iter = extraNodes.back();
+                extraNodes.pop_back();
+                iter++;
+            } else {
+                nodes.erase(iter++);
+            }
+        }
+    }
+    nodes.splice(nodes.end(), std::move(extraNodes));
+}
+
 }
 
 class PinyinMatchContext {
@@ -598,39 +641,7 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
         } else {
             current = pinyinHanziSep;
         }
-        decltype(nodes) extraNodes;
-        auto iter = nodes.begin();
-        while (iter != nodes.end()) {
-            if (current != 0) {
-                PinyinTrie::value_type result;
-                result = iter->first->traverse(&current, 1, iter->second);
-
-                if (PinyinTrie::isNoPath(result)) {
-                    nodes.erase(iter++);
-                } else {
-                    iter++;
-                }
-            } else {
-                bool changed = false;
-                for (char test = PinyinEncoder::firstFinal;
-                     test <= PinyinEncoder::lastFinal; test++) {
-                    decltype(extraNodes)::value_type p = *iter;
-                    auto result = p.first->traverse(&test, 1, p.second);
-                    if (!PinyinTrie::isNoPath(result)) {
-                        extraNodes.push_back(p);
-                        changed = true;
-                    }
-                }
-                if (changed) {
-                    *iter = extraNodes.back();
-                    extraNodes.pop_back();
-                    iter++;
-                } else {
-                    nodes.erase(iter++);
-                }
-            }
-        }
-        nodes.splice(nodes.end(), std::move(extraNodes));
+        searchOneStep(nodes, current);
     }
 
     for (auto &node : nodes) {
@@ -641,12 +652,13 @@ void PinyinDictionary::matchWords(const char *data, size_t size,
                 node.first->suffix(s, len + size + 1, pos);
 
                 auto view = std::string_view(s);
-                return callback(s.substr(0, size), view.substr(size + 1),
+                return callback(view.substr(0, size), view.substr(size + 1),
                                 value);
             },
             node.second);
     }
 }
+
 PinyinDictionary::PinyinDictionary()
     : d_ptr(std::make_unique<PinyinDictionaryPrivate>(this)) {
     FCITX_D();

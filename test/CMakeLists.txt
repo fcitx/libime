@@ -15,6 +15,7 @@ set(LIBIME_SINGLE_FILE_TEST
     testpinyincontext
     testpinyindictionary
     testprediction
+    testpinyinprediction
     testtableime_unit
     testtablerule
     )

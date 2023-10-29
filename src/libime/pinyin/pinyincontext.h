@@ -11,6 +11,7 @@
 #include <libime/core/inputbuffer.h>
 #include <libime/core/lattice.h>
 #include <memory>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -89,6 +90,10 @@ public:
 
     /// Selected hanzi segments.
     std::vector<std::string> selectedWords() const;
+
+    /// Selected hanzi with encoded pinyin
+    std::vector<std::pair<std::string, std::string>>
+    selectedWordsWithPinyin() const;
 
     /// Get the full pinyin string of the selected part.
     std::string selectedFullPinyin() const;

@@ -684,6 +684,21 @@ std::vector<std::string> PinyinContext::selectedWords() const {
     return newSentence;
 }
 
+std::vector<std::pair<std::string, std::string>>
+PinyinContext::selectedWordsWithPinyin() const {
+    FCITX_D();
+    std::vector<std::pair<std::string, std::string>> newSentence;
+    for (const auto &s : d->selected_) {
+        for (const auto &item : s) {
+            if (!item.word_.word().empty()) {
+                newSentence.emplace_back(item.word_.word(),
+                                         item.encodedPinyin_);
+            }
+        }
+    }
+    return newSentence;
+}
+
 std::string PinyinContext::selectedFullPinyin() const {
     FCITX_D();
     std::string pinyin;

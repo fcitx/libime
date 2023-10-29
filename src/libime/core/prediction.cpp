@@ -7,7 +7,9 @@
 #include "prediction.h"
 #include "datrie.h"
 #include "historybigram.h"
+#include "languagemodel.h"
 #include <unordered_set>
+#include <vector>
 
 namespace libime {
 
@@ -30,6 +32,17 @@ void Prediction::setHistoryBigram(const HistoryBigram *bigram) {
     FCITX_D();
     d->bigram_ = bigram;
 }
+
+const LanguageModel *Prediction::model() const {
+    FCITX_D();
+    return d->model_;
+}
+
+const HistoryBigram *Prediction::historyBigram() const {
+    FCITX_D();
+    return d->bigram_;
+}
+
 std::vector<std::string>
 Prediction::predict(const std::vector<std::string> &sentence,
                     size_t realMaxSize) {
@@ -38,9 +51,9 @@ Prediction::predict(const std::vector<std::string> &sentence,
         return {};
     }
 
-    std::vector<WordNode> node;
     State state = d->model_->nullState(), outState;
     std::vector<WordNode> nodes;
+    nodes.reserve(sentence.size());
     for (const auto &word : sentence) {
         auto idx = d->model_->index(word);
         nodes.emplace_back(word, idx);
@@ -50,10 +63,10 @@ Prediction::predict(const std::vector<std::string> &sentence,
     return predict(state, sentence, realMaxSize);
 }
 
-std::vector<std::string>
-Prediction::predict(const State &state,
-                    const std::vector<std::string> &sentence,
-                    size_t realMaxSize) {
+std::vector<std::pair<std::string, float>>
+Prediction::predictWithScore(const State &state,
+                             const std::vector<std::string> &sentence,
+                             size_t realMaxSize) {
     FCITX_D();
     if (!d->model_) {
         return {};
@@ -87,31 +100,34 @@ Prediction::predict(const State &state,
         d->bigram_->fillPredict(words, sentence, maxSize);
     }
 
+    std::vector<std::pair<std::string, float>> temps;
+    for (auto word : words) {
+        auto score = d->model_->singleWordScore(state, word);
+        temps.emplace_back(std::move(word), score);
+    }
+    std::sort(temps.begin(), temps.end(), [](auto &lhs, auto &rhs) {
+        if (lhs.second != rhs.second) {
+            return lhs.second > rhs.second;
+        }
+        return lhs.first < rhs.first;
+    });
+
+    if (realMaxSize && temps.size() > realMaxSize) {
+        temps.resize(realMaxSize);
+    }
+    return temps;
+}
+
+std::vector<std::string>
+Prediction::predict(const State &state,
+                    const std::vector<std::string> &sentence,
+                    size_t realMaxSize) {
+
+    auto temps = predictWithScore(state, sentence, realMaxSize);
     std::vector<std::string> result;
-    if (!d->model_) {
-        result.insert(result.end(), words.begin(), words.end());
-        std::sort(result.begin(), result.end());
-    } else {
-        std::vector<std::pair<float, std::string>> temps;
-        for (auto word : words) {
-            auto score = d->model_->singleWordScore(state, word);
-            temps.emplace_back(score, std::move(word));
-        }
-        std::sort(temps.begin(), temps.end(), [](auto &lhs, auto &rhs) {
-            if (lhs.first != rhs.first) {
-                return lhs.first > rhs.first;
-            }
-            return lhs.second < rhs.second;
-        });
-        for (auto &temp : temps) {
-            result.emplace_back(std::move(temp.second));
-        }
+    for (auto &temp : temps) {
+        result.emplace_back(std::move(temp.first));
     }
-
-    if (result.size() > realMaxSize) {
-        result.resize(realMaxSize);
-    }
-
     return result;
 }
 

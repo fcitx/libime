@@ -26,13 +26,24 @@ public:
         setLanguageModel(lm);
         setHistoryBigram(&lm->history());
     }
+
     void setLanguageModel(const LanguageModel *model);
+
+    const LanguageModel *model() const;
+
     void setHistoryBigram(const HistoryBigram *bigram);
+
+    const HistoryBigram *historyBigram() const;
+
     std::vector<std::string>
     predict(const State &state, const std::vector<std::string> &sentence = {},
-            size_t maxSize = -1);
+            size_t maxSize = 0);
     std::vector<std::string>
-    predict(const std::vector<std::string> &sentence = {}, size_t maxSize = -1);
+    predict(const std::vector<std::string> &sentence = {}, size_t maxSize = 0);
+
+    std::vector<std::pair<std::string, float>>
+    predictWithScore(const State &state,
+                     const std::vector<std::string> &sentence, size_t maxSize);
 
 private:
     std::unique_ptr<PredictionPrivate> d_ptr;

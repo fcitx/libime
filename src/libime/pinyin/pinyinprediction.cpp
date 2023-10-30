@@ -88,10 +88,12 @@ PinyinPrediction::predict(const State &state,
                     std::string(hz.substr(sentence.back().size())),
                     cost + model()->singleWordScore(prevState, hz),
                     PinyinPredictionSource::Dictionary};
-                intermedidateResult.push_back(newItem);
-                std::push_heap(intermedidateResult.begin(), intermedidateResult.end(), cmp);
+                intermedidateResult.push_back(std::move(newItem));
+                std::push_heap(intermedidateResult.begin(),
+                               intermedidateResult.end(), cmp);
                 while (intermedidateResult.size() > maxSize) {
-                    std::pop_heap(intermedidateResult.begin(), intermedidateResult.end(), cmp);
+                    std::pop_heap(intermedidateResult.begin(),
+                                  intermedidateResult.end(), cmp);
                     intermedidateResult.pop_back();
                 }
             }
@@ -100,12 +102,12 @@ PinyinPrediction::predict(const State &state,
 
     std::sort_heap(intermedidateResult.begin(), intermedidateResult.end(), cmp);
 
-        std::transform(intermedidateResult.begin(), intermedidateResult.end(),
-                       std::back_inserter(finalResult),
-                       [](auto &value) {
-                           return std::make_pair(std::move(std::get<std::string>(value)),
-                                                 std::get<PinyinPredictionSource>(value));
-                       });
+    std::transform(intermedidateResult.begin(), intermedidateResult.end(),
+                   std::back_inserter(finalResult), [](auto &value) {
+                       return std::make_pair(
+                           std::move(std::get<std::string>(value)),
+                           std::get<PinyinPredictionSource>(value));
+                   });
 
     return finalResult;
 }

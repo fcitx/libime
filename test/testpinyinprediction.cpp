@@ -42,7 +42,8 @@ int main() {
     prediction.setPinyinDictionary(&dict);
     auto py = PinyinEncoder::encodeFullPinyin("zhong'guo");
     auto result = prediction.predict(model.nullState(), {"我", "喜欢", "中国"}, {py.data(), py.size()}, 20);
-    FCITX_INFO() << result;
-    FCITX_INFO() << prediction.predict({"我", "喜欢", "中国"}, 20);
+    auto noPyResult = prediction.predict({"我", "喜欢", "中国"}, 20);
+    FCITX_ASSERT(result.size() > noPyResult.size())
+        << result << " " << noPyResult;
     return 0;
 }

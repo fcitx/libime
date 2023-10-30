@@ -101,7 +101,6 @@ PinyinPrediction::predict(const State &state,
         });
 
     std::sort_heap(intermedidateResult.begin(), intermedidateResult.end(), cmp);
-
     std::transform(intermedidateResult.begin(), intermedidateResult.end(),
                    std::back_inserter(finalResult), [](auto &value) {
                        return std::make_pair(

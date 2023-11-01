@@ -71,5 +71,6 @@ FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::string, languageCode,
                               setLanguageCode);
 FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, std::unordered_set<std::string>,
                               autoRuleSet, setAutoRuleSet);
-FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, sortByCodeLength, setSortByCodeLength);
+FCITX_DEFINE_PROPERTY_PRIVATE(TableOptions, bool, sortByCodeLength,
+                              setSortByCodeLength);
 } // namespace libime

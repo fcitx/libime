@@ -6,21 +6,19 @@
 #ifndef _FCITX_LIBIME_PINYIN_PREDICTION_H_
 #define _FCITX_LIBIME_PINYIN_PREDICTION_H_
 
-#include <libime/core/prediction.h>
 #include "libime/pinyin/pinyindictionary.h"
 #include "libimepinyin_export.h"
+#include <libime/core/prediction.h>
 
 namespace libime {
 
 class PinyinPredictionPrivate;
 
-enum class PinyinPredictionSource {
-    Model,
-    Dictionary
-};
+enum class PinyinPredictionSource { Model, Dictionary };
 
 /**
- * This is a prediction class that allows to predict against both model and pinyin dictionary.
+ * This is a prediction class that allows to predict against both model and
+ * pinyin dictionary.
  */
 class LIBIMEPINYIN_EXPORT PinyinPrediction : public Prediction {
 public:
@@ -36,8 +34,8 @@ public:
      * Predict from model and pinyin dictionary for the last sentnce being type.
      */
     std::vector<std::pair<std::string, PinyinPredictionSource>>
-    predict(const State &state, const std::vector<std::string> &sentence, std::string_view lastEncodedPinyin,
-            size_t maxSize = 0);
+    predict(const State &state, const std::vector<std::string> &sentence,
+            std::string_view lastEncodedPinyin, size_t maxSize = 0);
 
     /**
      * Same as the Prediction::predict with the same signature.

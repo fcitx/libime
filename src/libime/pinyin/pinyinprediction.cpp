@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2023-2023 CSSlayer <wengxt@gmail.com>
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
 #include "pinyinprediction.h"
 #include "libime/core/prediction.h"
 #include "libime/pinyin/pinyindictionary.h"

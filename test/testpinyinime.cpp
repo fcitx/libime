@@ -47,7 +47,8 @@ int main(int argc, char *argv[]) {
         std::fstream fin(argv[2], std::ios::in | std::ios::binary);
         ime.model()->history().load(fin);
     }
-    ime.setFuzzyFlags({PinyinFuzzyFlag::Inner, PinyinFuzzyFlag::CommonTypo, PinyinFuzzyFlag::AdvancedTypo});
+    ime.setFuzzyFlags({PinyinFuzzyFlag::Inner, PinyinFuzzyFlag::CommonTypo,
+                       PinyinFuzzyFlag::AdvancedTypo});
     ime.setScoreFilter(1.0f);
     ime.setShuangpinProfile(
         std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::Xiaohe));

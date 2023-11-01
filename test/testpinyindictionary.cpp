@@ -40,24 +40,24 @@ bool searchWord(const PinyinDictionary &dict, const char *data, size_t size,
     return seenWord;
 }
 
-bool searchWordPrefix(const PinyinDictionary &dict, const char *data, size_t size,
-                std::string_view expectedPinyin,
-                std::string_view expectedHanzi) {
+bool searchWordPrefix(const PinyinDictionary &dict, const char *data,
+                      size_t size, std::string_view expectedPinyin,
+                      std::string_view expectedHanzi) {
     bool seenWord = false;
-    dict.matchWordsPrefix(data, size,
-                    [&seenWord, expectedHanzi,
-                     expectedPinyin](std::string_view encodedPinyin,
-                                     std::string_view hanzi, float cost) {
-                        std::cout
-                            << PinyinEncoder::decodeFullPinyin(encodedPinyin)
-                            << " " << hanzi << " " << cost << std::endl;
-                        if (hanzi == expectedHanzi &&
-                            PinyinEncoder::decodeFullPinyin(encodedPinyin) ==
-                                expectedPinyin) {
-                            seenWord = true;
-                        }
-                        return true;
-                    });
+    dict.matchWordsPrefix(
+        data, size,
+        [&seenWord, expectedHanzi,
+         expectedPinyin](std::string_view encodedPinyin, std::string_view hanzi,
+                         float cost) {
+            std::cout << PinyinEncoder::decodeFullPinyin(encodedPinyin) << " "
+                      << hanzi << " " << cost << std::endl;
+            if (hanzi == expectedHanzi &&
+                PinyinEncoder::decodeFullPinyin(encodedPinyin) ==
+                    expectedPinyin) {
+                seenWord = true;
+            }
+            return true;
+        });
     return seenWord;
 }
 
@@ -87,7 +87,6 @@ int main() {
     dict.removeWord(PinyinDictionary::UserDict, testPinyin1, testHanzi1);
     FCITX_ASSERT(!searchWord(dict, c, sizeof(c), testPinyin1, testHanzi1));
     FCITX_ASSERT(!searchWordPrefix(dict, c, 2, testPinyin1, testHanzi1));
-
 
     dict.save(0, LIBIME_BINARY_DIR "/test/testpinyindictionary.dict",
               PinyinDictFormat::Binary);

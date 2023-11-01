@@ -189,7 +189,7 @@ inline void searchOneStep(
     nodes.splice(nodes.end(), std::move(extraNodes));
 }
 
-}
+} // namespace
 
 class PinyinMatchContext {
 public:
@@ -686,7 +686,8 @@ void PinyinDictionary::matchWordsPrefix(const char *data, size_t size,
                 node.first->suffix(s, len + size, pos);
 
                 std::string_view view(s);
-                if (auto sep = view.find(pinyinHanziSep, size); sep != std::string::npos) {
+                if (auto sep = view.find(pinyinHanziSep, size);
+                    sep != std::string::npos) {
                     return callback(view.substr(0, sep), view.substr(sep + 1),
                                     value);
                 }

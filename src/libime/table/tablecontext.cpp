@@ -173,7 +173,17 @@ public:
         if (!canDoAutoSelect()) {
             return false;
         }
-        return candidates_.size() == 1;
+        if (candidates_.size() != 1) {
+            return false;
+        }
+
+        if (candidates_[0].sentence().size() != 1) {
+            return false;
+        }
+        FCITX_Q();
+        return q->code(candidates_[0]) == q->currentCode() &&
+               (!dict_.tableOptions().exactMatch() ||
+                dict_.hasOneMatchingWord(q->currentCode()));
     };
 
     State currentState() {

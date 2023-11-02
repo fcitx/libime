@@ -1324,17 +1324,18 @@ bool TableBasedDictionary::hasMatchingWords(std::string_view code) const {
 }
 
 bool TableBasedDictionary::hasOneMatchingWord(std::string_view code) const {
-    bool hasMatch = false;
+    bool hasOneMatch = false;
     matchWords(
         code, TableMatchMode::Prefix,
-        [&hasMatch](std::string_view, std::string_view, uint32_t, PhraseFlag) {
-            if (hasMatch) {
+        [&hasOneMatch](std::string_view, std::string_view, uint32_t, PhraseFlag) {
+            if (hasOneMatch) {
+                hasOneMatch = false;
                 return false;
             }
-            hasMatch = true;
+            hasOneMatch = true;
             return true;
         });
-    return hasMatch;
+    return hasOneMatch;
 }
 
 PhraseFlag TableBasedDictionary::wordExists(std::string_view code,

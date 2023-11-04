@@ -37,7 +37,7 @@ target_include_directories(IMETable PUBLIC
 
 target_link_libraries(IMETable PUBLIC Fcitx5::Utils Boost::boost LibIME::Core PRIVATE Boost::iostreams PkgConfig::ZSTD)
 
-install(TARGETS IMETable EXPORT LibIMETableTargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+install(TARGETS IMETable EXPORT LibIMETableTargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 install(FILES ${LIBIME_TABLE_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/table" COMPONENT header)
 
 add_library(LibIME::Table ALIAS IMETable)
@@ -49,11 +49,15 @@ configure_package_config_file("${CMAKE_CURRENT_SOURCE_DIR}/LibIMETableConfig.cma
 
 generate_export_header(IMETable BASE_NAME LibIMETable)
 
-install(EXPORT LibIMETableTargets DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/LibIMETable" FILE LibIMETableTargets.cmake NAMESPACE LibIME:: )
+install(EXPORT LibIMETableTargets
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/LibIMETable"
+        FILE LibIMETableTargets.cmake
+        NAMESPACE LibIME::
+        COMPONENT Devel)
 
 install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/LibIMETableConfig.cmake"
                "${CMAKE_CURRENT_BINARY_DIR}/LibIMETableConfigVersion.cmake"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/LibIMETable"
-        COMPONENT Devel )
+        COMPONENT Devel)
 
 

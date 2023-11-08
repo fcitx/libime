@@ -307,6 +307,39 @@ void testEscape() {
     FCITX_ASSERT(out.str() == expect) << out.str();
 }
 
+void testOneMatchingWord() {
+
+    std::string test = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
+                       "Length=4\n"
+                       "Pinyin=@\n"
+                       "[Rule]\n"
+                       "e2=p11+p12+p21+p22\n"
+                       "e3=p11+p21+p31+p32\n"
+                       "a4=p11+p21+p31+n11\n"
+                       "[Data]\n"
+                       "xycq 统\n"
+                       "yfh 计\n"
+                       "nnkd 局\n"
+                       "nnkh 快跑\n";
+    std::stringstream ss(test);
+    libime::TableBasedDictionary table;
+    table.load(ss, libime::TableFormat::Text);
+    FCITX_ASSERT(table.hasOneMatchingWord("x"));
+    FCITX_ASSERT(table.hasOneMatchingWord("xy"));
+    FCITX_ASSERT(table.hasOneMatchingWord("xyc"));
+    FCITX_ASSERT(table.hasOneMatchingWord("xycq"));
+    FCITX_ASSERT(!table.hasOneMatchingWord("xycy"));
+    FCITX_ASSERT(!table.hasOneMatchingWord("n"));
+    FCITX_ASSERT(!table.hasOneMatchingWord("nn"));
+    FCITX_ASSERT(!table.hasOneMatchingWord("nnk"));
+    FCITX_ASSERT(table.hasOneMatchingWord("nnkh"));
+    FCITX_ASSERT(table.hasOneMatchingWord("nnkd"));
+    table.insert("nnkd", "局", libime::PhraseFlag::User);
+    FCITX_ASSERT(table.hasOneMatchingWord("nnkd"));
+    table.insert("nnkd", "局2", libime::PhraseFlag::User);
+    FCITX_ASSERT(!table.hasOneMatchingWord("nnkd"));
+}
+
 int main() {
     testRule();
     testWubi();
@@ -315,6 +348,7 @@ int main() {
     testPhraseSection();
     testInvalidPhraseSection();
     testEscape();
+    testOneMatchingWord();
 
     return 0;
 }

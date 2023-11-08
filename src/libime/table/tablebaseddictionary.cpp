@@ -1324,18 +1324,23 @@ bool TableBasedDictionary::hasMatchingWords(std::string_view code) const {
 }
 
 bool TableBasedDictionary::hasOneMatchingWord(std::string_view code) const {
-    bool hasOneMatch = false;
-    matchWords(
-        code, TableMatchMode::Prefix,
-        [&hasOneMatch](std::string_view, std::string_view, uint32_t, PhraseFlag) {
-            if (hasOneMatch) {
-                hasOneMatch = false;
-                return false;
-            }
-            hasOneMatch = true;
-            return true;
-        });
-    return hasOneMatch;
+    // User dict may have the same entry, so we need to check if it is the same.
+    std::optional<std::tuple<std::string, std::string>> previousMatch;
+    matchWords(code, TableMatchMode::Prefix,
+               [&previousMatch](std::string_view code, std::string_view word,
+                                uint32_t, PhraseFlag) {
+                   if (previousMatch) {
+                       if (std::get<0>(*previousMatch) == code &&
+                           std::get<1>(*previousMatch) == word) {
+                           return true;
+                       }
+                       previousMatch.reset();
+                       return false;
+                   }
+                   previousMatch.emplace(code, word);
+                   return true;
+               });
+    return previousMatch.has_value();
 }
 
 PhraseFlag TableBasedDictionary::wordExists(std::string_view code,

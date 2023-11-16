@@ -13,10 +13,11 @@
 #include <tuple>
 
 void usage(const char *argv0) {
-    std::cout << "Usage: " << argv0 << " [-du] <source> <dest>" << std::endl
+    std::cout << "Usage: " << argv0 << " [-due] [-m <main dict>] <source> <dest>" << std::endl
               << "-d: Dump binary to text" << std::endl
               << "-u: User dict" << std::endl
-              << "-e <path/to/main.dict>: Extra dict" << std::endl
+              << "-e: Extra dict" << std::endl
+              << "-m <path/to/main.dict>: Main dict to be used with extra dict" << std::endl
               << "-h: Show this help" << std::endl;
 }
 
@@ -24,9 +25,10 @@ int main(int argc, char *argv[]) {
 
     bool dump = false;
     bool user = false;
+    bool extra = false;
     std::optional<std::string> extraMain = std::nullopt;
     int c;
-    while ((c = getopt(argc, argv, "dhue:")) != -1) {
+    while ((c = getopt(argc, argv, "dhuem:")) != -1) {
         switch (c) {
         case 'd':
             dump = true;
@@ -35,6 +37,9 @@ int main(int argc, char *argv[]) {
             user = true;
             break;
         case 'e':
+            extra = true;
+            break;
+        case 'm':
             extraMain = std::string(optarg);
             break;
         case 'h':
@@ -65,8 +70,11 @@ int main(int argc, char *argv[]) {
     const auto inputFormat = dump ? TableFormat::Binary : TableFormat::Text;
     const auto outputFormat = dump ? TableFormat::Text : TableFormat::Binary;
     size_t extraIndex = 0;
-    if (extraMain) {
+    if (extra && extraMain) {
         dict.load(extraMain->c_str(), libime::TableFormat::Binary);
+    }
+
+    if (extra) {
         extraIndex = dict.loadExtra(*in, inputFormat);
     } else if (user) {
         dict.loadUser(*in, inputFormat);
@@ -83,7 +91,7 @@ int main(int argc, char *argv[]) {
         out = &fout;
     }
 
-    if (extraMain) {
+    if (extra) {
         dict.saveExtra(extraIndex, *out, outputFormat);
     } else if (user) {
         dict.saveUser(*out, outputFormat);

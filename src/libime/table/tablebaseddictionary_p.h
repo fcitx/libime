@@ -85,6 +85,8 @@ public:
 
     bool validateHints(std::vector<std::string> &hints,
                        const TableRule &rule) const;
+
+    bool hasExactMatchInPhraseTrie(std::string_view entry) const;
 };
 
 } // namespace libime

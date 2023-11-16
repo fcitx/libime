@@ -88,6 +88,8 @@ public:
         return exactMatchSearch(key.data(), key.size());
     }
 
+    bool hasExactMatch(std::string_view key) const;
+
     DATrie<T>::value_type traverse(std::string_view key,
                                    position_type &from) const {
         return traverse(key.data(), key.size(), from);

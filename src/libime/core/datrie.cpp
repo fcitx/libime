@@ -1101,6 +1101,11 @@ typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key,
 }
 
 template <typename T>
+bool DATrie<T>::hasExactMatch(std::string_view key) const {
+    return isValid(exactMatchSearch(key));
+}
+
+template <typename T>
 typename DATrie<T>::value_type DATrie<T>::traverse(const char *key, size_t len,
                                                    position_type &from) const {
     size_t pos = 0;

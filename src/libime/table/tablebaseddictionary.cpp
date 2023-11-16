@@ -15,6 +15,7 @@
 #include "tabledecoder_p.h"
 #include "tableoptions.h"
 #include "tablerule.h"
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/range/adaptor/reversed.hpp>
@@ -30,6 +31,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 
@@ -173,9 +175,8 @@ uint32_t maxValue(const DATrie<uint32_t> &trie) {
 
 bool insertOrUpdateTrie(DATrie<uint32_t> &trie, uint32_t &index,
                         std::string_view entry, bool updateExisting) {
-    auto searchResult = trie.exactMatchSearch(entry);
     // Always insert to user even it is dup because we need to update the index.
-    if (trie.isValid(searchResult) && !updateExisting) {
+    if (trie.hasExactMatch(entry) && !updateExisting) {
         return false;
     }
     trie.set(entry, index);
@@ -250,6 +251,10 @@ bool TableBasedDictionaryPrivate::insert(std::string_view key,
         entry = generateTableEntry(pinyinKey_, key, value);
     } else {
         entry = generateTableEntry(key, value);
+    }
+
+    if (flag == PhraseFlag::User) {
+        deletionTrie_.erase(entry);
     }
 
     return insertOrUpdateTrie(*trie, *index, entry, flag == PhraseFlag::User);
@@ -444,8 +449,7 @@ bool TableBasedDictionaryPrivate::matchWordsInternal(
                                      PhraseFlag flag) {
                        if (!deletionTrie_.empty()) {
                            auto entry = generateTableEntry(code, word);
-                           if (deletionTrie_.isValid(
-                                   deletionTrie_.exactMatchSearch(entry))) {
+                           if (deletionTrie_.hasExactMatch(entry)) {
                                return true;
                            }
                        }
@@ -536,6 +540,15 @@ bool TableBasedDictionaryPrivate::validateHints(std::vector<std::string> &hints,
     }
 
     return true;
+}
+
+bool TableBasedDictionaryPrivate::hasExactMatchInPhraseTrie(
+    std::string_view entry) const {
+    return phraseTrie_.hasExactMatch(entry) ||
+           std::any_of(extraTries_.begin(), extraTries_.end(),
+                       [&entry](const auto &extraTrie) {
+                           return extraTrie.first.hasExactMatch(entry);
+                       });
 }
 
 void TableBasedDictionaryPrivate::loadBinary(std::istream &in) {
@@ -1502,13 +1515,11 @@ PhraseFlag TableBasedDictionary::wordExists(std::string_view code,
     FCITX_D();
     auto entry = generateTableEntry(code, word);
 
-    auto value = d->userTrie_.exactMatchSearch(entry);
-    if (d->userTrie_.isValid(value)) {
+    if (d->userTrie_.hasExactMatch(entry)) {
         return PhraseFlag::User;
     }
-    value = d->phraseTrie_.exactMatchSearch(entry);
-    if (d->phraseTrie_.isValid(value) &&
-        !d->deletionTrie_.isValid(d->deletionTrie_.exactMatchSearch(entry))) {
+    if (d->hasExactMatchInPhraseTrie(entry) &&
+        !d->deletionTrie_.hasExactMatch(entry)) {
         return PhraseFlag::None;
     }
 
@@ -1524,9 +1535,8 @@ void TableBasedDictionary::removeWord(std::string_view code,
     auto entry = generateTableEntry(code, word);
     d->autoPhraseDict_.erase(entry);
     d->userTrie_.erase(entry);
-    auto value = d->phraseTrie_.exactMatchSearch(entry);
-    if (d->phraseTrie_.isValid(value) &&
-        !d->deletionTrie_.isValid(d->deletionTrie_.exactMatchSearch(entry))) {
+    if (d->hasExactMatchInPhraseTrie(entry) &&
+        !d->deletionTrie_.hasExactMatch(entry)) {
         d->deletionTrie_.set(entry, 0);
     }
 }

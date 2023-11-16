@@ -28,7 +28,21 @@ void testMatch(const TableBasedDictionary &dict, std::string_view code,
                         actual.insert(std::string{word});
                         return true;
                     });
-    FCITX_ASSERT(expect == actual);
+    FCITX_ASSERT(expect == actual)
+        << "Expect: " << expect << " Actual: " << actual;
+}
+
+void testMatchIndex(const TableBasedDictionary &dict, std::string_view code,
+                    uint32_t index) {
+    std::optional<uint32_t> actual;
+    dict.matchWords(code, TableMatchMode::Prefix,
+                    [&actual](std::string_view, std::string_view,
+                              uint32_t index, PhraseFlag) {
+                        actual = index;
+                        return true;
+                    });
+    FCITX_ASSERT(index == actual)
+        << "Expect: " << index << " Actual: " << actual;
 }
 
 void testWubi() {
@@ -68,7 +82,7 @@ void testWubi() {
 
         table.load(LIBIME_BINARY_DIR "/test/testtable.dict");
         table.statistic();
-        // table.dump(std::cout);
+        // table.save(std::cout, libime::TableFormat::Text);
 
         std::string key2;
         FCITX_ASSERT(table.generate("统计局", key2));
@@ -308,6 +322,48 @@ void testEscape() {
 }
 
 void testOneMatchingWord() {
+    libime::TableBasedDictionary table;
+    {
+        std::string test = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
+                           "Length=4\n"
+                           "Pinyin=@\n"
+                           "[Rule]\n"
+                           "e2=p11+p12+p21+p22\n"
+                           "e3=p11+p21+p31+p32\n"
+                           "a4=p11+p21+p31+n11\n"
+                           "[Data]\n"
+                           "xycq 统\n"
+                           "yfh 计\n"
+                           "nnkd 局\n";
+        std::stringstream ss(test);
+        table.load(ss, libime::TableFormat::Text);
+    }
+    testMatch(table, "nnkh", {}, false);
+    size_t extraIndex;
+    {
+        std::string test = "nnkh 快跑\n";
+        std::stringstream ss(test);
+        extraIndex = table.loadExtra(ss, TableFormat::Text);
+    }
+    FCITX_ASSERT(extraIndex == 0);
+    table.saveExtra(extraIndex, std::cout, libime::TableFormat::Text);
+
+    testMatch(table, "nnkh", {"快跑"}, false);
+    testMatchIndex(table, "xycq", 0);
+    testMatchIndex(table, "yfh", 1);
+    testMatchIndex(table, "nnkd", 2);
+    testMatchIndex(table, "nnkh", 3);
+    {
+        std::string test = "[Phrase]\n统计局\n";
+        std::stringstream ss(test);
+        extraIndex = table.loadExtra(ss, TableFormat::Text);
+    }
+    FCITX_ASSERT(extraIndex == 1);
+    table.saveExtra(extraIndex, std::cout, libime::TableFormat::Text);
+    testMatchIndex(table, "xynn", 4);
+}
+
+void testExtraDict() {
 
     std::string test = "KeyCode=abcdefghijklmnopqrstuvwxy\n"
                        "Length=4\n"
@@ -349,6 +405,7 @@ int main() {
     testInvalidPhraseSection();
     testEscape();
     testOneMatchingWord();
+    testExtraDict();
 
     return 0;
 }

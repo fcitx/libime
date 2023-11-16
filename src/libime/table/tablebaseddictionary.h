@@ -60,6 +60,17 @@ public:
                   TableFormat format = TableFormat::Binary);
     void saveUser(std::ostream &out, TableFormat format = TableFormat::Binary);
 
+    size_t loadExtra(const char *filename,
+                     TableFormat format = TableFormat::Binary);
+    size_t loadExtra(std::istream &in,
+                     TableFormat format = TableFormat::Binary);
+    void saveExtra(size_t index, const char *filename,
+                   TableFormat format = TableFormat::Binary);
+    void saveExtra(size_t index, std::ostream &out,
+                   TableFormat format = TableFormat::Binary);
+
+    void removeAllExtra();
+
     bool hasRule() const noexcept;
     bool hasCustomPrompt() const noexcept;
     const TableRule *findRule(std::string_view name) const;

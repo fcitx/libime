@@ -15,6 +15,7 @@
 #include <optional>
 #include <regex>
 #include <set>
+#include <string_view>
 #include <vector>
 
 namespace libime {
@@ -28,11 +29,17 @@ public:
     uint32_t promptKey_ = 0;
     uint32_t phraseKey_ = 0;
     uint32_t codeLength_ = 0;
-    DATrie<uint32_t> phraseTrie_;   // base dictionary
-    DATrie<uint32_t> userTrie_;     // user dictionary
-    DATrie<uint32_t> deletionTrie_; // mask over base dictionary
+
+    DATrie<uint32_t> phraseTrie_; // base dictionary
     uint32_t phraseTrieIndex_ = 0;
+
+    DATrie<uint32_t> userTrie_; // user dictionary
     uint32_t userTrieIndex_ = 0;
+
+    DATrie<uint32_t> deletionTrie_; // mask over base dictionary
+
+    std::vector<std::pair<DATrie<uint32_t>, uint32_t>> extraTries_;
+
     DATrie<int32_t> singleCharTrie_; // reverse lookup from single character
     DATrie<int32_t> singleCharConstTrie_; // lookup char for new phrase
     DATrie<int32_t> singleCharLookupTrie_;
@@ -55,12 +62,18 @@ public:
 
     bool matchTrie(std::string_view code, TableMatchMode mode, PhraseFlag flag,
                    const TableMatchCallback &callback) const;
+    bool matchTrie(const DATrie<uint32_t> &trie, uint32_t indexOffset,
+                   std::string_view code, TableMatchMode mode, PhraseFlag flag,
+                   const TableMatchCallback &callback) const;
 
     void reset();
     bool validate() const;
 
     void loadBinary(std::istream &in);
     void loadUserBinary(std::istream &in, uint32_t version);
+
+    bool validateKeyValue(std::string_view key, std::string_view value,
+                          PhraseFlag flag) const;
 
     FCITX_NODISCARD
     std::optional<std::tuple<std::string, std::string, PhraseFlag>>

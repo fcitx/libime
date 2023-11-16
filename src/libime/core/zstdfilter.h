@@ -8,6 +8,7 @@
 #define LIBIME_ZSTDFILTER_H
 
 #include <boost/iostreams/filter/symmetric.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/pipeline.hpp>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/misc.h>
@@ -172,6 +173,30 @@ public:
         : base_type(buffer_size) {}
 };
 BOOST_IOSTREAMS_PIPABLE(ZSTDDecompressor, 0)
+
+template <typename Callback>
+inline void readZSTDCompressed(std::istream &in, const Callback &callback) {
+    boost::iostreams::filtering_istreambuf compressBuf;
+    compressBuf.push(ZSTDDecompressor());
+    compressBuf.push(in);
+    std::istream compressIn(&compressBuf);
+    callback(compressIn);
+    // We don't want to read any data, but only trigger the zstd footer
+    // handling, which validates CRC.
+    compressIn.peek();
+    if (compressIn.bad()) {
+        throw std::invalid_argument("Failed to load dict data");
+    }
+}
+
+template <typename Callback>
+inline void writeZSTDCompressed(std::ostream &out, const Callback &callback) {
+    boost::iostreams::filtering_streambuf<boost::iostreams::output> compressBuf;
+    compressBuf.push(ZSTDCompressor());
+    compressBuf.push(out);
+    std::ostream compressOut(&compressBuf);
+    callback(compressOut);
+}
 
 } // namespace libime
 

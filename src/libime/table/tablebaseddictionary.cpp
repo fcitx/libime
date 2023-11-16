@@ -759,20 +759,11 @@ void TableBasedDictionary::loadBinary(std::istream &in) {
     case 1:
         d->loadBinary(in);
         break;
-    case 2: {
-        boost::iostreams::filtering_istreambuf compressBuf;
-        compressBuf.push(ZSTDDecompressor());
-        compressBuf.push(in);
-        std::istream compressIn(&compressBuf);
-        d->loadBinary(compressIn);
-        // We don't want to read any data, but only trigger the zstd footer
-        // handling, which validates CRC.
-        compressIn.peek();
-        if (compressIn.bad()) {
-            throw std::invalid_argument("Failed to load dict data");
-        }
+    case tableBinaryFormatVersion:
+        readZSTDCompressed(
+            in, [d](std::istream &compressIn) { d->loadBinary(compressIn); });
         break;
-    }
+
     default:
         throw std::invalid_argument("Invalid table version.");
     }
@@ -798,41 +789,40 @@ void TableBasedDictionary::save(std::ostream &out, TableFormat format) {
 }
 
 void TableBasedDictionary::saveBinary(std::ostream &origOut) {
-    FCITX_D();
     throw_if_io_fail(marshall(origOut, tableBinaryFormatMagic));
     throw_if_io_fail(marshall(origOut, tableBinaryFormatVersion));
 
-    boost::iostreams::filtering_streambuf<boost::iostreams::output> compressBuf;
-    compressBuf.push(ZSTDCompressor());
-    compressBuf.push(origOut);
-    std::ostream out(&compressBuf);
-    throw_if_io_fail(marshall(out, d->pinyinKey_));
-    throw_if_io_fail(marshall(out, d->promptKey_));
-    throw_if_io_fail(marshall(out, d->phraseKey_));
-    throw_if_io_fail(marshall(out, d->codeLength_));
-    throw_if_io_fail(
-        marshall(out, static_cast<uint32_t>(d->inputCode_.size())));
-    for (auto c : d->inputCode_) {
-        throw_if_io_fail(marshall(out, c));
-    }
-    throw_if_io_fail(
-        marshall(out, static_cast<uint32_t>(d->ignoreChars_.size())));
-    for (auto c : d->ignoreChars_) {
-        throw_if_io_fail(marshall(out, c));
-    }
-    throw_if_io_fail(marshall(out, static_cast<uint32_t>(d->rules_.size())));
-    for (const auto &rule : d->rules_) {
-        throw_if_io_fail(out << rule);
-    }
-    d->phraseTrie_.save(out);
-    d->singleCharTrie_.save(out);
-    if (hasRule()) {
-        d->singleCharConstTrie_.save(out);
-        d->singleCharLookupTrie_.save(out);
-    }
-    if (d->promptKey_) {
-        d->promptTrie_.save(out);
-    }
+    writeZSTDCompressed(origOut, [this](std::ostream &out) {
+        FCITX_D();
+        throw_if_io_fail(marshall(out, d->pinyinKey_));
+        throw_if_io_fail(marshall(out, d->promptKey_));
+        throw_if_io_fail(marshall(out, d->phraseKey_));
+        throw_if_io_fail(marshall(out, d->codeLength_));
+        throw_if_io_fail(
+            marshall(out, static_cast<uint32_t>(d->inputCode_.size())));
+        for (auto c : d->inputCode_) {
+            throw_if_io_fail(marshall(out, c));
+        }
+        throw_if_io_fail(
+            marshall(out, static_cast<uint32_t>(d->ignoreChars_.size())));
+        for (auto c : d->ignoreChars_) {
+            throw_if_io_fail(marshall(out, c));
+        }
+        throw_if_io_fail(
+            marshall(out, static_cast<uint32_t>(d->rules_.size())));
+        for (const auto &rule : d->rules_) {
+            throw_if_io_fail(out << rule);
+        }
+        d->phraseTrie_.save(out);
+        d->singleCharTrie_.save(out);
+        if (hasRule()) {
+            d->singleCharConstTrie_.save(out);
+            d->singleCharLookupTrie_.save(out);
+        }
+        if (d->promptKey_) {
+            d->promptTrie_.save(out);
+        }
+    });
 }
 
 void TableBasedDictionary::loadUser(const char *filename, TableFormat format) {
@@ -856,20 +846,11 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
         case 2:
             d->loadUserBinary(in, version);
             break;
-        case userTableBinaryFormatVersion: {
-            boost::iostreams::filtering_istreambuf compressBuf;
-            compressBuf.push(ZSTDDecompressor());
-            compressBuf.push(in);
-            std::istream compressIn(&compressBuf);
-            d->loadUserBinary(compressIn, version);
-            // We don't want to read any data, but only trigger the zstd footer
-            // handling, which validates CRC.
-            compressIn.peek();
-            if (compressIn.bad()) {
-                throw std::invalid_argument("Failed to load dict data");
-            }
+        case userTableBinaryFormatVersion:
+            readZSTDCompressed(in, [d, version](std::istream &compressIn) {
+                d->loadUserBinary(compressIn, version);
+            });
             break;
-        }
         default:
             throw std::invalid_argument("Invalid user table version.");
         }
@@ -945,17 +926,14 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
         throw_if_io_fail(marshall(out, userTableBinaryFormatMagic));
         throw_if_io_fail(marshall(out, userTableBinaryFormatVersion));
 
-        boost::iostreams::filtering_streambuf<boost::iostreams::output>
-            compressBuf;
-        compressBuf.push(ZSTDCompressor());
-        compressBuf.push(out);
-        std::ostream compressOut(&compressBuf);
-        d->userTrie_.save(compressOut);
-        throw_if_io_fail(compressOut);
-        d->autoPhraseDict_.save(compressOut);
-        throw_if_io_fail(compressOut);
-        d->deletionTrie_.save(compressOut);
-        throw_if_io_fail(compressOut);
+        writeZSTDCompressed(out, [d](std::ostream &compressOut) {
+            d->userTrie_.save(compressOut);
+            throw_if_io_fail(compressOut);
+            d->autoPhraseDict_.save(compressOut);
+            throw_if_io_fail(compressOut);
+            d->deletionTrie_.save(compressOut);
+            throw_if_io_fail(compressOut);
+        });
         break;
     }
     case TableFormat::Text: {

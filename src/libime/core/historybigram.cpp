@@ -507,25 +507,15 @@ void HistoryBigram::load(std::istream &in) {
     case 2:
         boost::range::for_each(d->pools_, [&in](auto &pool) { pool.load(in); });
         break;
-    case historyBinaryFormatVersion: {
-        boost::iostreams::filtering_istreambuf compressBuf;
-        compressBuf.push(ZSTDDecompressor());
-        compressBuf.push(in);
-        std::istream compressIn(&compressBuf);
-
-        boost::range::for_each(
-            d->pools_, [&compressIn](auto &pool) { pool.load(compressIn); });
-        // We don't want to read any data, but only trigger the zstd footer
-        // handling, which validates CRC.
-        compressIn.peek();
-        if (compressIn.bad()) {
-            throw std::invalid_argument("Failed to validate the history data");
-        }
+    case historyBinaryFormatVersion:
+        readZSTDCompressed(in, [d](std::istream &compressIn) {
+            boost::range::for_each(d->pools_, [&compressIn](auto &pool) {
+                pool.load(compressIn);
+            });
+        });
         break;
-    }
-    default: {
+    default:
         throw std::invalid_argument("Invalid history version.");
-    }
     }
 }
 
@@ -538,13 +528,11 @@ void HistoryBigram::save(std::ostream &out) {
     FCITX_D();
     throw_if_io_fail(marshall(out, historyBinaryFormatMagic));
     throw_if_io_fail(marshall(out, historyBinaryFormatVersion));
-    boost::iostreams::filtering_streambuf<boost::iostreams::output> compressBuf;
-    compressBuf.push(ZSTDCompressor());
-    compressBuf.push(out);
-    std::ostream compressOut(&compressBuf);
 
-    boost::range::for_each(
-        d->pools_, [&compressOut](auto &pool) { pool.save(compressOut); });
+    writeZSTDCompressed(out, [d](std::ostream &compressOut) {
+        boost::range::for_each(
+            d->pools_, [&compressOut](auto &pool) { pool.save(compressOut); });
+    });
 }
 
 void HistoryBigram::dump(std::ostream &out) {

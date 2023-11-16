@@ -779,21 +779,10 @@ void PinyinDictionary::loadBinary(size_t idx, std::istream &in) {
     case 0x1:
         trie.load(in);
         break;
-    case pinyinBinaryFormatVersion: {
-        boost::iostreams::filtering_istreambuf compressBuf;
-        compressBuf.push(ZSTDDecompressor());
-        compressBuf.push(in);
-        std::istream compressIn(&compressBuf);
-
-        trie.load(compressIn);
-        // We don't want to read any data, but only trigger the zstd footer
-        // handling, which validates CRC.
-        compressIn.peek();
-        if (compressIn.bad()) {
-            throw std::invalid_argument("Failed to load dict data");
-        }
+    case pinyinBinaryFormatVersion:
+        readZSTDCompressed(
+            in, [&trie](std::istream &compressIn) { trie.load(compressIn); });
         break;
-    }
     default:
         throw std::invalid_argument("Invalid pinyin version.");
         break;
@@ -818,12 +807,9 @@ void PinyinDictionary::save(size_t idx, std::ostream &out,
         throw_if_io_fail(marshall(out, pinyinBinaryFormatMagic));
         throw_if_io_fail(marshall(out, pinyinBinaryFormatVersion));
 
-        boost::iostreams::filtering_streambuf<boost::iostreams::output>
-            compressBuf;
-        compressBuf.push(ZSTDCompressor());
-        compressBuf.push(out);
-        std::ostream compressOut(&compressBuf);
-        mutableTrie(idx)->save(compressOut);
+        writeZSTDCompressed(out, [this, idx](std::ostream &compressOut) {
+            mutableTrie(idx)->save(compressOut);
+        });
     } break;
     default:
         throw std::invalid_argument("invalid format type");

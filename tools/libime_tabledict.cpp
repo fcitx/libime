@@ -5,7 +5,6 @@
  */
 
 #include "libime/table/tablebaseddictionary.h"
-#include <bits/getopt_core.h>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>

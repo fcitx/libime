@@ -1130,8 +1130,8 @@ void TableBasedDictionary::saveExtra(size_t index, std::ostream &out,
     switch (format) {
     case TableFormat::Binary:
 
-        throw_if_io_fail(marshall(out, userTableBinaryFormatMagic));
-        throw_if_io_fail(marshall(out, userTableBinaryFormatVersion));
+        throw_if_io_fail(marshall(out, extraTableBinaryFormatMagic));
+        throw_if_io_fail(marshall(out, extraTableBinaryFormatVersion));
 
         writeZSTDCompressed(out, [d, index](std::ostream &compressOut) {
             d->extraTries_[index].first.save(compressOut);

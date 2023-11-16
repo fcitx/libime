@@ -5,15 +5,19 @@
  */
 
 #include "libime/table/tablebaseddictionary.h"
+#include <bits/getopt_core.h>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
+#include <optional>
+#include <string>
 #include <tuple>
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0 << " [-du] <source> <dest>" << std::endl
               << "-d: Dump binary to text" << std::endl
               << "-u: User dict" << std::endl
+              << "-e <path/to/main.dict>: Extra dict" << std::endl
               << "-h: Show this help" << std::endl;
 }
 
@@ -21,14 +25,18 @@ int main(int argc, char *argv[]) {
 
     bool dump = false;
     bool user = false;
+    std::optional<std::string> extraMain = std::nullopt;
     int c;
-    while ((c = getopt(argc, argv, "dhu")) != -1) {
+    while ((c = getopt(argc, argv, "dhue:")) != -1) {
         switch (c) {
         case 'd':
             dump = true;
             break;
         case 'u':
             user = true;
+            break;
+        case 'e':
+            extraMain = std::string(optarg);
             break;
         case 'h':
             usage(argv[0]);
@@ -55,10 +63,16 @@ int main(int argc, char *argv[]) {
         in = &fin;
     }
 
-    if (user) {
-        dict.loadUser(*in, dump ? TableFormat::Binary : TableFormat::Text);
+    const auto inputFormat = dump ? TableFormat::Binary : TableFormat::Text;
+    const auto outputFormat = dump ? TableFormat::Text : TableFormat::Binary;
+    size_t extraIndex = 0;
+    if (extraMain) {
+        dict.load(extraMain->c_str(), libime::TableFormat::Binary);
+        extraIndex = dict.loadExtra(*in, inputFormat);
+    } else if (user) {
+        dict.loadUser(*in, inputFormat);
     } else {
-        dict.load(*in, dump ? TableFormat::Binary : TableFormat::Text);
+        dict.load(*in, inputFormat);
     }
 
     std::ofstream fout;
@@ -70,10 +84,12 @@ int main(int argc, char *argv[]) {
         out = &fout;
     }
 
-    if (user) {
-        dict.saveUser(*out, dump ? TableFormat::Text : TableFormat::Binary);
+    if (extraMain) {
+        dict.saveExtra(extraIndex, *out, outputFormat);
+    } else if (user) {
+        dict.saveUser(*out, outputFormat);
     } else {
-        dict.save(*out, dump ? TableFormat::Text : TableFormat::Binary);
+        dict.save(*out, outputFormat);
     }
     return 0;
 }

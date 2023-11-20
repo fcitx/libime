@@ -136,6 +136,9 @@ public:
     static bool isNoPath(value_type v);
     static bool isNoValue(value_type v);
 
+    static value_type noPath();
+    static value_type noValue();
+
     size_t mem_size() const;
 
 private:

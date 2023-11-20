@@ -47,12 +47,24 @@ struct NanValue {
     static inline int32_t NO_PATH() { return -2; }
 };
 
+// Musl doesn't have nanf implementation we need, just check if they are the
+// same value. If not, prefer old hardcoded value.
+bool isGoodNanf() {
+    int32_t noValue = decodeValue(std::nanf("1"));
+    int32_t noPath = decodeValue(std::nanf("2"));
+    return (noValue != noPath);
+}
+
 template <>
 struct NanValue<float> {
     static_assert(std::numeric_limits<float>::has_quiet_NaN,
                   "Require support for quiet NaN.");
-    static inline int32_t NO_VALUE() { return decodeValue(std::nanf("1")); }
-    static inline int32_t NO_PATH() { return decodeValue(std::nanf("2")); }
+    static inline int32_t NO_VALUE() {
+        return isGoodNanf() ? decodeValue(std::nanf("1")) : 0x7fc00001;
+    }
+    static inline int32_t NO_PATH() {
+        return isGoodNanf() ? decodeValue(std::nanf("2")) : 0x7fc00002;
+    }
 };
 
 } // namespace
@@ -1142,6 +1154,20 @@ bool DATrie<T>::isNoValue(value_type v) {
 template <typename T>
 bool DATrie<T>::isValid(value_type v) {
     return !(isNoPath(v) || isNoValue(v));
+}
+
+template <typename T>
+T DATrie<T>::noPath() {
+    typename DATriePrivate<T>::decorder_type d;
+    d.result = DATriePrivate<value_type>::CEDAR_NO_PATH;
+    return d.result_value;
+}
+
+template <typename T>
+T DATrie<T>::noValue() {
+    typename DATriePrivate<T>::decorder_type d;
+    d.result = DATriePrivate<value_type>::CEDAR_NO_VALUE;
+    return d.result_value;
 }
 
 template <typename T>

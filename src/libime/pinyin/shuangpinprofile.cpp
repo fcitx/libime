@@ -376,7 +376,7 @@ void ShuangpinProfile::buildShuangpinTable() {
     for (const auto &p : getPinyinMapV2()) {
         if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
             (!d->spTable_.count(p.pinyin()) ||
-             d->zeroS_.find('*') == std::string::npos)) {
+             d->zeroS_.find('*') != std::string::npos)) {
             auto &pys = d->spTable_[p.pinyin()];
             pys.emplace(PinyinSyllable{p.initial(), p.final()}, p.flags());
         }

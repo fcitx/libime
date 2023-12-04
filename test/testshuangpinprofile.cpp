@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "libime/pinyin/pinyindata.h"
+#include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/shuangpinprofile.h"
 #include <fcitx-utils/log.h>
 using namespace libime;
@@ -52,6 +53,16 @@ void checkProfile(const ShuangpinProfile &profile, bool hasSemicolon) {
     }
 
     FCITX_ASSERT(validSyls.empty()) << validSyls;
+}
+
+void checkABC() {
+    ShuangpinProfile sp(ShuangpinBuiltinProfile::ABC);
+    auto iter = sp.table().find("an");
+    FCITX_ASSERT(iter != sp.table().end());
+    FCITX_ASSERT(iter->second.count(
+        PinyinSyllable(PinyinInitial::ZH, libime::PinyinFinal::UN)));
+    FCITX_ASSERT(!iter->second.count(
+        PinyinSyllable(PinyinInitial::Zero, libime::PinyinFinal::AN)));
 }
 
 void checkXiaoHe() {
@@ -424,7 +435,7 @@ int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::PinyinJiajia),
                  false);
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe), false);
-
+    checkABC();
     checkXiaoHe();
 
     // wo jiu shi xiang ce shi yi xia

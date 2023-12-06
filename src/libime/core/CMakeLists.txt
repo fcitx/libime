@@ -13,7 +13,9 @@ add_library(kenlm STATIC ${KENLM_SRCS})
 target_include_directories(kenlm PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/kenlm>)
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=3 PRIVATE -DNDEBUG)
 target_link_libraries(kenlm PUBLIC Boost::boost PkgConfig::ZSTD)
-set_target_properties(kenlm PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(kenlm PROPERTIES
+  CXX_STANDARD 11
+  POSITION_INDEPENDENT_CODE ON)
 
 if(UNIX)
   check_library_exists(rt clock_gettime "clock_gettime from librt" HAVE_CLOCKGETTIME_RT)

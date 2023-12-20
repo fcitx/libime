@@ -267,6 +267,12 @@ void ShuangpinProfile::buildShuangpinTable() {
         if (iterPair.first != iterPair.second) {
             for (const auto &item :
                  boost::make_iterator_range(iterPair.first, iterPair.second)) {
+                // Shuangpin should not consider advanced typo, since it's
+                // swapping character order and will leads to wrong entry.
+                // Common typo also have "ng->gn" is ok.
+                if (item.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
+                    continue;
+                }
                 addPinyinToList(pys, item.initial(), item.final(),
                                 item.flags());
             }

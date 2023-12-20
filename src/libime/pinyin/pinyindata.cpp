@@ -8,6 +8,7 @@
 #include "libime/pinyin/pinyinencoder.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <fcitx-utils/stringutils.h>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 

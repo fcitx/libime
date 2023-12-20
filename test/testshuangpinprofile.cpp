@@ -66,8 +66,11 @@ void checkABC() {
 }
 
 void checkXiaoHe() {
+    ShuangpinProfile profile(ShuangpinBuiltinProfile::Xiaohe);
+    FCITX_ASSERT(profile.table().count("lv") == 1);
+    FCITX_ASSERT(profile.table().find("lv")->second.count(PinyinSyllable(PinyinInitial::L, libime::PinyinFinal::IU)) == 0);
     PinyinEncoder::parseUserShuangpin(
-        "aiaaah", ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe),
+        "aiaaah", profile,
         PinyinFuzzyFlag::None)
         .dfs([](const SegmentGraphBase &segs, const std::vector<size_t> &path) {
             size_t s = 0;

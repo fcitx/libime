@@ -274,6 +274,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
 SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
                                                const ShuangpinProfile &sp,
                                                PinyinFuzzyFlags flags) {
+    flags = flags.unset(PinyinFuzzyFlag::AdvancedTypo);
     SegmentGraph result{std::move(userPinyin)};
     auto pinyin = result.data();
     std::transform(pinyin.begin(), pinyin.end(), pinyin.begin(),

@@ -72,13 +72,22 @@ PinyinPrediction::predict(const State &state,
     State prevState = model()->nullState(), outState;
     std::vector<WordNode> nodes;
     if (sentence.size() >= 1) {
-        nodes.reserve(sentence.size() - 1);
+        nodes.reserve(sentence.size());
         for (const auto &word : fcitx::MakeIterRange(
                  sentence.begin(), std::prev(sentence.end()))) {
             auto idx = model()->index(word);
             nodes.emplace_back(word, idx);
             model()->score(prevState, nodes.back(), outState);
             prevState = std::move(outState);
+        }
+        // We record the last score for the sentence word to adjust the partial
+        // score. E.g. for 无, model may contain 压力 and dict contain 聊 score
+        // of 聊 should be P(...|无聊) and score of 压力 should be P(...|无) *
+        // P(...无|压力) adjust is the P(...|无) here.
+        nodes.emplace_back(sentence.back(), model()->index(sentence.back()));
+        float adjust = model()->score(prevState, nodes.back(), outState);
+        for (auto &result : intermedidateResult) {
+            std::get<float>(result) += adjust;
         }
     }
 

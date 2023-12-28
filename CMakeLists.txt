@@ -12,6 +12,7 @@ option(ENABLE_TEST "Build Test" On)
 option(ENABLE_COVERAGE "Build the project with gcov support (Need ENABLE_TEST=On)" Off)
 set(GCOV_TOOL "gcov" CACHE STRING "Path to gcov tool used by coverage.")
 option(ENABLE_DOC "Build doxygen" Off)
+option(ENABLE_DATA "Build data" On)
 
 #########################################
 # Dependency
@@ -56,7 +57,10 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(tools)
-add_subdirectory(data)
+
+if (ENABLE_DATA)
+  add_subdirectory(data)
+endif()
 
 if (ENABLE_DOC)
   find_package(Doxygen REQUIRED)

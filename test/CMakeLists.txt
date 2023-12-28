@@ -5,20 +5,25 @@ set(LIBIME_SINGLE_FILE_TEST
     testtable
     testpinyindata
     testpinyinencoder
-    testpinyinime_unit
     testinputbuffer
     testhistorybigram
     testshuangpinprofile
     testtrie
     testautophrasedict
-    testdecoder
-    testpinyincontext
-    testpinyindictionary
-    testprediction
-    testpinyinprediction
-    testtableime_unit
     testtablerule
     )
+
+if (ENABLE_DATA)
+    list(APPEND LIBIME_SINGLE_FILE_TEST
+         testpinyinime_unit
+         testdecoder
+         testpinyincontext
+         testpinyindictionary
+         testprediction
+         testpinyinprediction
+         testtableime_unit
+         )
+endif()
 
 foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
     add_executable(${TESTCASE} ${TESTCASE}.cpp)
@@ -27,8 +32,15 @@ foreach(TESTCASE ${LIBIME_SINGLE_FILE_TEST})
              COMMAND ${TESTCASE})
 endforeach()
 
-add_dependencies(testdecoder dict lm)
-add_dependencies(testpinyindictionary dict)
+if (ENABLE_DATA)
+    add_dependencies(testpinyinime_unit lm)
+    add_dependencies(testdecoder dict lm)
+    add_dependencies(testpinyincontext lm)
+    add_dependencies(testpinyindictionary dict)
+    add_dependencies(testprediction lm)
+    add_dependencies(testpinyinprediction lm)
+    add_dependencies(testtableime_unit lm)
+endif()
 
 add_executable(triebench triebench.cpp)
 target_link_libraries(triebench LibIME::Core)

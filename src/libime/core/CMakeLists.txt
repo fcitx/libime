@@ -68,7 +68,7 @@ ecm_setup_version(PROJECT
 # the cmake if will
 set(IMECore_SOVERSION 0)
 
-add_library(IMECore SHARED ${LIBIME_SRCS})
+add_library(IMECore ${LIBIME_SRCS})
 set_target_properties(IMECore
                       PROPERTIES VERSION ${IMECore_VERSION}
                       SOVERSION ${IMECore_SOVERSION}
@@ -81,7 +81,12 @@ target_include_directories(IMECore PUBLIC
 
 target_link_libraries(IMECore PUBLIC Fcitx5::Utils Boost::boost PRIVATE kenlm Boost::iostreams PkgConfig::ZSTD)
 
-install(TARGETS IMECore EXPORT LibIMECoreTargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+set(IMECore_INSTALL_TARGETS IMECore)
+if (NOT BUILD_SHARED_LIBS)
+    list(APPEND IMECore_INSTALL_TARGETS kenlm)
+endif()
+
+install(TARGETS ${IMECore_INSTALL_TARGETS} EXPORT LibIMECoreTargets LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 install(FILES ${LIBIME_HDRS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/LibIME/libime/core" COMPONENT header)
 
 add_library(LibIME::Core ALIAS IMECore)

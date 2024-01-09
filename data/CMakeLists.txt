@@ -49,12 +49,12 @@ add_custom_command(
 add_custom_target(dict ALL DEPENDS "${DICT_OUTPUT}" "${DICT_EXTB_OUTPUT}")
 install(FILES "${DICT_OUTPUT}" "${DICT_EXTB_OUTPUT}" DESTINATION "${LIBIME_INSTALL_PKGDATADIR}")
 
-set(TABLE_DICT_URL "https://download.fcitx-im.org/data/table.tar.gz")
-set(TABLE_DICT_TAR "table.tar.gz")
+set(TABLE_DICT_URL "https://download.fcitx-im.org/data/table-20240108.tar.gz")
+set(TABLE_DICT_TAR "table-20240108.tar.gz")
 set(TABLE_TXT_FILES db.txt erbi.txt qxm.txt wanfeng.txt
                       wbpy.txt wbx.txt zrm.txt cj.txt)
 fcitx5_download(table-dict-download ${TABLE_DICT_URL} ${TABLE_DICT_TAR}
-                6196053c724125e3ae3d8bd6b2f9172d0c83b65b0d410d3cde63b7a8d6ab87b7)
+                729c596d86907de727c74d0fc3fd241c406c5debd2b4cb74eefe022387ee9dae)
 fcitx5_extract(table-dict-extract ${TABLE_DICT_TAR} DEPENDS table-dict-download
                OUTPUT ${TABLE_TXT_FILES})
 

@@ -691,6 +691,7 @@ void PinyinDictionary::matchWordsPrefix(const char *data, size_t size,
                     return callback(view.substr(0, sep), view.substr(sep + 1),
                                     value);
                 }
+                return true;
             },
             node.second);
     }

@@ -13,11 +13,13 @@
 #include <tuple>
 
 void usage(const char *argv0) {
-    std::cout << "Usage: " << argv0 << " [-due] [-m <main dict>] <source> <dest>" << std::endl
+    std::cout << "Usage: " << argv0
+              << " [-due] [-m <main dict>] <source> <dest>" << std::endl
               << "-d: Dump binary to text" << std::endl
               << "-u: User dict" << std::endl
               << "-e: Extra dict" << std::endl
-              << "-m <path/to/main.dict>: Main dict to be used with extra dict" << std::endl
+              << "-m <path/to/main.dict>: Main dict to be used with extra dict"
+              << std::endl
               << "-h: Show this help" << std::endl;
 }
 

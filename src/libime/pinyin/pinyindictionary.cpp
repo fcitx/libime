@@ -210,7 +210,7 @@ public:
         const std::unordered_set<const SegmentGraphNode *> &ignore,
         NodeToMatchedPinyinPathsMap &matchedPaths)
         : graph_(graph), hasher_(graph), callback_(callback), ignore_(ignore),
-          matchedPathsMap_(&matchedPaths) {}
+          matchedPathsMap_(&matchedPaths), nodeCacheMap_(nullptr), matchCacheMap_(nullptr) {}
 
     PinyinMatchContext(const PinyinMatchContext &) = delete;
 

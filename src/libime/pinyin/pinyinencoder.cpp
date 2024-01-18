@@ -168,7 +168,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
             }
             auto iter = std::next(pinyin.begin(), top);
             if (*iter == '\'') {
-                while (*iter == '\'' && iter != pinyin.end()) {
+                while (iter != pinyin.end() && *iter == '\'') {
                     iter++;
                 }
                 auto next = std::distance(pinyin.begin(), iter);
@@ -286,7 +286,7 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
     const auto &table = sp.table();
     while (i < pinyin.size()) {
         auto start = i;
-        while (pinyin[i] == '\'' && i < pinyin.size()) {
+        while (i < pinyin.size() && pinyin[i] == '\'') {
             i++;
         }
         if (start != i) {
@@ -335,7 +335,7 @@ SegmentGraph PinyinEncoder::parseUserShuangpin(std::string userPinyin,
         size_t i = 0;
         while (i < pinyin.size()) {
             size_t start = i;
-            while (pinyin[i] == '\'' && i < pinyin.size()) {
+            while (i < pinyin.size() && pinyin[i] == '\'') {
                 i++;
             }
             // This is already handled above.

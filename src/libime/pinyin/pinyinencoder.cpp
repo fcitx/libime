@@ -154,7 +154,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
     }
 
     for (const auto fuzzyFlags : flagsToTry) {
-        std::priority_queue<size_t, std::vector<size_t>, std::greater<size_t>>
+        std::priority_queue<size_t, std::vector<size_t>, std::greater<>>
             q;
         q.push(0);
         while (!q.empty()) {
@@ -401,7 +401,8 @@ std::vector<char> PinyinEncoder::encodeOneUserPinyin(std::string pinyin) {
     }
     auto graph = parseUserPinyin(std::move(pinyin), PinyinFuzzyFlag::None);
     std::vector<char> result;
-    const SegmentGraphNode *node = &graph.start(), *prev = nullptr;
+    const SegmentGraphNode *node = &graph.start();
+    const SegmentGraphNode *prev = nullptr;
     while (node->nextSize()) {
         prev = node;
         node = &node->nexts().front();
@@ -674,7 +675,7 @@ PinyinEncoder::stringToSyllables(std::string_view pinyinView,
         }
     }
 
-    auto iter = initialMap.right.find(std::string{pinyin});
+    auto iter = initialMap.right.find(pinyin);
     if (initialMap.right.end() != iter) {
         getFuzzy(result, {iter->second, PinyinFinal::Invalid}, flags,
                  /*isSp=*/false);

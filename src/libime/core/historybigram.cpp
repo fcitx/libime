@@ -41,7 +41,7 @@ public:
 
     int32_t freq(std::string_view s) const {
         auto v = trie_.exactMatchSearch(s.data(), s.size());
-        if (trie_.isNoValue(v)) {
+        if (TrieType::isNoValue(v)) {
             return 0;
         }
         return v;
@@ -442,10 +442,11 @@ bool HistoryBigram::useOnlyUnigram() const {
 
 void HistoryBigram::add(const libime::SentenceResult &sentence) {
     FCITX_D();
-    d->populateSentence(
-        d->pools_[0].add(sentence.sentence() |
-                         boost::adaptors::transformed(
-                             [](const auto &item) { return item->word(); })));
+    d->populateSentence(d->pools_[0].add(
+        sentence.sentence() | boost::adaptors::transformed(
+                                  [](const auto &item) -> const std::string & {
+                                      return item->word();
+                                  })));
 }
 
 void HistoryBigram::add(const std::vector<std::string> &sentence) {
@@ -567,7 +568,7 @@ void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
     }
     lookup += "|";
     boost::range::for_each(
-        d->pools_, [&words, lookup, maxSize](const HistoryBigramPool &pool) {
+        d->pools_, [&words, &lookup, maxSize](const HistoryBigramPool &pool) {
             pool.fillPredict(words, lookup, maxSize);
         });
 }

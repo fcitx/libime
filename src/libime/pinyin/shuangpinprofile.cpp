@@ -104,13 +104,9 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
         if (boost::starts_with(lineView, option)) {
             std::string name{lineView.substr(option.size())};
             boost::trim_if(name, isSpaceCheck);
-            if (name == "自然码" || name == "微软" || name == "紫光" ||
-                name == "拼音加加" || name == "中文之星" || name == "智能ABC" ||
-                name == "小鹤") {
-                isDefault = true;
-            } else {
-                isDefault = false;
-            }
+            isDefault = (name == "自然码" || name == "微软" || name == "紫光" ||
+                         name == "拼音加加" || name == "中文之星" ||
+                         name == "智能ABC" || name == "小鹤");
         }
 
         if (isDefault) {
@@ -302,7 +298,7 @@ void ShuangpinProfile::buildShuangpinTable() {
                 if (PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
                                                        item.second)) {
                     std::string input;
-                    const auto finalString =
+                    const auto &finalString =
                         PinyinEncoder::finalToString(item.second);
                     if (finalString.size() == 1) {
                         input = std::string{c, c};

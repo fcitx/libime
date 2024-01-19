@@ -5,6 +5,7 @@
  */
 
 #include "libime/core/historybigram.h"
+#include <exception>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
@@ -16,7 +17,6 @@ void usage(const char *argv0) {
 }
 
 int main(int argc, char *argv[]) {
-
     bool compile = false;
     int c;
     while ((c = getopt(argc, argv, "ch")) != -1) {
@@ -40,25 +40,30 @@ int main(int argc, char *argv[]) {
     using namespace libime;
     HistoryBigram history;
 
-    std::ifstream in(argv[optind], std::ios::in | std::ios::binary);
-    if (compile) {
-        history.loadText(in);
-    } else {
-        history.load(in);
-    }
+    try {
+        std::ifstream in(argv[optind], std::ios::in | std::ios::binary);
+        if (compile) {
+            history.loadText(in);
+        } else {
+            history.load(in);
+        }
 
-    std::ofstream fout;
-    std::ostream *out;
-    if (strcmp(argv[optind + 1], "-") == 0) {
-        out = &std::cout;
-    } else {
-        fout.open(argv[optind + 1], std::ios::out | std::ios::binary);
-        out = &fout;
-    }
-    if (compile) {
-        history.save(*out);
-    } else {
-        history.dump(*out);
+        std::ofstream fout;
+        std::ostream *out;
+        if (strcmp(argv[optind + 1], "-") == 0) {
+            out = &std::cout;
+        } else {
+            fout.open(argv[optind + 1], std::ios::out | std::ios::binary);
+            out = &fout;
+        }
+        if (compile) {
+            history.save(*out);
+        } else {
+            history.dump(*out);
+        }
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return 1;
     }
     return 0;
 }

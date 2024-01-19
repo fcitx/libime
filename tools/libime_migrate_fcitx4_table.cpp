@@ -17,6 +17,7 @@
 #include <fcntl.h>
 #include <istream>
 #include <sstream>
+#include <stdexcept>
 
 #if __GNUC__ <= 8
 #include <boost/filesystem.hpp>
@@ -81,13 +82,13 @@ struct MigrationCommonOption {
         if (path[0] != '/') {
             if (useXdgPath) {
                 return stringutils::joinPath("table", path);
-            } else {
-#if __GNUC__ <= 8
-                return boost::filesystem::absolute(path).string();
-#else
-                return std::filesystem::absolute(path);
-#endif
             }
+
+#if __GNUC__ <= 8
+            return boost::filesystem::absolute(path).string();
+#else
+            return std::filesystem::absolute(path);
+#endif
         }
         return path;
     }
@@ -115,6 +116,7 @@ enum RecordType {
     RECORDTYPE_PINYIN = 0x1,
     RECORDTYPE_CONSTRUCT = 0x2,
     RECORDTYPE_PROMPT = 0x3,
+    RECORDTYPE_LAST = RECORDTYPE_PROMPT,
 };
 
 constexpr int INTERNAL_VERSION = 3;
@@ -162,9 +164,9 @@ char guessValidChar(char prefer, std::string_view invalid) {
     if (invalid.find(prefer) == std::string::npos) {
         return prefer;
     }
-    unsigned char c;
     std::string_view punct = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
-    for (c = 0; c <= 127; c++) {
+    for (int i = 0; i <= 127; i++) {
+        char c = static_cast<char>(i);
         if (punct.find(c) != std::string_view::npos || charutils::isdigit(c) ||
             charutils::islower(c) || charutils::isupper(c)) {
             if (invalid.find(c) == std::string::npos) {
@@ -296,16 +298,8 @@ void loadSource(
         if (!isOldVersion) {
             throw_if_io_fail(unmarshall(in, recordType));
 
-            switch (recordType) {
-            case RECORDTYPE_PINYIN:
-                break;
-            case RECORDTYPE_CONSTRUCT:
-                break;
-            case RECORDTYPE_PROMPT:
-                break;
-            default:
-                recordType = RECORDTYPE_NORMAL;
-                break;
+            if (recordType > RECORDTYPE_LAST) {
+                throw std::runtime_error("Invalid record type.");
             }
         }
 
@@ -319,7 +313,7 @@ void loadSource(
     }
 }
 
-int migrate(MigrationWithBaseOption option) {
+int migrate(const MigrationWithBaseOption& option) {
     UnixFD baseFd;
     if (option.baseFile.empty()) {
         if (!option.useXdgPath) {
@@ -354,8 +348,9 @@ int migrate(MigrationWithBaseOption option) {
         return 1;
     }
 
+    std::string dictFile = option.dictFile;
     if (!option.skipDict) {
-        if (option.dictFile.empty()) {
+        if (dictFile.empty()) {
             if (!option.useXdgPath) {
                 usage("Output dict file need to be specified.");
                 return 1;
@@ -363,7 +358,7 @@ int migrate(MigrationWithBaseOption option) {
 
             if (auto name =
                     replaceSuffix(option.sourceFile, mbSuffix, ".user.dict")) {
-                option.dictFile = *name;
+                dictFile = *name;
             } else {
                 usage("Failed to infer the dict file name. Please use -o to "
                       "specifiy the dict file, or -O skip.");
@@ -372,8 +367,9 @@ int migrate(MigrationWithBaseOption option) {
         }
     }
 
+    std::string historyFile = option.historyFile;
     if (!option.skipHistory) {
-        if (option.historyFile.empty()) {
+        if (historyFile.empty()) {
             if (!option.useXdgPath) {
                 usage("History file need to be specified.");
                 return 1;
@@ -381,7 +377,7 @@ int migrate(MigrationWithBaseOption option) {
 
             if (auto name =
                     replaceSuffix(option.sourceFile, mbSuffix, ".history")) {
-                option.historyFile = *name;
+                historyFile = *name;
             } else {
                 usage("Failed to infer the history file name. Please use -p to "
                       "specifiy the history file, or -P skip.");
@@ -406,7 +402,7 @@ int migrate(MigrationWithBaseOption option) {
         tableDict.load(in);
     }
     if (option.merge && !option.skipDict) {
-        UnixFD dictFd = option.openMergeFile(option.dictFile);
+        UnixFD dictFd = option.openMergeFile(dictFile);
         if (dictFd.isValid()) {
             try {
                 boost::iostreams::stream_buffer<
@@ -425,7 +421,7 @@ int migrate(MigrationWithBaseOption option) {
 
     HistoryBigram history;
     if (option.merge && !option.skipHistory) {
-        UnixFD historyFd = option.openMergeFile(option.historyFile);
+        UnixFD historyFd = option.openMergeFile(historyFile);
         if (historyFd.isValid()) {
             try {
                 boost::iostreams::stream_buffer<
@@ -464,7 +460,7 @@ int migrate(MigrationWithBaseOption option) {
 
                 if (!option.skipHistory) {
                     for (uint32_t i = 0;
-                         i < std::min(static_cast<uint32_t>(10u), freq); i++) {
+                         i < std::min(static_cast<uint32_t>(10U), freq); i++) {
                         history.add({value});
                     }
                 }
@@ -478,7 +474,7 @@ int migrate(MigrationWithBaseOption option) {
     if (!option.skipDict) {
         if (!StandardPath::global().safeSave(
                 StandardPath::Type::PkgData,
-                option.pathForSave(option.dictFile), [&tableDict](int fd) {
+                option.pathForSave(dictFile), [&tableDict](int fd) {
                     boost::iostreams::stream_buffer<
                         boost::iostreams::file_descriptor_sink>
                         buffer(fd, boost::iostreams::file_descriptor_flags::
@@ -495,7 +491,7 @@ int migrate(MigrationWithBaseOption option) {
     if (!option.skipHistory) {
         if (!StandardPath::global().safeSave(
                 StandardPath::Type::PkgData,
-                option.pathForSave(option.historyFile), [&history](int fd) {
+                option.pathForSave(historyFile), [&history](int fd) {
                     boost::iostreams::stream_buffer<
                         boost::iostreams::file_descriptor_sink>
                         buffer(fd, boost::iostreams::file_descriptor_flags::
@@ -512,10 +508,10 @@ int migrate(MigrationWithBaseOption option) {
     return 0;
 }
 
-int migrate(MigrationWithoutBaseOption option) {
-
+int migrate(const MigrationWithoutBaseOption &option) {
+    std::string dictFile = option.dictFile;
     if (!option.skipDict) {
-        if (option.dictFile.empty()) {
+        if (dictFile.empty()) {
             if (!option.useXdgPath) {
                 usage("Output dict file need to be specified.");
                 return 1;
@@ -523,7 +519,7 @@ int migrate(MigrationWithoutBaseOption option) {
 
             if (auto name =
                     replaceSuffix(option.sourceFile, mbSuffix, ".user.dict")) {
-                option.dictFile = *name;
+                dictFile = *name;
             } else {
                 usage("Failed to infer the dict file name. Please use -o to "
                       "specifiy the dict file, or -O skip.");
@@ -532,15 +528,16 @@ int migrate(MigrationWithoutBaseOption option) {
         }
     }
 
+    std::string historyFile = option.historyFile;
     if (!option.skipHistory) {
-        if (option.historyFile.empty()) {
+        if (historyFile.empty()) {
             if (!option.useXdgPath) {
                 usage("History file need to be specified.");
                 return 1;
             }
             if (auto name =
                     replaceSuffix(option.sourceFile, mbSuffix, ".main.dict")) {
-                option.historyFile = *name;
+                historyFile = *name;
             } else {
                 usage("Failed to infer the history file name. Please use -p to "
                       "specifiy the history file, or -P skip.");
@@ -617,7 +614,7 @@ int migrate(MigrationWithoutBaseOption option) {
 
                 if (!option.skipHistory) {
                     for (uint32_t i = 0;
-                         i < std::min(static_cast<uint32_t>(10u), freq); i++) {
+                         i < std::min(static_cast<uint32_t>(10U), freq); i++) {
                         history.add({value});
                     }
                 }
@@ -635,7 +632,7 @@ int migrate(MigrationWithoutBaseOption option) {
         }
         if (!StandardPath::global().safeSave(
                 StandardPath::Type::PkgData,
-                option.pathForSave(option.dictFile), [&tableDict](int fd) {
+                option.pathForSave(dictFile), [&tableDict](int fd) {
                     boost::iostreams::stream_buffer<
                         boost::iostreams::file_descriptor_sink>
                         buffer(fd, boost::iostreams::file_descriptor_flags::
@@ -652,7 +649,7 @@ int migrate(MigrationWithoutBaseOption option) {
     if (!option.skipHistory) {
         if (!StandardPath::global().safeSave(
                 StandardPath::Type::PkgData,
-                option.pathForSave(option.historyFile), [&history](int fd) {
+                option.pathForSave(historyFile), [&history](int fd) {
                     boost::iostreams::stream_buffer<
                         boost::iostreams::file_descriptor_sink>
                         buffer(fd, boost::iostreams::file_descriptor_flags::

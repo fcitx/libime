@@ -28,13 +28,13 @@
 namespace libime {
 
 namespace {
-const float fuzzyCost = std::log10(0.5f);
+const float fuzzyCost = std::log10(0.5F);
 const size_t minimumLongWordLength = 3;
 const float invalidPinyinCost = -100.0f;
 const char pinyinHanziSep = '!';
 
-static constexpr uint32_t pinyinBinaryFormatMagic = 0x000fc613;
-static constexpr uint32_t pinyinBinaryFormatVersion = 0x2;
+constexpr uint32_t pinyinBinaryFormatMagic = 0x000fc613;
+constexpr uint32_t pinyinBinaryFormatVersion = 0x2;
 
 struct PinyinSegmentGraphPathHasher {
     PinyinSegmentGraphPathHasher(const SegmentGraph &graph) : graph_(graph) {}

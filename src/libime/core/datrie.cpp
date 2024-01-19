@@ -79,19 +79,19 @@ using vector_impl = naivevector<T>;
 template <typename V, bool ORDERED, int MAX_TRIAL>
 class DATriePrivate {
 public:
-    typedef DATrie<V> base_type;
-    typedef typename base_type::value_type value_type;
-    typedef typename base_type::position_type position_type;
-    typedef typename base_type::updater_type updater_type;
-    typedef typename base_type::callback_type callback_type;
-    typedef DecoderUnion<V> decorder_type;
+    using base_type = DATrie<V>;
+    using value_type = typename base_type::value_type;
+    using position_type = typename base_type::position_type;
+    using updater_type = typename base_type::updater_type;
+    using callback_type = typename base_type::callback_type;
+    using decoder_type = DecoderUnion<V>;
 
     static inline const int32_t CEDAR_NO_VALUE = NanValue<V>::NO_VALUE();
     static inline const int32_t CEDAR_NO_PATH = NanValue<V>::NO_PATH();
 
     static constexpr int MAX_ALLOC_SIZE = 1 << 16; // must be divisible by 256
-    typedef value_type result_type;
-    typedef uint8_t uchar;
+    using result_type = value_type ;
+    using uchar = uint8_t ;
     static_assert(sizeof(value_type) <= sizeof(int32_t),
                   "value size need to be same as int32_t");
     struct node {
@@ -348,7 +348,7 @@ public:
 
     value_type traverse(const char *key, npos_t &from, size_t &pos,
                         size_t len) const {
-        decorder_type d;
+        decoder_type d;
         d.result = _find(key, from, pos, len);
         return d.result_value;
     }
@@ -493,7 +493,6 @@ public:
         }
         char *const data = &tail[len + 1];
         storeDWord(data, callback(loadDWord<value_type>(data)));
-        return;
     }
 
     // easy-going erase () without compression
@@ -525,7 +524,7 @@ public:
     }
 
     bool foreach(const callback_type &callback, npos_t root = npos_t()) const {
-        decorder_type b;
+        decoder_type b;
         size_t p(0);
         npos_t from = root;
         for (b.result = begin(from, p); b.result != CEDAR_NO_PATH;
@@ -702,7 +701,7 @@ public:
         if (auto bi = m_bheadO) {
             const auto bz = m_block[m_bheadO].prev;
             const auto nc = static_cast<short>(last - first + 1);
-            while (1) { // set candidate block
+            while (true) { // set candidate block
                 block &b = m_block[bi];
                 if (b.num >= nc && nc < b.reject) { // explore configuration
                     for (int e = b.ehead;;) {
@@ -1104,7 +1103,7 @@ typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key,
                                                            size_t len) const {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t npos;
-    typename DATriePrivate<T>::decorder_type decoder;
+    typename DATriePrivate<T>::decoder_type decoder;
     decoder.result = d->_find(key, npos, pos, len);
     if (decoder.result == DATriePrivate<value_type>::CEDAR_NO_PATH) {
         decoder.result = DATriePrivate<value_type>::CEDAR_NO_VALUE;
@@ -1139,14 +1138,14 @@ void DATrie<T>::shrink_tail() {
 
 template <typename T>
 bool DATrie<T>::isNoPath(value_type v) {
-    typename DATriePrivate<T>::decorder_type d;
+    typename DATriePrivate<T>::decoder_type d;
     d.result_value = v;
     return d.result == DATriePrivate<value_type>::CEDAR_NO_PATH;
 }
 
 template <typename T>
 bool DATrie<T>::isNoValue(value_type v) {
-    typename DATriePrivate<T>::decorder_type d;
+    typename DATriePrivate<T>::decoder_type d;
     d.result_value = v;
     return d.result == DATriePrivate<value_type>::CEDAR_NO_VALUE;
 }
@@ -1158,14 +1157,14 @@ bool DATrie<T>::isValid(value_type v) {
 
 template <typename T>
 T DATrie<T>::noPath() {
-    typename DATriePrivate<T>::decorder_type d;
+    typename DATriePrivate<T>::decoder_type d;
     d.result = DATriePrivate<value_type>::CEDAR_NO_PATH;
     return d.result_value;
 }
 
 template <typename T>
 T DATrie<T>::noValue() {
-    typename DATriePrivate<T>::decorder_type d;
+    typename DATriePrivate<T>::decoder_type d;
     d.result = DATriePrivate<value_type>::CEDAR_NO_VALUE;
     return d.result_value;
 }

@@ -13,6 +13,7 @@
 #include <iostream>
 #include <set>
 #include <string_view>
+#include <unordered_map>
 
 namespace libime {
 
@@ -171,8 +172,12 @@ void ShuangpinProfile::buildShuangpinTable() {
     for (const auto &p : d->initialMap_) {
         d->validInputs_.insert(p.first);
     }
+    std::unordered_map<PinyinFinal, char> singleCharFinal;
     for (const auto &p : d->finalMap_) {
         d->validInputs_.insert(p.first);
+        if (PinyinEncoder::finalToString(p.second).size() == 1) {
+            singleCharFinal[p.second] = p.first;
+        }
     }
 
     for (const auto &p : d->initialFinalMap_) {
@@ -209,15 +214,25 @@ void ShuangpinProfile::buildShuangpinTable() {
     std::set<char> finalChars;
     for (auto c = PinyinEncoder::firstFinal; c <= PinyinEncoder::lastFinal;
          c++) {
-        const auto &finalString =
-            PinyinEncoder::finalToString(static_cast<PinyinFinal>(c));
-        if (finalString.size() == 1) {
+        auto f = static_cast<PinyinFinal>(c);
+        const auto &finalString = PinyinEncoder::finalToString(f);
+        if (finalString.size() == 1 && !singleCharFinal.count(f)) {
             finalChars.insert(finalString[0]);
+            singleCharFinal[f] = finalString[0];
         }
     }
     // Add final in map to finalChars
     for (auto &p : d->finalMap_) {
         finalChars.insert(p.first);
+    }
+
+    for (const auto &[final, chr] : singleCharFinal) {
+        auto [begin, end] = d->finalMap_.equal_range(chr);
+        if (std::find_if(begin, end, [final = final](const auto &item) {
+                return item.second == final;
+            }) == end) {
+            d->finalMap_.emplace(chr, final);
+        }
     }
 
     auto addPinyinToList =
@@ -281,16 +296,6 @@ void ShuangpinProfile::buildShuangpinTable() {
         // length 2: keep same as quanpin
         // length 3: use the initial of quanpin and the one in the table.
         for (auto c : finalChars) {
-            // Check if final char is already a final (e.g. aeiou).
-            auto final = PinyinEncoder::stringToFinal(std::string{c});
-            if (final != PinyinFinal::Invalid &&
-                PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
-                                                   final)) {
-                std::string input{c, c};
-                d->spTable_[input].emplace(
-                    PinyinSyllable{PinyinInitial::Zero, final},
-                    PinyinFuzzyFlag::None);
-            }
             // If c is in final map.
             auto finalIterPair = d->finalMap_.equal_range(c);
             for (auto &item : boost::make_iterator_range(
@@ -303,7 +308,16 @@ void ShuangpinProfile::buildShuangpinTable() {
                     if (finalString.size() == 1) {
                         input = std::string{c, c};
                     } else {
-                        input = std::string{finalString[0], c};
+                        auto final = PinyinEncoder::stringToFinal(
+                            std::string{finalString[0]});
+                        if (final != PinyinFinal::Invalid) {
+                            auto singleCharFinalIter =
+                                singleCharFinal.find(final);
+                            if (singleCharFinalIter != singleCharFinal.end()) {
+                                input =
+                                    std::string{singleCharFinalIter->second, c};
+                            }
+                        }
                     }
                     d->spTable_[input].emplace(
                         PinyinSyllable{PinyinInitial::Zero, item.second},
@@ -338,18 +352,9 @@ void ShuangpinProfile::buildShuangpinTable() {
             }
 
             auto finalIterPair = d->finalMap_.equal_range(c2);
-            if (finalIterPair.first != finalIterPair.second) {
-                for (auto &item : boost::make_iterator_range(
-                         finalIterPair.first, finalIterPair.second)) {
-                    finals.push_back(item.second);
-                }
-            }
-            auto final = PinyinEncoder::stringToFinal(std::string{c2});
-            if (!d->finalSet_.count(final)) {
-                // v is defined in map.
-                if (final != PinyinFinal::Invalid) {
-                    finals.push_back(final);
-                }
+            for (auto &item : boost::make_iterator_range(
+                     finalIterPair.first, finalIterPair.second)) {
+                finals.push_back(item.second);
             }
 
             for (auto i : initials) {
@@ -399,24 +404,27 @@ void ShuangpinProfile::buildShuangpinTable() {
             addPinyinToList(pys, item.second, PinyinFinal::Invalid,
                             PinyinFuzzyFlag::None);
         }
-        auto final = PinyinEncoder::stringToFinal(std::string{c});
-        if (final != PinyinFinal::Invalid &&
-            PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero, final) &&
-            pys.empty()) {
-            addPinyinToList(pys, PinyinInitial::Zero, final,
-                            PinyinFuzzyFlag::None);
+
+        // Add single char final to partial pinyin.
+        auto [begin, end] = d->finalMap_.equal_range(c);
+        for (auto &item : boost::make_iterator_range(begin, end)) {
+            const auto final = item.second;
+            if (PinyinEncoder::finalToString(final).size() == 1 &&
+                PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
+                                                   final) &&
+                pys.empty()) {
+                addPinyinToList(pys, PinyinInitial::Zero, final,
+                                PinyinFuzzyFlag::None);
+            }
         }
 
-        // do not look into finalMap_
-        // because we're doing sp, using sp with single final shouldn't be
-        // allowed
         if (pys.empty()) {
             d->spTable_.erase(input);
         }
     }
 
     for (const auto &sp : d->spTable_) {
-        assert(sp.first.size() >= 1 && sp.first.size() <= 2);
+        assert(!sp.first.empty() && sp.first.size() <= 2);
         d->validInitials_.insert(sp.first[0]);
     }
 }

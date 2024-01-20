@@ -12,7 +12,7 @@ using namespace libime;
 void checkProfile(const ShuangpinProfile &profile, bool hasSemicolon) {
 
     for (const auto &p : profile.table()) {
-        if (p.second.size() >= 2) {
+        if (!p.second.empty()) {
             std::cout << p.first;
             for (const auto &py : p.second) {
                 std::cout << " " << py.first.toString() << " "
@@ -427,6 +427,80 @@ yan=en
     checkProfile(profile, true);
 }
 
+void checkAdvanceParsing2() {
+    std::string colemak = R"RAW_TEXT(
+[方案]
+方案名称=小鹤测试（Colemak 韵母原位）
+
+[零声母标识]
+=O*
+
+[声母]
+ch=I
+sh=U
+zh=V
+
+[韵母]
+a=A
+ai=S
+an=N
+ang=H
+ao=C
+e=F
+ei=W
+en=T
+eng=D
+er=R
+i=U
+ia=X
+ian=M
+iang=I
+iao=K
+ie=O
+in=B
+ing=E
+iong=R
+iu=Q
+o=Y
+ong=R
+ou=Z
+u=L
+ua=X
+uai=E
+uan=P
+uang=I
+ue=G
+ui=V
+un=J
+ve=G
+uo=Y
+)RAW_TEXT";
+    std::stringstream ss(colemak);
+    ShuangpinProfile profile(ss);
+    const auto &table = profile.table();
+    auto po = table.find("po");
+    FCITX_ASSERT(po != table.end() && po->second.size() == 1 &&
+                 po->second.begin()->first.toString() == "pie")
+        << *po;
+    auto ve = table.find("ve");
+    FCITX_ASSERT(ve != table.end() && ve->second.size() == 1 &&
+                 ve->second.begin()->first.toString() == "zhuai")
+        << *ve;
+    // ff -> e or f/h he
+    auto ff = table.find("ff");
+    FCITX_ASSERT(ff != table.end() &&
+                 ff->second.count(
+                     PinyinSyllable(PinyinInitial::Zero, PinyinFinal::E)) == 1)
+        << *ff;
+    // ft -> en
+    auto ft = table.find("ft");
+    FCITX_ASSERT(ft != table.end() &&
+                 ft->second.count(
+                     PinyinSyllable(PinyinInitial::Zero, PinyinFinal::EN)) == 1)
+        << *ft;
+    checkProfile(profile, false);
+}
+
 int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma), false);
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS), false);
@@ -455,6 +529,7 @@ int main() {
 
     checkSimpleParsing();
     checkAdvanceParsing();
+    checkAdvanceParsing2();
 
     return 0;
 }

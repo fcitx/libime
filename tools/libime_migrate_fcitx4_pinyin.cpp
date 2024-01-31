@@ -9,11 +9,9 @@
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
 #include "libime/pinyin/pinyindictionary.h"
-#include "libime/pinyin/pinyinencoder.h"
 #include <array>
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
-#include <fcitx-utils/cutf8.h>
 #include <fcitx-utils/standardpath.h>
 #include <fcntl.h>
 #include <iostream>

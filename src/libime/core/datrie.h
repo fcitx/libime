@@ -25,9 +25,6 @@ template <typename V, bool ORDERED = true, int MAX_TRIAL = 1>
 class DATriePrivate;
 
 template <typename T>
-class DATrie;
-
-template <typename T>
 struct NaN {
     static constexpr auto N1 = -1;
     static constexpr auto N2 = -2;

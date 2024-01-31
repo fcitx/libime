@@ -13,9 +13,7 @@
 #include "libime/pinyin/pinyinime.h"
 #include "testdir.h"
 #include <array>
-#include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/log.h>
-#include <fcitx-utils/stringutils.h>
 #include <sstream>
 
 using namespace libime;

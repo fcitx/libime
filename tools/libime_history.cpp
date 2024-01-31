@@ -6,7 +6,6 @@
 
 #include "libime/core/historybigram.h"
 #include <fstream>
-#include <getopt.h>
 #include <iostream>
 
 void usage(const char *argv0) {

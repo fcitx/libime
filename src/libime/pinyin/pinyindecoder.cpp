@@ -5,7 +5,6 @@
  */
 
 #include "pinyindecoder_p.h"
-#include <cmath>
 
 namespace libime {
 

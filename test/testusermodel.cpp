@@ -9,7 +9,6 @@
 #include "libime/core/userlanguagemodel.h"
 #include "testdir.h"
 #include <cmath>
-#include <fcitx-utils/log.h>
 #include <fstream>
 #include <list>
 

@@ -17,7 +17,6 @@
 namespace libime {
 
 class HistoryBigramPrivate;
-class HistoryBigram;
 
 class LIBIMECORE_EXPORT HistoryBigram {
 public:

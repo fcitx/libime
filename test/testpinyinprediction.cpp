@@ -9,9 +9,7 @@
 #include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/pinyinprediction.h"
 #include "testdir.h"
-#include "testutils.h"
 #include <fcitx-utils/log.h>
-#include <sstream>
 
 using namespace libime;
 

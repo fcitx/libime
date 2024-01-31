@@ -8,9 +8,7 @@
 #include "pinyinencoder.h"
 #include "shuangpindata.h"
 #include <boost/algorithm/string.hpp>
-#include <exception>
 #include <fcitx-utils/charutils.h>
-#include <iostream>
 #include <set>
 #include <string_view>
 

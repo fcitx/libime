@@ -13,9 +13,7 @@
 #include "pinyinmatchstate.h"
 #include <algorithm>
 #include <fcitx-utils/charutils.h>
-#include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
-#include <iostream>
 #include <iterator>
 #include <unordered_set>
 

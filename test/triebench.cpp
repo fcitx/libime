@@ -70,7 +70,7 @@ int main() {
     tree.clear();
 
     FCITX_ASSERT(!tree.erase(map.begin()->first));
-    FCITX_ASSERT(tree.size() == 0);
+    FCITX_ASSERT(tree.empty());
     decltype(tree) trie2("trie_data");
     using std::swap;
     swap(tree, trie2);

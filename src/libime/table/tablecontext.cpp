@@ -521,7 +521,8 @@ void TableContext::update() {
         };
 
         auto &graph = d->graph_;
-        auto bos = &graph.start(), eos = &graph.end();
+        const SegmentGraphNode* bos = &graph.start();
+        const SegmentGraphNode* eos = &graph.end();
         constexpr float pinyinPenalty = -0.5;
         for (const auto &latticeNode : d->lattice_.nodes(eos)) {
             if (latticeNode.from() == bos && latticeNode.to() == eos) {
@@ -553,7 +554,7 @@ void TableContext::update() {
             }
             // Check the limit, or if there's no candidate.
             if (min - score < minDistance || candidates().empty()) {
-                insertCandidate(sentence);
+                insertCandidate(std::move(sentence));
             }
         }
         t1 = std::chrono::high_resolution_clock::now();

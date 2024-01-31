@@ -23,8 +23,8 @@ class LatticeNode;
 
 class SentenceResult {
 public:
-    typedef std::vector<const LatticeNode *> Sentence;
-    SentenceResult(Sentence sentence = {}, float score = 0.0f)
+    using Sentence = std::vector<const LatticeNode *>;
+    SentenceResult(Sentence sentence = {}, float score = 0.0F)
         : sentence_(std::move(sentence)), score_(score) {}
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_COPY_AND_MOVE(SentenceResult)
 
@@ -116,7 +116,7 @@ public:
         return result;
     }
 
-    SentenceResult toSentenceResult(float adjust = 0.0f) const {
+    SentenceResult toSentenceResult(float adjust = 0.0F) const {
         SentenceResult::Sentence result;
         const auto *pivot = this;
         // to skip bos
@@ -136,7 +136,7 @@ public:
 protected:
     SegmentGraphPath path_;
     float cost_;
-    float score_ = 0.0f;
+    float score_ = 0.0F;
     State state_;
     LatticeNode *prev_ = nullptr;
 };
@@ -144,7 +144,9 @@ protected:
 inline std::string SentenceResult::toString() const {
     return fcitx::stringutils::join(
         sentence_ | boost::adaptors::transformed(
-                        [](const auto &item) { return item->word(); }),
+                        [](const auto &item) -> const std::string & {
+                            return item->word();
+                        }),
         "");
 }
 
@@ -174,9 +176,9 @@ public:
     void clear();
     void discardNode(const std::unordered_set<const SegmentGraphNode *> &node);
 
-    typedef boost::any_range<LatticeNode, boost::bidirectional_traversal_tag,
-                             const LatticeNode &>
-        NodeRange;
+    using NodeRange =
+        boost::any_range<LatticeNode, boost::bidirectional_traversal_tag,
+                         const LatticeNode &>;
 
     NodeRange nodes(const SegmentGraphNode *node) const;
 

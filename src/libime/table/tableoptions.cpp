@@ -10,31 +10,29 @@ namespace libime {
 // mostly from table.desc, certain options are not related to libime
 class TableOptionsPrivate {
 public:
+    std::string languageCode_;
+    std::string autoSelectRegex_;
+    std::string noMatchAutoSelectRegex_;
+    std::set<uint32_t> endKey_;
     OrderPolicy orderPolicy_ = OrderPolicy::No;
     uint32_t noSortInputLength_ = 0;
-    uint32_t pinyinKey_ = '\0';
-    bool autoSelect_ = false;
+    uint32_t pinyinKey_ = 0;
+    uint32_t matchingKey_ = 0;
     int autoSelectLength_ = 0;
-    std::string autoSelectRegex_;
     int noMatchAutoSelectLength_ = 0;
-    std::string noMatchAutoSelectRegex_;
-    bool commitRawInput_ = false;
-    std::set<uint32_t> endKey_;
-    uint32_t matchingKey_ = false;
-    bool exactMatch_ = false;
 
-    bool learning_ = true;
     int autoPhraseLength_ = -1;
     int saveAutoPhraseAfter_ = -1;
     std::unordered_set<std::string> autoRuleSet_;
 
+    bool commitRawInput_ = false;
+    bool exactMatch_ = false;
+    bool learning_ = true;
+    bool autoSelect_ = false;
     // show hint for word.
     bool prompt_ = false;
     // use prompt table
     bool displayCustomPromptSymbol_ = false;
-
-    std::string languageCode_;
-
     bool sortByCodeLength_ = true;
 };
 

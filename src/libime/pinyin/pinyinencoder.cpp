@@ -154,8 +154,7 @@ SegmentGraph PinyinEncoder::parseUserPinyin(std::string userPinyin,
     }
 
     for (const auto fuzzyFlags : flagsToTry) {
-        std::priority_queue<size_t, std::vector<size_t>, std::greater<>>
-            q;
+        std::priority_queue<size_t, std::vector<size_t>, std::greater<>> q;
         q.push(0);
         while (!q.empty()) {
             size_t top;

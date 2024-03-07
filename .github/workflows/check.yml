@@ -34,7 +34,6 @@ jobs:
           repository: fcitx/fcitx5
           path: fcitx5
       - name: Cache data files
-        id: cache data
         uses: actions/cache@v4
         with:
           path: 'fcitx5/**/*.tar.*'
@@ -56,7 +55,6 @@ jobs:
         with:
           path: libime
       - name: Cache data files
-        id: cache data
         uses: actions/cache@v4
         with:
           path: 'libime/**/*.tar.*'

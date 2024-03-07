@@ -33,11 +33,11 @@ jobs:
         with:
           repository: fcitx/fcitx5
           path: fcitx5
-      - name: Cache data files
+      - name: Cache fcitx5 data files
         uses: actions/cache@v4
         with:
           path: 'fcitx5/**/*.tar.*'
-          key: ${{ runner.os }}-${{ hashFiles('fcitx5/src/module/spell/CMakeLists.txt') }}
+          key: ${{ runner.os }}-${{ hashFiles('fcitx5/src/modules/spell/CMakeLists.txt') }}
       - name: Build and Install fcitx5
         uses: fcitx/github-actions@cmake
         with:
@@ -55,7 +55,7 @@ jobs:
         with:
           path: libime
           submodules: true
-      - name: Cache data files
+      - name: Cache libime data files
         uses: actions/cache@v4
         with:
           path: 'libime/**/*.tar.*'

@@ -15,7 +15,6 @@
 #include <fcitx-utils/charutils.h>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
-#include <iostream>
 #include <iterator>
 #include <unordered_set>
 
@@ -50,6 +49,25 @@ public:
     mutable std::unordered_set<std::string> candidatesToCursorSet_;
     std::vector<fcitx::ScopedConnection> conn_;
 
+    size_t alignCursorToNextSegment() const {
+        FCITX_Q();
+        auto currentCursor = q->cursor();
+        while (segs_.nodes(currentCursor).empty() &&
+               currentCursor < q->size()) {
+            currentCursor += 1;
+        }
+        return currentCursor;
+    }
+
+    bool needCandidatesToCursor() const {
+        FCITX_Q();
+        if (q->cursor() == q->selectedLength()) {
+            return false;
+        }
+
+        return alignCursorToNextSegment() != q->size();
+    }
+
     void clearCandidates() {
         candidates_.clear();
         candidatesToCursor_.clear();
@@ -64,20 +82,31 @@ public:
             return;
         }
         candidatesToCursorNeedUpdate_ = false;
-        auto start = q->selectedLength();
-        auto currentCursor = q->cursor();
         candidatesToCursor_.clear();
         candidatesToCursorSet_.clear();
+
+        auto start = q->selectedLength();
+        auto currentCursor = alignCursorToNextSegment();
+        // Poke best sentence from lattice, ignore nbest option for now.
+        auto nodeRange = lattice_.nodes(&segs_.node(currentCursor));
+        if (!nodeRange.empty()) {
+            candidatesToCursor_.push_back(nodeRange.front().toSentenceResult());
+            candidatesToCursorSet_.insert(
+                candidatesToCursor_.back().toString());
+        }
         for (const auto &candidate : candidates_) {
             const auto &sentence = candidate.sentence();
-            if (sentence.size() <= 1) {
+            if (sentence.size() == 1) {
+                if (sentence.back()->to()->index() + start > currentCursor) {
+                    continue;
+                }
                 auto text = candidate.toString();
                 if (candidatesToCursorSet_.count(text)) {
                     continue;
                 }
                 candidatesToCursor_.push_back(candidate);
                 candidatesToCursorSet_.insert(std::move(text));
-            } else {
+            } else if (sentence.size() > 1) {
                 auto newSentence = sentence;
                 while (!newSentence.empty() &&
                        newSentence.back()->to()->index() + start >
@@ -300,7 +329,7 @@ const std::unordered_set<std::string> &PinyinContext::candidateSet() const {
 
 const std::vector<SentenceResult> &PinyinContext::candidatesToCursor() const {
     FCITX_D();
-    if (cursor() == selectedLength() || cursor() == size()) {
+    if (!d->needCandidatesToCursor()) {
         return d->candidates_;
     }
     d->updateCandidatesToCursor();
@@ -310,7 +339,7 @@ const std::vector<SentenceResult> &PinyinContext::candidatesToCursor() const {
 const std::unordered_set<std::string> &
 PinyinContext::candidatesToCursorSet() const {
     FCITX_D();
-    if (cursor() == selectedLength() || cursor() == size()) {
+    if (!d->needCandidatesToCursor()) {
         return d->candidatesSet_;
     }
     d->updateCandidatesToCursor();

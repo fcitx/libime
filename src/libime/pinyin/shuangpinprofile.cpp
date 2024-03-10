@@ -381,6 +381,11 @@ void ShuangpinProfile::buildShuangpinTable() {
 
     // Add non-existent 2 char pinyin to the map.
     for (const auto &p : getPinyinMapV2()) {
+        // Don't add "ng" as two char direct pinyin.
+        if (p.pinyin() == "ng") {
+            continue;
+        }
+
         if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
             (!d->spTable_.count(p.pinyin()) ||
              d->zeroS_.find('*') != std::string::npos)) {

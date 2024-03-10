@@ -82,6 +82,25 @@ void checkXiaoHe() {
         });
 }
 
+void checkZiranma() {
+    ShuangpinProfile profile(ShuangpinBuiltinProfile::Ziranma);
+    FCITX_ASSERT(profile.table().count("ng") == 1);
+    FCITX_ASSERT(profile.table().find("ng")->second.count(PinyinSyllable(
+                     PinyinInitial::N, libime::PinyinFinal::ENG)) == 1);
+    FCITX_ASSERT(profile.table().find("ng")->second.count(PinyinSyllable(
+                     PinyinInitial::Zero, libime::PinyinFinal::NG)) == 0);
+    PinyinEncoder::parseUserShuangpin("aiaaah", profile, PinyinFuzzyFlag::None)
+        .dfs([](const SegmentGraphBase &segs, const std::vector<size_t> &path) {
+            size_t s = 0;
+            for (auto e : path) {
+                std::cout << segs.segment(s, e) << " ";
+                s = e;
+            }
+            std::cout << std::endl;
+            return true;
+        });
+}
+
 void checkSegments(const libime::SegmentGraph &graph,
                    std::vector<std::vector<std::string>> segments) {
     graph.dfs([&segments](const SegmentGraphBase &segs,
@@ -513,6 +532,7 @@ int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Xiaohe), false);
     checkABC();
     checkXiaoHe();
+    checkZiranma();
 
     // wo jiu shi xiang ce shi yi xia
     checkSegments(PinyinEncoder::parseUserShuangpin(

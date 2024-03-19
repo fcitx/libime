@@ -11,7 +11,6 @@
 #include <cmath>
 #include <fcitx-utils/log.h>
 #include <fstream>
-#include <getopt.h>
 #include <iostream>
 #include <string>
 #include <unordered_map>

@@ -10,12 +10,10 @@
 #include "zstdfilter.h"
 #include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm.hpp>
 #include <cmath>
-#include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
 #include <iterator>
 #include <ostream>

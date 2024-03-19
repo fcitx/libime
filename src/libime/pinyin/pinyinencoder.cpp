@@ -9,11 +9,9 @@
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/bimap.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
 #include <boost/container/static_vector.hpp>
 #include <fcitx-utils/charutils.h>
 #include <queue>
-#include <sstream>
 #include <string_view>
 #include <tuple>
 #include <unordered_map>

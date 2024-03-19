@@ -18,7 +18,6 @@
 namespace libime {
 class PinyinIME;
 class PinyinContextPrivate;
-class LatticeNode;
 enum class PinyinPreeditMode;
 
 class LIBIMEPINYIN_EXPORT PinyinContext : public InputBuffer {

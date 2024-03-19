@@ -8,7 +8,6 @@
 #include "tableoptions.h"
 #include "tablerule.h"
 #include <boost/range/adaptor/filtered.hpp>
-#include <cmath>
 #include <fcitx-utils/utf8.h>
 
 namespace libime {

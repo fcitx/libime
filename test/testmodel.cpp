@@ -8,7 +8,6 @@
 #include "libime/core/lattice.h"
 #include "testdir.h"
 #include <cmath>
-#include <fcitx-utils/log.h>
 
 int main() {
     using namespace libime;

@@ -14,11 +14,7 @@
 #include <fcitx-utils/charutils.h>
 #include <iostream>
 #include <libime/core/utils.h>
-#include <limits>
-#include <sstream>
-#include <stdexcept>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace libime {

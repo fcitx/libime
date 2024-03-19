@@ -15,15 +15,11 @@
 #include "libime/pinyin/shuangpinprofile.h"
 #include "testdir.h"
 #include "testutils.h"
-#include <boost/algorithm/string.hpp>
 #include <boost/iostreams/device/null.hpp>
 #include <boost/iostreams/stream.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 #include <fcitx-utils/log.h>
-#include <fcitx-utils/stringutils.h>
 #include <fstream>
 #include <functional>
-#include <sstream>
 
 using namespace libime;
 

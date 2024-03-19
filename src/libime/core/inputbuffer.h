@@ -9,8 +9,6 @@
 #include "libimecore_export.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <fcitx-utils/inputbuffer.h>
-#include <fcitx-utils/macros.h>
-#include <memory>
 #include <string_view>
 
 namespace libime {

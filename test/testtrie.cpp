@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "libime/core/datrie.h"
-#include <cmath>
 #include <cstring>
 #include <fcitx-utils/log.h>
 

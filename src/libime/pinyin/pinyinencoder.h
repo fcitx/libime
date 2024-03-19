@@ -7,14 +7,11 @@
 #define _FCITX_LIBIME_PINYIN_PINYINENCODER_H_
 
 #include "libimepinyin_export.h"
-#include <cassert>
 #include <fcitx-utils/flags.h>
 #include <fcitx-utils/log.h>
-#include <functional>
 #include <libime/core/segmentgraph.h>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 namespace libime {

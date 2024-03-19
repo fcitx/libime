@@ -7,19 +7,16 @@
 #define _FCITX_LIBIME_CORE_DECODER_H_
 
 #include "libimecore_export.h"
-#include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <libime/core/dictionary.h>
 #include <libime/core/lattice.h>
 #include <libime/core/segmentgraph.h>
 #include <memory>
-#include <vector>
 
 namespace libime {
 
 class DecoderPrivate;
 class Dictionary;
-class LanguageModel;
 
 class LIBIMECORE_EXPORT Decoder {
     friend class DecoderPrivate;

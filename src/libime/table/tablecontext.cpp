@@ -5,7 +5,6 @@
  */
 #include "tablecontext.h"
 #include "constants.h"
-#include "libime/core/decoder.h"
 #include "libime/core/historybigram.h"
 #include "libime/core/segmentgraph.h"
 #include "libime/core/userlanguagemodel.h"
@@ -15,10 +14,7 @@
 #include "tabledecoder.h"
 #include "tableoptions.h"
 #include "tablerule.h"
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <chrono>
 #include <fcitx-utils/log.h>
-#include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
 #include <regex>
 

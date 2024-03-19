@@ -12,7 +12,6 @@
 #include <boost/multi_index_container.hpp>
 #include <libime/pinyin/pinyinencoder.h>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 

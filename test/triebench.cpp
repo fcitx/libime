@@ -5,8 +5,6 @@
  */
 #include "libime/core/datrie.h"
 #include <fcitx-utils/log.h>
-#include <fcntl.h>
-#include <fstream>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>

@@ -7,7 +7,6 @@
 #define _FCITX_LIBIME_PINYIN_PINYINDICTIONARY_H_
 
 #include "libimepinyin_export.h"
-#include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <libime/core/triedictionary.h>
 #include <libime/pinyin/pinyinencoder.h>
@@ -22,7 +21,6 @@ class PinyinDictionaryPrivate;
 typedef std::function<bool(std::string_view encodedPinyin,
                            std::string_view hanzi, float cost)>
     PinyinMatchCallback;
-class PinyinDictionary;
 
 using PinyinTrie = typename TrieDictionary::TrieType;
 

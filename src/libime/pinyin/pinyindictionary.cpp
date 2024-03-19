@@ -14,16 +14,12 @@
 #include "pinyinencoder.h"
 #include "pinyinmatchstate_p.h"
 #include <boost/algorithm/string.hpp>
-#include <boost/iostreams/filtering_streambuf.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/unordered_map.hpp>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <queue>
 #include <string>
 #include <string_view>
-#include <type_traits>
 
 namespace libime {
 

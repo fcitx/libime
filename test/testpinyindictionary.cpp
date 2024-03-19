@@ -7,7 +7,6 @@
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include "testdir.h"
-#include "testutils.h"
 #include <fcitx-utils/log.h>
 #include <sstream>
 

@@ -470,11 +470,15 @@ void PinyinContext::update() {
             float max = -std::numeric_limits<float>::max();
             auto distancePenalty = d->ime_->model()->unknownPenalty() /
                                    PINYIN_DISTANCE_PENALTY_FACTOR;
+            // Pull the phrase from lattice, this part is the word that's in the
+            // dict.
             for (const auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
                 auto adjust = static_cast<float>(distance) * distancePenalty;
                 for (const auto &latticeNode : d->lattice_.nodes(&graphNode)) {
-                    if (latticeNode.from() == bos) {
+                    if (latticeNode.from() == bos &&
+                        !static_cast<const PinyinLatticeNode &>(latticeNode)
+                             .isCorrection()) {
                         if (!d->ime_->model()->isNodeUnknown(latticeNode)) {
                             if (latticeNode.score() < min) {
                                 min = latticeNode.score();
@@ -492,13 +496,42 @@ void PinyinContext::update() {
                     }
                 }
             }
+
+            // Filter correction word based on score
+            for (const auto &graphNode : graph.nodes(i)) {
+                auto distance = graph.distanceToEnd(graphNode);
+                auto adjust = static_cast<float>(distance) * distancePenalty;
+                for (const auto &latticeNode : d->lattice_.nodes(&graphNode)) {
+                    if (latticeNode.from() == bos &&
+                        static_cast<const PinyinLatticeNode &>(latticeNode)
+                            .isCorrection()) {
+                        if (d->candidatesSet_.count(latticeNode.word())) {
+                            continue;
+                        }
+                        if ((latticeNode.score() > min &&
+                             latticeNode.score() + d->ime_->maxDistance() >
+                                 max) ||
+                            static_cast<const PinyinLatticeNode &>(latticeNode)
+                                    .encodedPinyin()
+                                    .size() <= 2) {
+                            d->candidates_.push_back(
+                                latticeNode.toSentenceResult(adjust));
+                            d->candidatesSet_.insert(latticeNode.word());
+                        }
+                    }
+                }
+            }
+
+            // This part is the phrase that's constructable from lattice.
             for (const auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
                 auto adjust = static_cast<float>(distance) * distancePenalty;
                 for (const auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() != bos &&
                         latticeNode.score() > min &&
-                        latticeNode.score() + d->ime_->maxDistance() > max) {
+                        latticeNode.score() + d->ime_->maxDistance() > max &&
+                        !static_cast<const PinyinLatticeNode &>(latticeNode)
+                             .anyCorrectionOnPath()) {
                         auto fullWord = latticeNode.fullWord();
                         if (d->candidatesSet_.count(fullWord)) {
                             continue;

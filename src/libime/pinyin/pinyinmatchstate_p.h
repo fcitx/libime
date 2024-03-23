@@ -36,12 +36,13 @@ struct MatchedPinyinTrieNodes {
 // adjustment score.
 struct PinyinMatchResult {
     PinyinMatchResult(std::string_view s, float value,
-                      std::string_view encodedPinyin)
+                      std::string_view encodedPinyin, bool isCorrection)
         : word_(s, InvalidWordIndex), value_(value),
-          encodedPinyin_(encodedPinyin) {}
+          encodedPinyin_(encodedPinyin), isCorrection_(isCorrection) {}
     WordNode word_;
-    float value_;
+    float value_ = 0.0F;
     std::string encodedPinyin_;
+    bool isCorrection_ = false;
 };
 
 // class to store current SegmentGraphPath leads to this match and the match

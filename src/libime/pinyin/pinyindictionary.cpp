@@ -5,6 +5,7 @@
  */
 
 #include "pinyindictionary.h"
+#include "constants.h"
 #include "libime/core/datrie.h"
 #include "libime/core/lattice.h"
 #include "libime/core/lrucache.h"
@@ -23,14 +24,13 @@
 #include <queue>
 #include <string>
 #include <string_view>
-#include <type_traits>
 
 namespace libime {
 
 namespace {
 const float fuzzyCost = std::log10(0.5F);
 const size_t minimumLongWordLength = 3;
-const float invalidPinyinCost = -100.0f;
+const float invalidPinyinCost = -100.0F;
 const char pinyinHanziSep = '!';
 
 constexpr uint32_t pinyinBinaryFormatMagic = 0x000fc613;
@@ -194,7 +194,7 @@ size_t fuzzyFactor(PinyinFuzzyFlags flags) {
     size_t factor = 0;
     if (flags.test(PinyinFuzzyFlag::Correction)) {
         flags = flags.unset(PinyinFuzzyFlag::Correction);
-        factor += 4;
+        factor += PINYIN_CORRECTION_FUZZY_FACTOR;
     }
     if (flags != 0) {
         factor += 1;
@@ -354,8 +354,8 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
         float extraCost = fuzzies * fuzzyCost;
         if (matchLongWord) {
             path.trie()->foreach(
-                [&path, &callback, extraCost](PinyinTrie::value_type value,
-                                              size_t len, uint64_t pos) {
+                [&path, &callback, extraCost, fuzzies](
+                    PinyinTrie::value_type value, size_t len, uint64_t pos) {
                     std::string s;
                     s.reserve(len + path.size() * 2);
                     path.trie()->suffix(s, len + path.size() * 2, pos);
@@ -370,7 +370,8 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
                         float overLengthCost = fuzzyCost * lengthDiff;
 
                         callback(encodedPinyin, hanzi,
-                                 value + extraCost + overLengthCost);
+                                 value + extraCost + overLengthCost,
+                                 fuzzies >= PINYIN_CORRECTION_FUZZY_FACTOR);
                     }
                     return true;
                 },
@@ -383,15 +384,16 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
             }
 
             path.trie()->foreach(
-                [&path, &callback, extraCost](PinyinTrie::value_type value,
-                                              size_t len, uint64_t pos) {
+                [&path, &callback, extraCost, fuzzies](
+                    PinyinTrie::value_type value, size_t len, uint64_t pos) {
                     std::string s;
                     s.reserve(len + path.size() * 2 + 1);
                     path.trie()->suffix(s, len + path.size() * 2 + 1, pos);
                     std::string_view view(s);
                     auto encodedPinyin = view.substr(0, path.size() * 2);
                     auto hanzi = view.substr(path.size() * 2 + 1);
-                    callback(encodedPinyin, hanzi, value + extraCost);
+                    callback(encodedPinyin, hanzi, value + extraCost,
+                             fuzzies >= PINYIN_CORRECTION_FUZZY_FACTOR);
                     return true;
                 },
                 pos);
@@ -421,12 +423,12 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
     const bool matchLongWord =
         (path.path_.back() == &context.graph_.end() && matchLongWordEnabled);
 
-    auto foundOneWord = [&path, &prevNode, &matched,
-                         &context](std::string_view encodedPinyin,
-                                   WordNode &word, float cost) {
-        context.callback_(
-            path.path_, word, cost,
-            std::make_unique<PinyinLatticeNodePrivate>(encodedPinyin));
+    auto foundOneWord = [&path, &prevNode, &matched, &context](
+                            std::string_view encodedPinyin, WordNode &word,
+                            float cost, bool isCorrection) {
+        context.callback_(path.path_, word, cost,
+                          std::make_unique<PinyinLatticeNodePrivate>(
+                              encodedPinyin, isCorrection));
         if (path.size() == 1 &&
             path.path_[path.path_.size() - 2] == &prevNode) {
             matched = true;
@@ -445,8 +447,10 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
             auto &items = *result;
             matchWordsOnTrie(path, matchLongWordEnabled,
                              [&items](std::string_view encodedPinyin,
-                                      std::string_view hanzi, float cost) {
-                                 items.emplace_back(hanzi, cost, encodedPinyin);
+                                      std::string_view hanzi, float cost,
+                                      bool isCorrection) {
+                                 items.emplace_back(hanzi, cost, encodedPinyin,
+                                                    isCorrection);
                              });
         }
         for (auto &item : *result) {
@@ -454,14 +458,17 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
                 item.encodedPinyin_.size() / 2 > path.size()) {
                 continue;
             }
-            foundOneWord(item.encodedPinyin_, item.word_, item.value_);
+            foundOneWord(item.encodedPinyin_, item.word_, item.value_,
+                         item.isCorrection_);
         }
     } else {
         matchWordsOnTrie(path, matchLongWord,
                          [&foundOneWord](std::string_view encodedPinyin,
-                                         std::string_view hanzi, float cost) {
+                                         std::string_view hanzi, float cost,
+                                         bool isCorrection) {
                              WordNode word(hanzi, InvalidWordIndex);
-                             foundOneWord(encodedPinyin, word, cost);
+                             foundOneWord(encodedPinyin, word, cost,
+                                          isCorrection);
                          });
     }
 

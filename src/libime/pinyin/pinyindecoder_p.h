@@ -13,10 +13,11 @@ namespace libime {
 
 class PinyinLatticeNodePrivate : public LatticeNodeData {
 public:
-    PinyinLatticeNodePrivate(std::string_view encodedPinyin)
-        : encodedPinyin_(encodedPinyin) {}
+    PinyinLatticeNodePrivate(std::string_view encodedPinyin, bool isCorrection)
+        : encodedPinyin_(encodedPinyin), isCorrection_(isCorrection) {}
 
     std::string encodedPinyin_;
+    bool isCorrection_ = false;
 };
 } // namespace libime
 

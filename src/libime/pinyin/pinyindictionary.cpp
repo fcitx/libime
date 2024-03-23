@@ -351,10 +351,14 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
         uint64_t pos;
         size_t fuzzies;
         std::tie(pos, fuzzies) = pr;
-        float extraCost = fuzzies * fuzzyCost;
+        const float extraCost = fuzzies * fuzzyCost;
+        // This is an inaccuration estimation, since fuzzies may contain real
+        // fuzzy pinyin. But since this value is 10, it is a good estimate.
+        // After all 10 fuzzies in a word is kinda impossible.
+        const bool isCorrection = fuzzies >= PINYIN_CORRECTION_FUZZY_FACTOR;
         if (matchLongWord) {
             path.trie()->foreach(
-                [&path, &callback, extraCost, fuzzies](
+                [&path, &callback, extraCost, isCorrection](
                     PinyinTrie::value_type value, size_t len, uint64_t pos) {
                     std::string s;
                     s.reserve(len + path.size() * 2);
@@ -371,7 +375,7 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
 
                         callback(encodedPinyin, hanzi,
                                  value + extraCost + overLengthCost,
-                                 fuzzies >= PINYIN_CORRECTION_FUZZY_FACTOR);
+                                 isCorrection);
                     }
                     return true;
                 },
@@ -384,7 +388,7 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
             }
 
             path.trie()->foreach(
-                [&path, &callback, extraCost, fuzzies](
+                [&path, &callback, extraCost, isCorrection](
                     PinyinTrie::value_type value, size_t len, uint64_t pos) {
                     std::string s;
                     s.reserve(len + path.size() * 2 + 1);
@@ -393,7 +397,7 @@ void matchWordsOnTrie(const MatchedPinyinPath &path, bool matchLongWord,
                     auto encodedPinyin = view.substr(0, path.size() * 2);
                     auto hanzi = view.substr(path.size() * 2 + 1);
                     callback(encodedPinyin, hanzi, value + extraCost,
-                             fuzzies >= PINYIN_CORRECTION_FUZZY_FACTOR);
+                             isCorrection);
                     return true;
                 },
                 pos);

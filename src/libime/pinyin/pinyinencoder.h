@@ -7,14 +7,11 @@
 #define _FCITX_LIBIME_PINYIN_PINYINENCODER_H_
 
 #include "libimepinyin_export.h"
-#include <cassert>
 #include <fcitx-utils/flags.h>
 #include <fcitx-utils/log.h>
-#include <functional>
 #include <libime/core/segmentgraph.h>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 namespace libime {
@@ -53,6 +50,12 @@ enum class PinyinFuzzyFlag {
      * @since 1.1.3
      */
     AdvancedTypo = 1 << 18,
+    /**
+     * Enable correction based on layout profile.
+     *
+     * @since 1.1.7
+     */
+    Correction = 1 << 19,
 };
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;

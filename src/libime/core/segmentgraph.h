@@ -258,6 +258,7 @@ public:
     }
 
     SegmentGraphNodeConstRange nodes(size_t idx) const override {
+        assert(idx < graph_.size());
         if (graph_[idx]) {
             return {graph_[idx].get(), graph_[idx].get() + 1};
         }
@@ -362,6 +363,7 @@ private:
     }
 
     SegmentGraphNodeRange mutableNodes(size_t idx) {
+        assert(idx < graph_.size());
         if (graph_[idx]) {
             return {graph_[idx].get(), graph_[idx].get() + 1};
         }

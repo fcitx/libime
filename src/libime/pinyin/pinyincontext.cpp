@@ -52,7 +52,11 @@ public:
     size_t alignCursorToNextSegment() const {
         FCITX_Q();
         auto currentCursor = q->cursor();
-        while (segs_.nodes(currentCursor).empty() &&
+        auto start = q->selectedLength();
+        if (currentCursor < start) {
+            return start;
+        }
+        while (segs_.nodes(currentCursor - start).empty() &&
                currentCursor < q->size()) {
             currentCursor += 1;
         }
@@ -88,7 +92,7 @@ public:
         auto start = q->selectedLength();
         auto currentCursor = alignCursorToNextSegment();
         // Poke best sentence from lattice, ignore nbest option for now.
-        auto nodeRange = lattice_.nodes(&segs_.node(currentCursor));
+        auto nodeRange = lattice_.nodes(&segs_.node(currentCursor - start));
         if (!nodeRange.empty()) {
             candidatesToCursor_.push_back(nodeRange.front().toSentenceResult());
             candidatesToCursorSet_.insert(

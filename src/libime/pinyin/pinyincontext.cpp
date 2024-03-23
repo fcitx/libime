@@ -435,8 +435,9 @@ void PinyinContext::update() {
             newGraph = PinyinEncoder::parseUserShuangpin(
                 userInput().substr(start), *spProfile, d->ime_->fuzzyFlags());
         } else {
-            newGraph = PinyinEncoder::parseUserPinyin(userInput().substr(start),
-                                                      d->ime_->fuzzyFlags());
+            newGraph = PinyinEncoder::parseUserPinyin(
+                userInput().substr(start), d->ime_->correctionProfile().get(),
+                d->ime_->fuzzyFlags());
         }
         d->segs_.merge(
             newGraph,

@@ -141,7 +141,8 @@ struct SegmentGraphNodeGreater {
 const SegmentGraphNode *prevIsSeparator(const SegmentGraph &graph,
                                         const SegmentGraphNode &node) {
     if (node.prevSize() == 1) {
-        const auto &prev = node.prevs().front();
+        const auto range = node.prevs();
+        const auto &prev = range.front();
         auto pinyin = graph.segment(prev, node);
         if (boost::starts_with(pinyin, "\'")) {
             return &prev;
@@ -189,6 +190,18 @@ inline void searchOneStep(
     nodes.splice(nodes.end(), std::move(extraNodes));
 }
 
+size_t fuzzyFactor(PinyinFuzzyFlags flags) {
+    size_t factor = 0;
+    if (flags.test(PinyinFuzzyFlag::Correction)) {
+        flags = flags.unset(PinyinFuzzyFlag::Correction);
+        factor += 4;
+    }
+    if (flags != 0) {
+        factor += 1;
+    }
+    return factor;
+}
+
 } // namespace
 
 class PinyinMatchContext {
@@ -203,6 +216,7 @@ public:
           matchCacheMap_(&matchState->d_func()->matchCacheMap_),
           flags_(matchState->fuzzyFlags()),
           spProfile_(matchState->shuangpinProfile()),
+          correctionProfile_(matchState->correctionProfile()),
           partialLongWordLimit_(matchState->partialLongWordLimit()) {}
 
     explicit PinyinMatchContext(
@@ -225,6 +239,7 @@ public:
     PinyinMatchResultCache *matchCacheMap_ = nullptr;
     PinyinFuzzyFlags flags_{PinyinFuzzyFlag::None};
     std::shared_ptr<const ShuangpinProfile> spProfile_;
+    std::shared_ptr<const PinyinCorrectionProfile> correctionProfile_;
     size_t partialLongWordLimit_ = 0;
 };
 
@@ -285,9 +300,9 @@ void PinyinDictionaryPrivate::addEmptyMatch(
     }
 }
 
-PinyinTriePositions
-traverseAlongPathOneStepBySyllables(const MatchedPinyinPath &path,
-                                    const MatchedPinyinSyllables &syls) {
+PinyinTriePositions traverseAlongPathOneStepBySyllables(
+    const MatchedPinyinPath &path,
+    const MatchedPinyinSyllablesWithFuzzyFlags &syls) {
     PinyinTriePositions positions;
     for (const auto &pr : path.triePositions()) {
         uint64_t _pos;
@@ -303,24 +318,25 @@ traverseAlongPathOneStepBySyllables(const MatchedPinyinPath &path,
             }
             const auto &finals = syl.second;
 
-            auto updateNext = [fuzzies, &path, &positions](auto finalPair,
+            auto updateNext = [fuzzies, &path, &positions](PinyinFinal pyFinal,
+                                                           size_t fuzzyFactor,
                                                            auto pos) {
-                auto final = static_cast<char>(finalPair.first);
+                auto final = static_cast<char>(pyFinal);
                 auto result = path.trie()->traverse(&final, 1, pos);
 
                 if (!PinyinTrie::isNoPath(result)) {
-                    size_t newFuzzies = fuzzies + (finalPair.second ? 1 : 0);
+                    size_t newFuzzies = fuzzies + fuzzyFactor;
                     positions.emplace_back(pos, newFuzzies);
                 }
             };
             if (finals.size() > 1 || finals[0].first != PinyinFinal::Invalid) {
                 for (auto final : finals) {
-                    updateNext(final, pos);
+                    updateNext(final.first, fuzzyFactor(final.second), pos);
                 }
             } else if (!path.flags_.test(PinyinDictFlag::FullMatch)) {
                 for (char test = PinyinEncoder::firstFinal;
                      test <= PinyinEncoder::lastFinal; test++) {
-                    updateNext(std::make_pair(test, true), pos);
+                    updateNext(static_cast<PinyinFinal>(test), 1, pos);
                 }
             }
         }
@@ -491,9 +507,10 @@ void PinyinDictionaryPrivate::findMatchesBetween(
 
     const auto syls =
         context.spProfile_
-            ? PinyinEncoder::shuangpinToSyllables(pinyin, *context.spProfile_,
-                                                  context.flags_)
-            : PinyinEncoder::stringToSyllables(pinyin, context.flags_);
+            ? PinyinEncoder::shuangpinToSyllablesWithFuzzyFlags(
+                  pinyin, *context.spProfile_, context.flags_)
+            : PinyinEncoder::stringToSyllablesWithFuzzyFlags(
+                  pinyin, context.correctionProfile_.get(), context.flags_);
     const MatchedPinyinPaths &prevMatchedPaths = matchedPathsMap[&prevNode];
     MatchedPinyinPaths newPaths;
     for (const auto &path : prevMatchedPaths) {

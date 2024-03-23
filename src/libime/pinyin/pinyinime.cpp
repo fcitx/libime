@@ -5,6 +5,8 @@
  */
 #include "pinyinime.h"
 #include "libime/core/userlanguagemodel.h"
+#include "libime/pinyin/pinyincorrectionprofile.h"
+#include "libime/pinyin/pinyinencoder.h"
 #include "pinyindecoder.h"
 
 namespace libime {
@@ -25,6 +27,7 @@ public:
     std::unique_ptr<UserLanguageModel> model_;
     std::unique_ptr<PinyinDecoder> decoder_;
     std::shared_ptr<const ShuangpinProfile> spProfile_;
+    std::shared_ptr<const PinyinCorrectionProfile> correctionProfile_;
     size_t nbest_ = 1;
     size_t beamSize_ = Decoder::beamSizeDefault;
     size_t frameSize_ = Decoder::frameSizeDefault;
@@ -174,4 +177,20 @@ std::shared_ptr<const ShuangpinProfile> PinyinIME::shuangpinProfile() const {
     FCITX_D();
     return d->spProfile_;
 }
+
+void PinyinIME::setCorrectionProfile(
+    std::shared_ptr<const PinyinCorrectionProfile> profile) {
+    FCITX_D();
+    if (d->correctionProfile_ != profile) {
+        d->correctionProfile_ = std::move(profile);
+        emit<PinyinIME::optionChanged>();
+    }
+}
+
+std::shared_ptr<const PinyinCorrectionProfile>
+PinyinIME::correctionProfile() const {
+    FCITX_D();
+    return d->correctionProfile_;
+}
+
 } // namespace libime

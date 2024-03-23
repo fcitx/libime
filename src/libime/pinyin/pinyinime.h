@@ -9,6 +9,7 @@
 #include "libimepinyin_export.h"
 #include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
+#include <libime/pinyin/pinyincorrectionprofile.h>
 #include <libime/pinyin/pinyinencoder.h>
 #include <limits>
 #include <memory>
@@ -45,6 +46,10 @@ public:
     std::shared_ptr<const ShuangpinProfile> shuangpinProfile() const;
     void setPreeditMode(PinyinPreeditMode mode);
     PinyinPreeditMode preeditMode() const;
+
+    void setCorrectionProfile(
+        std::shared_ptr<const PinyinCorrectionProfile> profile);
+    std::shared_ptr<const PinyinCorrectionProfile> correctionProfile() const;
 
     float maxDistance() const;
     float minPath() const;

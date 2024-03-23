@@ -17,6 +17,7 @@
 namespace libime {
 
 class ShuangpinProfile;
+class PinyinCorrectionProfile;
 
 enum class PinyinFuzzyFlag {
     None = 0,
@@ -203,13 +204,23 @@ LIBIMEPINYIN_EXPORT
 fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
                                      PinyinSyllable syl);
 
-using MatchedPinyinSyllables = std::vector<
-    std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, bool>>>>;
+template <typename FuzzyValue>
+using FuzzyPinyinSyllables = std::vector<
+    std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, FuzzyValue>>>>;
+
+using MatchedPinyinSyllables = FuzzyPinyinSyllables<bool>;
+
+using MatchedPinyinSyllablesWithFuzzyFlags =
+    FuzzyPinyinSyllables<PinyinFuzzyFlags>;
 
 class LIBIMEPINYIN_EXPORT PinyinEncoder {
 public:
     static SegmentGraph parseUserPinyin(std::string pinyin,
                                         PinyinFuzzyFlags flags);
+    static SegmentGraph parseUserPinyin(std::string pinyin,
+                                        const PinyinCorrectionProfile *profile,
+                                        PinyinFuzzyFlags flags);
+
     static SegmentGraph parseUserShuangpin(std::string pinyin,
                                            const ShuangpinProfile &sp,
                                            PinyinFuzzyFlags flags);
@@ -270,9 +281,19 @@ public:
 
     static MatchedPinyinSyllables stringToSyllables(std::string_view pinyin,
                                                     PinyinFuzzyFlags flags);
+
+    static MatchedPinyinSyllablesWithFuzzyFlags
+    stringToSyllablesWithFuzzyFlags(std::string_view pinyin,
+                                    const PinyinCorrectionProfile *profile,
+                                    PinyinFuzzyFlags flags);
+
     static MatchedPinyinSyllables
     shuangpinToSyllables(std::string_view pinyin, const ShuangpinProfile &sp,
                          PinyinFuzzyFlags flags);
+    static MatchedPinyinSyllablesWithFuzzyFlags
+    shuangpinToSyllablesWithFuzzyFlags(std::string_view pinyin,
+                                       const ShuangpinProfile &sp,
+                                       PinyinFuzzyFlags flags);
 
     static const char firstInitial = static_cast<char>(PinyinInitial::B);
     static const char lastInitial = static_cast<char>(PinyinInitial::Zero);

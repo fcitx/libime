@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include "libime/pinyin/pinyincorrectionprofile.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include <fcitx-utils/log.h>
 #include <string>
@@ -72,29 +73,56 @@ int main() {
     check("qi'e", PinyinFuzzyFlag::Inner, {"qi", "'", "e"});
     check("nng", PinyinFuzzyFlag::InnerShort, {"n", "ng"});
 
-    for (const auto &syl : PinyinEncoder::stringToSyllables(
-             "niagn",
-             PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
-                              PinyinFuzzyFlag::CommonTypo})) {
-        for (auto f : syl.second) {
-            FCITX_INFO() << PinyinSyllable(syl.first, f.first).toString();
-        }
-    }
-    for (const auto &syl : PinyinEncoder::stringToSyllables(
-             "n",
-             PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
-                              PinyinFuzzyFlag::CommonTypo})) {
-        for (auto f : syl.second) {
-            FCITX_INFO() << PinyinSyllable(syl.first, f.first).toString();
-        }
-    }
-    for (const auto &syl : PinyinEncoder::stringToSyllables(
-             "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
-                       PinyinFuzzyFlag::CommonTypo})) {
-        for (auto f : syl.second) {
-            FCITX_INFO() << PinyinSyllable(syl.first, f.first).toString();
-        }
-    }
+    FCITX_ASSERT(PinyinEncoder::stringToSyllables(
+                     "niagn", PinyinFuzzyFlags{PinyinFuzzyFlag::L_N,
+                                               PinyinFuzzyFlag::IAN_IANG,
+                                               PinyinFuzzyFlag::CommonTypo}) ==
+                 MatchedPinyinSyllables{
+                     {PinyinInitial::N,
+                      {{PinyinFinal::IANG, true}, {PinyinFinal::IAN, true}}},
+                     {PinyinInitial::L,
+                      {{PinyinFinal::IANG, true}, {PinyinFinal::IAN, true}}}});
+    FCITX_ASSERT(
+        PinyinEncoder::stringToSyllablesWithFuzzyFlags(
+            "niagn", nullptr,
+            PinyinFuzzyFlags{PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::IAN_IANG,
+                             PinyinFuzzyFlag::CommonTypo}) ==
+        MatchedPinyinSyllablesWithFuzzyFlags{
+            {PinyinInitial::N,
+             {{PinyinFinal::IANG,
+               PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo}},
+              {PinyinFinal::IAN,
+               PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo, PinyinFuzzyFlag::IAN_IANG}}}},
+            {PinyinInitial::L,
+             {{PinyinFinal::IANG,
+               PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo, PinyinFuzzyFlag::L_N}},
+              {PinyinFinal::IAN,
+               PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo, PinyinFuzzyFlag::IAN_IANG, PinyinFuzzyFlag::L_N}}}}});
+
+    FCITX_ASSERT(PinyinEncoder::stringToSyllables(
+                     "n", PinyinFuzzyFlags{PinyinFuzzyFlag::L_N,
+                                           PinyinFuzzyFlag::IAN_IANG,
+                                           PinyinFuzzyFlag::CommonTypo}) ==
+                 MatchedPinyinSyllables{
+                     {PinyinInitial::N, {{PinyinFinal::Invalid, false}}},
+                     {PinyinInitial::L, {{PinyinFinal::Invalid, true}}}});
+
+    FCITX_ASSERT(PinyinEncoder::stringToSyllables(
+                     "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
+                               PinyinFuzzyFlag::CommonTypo}) ==
+                 MatchedPinyinSyllables{
+                     {PinyinInitial::C, {{PinyinFinal::UAN, true}}},
+                     {PinyinInitial::CH,
+                      {{PinyinFinal::UAN, true}, {PinyinFinal::UANG, true}}}});
+
+    FCITX_ASSERT(PinyinEncoder::stringToSyllables(
+                     "e", PinyinFuzzyFlags{PinyinFuzzyFlag::PartialFinal}) ==
+                 MatchedPinyinSyllables{{PinyinInitial::Zero,
+                                         {{PinyinFinal::E, false},
+                                          {PinyinFinal::EI, true},
+                                          {PinyinFinal::EN, true},
+                                          {PinyinFinal::ENG, true},
+                                          {PinyinFinal::ER, true}}}});
 
     for (const auto &syl : PinyinEncoder::stringToSyllables(
              "e", PinyinFuzzyFlags{PinyinFuzzyFlag::PartialFinal})) {
@@ -203,5 +231,13 @@ int main() {
     check("zhunipingan", PinyinFuzzyFlag::Inner, {"zhu", "ni", "pin", "gan"});
     check("zhuna", PinyinFuzzyFlag::Inner, {"zhu", "na"});
     check("zhuna", PinyinFuzzyFlag::Inner, {"zhun", "a"});
+
+    {
+        PinyinCorrectionProfile profile(BuiltinPinyinCorrectionProfile::Qwerty);
+        auto graph = PinyinEncoder::parseUserPinyin(
+            "zhyi", &profile, PinyinFuzzyFlag::Correction);
+        dfs(graph, {"zhyi"});
+    }
+
     return 0;
 }

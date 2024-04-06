@@ -202,6 +202,66 @@ size_t fuzzyFactor(PinyinFuzzyFlags flags) {
     return factor;
 }
 
+PinyinDictionary::TrieType loadTextImpl(std::istream &in) {
+    PinyinDictionary::TrieType trie;
+
+    std::string buf;
+    auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
+    while (!in.eof()) {
+        if (!std::getline(in, buf)) {
+            break;
+        }
+
+        boost::trim_if(buf, isSpaceCheck);
+        std::vector<std::string> tokens;
+        boost::split(tokens, buf, isSpaceCheck);
+        if (tokens.size() == 3 || tokens.size() == 2) {
+            const std::string &hanzi = tokens[0];
+            std::string_view pinyin = tokens[1];
+            float prob = 0.0F;
+            if (tokens.size() == 3) {
+                prob = std::stof(tokens[2]);
+            }
+
+            try {
+                auto result = PinyinEncoder::encodeFullPinyinWithFlags(
+                    pinyin, PinyinFuzzyFlag::VE_UE);
+                result.push_back(pinyinHanziSep);
+                result.insert(result.end(), hanzi.begin(), hanzi.end());
+                trie.set(result.data(), result.size(), prob);
+            } catch (const std::invalid_argument &e) {
+                LIBIME_ERROR()
+                    << "Failed to parse line: " << buf << ", skipping.";
+            }
+        }
+    }
+    return trie;
+}
+
+PinyinDictionary::TrieType loadBinaryImpl(std::istream &in) {
+    PinyinDictionary::TrieType trie;
+    uint32_t magic = 0;
+    uint32_t version = 0;
+    throw_if_io_fail(unmarshall(in, magic));
+    if (magic != pinyinBinaryFormatMagic) {
+        throw std::invalid_argument("Invalid pinyin magic.");
+    }
+    throw_if_io_fail(unmarshall(in, version));
+    switch (version) {
+    case 0x1:
+        trie.load(in);
+        break;
+    case pinyinBinaryFormatVersion:
+        readZSTDCompressed(
+            in, [&trie](std::istream &compressIn) { trie.load(compressIn); });
+        break;
+    default:
+        throw std::invalid_argument("Invalid pinyin version.");
+        break;
+    }
+    return trie;
+}
+
 } // namespace
 
 class PinyinMatchContext {
@@ -747,77 +807,27 @@ void PinyinDictionary::load(size_t idx, const char *filename,
 
 void PinyinDictionary::load(size_t idx, std::istream &in,
                             PinyinDictFormat format) {
+    setTrie(idx, load(in, format));
+}
+
+PinyinDictionary::TrieType PinyinDictionary::load(std::istream &in,
+                                                  PinyinDictFormat format) {
     switch (format) {
     case PinyinDictFormat::Text:
-        loadText(idx, in);
-        break;
+        return loadTextImpl(in);
     case PinyinDictFormat::Binary:
-        loadBinary(idx, in);
-        break;
+        return loadBinaryImpl(in);
     default:
         throw std::invalid_argument("invalid format type");
     }
-    emit<PinyinDictionary::dictionaryChanged>(idx);
 }
 
 void PinyinDictionary::loadText(size_t idx, std::istream &in) {
-    DATrie<float> trie;
-
-    std::string buf;
-    auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
-    while (!in.eof()) {
-        if (!std::getline(in, buf)) {
-            break;
-        }
-
-        boost::trim_if(buf, isSpaceCheck);
-        std::vector<std::string> tokens;
-        boost::split(tokens, buf, isSpaceCheck);
-        if (tokens.size() == 3 || tokens.size() == 2) {
-            const std::string &hanzi = tokens[0];
-            std::string_view pinyin = tokens[1];
-            float prob = 0.0F;
-            if (tokens.size() == 3) {
-                prob = std::stof(tokens[2]);
-            }
-
-            try {
-                auto result = PinyinEncoder::encodeFullPinyinWithFlags(
-                    pinyin, PinyinFuzzyFlag::VE_UE);
-                result.push_back(pinyinHanziSep);
-                result.insert(result.end(), hanzi.begin(), hanzi.end());
-                trie.set(result.data(), result.size(), prob);
-            } catch (const std::invalid_argument &e) {
-                LIBIME_ERROR()
-                    << "Failed to parse line: " << buf << ", skipping.";
-            }
-        }
-    }
-    *mutableTrie(idx) = std::move(trie);
+    *mutableTrie(idx) = loadTextImpl(in);
 }
 
 void PinyinDictionary::loadBinary(size_t idx, std::istream &in) {
-    DATrie<float> trie;
-    uint32_t magic = 0;
-    uint32_t version = 0;
-    throw_if_io_fail(unmarshall(in, magic));
-    if (magic != pinyinBinaryFormatMagic) {
-        throw std::invalid_argument("Invalid pinyin magic.");
-    }
-    throw_if_io_fail(unmarshall(in, version));
-    switch (version) {
-    case 0x1:
-        trie.load(in);
-        break;
-    case pinyinBinaryFormatVersion:
-        readZSTDCompressed(
-            in, [&trie](std::istream &compressIn) { trie.load(compressIn); });
-        break;
-    default:
-        throw std::invalid_argument("Invalid pinyin version.");
-        break;
-    }
-    *mutableTrie(idx) = std::move(trie);
+    *mutableTrie(idx) = loadBinaryImpl(in);
 }
 
 void PinyinDictionary::save(size_t idx, const char *filename,

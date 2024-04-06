@@ -45,7 +45,19 @@ public:
     // Clear dictionary.
     void clear(size_t idx);
 
-    const DATrie<float> *trie(size_t idx) const;
+    const TrieType *trie(size_t idx) const;
+
+    /**
+     * Set trie from external source.
+     *
+     * There is no validation on the data within it, subclass may expect a
+     * certain way of organize the key and value.
+     *
+     * @param idx the index need to be within [0, dictSize())
+     * @param trie new trie.
+     * @since 1.1.7
+     */
+    void setTrie(size_t idx, TrieType trie);
 
     // Total number to dictionary.
     size_t dictSize() const;
@@ -54,7 +66,7 @@ public:
     FCITX_DECLARE_SIGNAL(TrieDictionary, dictSizeChanged, void(size_t));
 
 protected:
-    DATrie<float> *mutableTrie(size_t idx);
+    TrieType *mutableTrie(size_t idx);
     void addWord(size_t idx, std::string_view key, float cost = 0.0f);
     bool removeWord(size_t idx, std::string_view key);
 

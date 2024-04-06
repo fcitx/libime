@@ -91,13 +91,14 @@ int main() {
             {PinyinInitial::N,
              {{PinyinFinal::IANG,
                PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo}},
-              {PinyinFinal::IAN,
-               PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo, PinyinFuzzyFlag::IAN_IANG}}}},
+              {PinyinFinal::IAN, PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo,
+                                                  PinyinFuzzyFlag::IAN_IANG}}}},
             {PinyinInitial::L,
-             {{PinyinFinal::IANG,
-               PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo, PinyinFuzzyFlag::L_N}},
-              {PinyinFinal::IAN,
-               PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo, PinyinFuzzyFlag::IAN_IANG, PinyinFuzzyFlag::L_N}}}}});
+             {{PinyinFinal::IANG, PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo,
+                                                   PinyinFuzzyFlag::L_N}},
+              {PinyinFinal::IAN, PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo,
+                                                  PinyinFuzzyFlag::IAN_IANG,
+                                                  PinyinFuzzyFlag::L_N}}}}});
 
     FCITX_ASSERT(PinyinEncoder::stringToSyllables(
                      "n", PinyinFuzzyFlags{PinyinFuzzyFlag::L_N,

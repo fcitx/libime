@@ -10,6 +10,7 @@ set(LIBIME_PINYIN_HDRS
     pinyinprediction.h
     shuangpindata.h
     shuangpinprofile.h
+    pinyincorrectionprofile.h
     ${CMAKE_CURRENT_BINARY_DIR}/libimepinyin_export.h
     )
 
@@ -23,6 +24,7 @@ set(LIBIME_PINYIN_SRCS
     pinyinmatchstate.cpp
     shuangpinprofile.cpp
     pinyinprediction.cpp
+    pinyincorrectionprofile.cpp
     )
 
 ecm_setup_version(PROJECT

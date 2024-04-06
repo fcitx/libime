@@ -48,6 +48,29 @@ public:
     mutable std::unordered_set<std::string> candidatesToCursorSet_;
     std::vector<fcitx::ScopedConnection> conn_;
 
+    size_t alignCursorToNextSegment() const {
+        FCITX_Q();
+        auto currentCursor = q->cursor();
+        auto start = q->selectedLength();
+        if (currentCursor < start) {
+            return start;
+        }
+        while (segs_.nodes(currentCursor - start).empty() &&
+               currentCursor < q->size()) {
+            currentCursor += 1;
+        }
+        return currentCursor;
+    }
+
+    bool needCandidatesToCursor() const {
+        FCITX_Q();
+        if (q->cursor() == q->selectedLength()) {
+            return false;
+        }
+
+        return alignCursorToNextSegment() != q->size();
+    }
+
     void clearCandidates() {
         candidates_.clear();
         candidatesToCursor_.clear();
@@ -62,20 +85,31 @@ public:
             return;
         }
         candidatesToCursorNeedUpdate_ = false;
-        auto start = q->selectedLength();
-        auto currentCursor = q->cursor();
         candidatesToCursor_.clear();
         candidatesToCursorSet_.clear();
+
+        auto start = q->selectedLength();
+        auto currentCursor = alignCursorToNextSegment();
+        // Poke best sentence from lattice, ignore nbest option for now.
+        auto nodeRange = lattice_.nodes(&segs_.node(currentCursor - start));
+        if (!nodeRange.empty()) {
+            candidatesToCursor_.push_back(nodeRange.front().toSentenceResult());
+            candidatesToCursorSet_.insert(
+                candidatesToCursor_.back().toString());
+        }
         for (const auto &candidate : candidates_) {
             const auto &sentence = candidate.sentence();
-            if (sentence.size() <= 1) {
+            if (sentence.size() == 1) {
+                if (sentence.back()->to()->index() + start > currentCursor) {
+                    continue;
+                }
                 auto text = candidate.toString();
                 if (candidatesToCursorSet_.count(text)) {
                     continue;
                 }
                 candidatesToCursor_.push_back(candidate);
                 candidatesToCursorSet_.insert(std::move(text));
-            } else {
+            } else if (sentence.size() > 1) {
                 auto newSentence = sentence;
                 while (!newSentence.empty() &&
                        newSentence.back()->to()->index() + start >
@@ -298,7 +332,7 @@ const std::unordered_set<std::string> &PinyinContext::candidateSet() const {
 
 const std::vector<SentenceResult> &PinyinContext::candidatesToCursor() const {
     FCITX_D();
-    if (cursor() == selectedLength() || cursor() == size()) {
+    if (!d->needCandidatesToCursor()) {
         return d->candidates_;
     }
     d->updateCandidatesToCursor();
@@ -308,7 +342,7 @@ const std::vector<SentenceResult> &PinyinContext::candidatesToCursor() const {
 const std::unordered_set<std::string> &
 PinyinContext::candidatesToCursorSet() const {
     FCITX_D();
-    if (cursor() == selectedLength() || cursor() == size()) {
+    if (!d->needCandidatesToCursor()) {
         return d->candidatesSet_;
     }
     d->updateCandidatesToCursor();
@@ -404,8 +438,9 @@ void PinyinContext::update() {
             newGraph = PinyinEncoder::parseUserShuangpin(
                 userInput().substr(start), *spProfile, d->ime_->fuzzyFlags());
         } else {
-            newGraph = PinyinEncoder::parseUserPinyin(userInput().substr(start),
-                                                      d->ime_->fuzzyFlags());
+            newGraph = PinyinEncoder::parseUserPinyin(
+                userInput().substr(start), d->ime_->correctionProfile().get(),
+                d->ime_->fuzzyFlags());
         }
         d->segs_.merge(
             newGraph,
@@ -434,11 +469,15 @@ void PinyinContext::update() {
             float max = -std::numeric_limits<float>::max();
             auto distancePenalty = d->ime_->model()->unknownPenalty() /
                                    PINYIN_DISTANCE_PENALTY_FACTOR;
+            // Pull the phrase from lattice, this part is the word that's in the
+            // dict.
             for (const auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
                 auto adjust = static_cast<float>(distance) * distancePenalty;
                 for (const auto &latticeNode : d->lattice_.nodes(&graphNode)) {
-                    if (latticeNode.from() == bos) {
+                    if (latticeNode.from() == bos &&
+                        !static_cast<const PinyinLatticeNode &>(latticeNode)
+                             .isCorrection()) {
                         if (!d->ime_->model()->isNodeUnknown(latticeNode)) {
                             if (latticeNode.score() < min) {
                                 min = latticeNode.score();
@@ -456,13 +495,42 @@ void PinyinContext::update() {
                     }
                 }
             }
+
+            // Filter correction word based on score
+            for (const auto &graphNode : graph.nodes(i)) {
+                auto distance = graph.distanceToEnd(graphNode);
+                auto adjust = static_cast<float>(distance) * distancePenalty;
+                for (const auto &latticeNode : d->lattice_.nodes(&graphNode)) {
+                    if (latticeNode.from() == bos &&
+                        static_cast<const PinyinLatticeNode &>(latticeNode)
+                            .isCorrection()) {
+                        if (d->candidatesSet_.count(latticeNode.word())) {
+                            continue;
+                        }
+                        if ((latticeNode.score() > min &&
+                             latticeNode.score() + d->ime_->maxDistance() >
+                                 max) ||
+                            static_cast<const PinyinLatticeNode &>(latticeNode)
+                                    .encodedPinyin()
+                                    .size() <= 2) {
+                            d->candidates_.push_back(
+                                latticeNode.toSentenceResult(adjust));
+                            d->candidatesSet_.insert(latticeNode.word());
+                        }
+                    }
+                }
+            }
+
+            // This part is the phrase that's constructable from lattice.
             for (const auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
                 auto adjust = static_cast<float>(distance) * distancePenalty;
                 for (const auto &latticeNode : d->lattice_.nodes(&graphNode)) {
                     if (latticeNode.from() != bos &&
                         latticeNode.score() > min &&
-                        latticeNode.score() + d->ime_->maxDistance() > max) {
+                        latticeNode.score() + d->ime_->maxDistance() > max &&
+                        !static_cast<const PinyinLatticeNode &>(latticeNode)
+                             .anyCorrectionOnPath()) {
                         auto fullWord = latticeNode.fullWord();
                         if (d->candidatesSet_.count(fullWord)) {
                             continue;

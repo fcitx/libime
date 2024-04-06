@@ -310,7 +310,7 @@ void loadSource(
     }
 }
 
-int migrate(const MigrationWithBaseOption& option) {
+int migrate(const MigrationWithBaseOption &option) {
     UnixFD baseFd;
     if (option.baseFile.empty()) {
         if (!option.useXdgPath) {
@@ -470,8 +470,8 @@ int migrate(const MigrationWithBaseOption& option) {
     std::cout << "Found " << mergedWord << " new words." << std::endl;
     if (!option.skipDict) {
         if (!StandardPath::global().safeSave(
-                StandardPath::Type::PkgData,
-                option.pathForSave(dictFile), [&tableDict](int fd) {
+                StandardPath::Type::PkgData, option.pathForSave(dictFile),
+                [&tableDict](int fd) {
                     boost::iostreams::stream_buffer<
                         boost::iostreams::file_descriptor_sink>
                         buffer(fd, boost::iostreams::file_descriptor_flags::
@@ -487,8 +487,8 @@ int migrate(const MigrationWithBaseOption& option) {
 
     if (!option.skipHistory) {
         if (!StandardPath::global().safeSave(
-                StandardPath::Type::PkgData,
-                option.pathForSave(historyFile), [&history](int fd) {
+                StandardPath::Type::PkgData, option.pathForSave(historyFile),
+                [&history](int fd) {
                     boost::iostreams::stream_buffer<
                         boost::iostreams::file_descriptor_sink>
                         buffer(fd, boost::iostreams::file_descriptor_flags::
@@ -628,8 +628,8 @@ int migrate(const MigrationWithoutBaseOption &option) {
             return 1;
         }
         if (!StandardPath::global().safeSave(
-                StandardPath::Type::PkgData,
-                option.pathForSave(dictFile), [&tableDict](int fd) {
+                StandardPath::Type::PkgData, option.pathForSave(dictFile),
+                [&tableDict](int fd) {
                     boost::iostreams::stream_buffer<
                         boost::iostreams::file_descriptor_sink>
                         buffer(fd, boost::iostreams::file_descriptor_flags::
@@ -645,8 +645,8 @@ int migrate(const MigrationWithoutBaseOption &option) {
 
     if (!option.skipHistory) {
         if (!StandardPath::global().safeSave(
-                StandardPath::Type::PkgData,
-                option.pathForSave(historyFile), [&history](int fd) {
+                StandardPath::Type::PkgData, option.pathForSave(historyFile),
+                [&history](int fd) {
                     boost::iostreams::stream_buffer<
                         boost::iostreams::file_descriptor_sink>
                         buffer(fd, boost::iostreams::file_descriptor_flags::

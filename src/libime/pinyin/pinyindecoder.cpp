@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include "libime/pinyin/pinyindecoder.h"
 #include "pinyindecoder_p.h"
 
 namespace libime {
@@ -23,6 +24,24 @@ const std::string &PinyinLatticeNode::encodedPinyin() const {
         return empty;
     }
     return d_ptr->encodedPinyin_;
+}
+
+bool PinyinLatticeNode::isCorrection() const {
+    if (!d_ptr) {
+        return false;
+    }
+    return d_ptr->isCorrection_;
+}
+
+bool PinyinLatticeNode::anyCorrectionOnPath() const {
+    const auto *pivot = this;
+    while (pivot) {
+        if (pivot->isCorrection()) {
+            return true;
+        }
+        pivot = static_cast<PinyinLatticeNode *>(pivot->prev());
+    }
+    return false;
 }
 
 LatticeNode *PinyinDecoder::createLatticeNodeImpl(

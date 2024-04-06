@@ -166,5 +166,25 @@ int main() {
         FCITX_ASSERT(c.preedit(PinyinPreeditMode::RawText) == "xi ' an");
     }
 
+    {
+        c.clear();
+        c.type("nianglanghang");
+        size_t i = 0;
+        for (const auto &candidate : c.candidatesToCursor()) {
+            if (candidate.toString() == "娘") {
+                break;
+            }
+            i++;
+        }
+        FCITX_ASSERT(i < c.candidatesToCursor().size());
+        c.selectCandidatesToCursor(i);
+        i = c.size();
+        while (i > 0) {
+            --i;
+            c.setCursor(i);
+            c.candidatesToCursor();
+        }
+    }
+
     return 0;
 }

@@ -70,6 +70,16 @@ public:
 
     void setFlags(size_t idx, PinyinDictFlags flags);
 
+    /**
+     * Load text format into the Trie
+     *
+     * @param in input stream
+     * @param format dict format.
+     * @see TrieDictionary::setTrie
+     * @since 1.1.7
+     */
+    static TrieType load(std::istream &in, PinyinDictFormat format);
+
     using dictionaryChanged = TrieDictionary::dictionaryChanged;
 
 protected:

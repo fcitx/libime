@@ -8,6 +8,7 @@
 
 namespace libime {
 constexpr float PINYIN_DISTANCE_PENALTY_FACTOR = 1.8;
-}
+constexpr int PINYIN_CORRECTION_FUZZY_FACTOR = 10;
+} // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_CONSTANTS_H_

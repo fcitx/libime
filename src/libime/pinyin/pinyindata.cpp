@@ -5,8 +5,9 @@
  */
 
 #include "pinyindata.h"
-#include "libime/pinyin/pinyinencoder.h"
+#include "pinyinencoder.h"
 #include <boost/algorithm/string/predicate.hpp>
+#include <fcitx-utils/stringutils.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -989,10 +990,8 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
             } else if (boost::algorithm::ends_with(result, "ua")) {
                 result[result.size() - 2] = 'a';
                 result[result.size() - 1] = 'u';
-            } else if (boost::algorithm::ends_with(result, "uai")) {
-                result[result.size() - 3] = 'a';
-                result[result.size() - 2] = 'u';
-            } else if (boost::algorithm::ends_with(result, "uan")) {
+            } else if (boost::algorithm::ends_with(result, "uai") ||
+                       boost::algorithm::ends_with(result, "uan")) {
                 result[result.size() - 3] = 'a';
                 result[result.size() - 2] = 'u';
             } else if (boost::algorithm::ends_with(result, "van")) {
@@ -1026,8 +1025,8 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
             if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
                 break;
             }
-            for (const auto two : {"ai", "ia", "ei", "ie", "ao", "uo", "ou",
-                                   "iu", "an", "en", "in"}) {
+            for (const auto *const two : {"ai", "ia", "ei", "ie", "ao", "uo",
+                                          "ou", "iu", "an", "en", "in"}) {
                 if (boost::algorithm::ends_with(result, two)) {
                     std::swap(result[result.size() - 2],
                               result[result.size() - 1]);
@@ -1037,7 +1036,7 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
             if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
                 break;
             }
-            for (const auto three :
+            for (const auto *const three :
                  {"ang", "eng", "ing", "ong", "iao", "ian"}) {
                 if (boost::algorithm::ends_with(result, three)) {
                     std::swap(result[result.size() - 3],
@@ -1048,7 +1047,7 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
             if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
                 break;
             }
-            for (const auto four : {"iang", "iong"}) {
+            for (const auto *const four : {"iang", "iong"}) {
                 if (boost::algorithm::ends_with(result, four)) {
                     std::swap(result[result.size() - 4],
                               result[result.size() - 3]);
@@ -1207,7 +1206,7 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
 
 void applyFuzzy(PinyinMap &map, PinyinFuzzyFlag fz, int pass = 0) {
     std::vector<PinyinEntry> newEntries;
-    for (auto &entry : map) {
+    for (const auto &entry : map) {
         if (auto newEntry = applyFuzzy(entry, fz, pass)) {
             newEntries.push_back(*newEntry);
         }

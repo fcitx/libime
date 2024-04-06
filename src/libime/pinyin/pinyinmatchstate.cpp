@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include "libime/pinyin/pinyinencoder.h"
 #include "pinyincontext.h"
 #include "pinyinime.h"
 #include "pinyinmatchstate_p.h"
@@ -50,6 +51,15 @@ PinyinMatchState::shuangpinProfile() const {
     FCITX_D();
     if (d->context_->useShuangpin()) {
         return d->context_->ime()->shuangpinProfile();
+    }
+    return {};
+}
+
+std::shared_ptr<const PinyinCorrectionProfile>
+PinyinMatchState::correctionProfile() const {
+    FCITX_D();
+    if (d->context_->ime()->fuzzyFlags().test(PinyinFuzzyFlag::Correction)) {
+        return d->context_->ime()->correctionProfile();
     }
     return {};
 }

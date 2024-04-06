@@ -22,6 +22,8 @@ public:
     virtual ~PinyinLatticeNode();
 
     const std::string &encodedPinyin() const;
+    bool isCorrection() const;
+    bool anyCorrectionOnPath() const;
 
 private:
     std::unique_ptr<PinyinLatticeNodePrivate> d_ptr;

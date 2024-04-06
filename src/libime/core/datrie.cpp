@@ -90,8 +90,8 @@ public:
     static inline const int32_t CEDAR_NO_PATH = NanValue<V>::NO_PATH();
 
     static constexpr int MAX_ALLOC_SIZE = 1 << 16; // must be divisible by 256
-    using result_type = value_type ;
-    using uchar = uint8_t ;
+    using result_type = value_type;
+    using uchar = uint8_t;
     static_assert(sizeof(value_type) <= sizeof(int32_t),
                   "value size need to be same as int32_t");
     struct node {

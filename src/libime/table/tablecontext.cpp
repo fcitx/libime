@@ -521,8 +521,8 @@ void TableContext::update() {
         };
 
         auto &graph = d->graph_;
-        const SegmentGraphNode* bos = &graph.start();
-        const SegmentGraphNode* eos = &graph.end();
+        const SegmentGraphNode *bos = &graph.start();
+        const SegmentGraphNode *eos = &graph.end();
         constexpr float pinyinPenalty = -0.5;
         for (const auto &latticeNode : d->lattice_.nodes(eos)) {
             if (latticeNode.from() == bos && latticeNode.to() == eos) {

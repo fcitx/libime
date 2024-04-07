@@ -8,6 +8,7 @@
 #include "libime/pinyin/pinyindictionary.h"
 #include <fcitx-utils/log.h>
 #include <fstream>
+#include <unistd.h>
 #include <iostream>
 
 void usage(const char *argv0) {

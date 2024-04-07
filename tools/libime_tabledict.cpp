@@ -6,6 +6,7 @@
 
 #include "libime/table/tablebaseddictionary.h"
 #include <fstream>
+#include <unistd.h>
 #include <iostream>
 #include <optional>
 #include <string>

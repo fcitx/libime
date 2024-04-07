@@ -15,6 +15,7 @@
 #include <fcitx-utils/charutils.h>
 #include <fcitx-utils/standardpath.h>
 #include <fcntl.h>
+#include <sstream>
 
 #if __GNUC__ <= 8
 #include <boost/filesystem.hpp>

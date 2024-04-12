@@ -16,6 +16,8 @@
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/utf8.h>
 #include <iterator>
+#include <stdexcept>
+#include <string>
 #include <unordered_set>
 
 namespace libime {
@@ -144,6 +146,28 @@ public:
                 WordNode{p->word(), ime_->model()->index(p->word())},
                 static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
         }
+        // add some special code for handling separator at the end
+        auto remain = std::string_view(q->userInput()).substr(offset);
+        if (!remain.empty()) {
+            if (std::all_of(remain.begin(), remain.end(),
+                            [](char c) { return c == '\''; })) {
+                selection.emplace_back(q->size(), WordNode("", 0), "");
+            }
+        }
+
+        q->update();
+    }
+
+    void selectCustom(size_t inputLength, std::string_view segment) {
+        FCITX_Q();
+        auto offset = q->selectedLength();
+
+        selected_.emplace_back();
+
+        auto &selection = selected_.back();
+        selection.emplace_back(offset + inputLength,
+                               WordNode{segment, ime_->model()->index(segment)},
+                               "");
         // add some special code for handling separator at the end
         auto remain = std::string_view(q->userInput()).substr(offset);
         if (!remain.empty()) {
@@ -362,6 +386,14 @@ void PinyinContext::selectCandidatesToCursor(size_t idx) {
     const auto &candidates = this->candidatesToCursor();
     assert(idx < candidates.size());
     d->select(candidates[idx]);
+}
+
+void PinyinContext::selectCustom(size_t inputLength, std::string_view segment) {
+    FCITX_D();
+    if (inputLength == 0 && selectedLength() + inputLength > size()) {
+        throw std::out_of_range("Invalid input length");
+    }
+    d->selectCustom(inputLength, segment);
 }
 
 bool PinyinContext::cancelTill(size_t pos) {

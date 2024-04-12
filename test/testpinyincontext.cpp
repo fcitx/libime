@@ -188,5 +188,26 @@ int main() {
         }
     }
 
+    {
+        c.clear();
+        c.type("hellonihao");
+        c.selectCustom(5, "Hello");
+        size_t i = 0;
+        for (const auto &candidate : c.candidatesToCursor()) {
+            if (candidate.toString() == "你") {
+                break;
+            }
+            i++;
+        }
+        FCITX_ASSERT(i < c.candidatesToCursor().size());
+        c.selectCandidatesToCursor(i);
+
+        FCITX_ASSERT(!c.selected());
+        c.selectCustom(3, "What");
+
+        FCITX_ASSERT(c.selected());
+        FCITX_ASSERT(c.selectedSentence() == "Hello你What");
+    }
+
     return 0;
 }

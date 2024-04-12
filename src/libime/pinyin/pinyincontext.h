@@ -59,6 +59,17 @@ public:
     void cancel();
     bool cancelTill(size_t pos);
 
+    /**
+     * Create a custom selection
+     *
+     * This allows Engine to do make a custom selection that is not pinyin.
+     *
+     * @param inputLength the length of characters to match in the input
+     * @param segment segment
+     * @since 1.1.7
+     */
+    void selectCustom(size_t inputLength, std::string_view segment);
+
     /// Whether the input is fully selected.
     bool selected() const;
 

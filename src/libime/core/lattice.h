@@ -9,7 +9,6 @@
 #include "libimecore_export.h"
 #include <algorithm>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/adaptor/type_erased.hpp>
 #include <fcitx-utils/macros.h>
 #include <fcitx-utils/stringutils.h>
 #include <libime/core/languagemodel.h>
@@ -19,10 +18,7 @@
 
 namespace libime {
 
-class Decoder;
 class LatticePrivate;
-class SegmentGraphNode;
-class SegmentGraph;
 class LatticeNode;
 
 class SentenceResult {

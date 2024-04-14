@@ -7,10 +7,8 @@
 #include "libime/core/userlanguagemodel.h"
 #include "libime/table/tablebaseddictionary.h"
 #include "libime/table/tablecontext.h"
-#include "libime/table/tabledecoder.h"
 #include "libime/table/tableoptions.h"
 #include "testdir.h"
-#include "testutils.h"
 #include <fcitx-utils/log.h>
 
 using namespace libime;

@@ -7,7 +7,7 @@
 #include "libime/core/historybigram.h"
 #include <exception>
 #include <fstream>
-#include <getopt.h>
+#include <unistd.h>
 #include <iostream>
 
 void usage(const char *argv0) {

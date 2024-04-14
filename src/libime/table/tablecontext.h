@@ -10,10 +10,8 @@
 /// \brief Class provide input method support for table-based ones, like wubi.
 
 #include "libimetable_export.h"
-#include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <libime/core/inputbuffer.h>
-#include <libime/core/lattice.h>
 #include <libime/table/tablebaseddictionary.h>
 #include <string_view>
 #include <tuple>

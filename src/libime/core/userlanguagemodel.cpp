@@ -8,7 +8,6 @@
 #include "constants.h"
 #include "historybigram.h"
 #include "lm/model.hh"
-#include "utils.h"
 #include "utils_p.h"
 #include <cmath>
 

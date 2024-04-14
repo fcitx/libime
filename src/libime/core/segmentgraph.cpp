@@ -6,9 +6,7 @@
 
 #include "segmentgraph.h"
 #include "lattice_p.h"
-#include <boost/algorithm/string.hpp>
 #include <boost/range/combine.hpp>
-#include <iostream>
 #include <queue>
 
 namespace libime {

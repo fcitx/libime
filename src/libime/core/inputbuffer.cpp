@@ -4,12 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "inputbuffer.h"
-#include <boost/iterator/function_input_iterator.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <exception>
 #include <fcitx-utils/utf8.h>
-#include <numeric>
-#include <vector>
 
 namespace libime {
 

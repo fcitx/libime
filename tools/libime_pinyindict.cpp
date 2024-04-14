@@ -6,10 +6,9 @@
 
 #include "libime/core/utils.h"
 #include "libime/pinyin/pinyindictionary.h"
-#include "libime/pinyin/pinyinencoder.h"
 #include <fcitx-utils/log.h>
 #include <fstream>
-#include <getopt.h>
+#include <unistd.h>
 #include <iostream>
 
 void usage(const char *argv0) {

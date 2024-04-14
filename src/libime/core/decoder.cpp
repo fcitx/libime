@@ -5,14 +5,12 @@
  */
 
 #include "decoder.h"
-#include "datrie.h"
 #include "languagemodel.h"
 #include "lattice_p.h"
 #include "utils.h"
 #include <boost/functional/hash.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptor/sliced.hpp>
-#include <chrono>
 #include <limits>
 #include <memory>
 #include <queue>

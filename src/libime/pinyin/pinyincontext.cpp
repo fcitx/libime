@@ -13,6 +13,7 @@
 #include "pinyinmatchstate.h"
 #include <algorithm>
 #include <fcitx-utils/charutils.h>
+#include <fcitx-utils/keysym.h>
 #include <fcitx-utils/utf8.h>
 #include <iterator>
 #include <stdexcept>
@@ -22,6 +23,12 @@
 #include <utility>
 
 namespace libime {
+
+enum class LearnWordResult {
+    Normal,
+    Custom,
+    Ignored,
+};
 
 struct SelectedPinyin {
     SelectedPinyin(size_t s, WordNode word, std::string encodedPinyin,
@@ -182,6 +189,65 @@ public:
                                    WordNode{segment, index},
                                    std::string(encodedPinyin), true);
         });
+    }
+
+    LearnWordResult learnWord() {
+        std::string ss;
+        std::string pinyin;
+        if (selected_.empty()) {
+            return LearnWordResult::Ignored;
+        }
+        // don't learn existing word.
+        if (selected_.size() == 1 && selected_[0].size() == 1) {
+            return LearnWordResult::Ignored;
+        }
+        bool hasCustom = false;
+        for (auto &s : selected_) {
+            for (auto &item : s) {
+                if (item.custom_) {
+                    hasCustom = true;
+                    break;
+                }
+            }
+            if (hasCustom) {
+                break;
+            }
+        }
+        for (auto &s : selected_) {
+            bool first = true;
+            for (auto &item : s) {
+                if (!item.word_.word().empty()) {
+                    // We can't learn non pinyin word.
+                    if (item.encodedPinyin_.empty()) {
+                        return LearnWordResult::Ignored;
+                    }
+                    if (item.encodedPinyin_.size() != 2 && !hasCustom) {
+                        return LearnWordResult::Ignored;
+                    }
+                    if (first) {
+                        first = false;
+                        ss += item.word_.word();
+                        if (!pinyin.empty()) {
+                            pinyin.push_back('\'');
+                        }
+                        pinyin += PinyinEncoder::decodeFullPinyin(
+                            item.encodedPinyin_);
+                    } else {
+                        return LearnWordResult::Ignored;
+                    }
+                }
+            }
+        }
+
+        if (auto opt = ime_->dict()->lookupWord(PinyinDictionary::UserDict,
+                                                pinyin, ss)) {
+            return LearnWordResult::Normal;
+        }
+
+        ime_->dict()->addWord(PinyinDictionary::UserDict, pinyin, ss,
+                              hasCustom ? -1 : 0);
+
+        return hasCustom ? LearnWordResult::Custom : LearnWordResult::Normal;
     }
 };
 
@@ -848,9 +914,12 @@ void PinyinContext::learn() {
         return;
     }
 
-    if (learnWord()) {
-        std::vector<std::string> newSentence{sentence()};
-        d->ime_->model()->history().add(newSentence);
+    if (auto result = d->learnWord(); result != LearnWordResult::Ignored) {
+        // Do not insert custom to history for the first time.
+        if (result == LearnWordResult::Normal) {
+            std::vector<std::string> newSentence{sentence()};
+            d->ime_->model()->history().add(newSentence);
+        }
     } else {
         std::vector<std::string> newSentence;
         for (auto &s : d->selected_) {
@@ -868,59 +937,7 @@ void PinyinContext::learn() {
     }
 }
 
-bool PinyinContext::learnWord() {
-    FCITX_D();
-    std::string ss;
-    std::string pinyin;
-    if (d->selected_.empty()) {
-        return false;
-    }
-    // don't learn existing word.
-    if (d->selected_.size() == 1 && d->selected_[0].size() == 1) {
-        return false;
-    }
-    bool hasCustom = false;
-    for (auto &s : d->selected_) {
-        for (auto &item : s) {
-            if (item.custom_) {
-                hasCustom = true;
-                break;
-            }
-        }
-        if (hasCustom) {
-            break;
-        }
-    }
-    for (auto &s : d->selected_) {
-        bool first = true;
-        for (auto &item : s) {
-            if (!item.word_.word().empty()) {
-                // We can't learn non pinyin word.
-                if (item.encodedPinyin_.empty()) {
-                    return false;
-                }
-                if (item.encodedPinyin_.size() != 2 && !hasCustom) {
-                    return false;
-                }
-                if (first) {
-                    first = false;
-                    ss += item.word_.word();
-                    if (!pinyin.empty()) {
-                        pinyin.push_back('\'');
-                    }
-                    pinyin +=
-                        PinyinEncoder::decodeFullPinyin(item.encodedPinyin_);
-                } else {
-                    return false;
-                }
-            }
-        }
-    }
-
-    d->ime_->dict()->addWord(PinyinDictionary::UserDict, pinyin, ss);
-
-    return true;
-}
+bool PinyinContext::learnWord() { return false; }
 
 PinyinIME *PinyinContext::ime() const {
     FCITX_D();

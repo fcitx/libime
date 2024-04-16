@@ -67,6 +67,8 @@ public:
                  std::string_view hanzi, float cost = 0.0f);
     bool removeWord(size_t idx, std::string_view fullPinyin,
                     std::string_view hanzi);
+    std::optional<float> lookupWord(size_t idx, std::string_view fullPinyin,
+                                    std::string_view hanzi) const;
 
     void setFlags(size_t idx, PinyinDictFlags flags);
 

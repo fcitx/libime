@@ -25,11 +25,11 @@ add_custom_target(lm-predict ALL DEPENDS "${LM_PREDICT_OUTPUT}")
 install(FILES "${LM_OUTPUT}" RENAME zh_CN.lm DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
 install(FILES "${LM_PREDICT_OUTPUT}" RENAME zh_CN.lm.predict DESTINATION "${LIBIME_INSTALL_LIBDATADIR}")
 
-set(DICT_TAR "dict-20230412.tar.xz")
+set(DICT_TAR "dict-20240416.tar.zst")
 set(DICT_URL "https://download.fcitx-im.org/data/${DICT_TAR}")
 
 fcitx5_download(dict-download ${DICT_URL} ${DICT_TAR}
-               f05fccaff9687900aac3d9ad5a81b20888b573201403fbcd9bbc7907d9e97507)
+               adeb7d17af003a2ee2c87ca4ae17ac7eb90b3202decc4b5388b56c17ec36dc43)
 fcitx5_extract(dict-extract ${DICT_TAR} DEPENDS dict-download
                OUTPUT dict_sc.txt dict_extb.txt)
 

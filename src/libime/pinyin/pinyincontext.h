@@ -65,9 +65,11 @@ public:
      *
      * @param inputLength the length of characters to match in the input
      * @param segment segment
+     * @param encodedPinyin whether this segment has a pinyin
      * @since 1.1.7
      */
-    void selectCustom(size_t inputLength, std::string_view segment);
+    void selectCustom(size_t inputLength, std::string_view segment,
+                      std::string_view encodedPinyin = "");
 
     /// Whether the input is fully selected.
     bool selected() const;

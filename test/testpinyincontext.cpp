@@ -10,11 +10,13 @@
 #include "libime/pinyin/pinyincontext.h"
 #include "libime/pinyin/pinyindecoder.h"
 #include "libime/pinyin/pinyindictionary.h"
+#include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/pinyinime.h"
 #include "testdir.h"
 #include <array>
 #include <fcitx-utils/log.h>
 #include <sstream>
+#include <string_view>
 
 using namespace libime;
 
@@ -205,6 +207,30 @@ int main() {
 
         FCITX_ASSERT(c.selected());
         FCITX_ASSERT(c.selectedSentence() == "Hello你What");
+
+    }
+
+    {
+        c.clear();
+        c.type("shounihao");
+        auto shouPinyin = PinyinEncoder::encodeFullPinyin("shou");
+        c.selectCustom(4, "✋", std::string_view(shouPinyin.data(), shouPinyin.size()));
+        size_t i = 0;
+        for (const auto &candidate : c.candidatesToCursor()) {
+            if (candidate.toString() == "你好") {
+                break;
+            }
+            i++;
+        }
+        FCITX_ASSERT(i < c.candidatesToCursor().size());
+        c.selectCandidatesToCursor(i);
+
+        FCITX_ASSERT(c.selected());
+        c.learn();
+
+        c.clear();
+        c.type("shounihao");
+        FCITX_ASSERT(c.candidatesToCursorSet().count("✋你好") > 0);
     }
 
     return 0;

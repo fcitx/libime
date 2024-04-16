@@ -17,17 +17,21 @@
 #include <iterator>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_set>
+#include <utility>
 
 namespace libime {
 
 struct SelectedPinyin {
-    SelectedPinyin(size_t s, WordNode word, std::string encodedPinyin)
+    SelectedPinyin(size_t s, WordNode word, std::string encodedPinyin,
+                   bool custom)
         : offset_(s), word_(std::move(word)),
-          encodedPinyin_(std::move(encodedPinyin)) {}
+          encodedPinyin_(std::move(encodedPinyin)), custom_(custom) {}
     size_t offset_;
     WordNode word_;
     std::string encodedPinyin_;
+    bool custom_;
 };
 
 class PinyinContextPrivate : public fcitx::QPtrHolder<PinyinContext> {
@@ -132,51 +136,52 @@ public:
         }
     }
 
-    void select(const SentenceResult &sentence) {
+    template <typename FillSentence>
+    void selectHelper(const FillSentence &fillSentence) {
         FCITX_Q();
-        auto offset = q->selectedLength();
-
         selected_.emplace_back();
 
         auto &selection = selected_.back();
-        for (const auto &p : sentence.sentence()) {
-            selection.emplace_back(
-                offset + p->to()->index(),
-                WordNode{p->word(), ime_->model()->index(p->word())},
-                static_cast<const PinyinLatticeNode *>(p)->encodedPinyin());
-        }
+        fillSentence(selection);
         // add some special code for handling separator at the end
-        auto remain = std::string_view(q->userInput()).substr(offset);
+        auto remain =
+            std::string_view(q->userInput()).substr(q->selectedLength());
         if (!remain.empty()) {
             if (std::all_of(remain.begin(), remain.end(),
                             [](char c) { return c == '\''; })) {
-                selection.emplace_back(q->size(), WordNode("", 0), "");
+                selection.emplace_back(q->size(), WordNode("", 0), "", false);
             }
         }
 
         q->update();
     }
 
-    void selectCustom(size_t inputLength, std::string_view segment) {
+    void select(const SentenceResult &sentence) {
         FCITX_Q();
         auto offset = q->selectedLength();
-
-        selected_.emplace_back();
-
-        auto &selection = selected_.back();
-        selection.emplace_back(offset + inputLength,
-                               WordNode{segment, ime_->model()->index(segment)},
-                               "");
-        // add some special code for handling separator at the end
-        auto remain = std::string_view(q->userInput()).substr(offset);
-        if (!remain.empty()) {
-            if (std::all_of(remain.begin(), remain.end(),
-                            [](char c) { return c == '\''; })) {
-                selection.emplace_back(q->size(), WordNode("", 0), "");
+        selectHelper([offset, &sentence,
+                      this](std::vector<SelectedPinyin> &selection) {
+            for (const auto &p : sentence.sentence()) {
+                selection.emplace_back(
+                    offset + p->to()->index(),
+                    WordNode{p->word(), ime_->model()->index(p->word())},
+                    static_cast<const PinyinLatticeNode *>(p)->encodedPinyin(),
+                    false);
             }
-        }
+        });
+    }
 
-        q->update();
+    void selectCustom(size_t inputLength, std::string_view segment,
+                      std::string_view encodedPinyin) {
+        FCITX_Q();
+        auto offset = q->selectedLength();
+        selectHelper([this, offset, &segment, inputLength,
+                      &encodedPinyin](std::vector<SelectedPinyin> &selection) {
+            auto index = ime_->model()->index(segment);
+            selection.emplace_back(offset + inputLength,
+                                   WordNode{segment, index},
+                                   std::string(encodedPinyin), true);
+        });
     }
 };
 
@@ -387,12 +392,16 @@ void PinyinContext::selectCandidatesToCursor(size_t idx) {
     d->select(candidates[idx]);
 }
 
-void PinyinContext::selectCustom(size_t inputLength, std::string_view segment) {
+void PinyinContext::selectCustom(size_t inputLength, std::string_view segment,
+                                 std::string_view encodedPinyin) {
     FCITX_D();
     if (inputLength == 0 && selectedLength() + inputLength > size()) {
         throw std::out_of_range("Invalid input length");
     }
-    d->selectCustom(inputLength, segment);
+    if (encodedPinyin.size() % 2 != 0) {
+        throw std::invalid_argument("Invalid encoded pinyin");
+    }
+    d->selectCustom(inputLength, segment, encodedPinyin);
 }
 
 bool PinyinContext::cancelTill(size_t pos) {
@@ -870,12 +879,27 @@ bool PinyinContext::learnWord() {
     if (d->selected_.size() == 1 && d->selected_[0].size() == 1) {
         return false;
     }
+    bool hasCustom = false;
+    for (auto &s : d->selected_) {
+        for (auto &item : s) {
+            if (item.custom_) {
+                hasCustom = true;
+                break;
+            }
+        }
+        if (hasCustom) {
+            break;
+        }
+    }
     for (auto &s : d->selected_) {
         bool first = true;
         for (auto &item : s) {
             if (!item.word_.word().empty()) {
                 // We can't learn non pinyin word.
-                if (item.encodedPinyin_.size() != 2) {
+                if (item.encodedPinyin_.empty()) {
+                    return false;
+                }
+                if (item.encodedPinyin_.size() != 2 && !hasCustom) {
                     return false;
                 }
                 if (first) {

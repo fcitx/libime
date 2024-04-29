@@ -7,8 +7,8 @@
 #include "libime/core/historybigram.h"
 #include <exception>
 #include <fstream>
-#include <unistd.h>
 #include <iostream>
+#include <unistd.h>
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0 << " [-c] <source> <dest>" << std::endl

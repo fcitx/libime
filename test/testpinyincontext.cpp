@@ -207,14 +207,14 @@ int main() {
 
         FCITX_ASSERT(c.selected());
         FCITX_ASSERT(c.selectedSentence() == "Hello你What");
-
     }
 
     {
         c.clear();
         c.type("shounihao");
         auto shouPinyin = PinyinEncoder::encodeFullPinyin("shou");
-        c.selectCustom(4, "✋", std::string_view(shouPinyin.data(), shouPinyin.size()));
+        c.selectCustom(4, "✋",
+                       std::string_view(shouPinyin.data(), shouPinyin.size()));
         size_t i = 0;
         for (const auto &candidate : c.candidatesToCursor()) {
             if (candidate.toString() == "你好") {

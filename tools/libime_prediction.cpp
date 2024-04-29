@@ -11,9 +11,9 @@
 #include <cmath>
 #include <fcitx-utils/log.h>
 #include <fstream>
-#include <unistd.h>
 #include <iostream>
 #include <string>
+#include <unistd.h>
 #include <unordered_map>
 #include <vector>
 

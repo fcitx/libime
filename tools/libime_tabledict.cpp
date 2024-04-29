@@ -6,10 +6,10 @@
 
 #include "libime/table/tablebaseddictionary.h"
 #include <fstream>
-#include <unistd.h>
 #include <iostream>
 #include <optional>
 #include <string>
+#include <unistd.h>
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0

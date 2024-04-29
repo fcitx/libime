@@ -8,8 +8,8 @@
 #include "libime/pinyin/pinyindictionary.h"
 #include <fcitx-utils/log.h>
 #include <fstream>
-#include <unistd.h>
 #include <iostream>
+#include <unistd.h>
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0 << " [-d] <source> <dest>" << std::endl

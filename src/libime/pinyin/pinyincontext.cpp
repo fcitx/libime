@@ -201,41 +201,47 @@ public:
         if (selected_.size() == 1 && selected_[0].size() == 1) {
             return LearnWordResult::Ignored;
         }
+        // Validate the learning word.
+        // All single || custom || length <= 4
         bool hasCustom = false;
+        size_t totalPinyinLength = 0;
+        bool isAllSingleWord = true;
         for (auto &s : selected_) {
+            isAllSingleWord =
+                isAllSingleWord &&
+                (s.empty() ||
+                 (s.size() == 1 && (s[0].word_.word().empty() ||
+                                    s[0].encodedPinyin_.size() == 2)));
             for (auto &item : s) {
+                if (item.word_.word().empty()) {
+                    continue;
+                }
                 if (item.custom_) {
                     hasCustom = true;
-                    break;
                 }
-            }
-            if (hasCustom) {
-                break;
+                // We can't learn non pinyin word.
+                if (item.encodedPinyin_.empty() ||
+                    item.encodedPinyin_.size() % 2 != 0) {
+                    return LearnWordResult::Ignored;
+                }
+                totalPinyinLength += item.encodedPinyin_.size() / 2;
             }
         }
+        if (!isAllSingleWord && !hasCustom && totalPinyinLength > 4) {
+            return LearnWordResult::Ignored;
+        }
         for (auto &s : selected_) {
-            bool first = true;
             for (auto &item : s) {
-                if (!item.word_.word().empty()) {
-                    // We can't learn non pinyin word.
-                    if (item.encodedPinyin_.empty()) {
-                        return LearnWordResult::Ignored;
-                    }
-                    if (item.encodedPinyin_.size() != 2 && !hasCustom) {
-                        return LearnWordResult::Ignored;
-                    }
-                    if (first) {
-                        first = false;
-                        ss += item.word_.word();
-                        if (!pinyin.empty()) {
-                            pinyin.push_back('\'');
-                        }
-                        pinyin += PinyinEncoder::decodeFullPinyin(
-                            item.encodedPinyin_);
-                    } else {
-                        return LearnWordResult::Ignored;
-                    }
+                if (item.word_.word().empty()) {
+                    continue;
                 }
+                assert(!item.encodedPinyin_.empty());
+                assert(item.encodedPinyin_.size() % 2 == 0);
+                ss += item.word_.word();
+                if (!pinyin.empty()) {
+                    pinyin.push_back('\'');
+                }
+                pinyin += PinyinEncoder::decodeFullPinyin(item.encodedPinyin_);
             }
         }
 

@@ -12,6 +12,7 @@
 #include "libime/pinyin/shuangpinprofile.h"
 #include "testdir.h"
 #include <fcitx-utils/log.h>
+#include <iterator>
 #include <memory>
 
 using namespace libime;
@@ -42,5 +43,16 @@ int main() {
         << c.candidatesToCursorSet();
     FCITX_ASSERT(!c.candidatesToCursorSet().count("你好中国"));
     FCITX_ASSERT(c.candidatesToCursorSet().count("你好"));
+    c.setCursor(0);
+    auto iter = std::find_if(
+        c.candidates().begin(), c.candidates().end(),
+        [](const auto &cand) { return cand.toString() == "你好中国"; });
+    FCITX_ASSERT(iter != c.candidates().end());
+    FCITX_ASSERT(!ime.dict()->lookupWord(PinyinDictionary::UserDict,
+                                         "ni'hao'zhong'guo", "你好中国"));
+    c.select(std::distance(c.candidates().begin(), iter));
+    c.learn();
+    FCITX_ASSERT(ime.dict()->lookupWord(PinyinDictionary::UserDict,
+                                        "ni'hao'zhong'guo", "你好中国"));
     return 0;
 }

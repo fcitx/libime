@@ -99,7 +99,8 @@ struct LongestMatchResult {
 template <typename Iter>
 LongestMatchResult longestMatch(Iter iter, Iter end, PinyinFuzzyFlags flags,
                                 const PinyinMap &map) {
-    if (*iter == 'i' || *iter == 'u' || *iter == 'v') {
+    if ((*iter == 'i' || *iter == 'u' || *iter == 'v') &&
+        !flags.test(PinyinFuzzyFlag::Correction)) {
         return {false, std::string_view(&*iter, std::distance(iter, end)),
                 false};
     }

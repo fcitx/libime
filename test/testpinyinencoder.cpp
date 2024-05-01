@@ -238,6 +238,11 @@ int main() {
         auto graph = PinyinEncoder::parseUserPinyin(
             "zhyi", &profile, PinyinFuzzyFlag::Correction);
         dfs(graph, {"zhyi"});
+
+        graph = PinyinEncoder::parseUserPinyin("xianguaoyige", &profile,
+                                               PinyinFuzzyFlag::Correction);
+        dfs(graph, {"xiang", "uao", "yi", "ge"});
+        dfs(graph, {"xian", "gu", "ao", "yi", "ge"});
     }
 
     return 0;

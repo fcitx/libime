@@ -243,6 +243,10 @@ int main() {
                                                PinyinFuzzyFlag::Correction);
         dfs(graph, {"xiang", "uao", "yi", "ge"});
         dfs(graph, {"xian", "gu", "ao", "yi", "ge"});
+
+        graph = PinyinEncoder::parseUserPinyin("suang", &profile,
+                                               PinyinFuzzyFlag::Correction);
+        dfs(graph, {"suan", "g"});
     }
 
     return 0;

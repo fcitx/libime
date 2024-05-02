@@ -96,6 +96,21 @@ struct LongestMatchResult {
     bool isCompletePinyin;
 };
 
+bool hasMatchInMap(const PinyinMap &map, std::string_view range,
+                   PinyinFuzzyFlags flags) {
+    auto iterPair = map.equal_range(range);
+    if (iterPair.first != iterPair.second) {
+        for (const auto &item :
+             boost::make_iterator_range(iterPair.first, iterPair.second)) {
+            if (flags.test(item.flags())) {
+                // do not consider m/n/r as complete pinyin
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 template <typename Iter>
 LongestMatchResult longestMatch(Iter iter, Iter end, PinyinFuzzyFlags flags,
                                 const PinyinMap &map) {
@@ -109,16 +124,10 @@ LongestMatchResult longestMatch(Iter iter, Iter end, PinyinFuzzyFlags flags,
     }
     auto range = std::string_view(&*iter, std::distance(iter, end));
     for (; !range.empty(); range.remove_suffix(1)) {
-        auto iterPair = map.equal_range(range);
-        if (iterPair.first != iterPair.second) {
-            for (const auto &item :
-                 boost::make_iterator_range(iterPair.first, iterPair.second)) {
-                if (flags.test(item.flags())) {
-                    // do not consider m/n/r as complete pinyin
-                    return {true, range,
-                            (range != "m" && range != "n" && range != "r")};
-                }
-            }
+        if (hasMatchInMap(map, range, flags)) {
+            // do not consider m/n/r as complete pinyin
+            return {true, range,
+                    (range != "m" && range != "n" && range != "r")};
         }
         if (range.size() <= 2) {
             auto iter = initialMap.right.find(std::string{range});
@@ -217,8 +226,7 @@ PinyinEncoder::parseUserPinyin(std::string userPinyin,
                      str.back() == 'o' || str.back() == 'r' ||
                      str.back() == 'h' ||
                      fuzzyFlags.test(PinyinFuzzyFlag::Correction)) &&
-                    pinyinMap.find(str.substr(0, str.size() - 1)) !=
-                        pinyinMap.end()) {
+                    hasMatchInMap(pinyinMap, str.substr(0, str.size() - 1), fuzzyFlags)) {
                     // str[0:-1] is also a full pinyin, check next pinyin
                     auto nextMatch = longestMatch(iter + str.size(), end,
                                                   fuzzyFlags, pinyinMap);

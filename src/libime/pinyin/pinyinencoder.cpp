@@ -226,7 +226,8 @@ PinyinEncoder::parseUserPinyin(std::string userPinyin,
                      str.back() == 'o' || str.back() == 'r' ||
                      str.back() == 'h' ||
                      fuzzyFlags.test(PinyinFuzzyFlag::Correction)) &&
-                    hasMatchInMap(pinyinMap, str.substr(0, str.size() - 1), fuzzyFlags)) {
+                    hasMatchInMap(pinyinMap, str.substr(0, str.size() - 1),
+                                  fuzzyFlags)) {
                     // str[0:-1] is also a full pinyin, check next pinyin
                     auto nextMatch = longestMatch(iter + str.size(), end,
                                                   fuzzyFlags, pinyinMap);

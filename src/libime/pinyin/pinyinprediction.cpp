@@ -4,15 +4,20 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "pinyinprediction.h"
+#include "libime/core/languagemodel.h"
 #include "libime/core/prediction.h"
 #include "libime/pinyin/pinyindictionary.h"
 #include <algorithm>
+#include <cstddef>
+#include <fcitx-utils/macros.h>
 #include <fcitx-utils/misc.h>
 #include <fcitx-utils/stringutils.h>
 #include <iterator>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <tuple>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -69,16 +74,18 @@ PinyinPrediction::predict(const State &state,
         });
     std::make_heap(intermedidateResult.begin(), intermedidateResult.end(), cmp);
 
-    State prevState = model()->nullState(), outState;
+    State prevState = model()->nullState();
+    State outState;
     std::vector<WordNode> nodes;
-    if (sentence.size() >= 1) {
+    std::unordered_set<std::string> dup;
+    if (!sentence.empty()) {
         nodes.reserve(sentence.size());
         for (const auto &word : fcitx::MakeIterRange(
                  sentence.begin(), std::prev(sentence.end()))) {
             auto idx = model()->index(word);
             nodes.emplace_back(word, idx);
             model()->score(prevState, nodes.back(), outState);
-            prevState = std::move(outState);
+            prevState = outState;
         }
         // We record the last score for the sentence word to adjust the partial
         // score. E.g. for 无, model may contain 压力 and dict contain 聊 score
@@ -88,26 +95,36 @@ PinyinPrediction::predict(const State &state,
         float adjust = model()->score(prevState, nodes.back(), outState);
         for (auto &result : intermedidateResult) {
             std::get<float>(result) += adjust;
+            dup.insert(std::get<std::string>(result));
         }
     }
 
     d->dict_->matchWordsPrefix(
         lastEncodedPinyin.data(), lastEncodedPinyin.size(),
-        [this, &sentence, &prevState, &cmp, &intermedidateResult,
+        [this, &sentence, &prevState, &cmp, &intermedidateResult, &dup,
          maxSize](std::string_view, std::string_view hz, float cost) {
             if (sentence.back().size() < hz.size() &&
                 fcitx::stringutils::startsWith(hz, sentence.back())) {
 
+                std::string newWord(hz.substr(sentence.back().size()));
+                if (dup.count(newWord)) {
+                    return true;
+                }
+
                 std::tuple<std::string, float, PinyinPredictionSource> newItem{
-                    std::string(hz.substr(sentence.back().size())),
+                    std::move(newWord),
                     cost + model()->singleWordScore(prevState, hz),
                     PinyinPredictionSource::Dictionary};
+
+                dup.insert(std::get<std::string>(newItem));
                 intermedidateResult.push_back(std::move(newItem));
                 std::push_heap(intermedidateResult.begin(),
                                intermedidateResult.end(), cmp);
                 while (intermedidateResult.size() > maxSize) {
                     std::pop_heap(intermedidateResult.begin(),
                                   intermedidateResult.end(), cmp);
+                    dup.erase(
+                        std::get<std::string>(intermedidateResult.back()));
                     intermedidateResult.pop_back();
                 }
             }

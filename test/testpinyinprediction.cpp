@@ -9,7 +9,9 @@
 #include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/pinyinprediction.h"
 #include "testdir.h"
+#include <algorithm>
 #include <fcitx-utils/log.h>
+#include <string>
 
 using namespace libime;
 
@@ -45,5 +47,18 @@ int main() {
     auto noPyResult = prediction.predict({"我", "喜欢", "中国"}, 20);
     FCITX_ASSERT(result.size() > noPyResult.size())
         << result << " " << noPyResult;
+
+    // Check if word that exists in multiple sub dicts won't generate multiple
+    // result.
+    py = PinyinEncoder::encodeFullPinyin("guan'xi");
+    FCITX_ASSERT(
+        dict.lookupWord(PinyinDictionary::SystemDict, "guan'xi'ren", "关系人"));
+    dict.addWord(PinyinDictionary::UserDict, "guan'xi'ren", "关系人");
+    result = prediction.predict(model.nullState(), {"关系"},
+                                {py.data(), py.size()}, 49);
+    FCITX_ASSERT(
+        std::count_if(result.begin(), result.end(), [](const auto &item) {
+            return std::get<std::string>(item) == "人";
+        }) == 1);
     return 0;
 }

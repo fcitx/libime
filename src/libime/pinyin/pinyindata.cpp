@@ -940,132 +940,176 @@ const PinyinMap &getPinyinMap() {
     return pinyinMap;
 }
 
+enum class FuzzyUpdatePhase {
+    CommonTypo_UV_JQXY,
+    CommonTypo_ON_ONG,
+    CommonTypo_Swap_NG_UE_UA_UAN,
+    CommonTypo_Swap_UANG,
+    AdvancedTypo_Swap_XH_UN,
+    AdvancedTypo_Swap_Length2,
+    AdvancedTypo_Swap_Length3,
+    AdvancedTypo_Swap_Length4,
+    AdvancedTypo_Swap_XHY_XYH,
+};
+
+PinyinFuzzyFlag fuzzyPhaseToFlag(FuzzyUpdatePhase phase) {
+    switch (phase) {
+    case FuzzyUpdatePhase::CommonTypo_UV_JQXY:
+    case FuzzyUpdatePhase::CommonTypo_ON_ONG:
+    case FuzzyUpdatePhase::CommonTypo_Swap_NG_UE_UA_UAN:
+    case FuzzyUpdatePhase::CommonTypo_Swap_UANG:
+        return PinyinFuzzyFlag::CommonTypo;
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_XH_UN:
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_Length2:
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_Length3:
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_Length4:
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_XHY_XYH:
+        return PinyinFuzzyFlag::AdvancedTypo;
+    }
+    return PinyinFuzzyFlag::CommonTypo;
+}
+
 std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
-                                      PinyinFuzzyFlag fz, int pass) {
+                                      FuzzyUpdatePhase phase) {
     if (entry.pinyin() == "m" || entry.pinyin() == "n" ||
         entry.pinyin() == "r" || entry.pinyin() == "ng" ||
         entry.pinyin() == "ou") {
         return std::nullopt;
     }
     auto result = entry.pinyin();
-    switch (fz) {
-    case PinyinFuzzyFlag::CommonTypo: {
-        if (pass == 0) {
-            // Allow non standard usage like jv jve jvan jvuang
-            if (result[0] == 'j' || result[0] == 'q' || result[0] == 'x' ||
-                result[0] == 'y') {
-                if (boost::algorithm::ends_with(result, "u") &&
-                    !boost::algorithm::ends_with(result, "iu") &&
-                    !boost::algorithm::ends_with(result, "ou")) {
-                    result.back() = 'v';
-                }
+    const PinyinFuzzyFlag fz = fuzzyPhaseToFlag(phase);
+    switch (phase) {
+    case FuzzyUpdatePhase::CommonTypo_UV_JQXY: {
+        // Allow non standard usage like jv jve jvan jvuang
+        if (result[0] == 'j' || result[0] == 'q' || result[0] == 'x' ||
+            result[0] == 'y') {
+            if (boost::algorithm::ends_with(result, "u") &&
+                !boost::algorithm::ends_with(result, "iu") &&
+                !boost::algorithm::ends_with(result, "ou")) {
+                result.back() = 'v';
+            }
 
-                if (boost::algorithm::ends_with(result, "ue")) {
-                    result[result.size() - 2] = 'v';
-                }
-                if (boost::algorithm::ends_with(result, "uan")) {
-                    result[result.size() - 3] = 'v';
-                }
-                if (boost::algorithm::ends_with(result, "uang")) {
-                    result[result.size() - 4] = 'v';
-                }
-            }
-        } else if (pass == 1) {
-            // Allow lon -> long
-            if (boost::algorithm::ends_with(result, "ong")) {
-                result.pop_back();
-            }
-        } else if (pass == 2) {
-            // Allow ying -> yign
-            if (boost::algorithm::ends_with(result, "ng")) {
-                result[result.size() - 2] = 'g';
-                result[result.size() - 1] = 'n';
-            } else if (boost::algorithm::ends_with(result, "ue")) {
-                // Allow fuzzy for uv, that does not cause ambiguity.
-                result[result.size() - 2] = 'e';
-                result[result.size() - 1] = 'u';
-            } else if (boost::algorithm::ends_with(result, "ve")) {
-                result[result.size() - 2] = 'e';
-                result[result.size() - 1] = 'v';
-            } else if (boost::algorithm::ends_with(result, "ua")) {
-                result[result.size() - 2] = 'a';
-                result[result.size() - 1] = 'u';
-            } else if (boost::algorithm::ends_with(result, "uai") ||
-                       boost::algorithm::ends_with(result, "uan")) {
-                result[result.size() - 3] = 'a';
-                result[result.size() - 2] = 'u';
-            } else if (boost::algorithm::ends_with(result, "van")) {
-                result[result.size() - 3] = 'a';
+            if (boost::algorithm::ends_with(result, "ue")) {
                 result[result.size() - 2] = 'v';
             }
-        } else if (pass == 3) {
-            // this conflicts with "ng" rule, so need a separate pass.
-            if (boost::algorithm::ends_with(result, "uang")) {
-                result[result.size() - 4] = 'a';
-                result[result.size() - 3] = 'u';
-            } else if (boost::algorithm::ends_with(result, "vang")) {
-                result[result.size() - 4] = 'a';
+            if (boost::algorithm::ends_with(result, "uan")) {
                 result[result.size() - 3] = 'v';
             }
+            if (boost::algorithm::ends_with(result, "uang")) {
+                result[result.size() - 4] = 'v';
+            }
+        }
+    } break;
+    case FuzzyUpdatePhase::CommonTypo_ON_ONG:
+        // Allow lon -> long
+        if (boost::algorithm::ends_with(result, "ong")) {
+            result.pop_back();
         }
         break;
-    case PinyinFuzzyFlag::AdvancedTypo:
-        if (pass == 0) {
-            // Allow reversed zhe -> hze
-            if (boost::algorithm::starts_with(result, "zh") ||
-                boost::algorithm::starts_with(result, "sh") ||
-                boost::algorithm::starts_with(result, "ch")) {
-                std::swap(result[0], result[1]);
-            } else if (boost::algorithm::ends_with(result, "un") &&
-                       !boost::algorithm::ends_with(result, "aun")) {
-                result[result.size() - 2] = 'n';
-                result[result.size() - 1] = 'u';
-            }
-        } else if (pass == 1) {
-            if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
-                break;
-            }
-            for (const auto *const two : {"ai", "ia", "ei", "ie", "ao", "uo",
-                                          "ou", "iu", "an", "en", "in"}) {
-                if (boost::algorithm::ends_with(result, two)) {
-                    std::swap(result[result.size() - 2],
-                              result[result.size() - 1]);
-                }
-            }
-        } else if (pass == 2) {
-            if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
-                break;
-            }
-            for (const auto *const three :
-                 {"ang", "eng", "ing", "ong", "iao", "ian"}) {
-                if (boost::algorithm::ends_with(result, three)) {
-                    std::swap(result[result.size() - 3],
-                              result[result.size() - 2]);
-                }
-            }
-        } else if (pass == 3) {
-            if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
-                break;
-            }
-            for (const auto *const four : {"iang", "iong"}) {
-                if (boost::algorithm::ends_with(result, four)) {
-                    std::swap(result[result.size() - 4],
-                              result[result.size() - 3]);
-                }
-            }
-        } else if (pass == 4) {
-            if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
-                break;
-            }
-            // zhe -> zeh.
-            if (result.size() == 3 && result[1] == 'h' &&
-                entry.flags() == PinyinFuzzyFlag::None) {
+    case FuzzyUpdatePhase::CommonTypo_Swap_NG_UE_UA_UAN:
+        // Allow ying -> yign
+        if (boost::algorithm::ends_with(result, "ng")) {
+            result[result.size() - 2] = 'g';
+            result[result.size() - 1] = 'n';
+        } else if (boost::algorithm::ends_with(result, "ue")) {
+            // Allow fuzzy for uv, that does not cause ambiguity.
+            result[result.size() - 2] = 'e';
+            result[result.size() - 1] = 'u';
+        } else if (boost::algorithm::ends_with(result, "ve")) {
+            result[result.size() - 2] = 'e';
+            result[result.size() - 1] = 'v';
+        } else if (boost::algorithm::ends_with(result, "ua")) {
+            result[result.size() - 2] = 'a';
+            result[result.size() - 1] = 'u';
+        } else if (boost::algorithm::ends_with(result, "uai") ||
+                   boost::algorithm::ends_with(result, "uan")) {
+            result[result.size() - 3] = 'a';
+            result[result.size() - 2] = 'u';
+        } else if (boost::algorithm::ends_with(result, "van")) {
+            result[result.size() - 3] = 'a';
+            result[result.size() - 2] = 'v';
+        }
+        break;
+    case FuzzyUpdatePhase::CommonTypo_Swap_UANG:
+        // this conflicts with "ng" rule, so need a separate pass.
+        if (boost::algorithm::ends_with(result, "uang")) {
+            result[result.size() - 4] = 'a';
+            result[result.size() - 3] = 'u';
+        } else if (boost::algorithm::ends_with(result, "vang")) {
+            result[result.size() - 4] = 'a';
+            result[result.size() - 3] = 'v';
+        }
+        break;
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_XH_UN:
+        // Allow reversed zhe -> hze
+        if (boost::algorithm::starts_with(result, "zh") ||
+            boost::algorithm::starts_with(result, "sh") ||
+            boost::algorithm::starts_with(result, "ch")) {
+            std::swap(result[0], result[1]);
+        } else if (boost::algorithm::ends_with(result, "un") &&
+                   !boost::algorithm::ends_with(result, "aun")) {
+            result[result.size() - 2] = 'n';
+            result[result.size() - 1] = 'u';
+        }
+        break;
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_Length2:
+        if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
+            break;
+        }
+        for (const auto *const two : {"ai", "ia", "ei", "ie", "ao", "uo", "ou",
+                                      "iu", "an", "en", "in"}) {
+            if (boost::algorithm::ends_with(result, two)) {
                 std::swap(result[result.size() - 2], result[result.size() - 1]);
             }
         }
         break;
-    }
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_Length3:
+        if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
+            break;
+        }
+        for (const auto *const three :
+             {"ang", "eng", "ing", "ong", "iao", "ian"}) {
+            if (boost::algorithm::ends_with(result, three)) {
+                std::swap(result[result.size() - 3], result[result.size() - 2]);
+            }
+        }
+        break;
 
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_Length4:
+        if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
+            break;
+        }
+        for (const auto *const four : {"iang", "iong"}) {
+            if (boost::algorithm::ends_with(result, four)) {
+                std::swap(result[result.size() - 4], result[result.size() - 3]);
+            }
+        }
+        break;
+
+    case FuzzyUpdatePhase::AdvancedTypo_Swap_XHY_XYH:
+        if (entry.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
+            break;
+        }
+        // zhe -> zeh.
+        if (result.size() == 3 && result[1] == 'h' &&
+            entry.flags() == PinyinFuzzyFlag::None) {
+            std::swap(result[result.size() - 2], result[result.size() - 1]);
+        }
+        break;
+    default:
+        break;
+    }
+    if (result == entry.pinyin()) {
+        return std::nullopt;
+    }
+    return PinyinEntry(result.data(), entry.initial(), entry.final(),
+                       entry.flags() | fz);
+}
+
+std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
+                                      PinyinFuzzyFlag fz) {
+    auto result = entry.pinyin();
+    switch (fz) {
     case PinyinFuzzyFlag::VE_UE: {
         if (boost::algorithm::ends_with(result, "ve")) {
             result[result.size() - 2] = 'u';
@@ -1204,10 +1248,11 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
                        entry.flags() | fz);
 }
 
-void applyFuzzy(PinyinMap &map, PinyinFuzzyFlag fz, int pass = 0) {
+template <typename T>
+void applyFuzzyToMap(PinyinMap &map, T fuzzy) {
     std::vector<PinyinEntry> newEntries;
     for (const auto &entry : map) {
-        if (auto newEntry = applyFuzzy(entry, fz, pass)) {
+        if (auto newEntry = applyFuzzy(entry, fuzzy)) {
             newEntries.push_back(*newEntry);
         }
     }
@@ -1239,17 +1284,22 @@ const PinyinMap &getPinyinMapV2() {
                         PinyinFuzzyFlag::VE_UE, PinyinFuzzyFlag::F_H,
                         PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::Z_ZH,
                         PinyinFuzzyFlag::S_SH, PinyinFuzzyFlag::C_CH}) {
-            applyFuzzy(filtered, fz);
+            applyFuzzyToMap(filtered, fz);
         }
-        applyFuzzy(filtered, PinyinFuzzyFlag::CommonTypo, 0);
-        applyFuzzy(filtered, PinyinFuzzyFlag::CommonTypo, 1);
-        applyFuzzy(filtered, PinyinFuzzyFlag::CommonTypo, 2);
-        applyFuzzy(filtered, PinyinFuzzyFlag::CommonTypo, 3);
-        applyFuzzy(filtered, PinyinFuzzyFlag::AdvancedTypo, 0);
-        applyFuzzy(filtered, PinyinFuzzyFlag::AdvancedTypo, 1);
-        applyFuzzy(filtered, PinyinFuzzyFlag::AdvancedTypo, 2);
-        applyFuzzy(filtered, PinyinFuzzyFlag::AdvancedTypo, 3);
-        applyFuzzy(filtered, PinyinFuzzyFlag::AdvancedTypo, 4);
+
+        for (auto phase : {
+                 FuzzyUpdatePhase::CommonTypo_UV_JQXY,
+                 FuzzyUpdatePhase::CommonTypo_ON_ONG,
+                 FuzzyUpdatePhase::CommonTypo_Swap_NG_UE_UA_UAN,
+                 FuzzyUpdatePhase::CommonTypo_Swap_UANG,
+                 FuzzyUpdatePhase::AdvancedTypo_Swap_XH_UN,
+                 FuzzyUpdatePhase::AdvancedTypo_Swap_Length2,
+                 FuzzyUpdatePhase::AdvancedTypo_Swap_Length3,
+                 FuzzyUpdatePhase::AdvancedTypo_Swap_Length4,
+                 FuzzyUpdatePhase::AdvancedTypo_Swap_XHY_XYH,
+             }) {
+            applyFuzzyToMap(filtered, phase);
+        }
         return filtered;
     }();
     return map;

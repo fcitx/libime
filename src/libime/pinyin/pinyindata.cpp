@@ -6,11 +6,18 @@
 
 #include "pinyindata.h"
 #include "pinyinencoder.h"
+#include <algorithm>
 #include <boost/algorithm/string/predicate.hpp>
+#include <cstdint>
+#include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
+#include <iterator>
+#include <optional>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -989,7 +996,8 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
                 result.back() = 'v';
             }
 
-            if (boost::algorithm::ends_with(result, "ue")) {
+            if (boost::algorithm::ends_with(result, "ue") ||
+                boost::algorithm::ends_with(result, "un")) {
                 result[result.size() - 2] = 'v';
             }
             if (boost::algorithm::ends_with(result, "uan")) {

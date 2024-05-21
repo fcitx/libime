@@ -7,7 +7,13 @@
 #include "libime/pinyin/pinyindata.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <cstdint>
 #include <fcitx-utils/log.h>
+#include <iostream>
+#include <iterator>
+#include <ostream>
+#include <string>
 #include <unordered_set>
 
 using namespace libime;
@@ -156,5 +162,7 @@ int main() {
         }
     }
     FCITX_ASSERT(getPinyinMapV2().count("zhaung"));
+    FCITX_ASSERT(getPinyinMapV2().count("jvn"));
+    FCITX_ASSERT(getPinyinMapV2().count("yvn"));
     return 0;
 }

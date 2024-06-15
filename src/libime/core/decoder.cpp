@@ -7,14 +7,28 @@
 #include "decoder.h"
 #include "languagemodel.h"
 #include "lattice_p.h"
+#include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
 #include "utils.h"
+#include <algorithm>
+#include <boost/container_hash/hash.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptor/sliced.hpp>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <fcitx-utils/macros.h>
 #include <limits>
 #include <memory>
 #include <queue>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -25,7 +39,7 @@ struct NBestNode {
 
     const LatticeNode *node_;
     // for nbest
-    float gn_ = 0.0f;
+    float gn_ = 0.0F;
     float fn_ = -std::numeric_limits<float>::max();
     std::shared_ptr<NBestNode> next_;
 };
@@ -387,9 +401,10 @@ bool Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
 }
 
 LatticeNode *Decoder::createLatticeNodeImpl(
-    const SegmentGraphBase &, const LanguageModelBase *, std::string_view word,
-    WordIndex idx, SegmentGraphPath path, const State &state, float cost,
-    std::unique_ptr<LatticeNodeData>, bool) const {
+    const SegmentGraphBase & /*unused*/, const LanguageModelBase * /*unused*/,
+    std::string_view word, WordIndex idx, SegmentGraphPath path,
+    const State &state, float cost, std::unique_ptr<LatticeNodeData> /*unused*/,
+    bool /*unused*/) const {
     return new LatticeNode(word, idx, std::move(path), state, cost);
 }
 } // namespace libime

@@ -18,10 +18,17 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <ios>
+#include <istream>
 #include <limits>
+#include <ostream>
 #include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
 #include <vector>
 
 namespace libime {

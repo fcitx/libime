@@ -7,11 +7,20 @@
 #ifndef LIBIME_ZSTDFILTER_H
 #define LIBIME_ZSTDFILTER_H
 
+#include <boost/iostreams/categories.hpp>
+#include <boost/iostreams/constants.hpp>
 #include <boost/iostreams/filter/symmetric.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/pipeline.hpp>
+#include <boost/throw_exception.hpp>
+#include <cstddef>
+#include <cstring>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/misc.h>
+#include <ios>
+#include <istream>
+#include <ostream>
+#include <stdexcept>
 #include <zstd.h>
 
 namespace libime {
@@ -41,14 +50,14 @@ enum class ZSTDResult {
 
 class ZSTDFilterBase {
 public:
-    typedef char char_type;
+    using char_type = char;
+    ZSTDFilterBase(const ZSTDFilterBase &) = delete;
 
 protected:
     ZSTDFilterBase() = default;
-    ZSTDFilterBase(const ZSTDFilterBase &) = delete;
     ~ZSTDFilterBase() {}
     void before(const char *&src_begin, const char *src_end, char *&dest_begin,
-                char *dest_end) {
+                const char *dest_end) {
         in_.src = src_begin;
         in_.size = static_cast<size_t>(src_end - src_begin);
         in_.pos = 0;
@@ -56,7 +65,8 @@ protected:
         out_.size = static_cast<size_t>(dest_end - dest_begin);
         out_.pos = 0;
     }
-    void after(const char *&src_begin, char *&dest_begin, bool) {
+    void after(const char *&src_begin, char *&dest_begin,
+               bool /*unused*/) const {
         src_begin = reinterpret_cast<const char *>(in_.src) + in_.pos;
         dest_begin = reinterpret_cast<char *>(out_.dst) + out_.pos;
     }
@@ -95,8 +105,9 @@ private:
     ZSTDResult deflate(bool finish) {
         // Ignore spurious extra calls.
         // Note size > 0 will trigger an error in this case.
-        if (eof_ && in_.size == 0)
+        if (eof_ && in_.size == 0) {
             return ZSTDResult::StreamEnd;
+        }
         size_t result = ZSTD_compressStream(cstream_.get(), &out_, &in_);
         ZSTDError::check(result);
         if (finish) {
@@ -147,12 +158,12 @@ private:
 struct ZSTDCompressor
     : boost::iostreams::symmetric_filter<details::ZSTDCompressorImpl> {
 private:
-    typedef details::ZSTDCompressorImpl impl_type;
-    typedef symmetric_filter<impl_type> base_type;
+    using impl_type = details::ZSTDCompressorImpl;
+    using base_type = symmetric_filter<impl_type>;
 
 public:
-    typedef typename base_type::char_type char_type;
-    typedef typename base_type::category category;
+    using char_type = typename base_type::char_type;
+    using category = typename base_type::category;
     ZSTDCompressor(std::streamsize buffer_size =
                        boost::iostreams::default_device_buffer_size)
         : base_type(buffer_size) {}
@@ -162,12 +173,12 @@ BOOST_IOSTREAMS_PIPABLE(ZSTDCompressor, 0)
 struct ZSTDDecompressor
     : boost::iostreams::symmetric_filter<details::ZSTDDecompressorImpl> {
 private:
-    typedef details::ZSTDDecompressorImpl impl_type;
-    typedef symmetric_filter<impl_type> base_type;
+    using impl_type = details::ZSTDDecompressorImpl;
+    using base_type = symmetric_filter<impl_type>;
 
 public:
-    typedef typename base_type::char_type char_type;
-    typedef typename base_type::category category;
+    using char_type = typename base_type::char_type;
+    using category = typename base_type::category;
     ZSTDDecompressor(std::streamsize buffer_size =
                          boost::iostreams::default_device_buffer_size)
         : base_type(buffer_size) {}

@@ -8,6 +8,7 @@
 
 #include "libimetable_export.h"
 #include <cstddef>
+#include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <functional>
 #include <istream>

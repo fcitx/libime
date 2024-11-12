@@ -13,6 +13,7 @@ option(ENABLE_COVERAGE "Build the project with gcov support (Need ENABLE_TEST=On
 set(GCOV_TOOL "gcov" CACHE STRING "Path to gcov tool used by coverage.")
 option(ENABLE_DOC "Build doxygen" Off)
 option(ENABLE_DATA "Build data" On)
+option(ENABLE_TOOLS "Build tools" On)
 
 #########################################
 # Dependency
@@ -34,7 +35,7 @@ pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET "libzstd")
 find_package(Fcitx5Utils REQUIRED)
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
 
-find_package(Boost 1.61 REQUIRED COMPONENTS iostreams filesystem)
+find_package(Boost 1.61 REQUIRED COMPONENTS iostreams OPTIONAL_COMPONENTS filesystem)
 set(LIBIME_INSTALL_PKGDATADIR "${CMAKE_INSTALL_FULL_DATADIR}/libime")
 set(LIBIME_INSTALL_LIBDATADIR "${CMAKE_INSTALL_FULL_LIBDIR}/libime")
 
@@ -56,7 +57,10 @@ if(ENABLE_TEST)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(tools)
+
+if (ENABLE_TOOLS)
+  add_subdirectory(tools)
+endif()
 
 if (ENABLE_DATA)
   add_subdirectory(data)

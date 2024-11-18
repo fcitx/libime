@@ -17,7 +17,7 @@
 #include <fcntl.h>
 #include <sstream>
 
-#if __GNUC__ <= 8
+#ifdef USE_BOOST_FILESYSTEM
 #include <boost/filesystem.hpp>
 #else
 #include <filesystem>
@@ -82,7 +82,7 @@ struct MigrationCommonOption {
                 return stringutils::joinPath("table", path);
             }
 
-#if __GNUC__ <= 8
+#ifdef USE_BOOST_FILESYSTEM
             return boost::filesystem::absolute(path).string();
 #else
             return std::filesystem::absolute(path);

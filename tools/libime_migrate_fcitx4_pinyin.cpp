@@ -18,7 +18,7 @@
 #include <string_view>
 #include <unordered_map>
 
-#if __GNUC__ <= 8
+#ifdef USE_BOOST_FILESYSTEM
 #include <boost/filesystem.hpp>
 #else
 #include <filesystem>
@@ -347,7 +347,7 @@ int main(int argc, char *argv[]) {
             if (dictFile[0] == '/') {
                 outputDictFile = dictFile;
             } else {
-#if __GNUC__ <= 8
+#ifdef USE_BOOST_FILESYSTEM
                 outputDictFile = boost::filesystem::absolute(dictFile).string();
 #else
                 outputDictFile = std::filesystem::absolute(dictFile);
@@ -373,7 +373,7 @@ int main(int argc, char *argv[]) {
             if (historyFile[0] == '/') {
                 outputHistoryFile = historyFile;
             } else {
-#if __GNUC__ <= 8
+#ifdef USE_BOOST_FILESYSTEM
                 outputHistoryFile =
                     boost::filesystem::absolute(historyFile).string();
 #else

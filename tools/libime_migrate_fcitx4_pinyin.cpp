@@ -5,6 +5,7 @@
  *
  */
 
+#include "filesystem_helper.h"
 #include "libime/core/historybigram.h"
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
@@ -17,12 +18,6 @@
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
-
-#ifdef USE_BOOST_FILESYSTEM
-#include <boost/filesystem.hpp>
-#else
-#include <filesystem>
-#endif
 
 static const std::array<std::string, 412> PYFA = {
     "AA", "AB", "AC", "AD", "AE", "AF", "AH", "AI", "AJ", "AU", "AV", "AW",
@@ -347,11 +342,7 @@ int main(int argc, char *argv[]) {
             if (dictFile[0] == '/') {
                 outputDictFile = dictFile;
             } else {
-#ifdef USE_BOOST_FILESYSTEM
-                outputDictFile = boost::filesystem::absolute(dictFile).string();
-#else
-                outputDictFile = std::filesystem::absolute(dictFile);
-#endif
+                outputDictFile = absolutePath(dictFile);
             }
         }
         StandardPath::global().safeSave(
@@ -373,12 +364,7 @@ int main(int argc, char *argv[]) {
             if (historyFile[0] == '/') {
                 outputHistoryFile = historyFile;
             } else {
-#ifdef USE_BOOST_FILESYSTEM
-                outputHistoryFile =
-                    boost::filesystem::absolute(historyFile).string();
-#else
-                outputHistoryFile = std::filesystem::absolute(historyFile);
-#endif
+                outputHistoryFile = absolutePath(historyFile);
             }
         }
         StandardPath::global().safeSave(

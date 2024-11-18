@@ -43,16 +43,11 @@ int main() {
 }
 " HAS_STD_FILESYSTEM)
 
-if (HAS_STD_FILESYSTEM)
-    set(BOOST_FILESYSTEM)
-    set(BOOST_FILESYSTEM_LIB)
-else()
-    add_definitions(-DUSE_BOOST_FILESYSTEM)
-    set(BOOST_FILESYSTEM filesystem)
-    set(BOOST_FILESYSTEM_LIB Boost::filesystem)
+find_package(Boost 1.61 REQUIRED COMPONENTS iostreams)
+if (NOT HAS_STD_FILESYSTEM)
+    find_package(Boost REQUIRED COMPONENTS filesystem)
 endif()
 
-find_package(Boost 1.61 REQUIRED COMPONENTS iostreams ${BOOST_FILESYSTEM})
 set(LIBIME_INSTALL_PKGDATADIR "${CMAKE_INSTALL_FULL_DATADIR}/libime")
 set(LIBIME_INSTALL_LIBDATADIR "${CMAKE_INSTALL_FULL_LIBDIR}/libime")
 

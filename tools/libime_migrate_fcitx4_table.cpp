@@ -6,6 +6,7 @@
  *
  */
 #include "config.h"
+#include "filesystem_helper.h"
 #include "libime/core/historybigram.h"
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
@@ -16,12 +17,6 @@
 #include <fcitx-utils/standardpath.h>
 #include <fcntl.h>
 #include <sstream>
-
-#if __GNUC__ <= 8
-#include <boost/filesystem.hpp>
-#else
-#include <filesystem>
-#endif
 
 using namespace libime;
 using namespace fcitx;
@@ -82,11 +77,7 @@ struct MigrationCommonOption {
                 return stringutils::joinPath("table", path);
             }
 
-#if __GNUC__ <= 8
-            return boost::filesystem::absolute(path).string();
-#else
-            return std::filesystem::absolute(path);
-#endif
+            return absolutePath(path);
         }
         return path;
     }

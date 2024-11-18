@@ -39,7 +39,7 @@ include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
 #include <filesystem>
 int main() {
-    return std::filesystem::is_regular_file(\"/\") ? 0 : 1;
+    return std::filesystem::absolute(\".\").string()[0] == '/';
 }
 " HAS_STD_FILESYSTEM)
 

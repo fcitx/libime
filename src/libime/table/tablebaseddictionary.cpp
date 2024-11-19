@@ -1082,7 +1082,8 @@ size_t TableBasedDictionary::loadExtra(std::istream &in, TableFormat format) {
                 continue;
             }
             boost::trim_if(buf, isSpaceCheck);
-            if (buf == ExtraDictPhraseMark) {
+            if (buf == strConst[0][STR_PHRASE] ||
+                buf == strConst[1][STR_PHRASE]) {
                 state = ExtraDictState::Phrase;
                 continue;
             }

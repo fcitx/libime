@@ -7,7 +7,9 @@
 #define _FCITX_LIBIME_CORE_INPUTBUFFER_H_
 
 #include "libimecore_export.h"
+#include <boost/iterator/iterator_categories.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <cstddef>
 #include <fcitx-utils/inputbuffer.h>
 #include <string_view>
 
@@ -21,7 +23,7 @@ public:
                                         boost::bidirectional_traversal_tag,
                                         std::string_view> {
     public:
-        iterator() {}
+        iterator() = default;
         iterator(const InputBuffer *buffer, size_t idx)
             : buffer_(buffer), idx_(idx) {}
 
@@ -49,9 +51,9 @@ public:
 
     std::string_view operator[](size_t i) const { return at(i); }
 
-    iterator begin() { return iterator(this, 0); }
+    iterator begin() { return {this, 0}; }
 
-    iterator end() { return iterator(this, size()); }
+    iterator end() { return {this, size()}; }
 };
 } // namespace libime
 

@@ -9,7 +9,6 @@
 
 #include <cstdint>
 #include <iostream>
-#include <utility>
 #include <vector>
 
 #if defined(__linux__) || defined(__GLIBC__) || defined(__EMSCRIPTEN__)

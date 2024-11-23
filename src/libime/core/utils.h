@@ -10,10 +10,13 @@
 #include "libimecore_export.h"
 #include <arpa/inet.h>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <fcitx-utils/log.h>
 #include <iostream>
+#include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace libime {

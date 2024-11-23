@@ -25,10 +25,10 @@
 
 namespace libime {
 
-class ZSTDError : public BOOST_IOSTREAMS_FAILURE {
+class ZSTDError : public std::ios::failure {
 public:
     explicit ZSTDError(size_t error)
-        : BOOST_IOSTREAMS_FAILURE(ZSTD_getErrorName(error)), error_(error) {}
+        : std::ios::failure(ZSTD_getErrorName(error)), error_(error) {}
 
     size_t error() const { return error_; }
     static void check(size_t error) {

@@ -8,7 +8,13 @@
 #include "datrie.h"
 #include "historybigram.h"
 #include "languagemodel.h"
+#include <algorithm>
+#include <cstddef>
+#include <fcitx-utils/macros.h>
+#include <memory>
+#include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace libime {
@@ -51,14 +57,15 @@ Prediction::predict(const std::vector<std::string> &sentence,
         return {};
     }
 
-    State state = d->model_->nullState(), outState;
+    State state = d->model_->nullState();
+    State outState;
     std::vector<WordNode> nodes;
     nodes.reserve(sentence.size());
     for (const auto &word : sentence) {
         auto idx = d->model_->index(word);
         nodes.emplace_back(word, idx);
         d->model_->score(state, nodes.back(), outState);
-        state = std::move(outState);
+        state = outState;
     }
     return predict(state, sentence, realMaxSize);
 }
@@ -89,10 +96,7 @@ Prediction::predictWithScore(const State &state,
             trie.suffix(buf, len, pos);
             words.emplace(std::move(buf));
 
-            if (maxSize > 0 && words.size() >= maxSize) {
-                return false;
-            }
-            return true;
+            return maxSize <= 0 || words.size() < maxSize;
         });
     }
 
@@ -125,6 +129,7 @@ Prediction::predict(const State &state,
 
     auto temps = predictWithScore(state, sentence, realMaxSize);
     std::vector<std::string> result;
+    result.reserve(temps.size());
     for (auto &temp : temps) {
         result.emplace_back(std::move(temp.first));
     }

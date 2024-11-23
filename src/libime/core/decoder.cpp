@@ -270,7 +270,8 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
             std::priority_queue<std::shared_ptr<NBestNode>,
                                 std::vector<std::shared_ptr<NBestNode>>,
                                 NBestNodeLess<std::shared_ptr<NBestNode>>>;
-        PriorityQueueType q, result;
+        PriorityQueueType q;
+        PriorityQueueType result;
 
         auto *eos = &lattice[nullptr][0];
         auto newNBestNode = [](const LatticeNode *node) {

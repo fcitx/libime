@@ -6,19 +6,36 @@
 #include "historybigram.h"
 #include "constants.h"
 #include "datrie.h"
+#include "lattice.h"
 #include "utils.h"
 #include "zstdfilter.h"
+#include <algorithm>
+#include <array>
 #include <boost/algorithm/cxx11/all_of.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm/for_each.hpp>
+#include <cassert>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <fcitx-utils/macros.h>
 #include <fcitx-utils/stringutils.h>
+#include <functional>
+#include <istream>
 #include <iterator>
+#include <list>
+#include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -53,7 +70,7 @@ public:
 
     void decFreq(std::string_view s, int32_t delta) {
         auto v = trie_.exactMatchSearch(s.data(), s.size());
-        if (trie_.isNoValue(v)) {
+        if (TrieType::isNoValue(v)) {
             return;
         }
         if (v <= delta) {
@@ -68,7 +85,7 @@ public:
 
     void eraseByKey(std::string_view s) {
         auto v = trie_.exactMatchSearch(s.data(), s.size());
-        if (trie_.isNoValue(v)) {
+        if (TrieType::isNoValue(v)) {
             return;
         }
         trie_.erase(s);
@@ -121,10 +138,7 @@ public:
                           }
                           words.emplace(std::move(buf));
 
-                          if (maxSize > 0 && words.size() >= maxSize) {
-                              return false;
-                          }
-                          return true;
+                          return maxSize <= 0 || words.size() < maxSize;
                       });
     }
 
@@ -168,8 +182,9 @@ public:
         std::vector<std::string> lines;
         while (std::getline(in, buf)) {
             lines.emplace_back(buf);
-            if (lines.size() >= maxSize_)
+            if (lines.size() >= maxSize_) {
                 break;
+            }
         }
         for (auto &line : lines | boost::adaptors::reversed) {
             std::vector<std::string> sentence =
@@ -348,8 +363,6 @@ private:
 // And then we define alpha as p = 1 / (1 + alpha).
 class HistoryBigramPrivate {
 public:
-    HistoryBigramPrivate() {}
-
     void populateSentence(std::list<std::vector<std::string>> popedSentence) {
         for (size_t i = 1; !popedSentence.empty() && i < pools_.size(); i++) {
             std::list<std::vector<std::string>> nextSentences;
@@ -405,7 +418,7 @@ HistoryBigram::HistoryBigram()
     d->poolWeight_.reserve(poolSize.size());
     for (auto size : poolSize) {
         d->pools_.emplace_back(size);
-        float portion = 1.0f;
+        float portion = 1.0F;
         if (d->pools_.size() != poolSize.size()) {
             portion *= 1 - p;
         }
@@ -472,11 +485,11 @@ float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
     auto bf = d->bigramFreq(prev, cur);
     auto uf1 = d->unigramFreq(cur);
 
-    float bigramWeight = d->useOnlyUnigram_ ? 0.0f : 0.8f;
+    float bigramWeight = d->useOnlyUnigram_ ? 0.0F : 0.8F;
     // add 0.5 to avoid div 0
-    float pr = 0.0f;
+    float pr = 0.0F;
     pr += bigramWeight * float(bf) / float(uf0 + d->poolWeight_[0] / 2);
-    pr += (1.0f - bigramWeight) * float(uf1) /
+    pr += (1.0F - bigramWeight) * float(uf1) /
           float(d->unigramSize() + d->poolWeight_[0] / 2);
 
     if (pr >= 1.0) {

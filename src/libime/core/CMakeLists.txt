@@ -50,6 +50,7 @@ set(LIBIME_HDRS
 
 set(LIBIME_SRCS
     datrie.cpp
+    dictionary.cpp
     decoder.cpp
     languagemodel.cpp
     inputbuffer.cpp

@@ -9,14 +9,13 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <libime/core/lattice.h>
 #include <libime/core/segmentgraph.h>
-#include <map>
 #include <unordered_map>
+#include <vector>
 
 namespace libime {
 
-typedef std::unordered_map<const SegmentGraphNode *,
-                           boost::ptr_vector<LatticeNode>>
-    LatticeMap;
+using LatticeMap = std::unordered_map<const SegmentGraphNode *,
+                                      boost::ptr_vector<LatticeNode>>;
 
 class LatticePrivate {
 public:

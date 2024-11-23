@@ -5,3 +5,12 @@
  */
 
 #include "dictionary.h"
+#include "segmentgraph.h"
+#include <unordered_set>
+
+void libime::Dictionary::matchPrefix(
+    const SegmentGraph &graph, const GraphMatchCallback &callback,
+    const std::unordered_set<const SegmentGraphNode *> &ignore,
+    void *helper) const {
+    matchPrefixImpl(graph, callback, ignore, helper);
+}

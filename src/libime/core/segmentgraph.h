@@ -7,24 +7,32 @@
 #define _FCITX_LIBIME_CORE_SEGMENTGRAPH_H_
 
 #include "libimecore_export.h"
+#include <boost/iterator/iterator_categories.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/adaptor/type_erased.hpp>
+#include <boost/range/any_range.hpp>
+#include <boost/range/iterator_range_core.hpp>
+#include <cassert>
+#include <cstddef>
 #include <fcitx-utils/element.h>
+#include <fcitx-utils/macros.h>
 #include <functional>
 #include <list>
+#include <memory>
+#include <string>
 #include <string_view>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
 class SegmentGraphBase;
 class SegmentGraphNode;
-typedef std::function<bool(const SegmentGraphBase &graph,
-                           const std::vector<size_t> &)>
-    SegmentGraphDFSCallback;
-typedef std::function<bool(const SegmentGraphBase &graph,
-                           const SegmentGraphNode *)>
-    SegmentGraphBFSCallback;
+using SegmentGraphDFSCallback =
+    std::function<bool(const SegmentGraphBase &, const std::vector<size_t> &)>;
+using SegmentGraphBFSCallback =
+    std::function<bool(const SegmentGraphBase &, const SegmentGraphNode *)>;
 
 using SegmentGraphNodeRange =
     boost::any_range<SegmentGraphNode, boost::bidirectional_traversal_tag>;
@@ -106,10 +114,9 @@ private:
     size_t start_;
 };
 
-typedef std::vector<const SegmentGraphNode *> SegmentGraphPath;
-typedef std::function<void(
-    const std::unordered_set<const SegmentGraphNode *> &node)>
-    DiscardCallback;
+using SegmentGraphPath = std::vector<const SegmentGraphNode *>;
+using DiscardCallback =
+    std::function<void(const std::unordered_set<const SegmentGraphNode *> &)>;
 
 class LIBIMECORE_EXPORT SegmentGraphBase {
 public:
@@ -131,7 +138,7 @@ public:
     size_t size() const { return data().size(); }
 
     inline std::string_view segment(size_t start, size_t end) const {
-        return std::string_view(data().data() + start, end - start);
+        return {data().data() + start, end - start};
     }
 
     inline std::string_view segment(const SegmentGraphNode &start,

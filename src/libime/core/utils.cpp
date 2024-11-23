@@ -5,6 +5,7 @@
  */
 
 #include "utils.h"
+#include <fcitx-utils/log.h>
 
 namespace libime {
 

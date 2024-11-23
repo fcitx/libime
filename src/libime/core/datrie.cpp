@@ -20,14 +20,17 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <fcitx-utils/macros.h>
 #include <fstream>
 #include <ios>
 #include <istream>
 #include <limits>
+#include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <sys/types.h>
 #include <tuple>
 #include <vector>
 

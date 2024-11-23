@@ -6,8 +6,11 @@
 #ifndef _FCITX_LIBIME_CORE_LRU_H_
 #define _FCITX_LIBIME_CORE_LRU_H_
 
+#include <boost/container_hash/hash.hpp>
 #include <boost/unordered_map.hpp>
+#include <cstddef>
 #include <list>
+#include <utility>
 
 namespace libime {
 
@@ -15,13 +18,13 @@ namespace libime {
 template <typename K, typename V, typename H = boost::hash<K>>
 class LRUCache {
 public:
-    typedef K key_type;
-    typedef V value_type;
+    using key_type = K;
+    using value_type = V;
     // we use boost's unordered_map is for the heterogeneous lookup
     // functionality.
-    typedef boost::unordered_map<
-        K, std::pair<V, typename std::list<K>::iterator>, H>
-        dict_type;
+    using dict_type =
+        boost::unordered_map<K, std::pair<V, typename std::list<K>::iterator>,
+                             H>;
 
     LRUCache(size_t sz = 80) : sz_(sz) {}
 
@@ -105,7 +108,6 @@ private:
         return &i->second.first;
     }
 
-private:
     dict_type dict_;
     std::list<K> order_;
     // Maximum size of the cache.

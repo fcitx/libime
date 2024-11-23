@@ -5,9 +5,16 @@
  */
 
 #include "segmentgraph.h"
-#include "lattice_p.h"
 #include <boost/range/combine.hpp>
+#include <boost/range/detail/combine_cxx11.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <cassert>
+#include <cstddef>
 #include <queue>
+#include <tuple>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -63,7 +70,8 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
 
     q.emplace(&start(), &graph.start());
     while (!q.empty()) {
-        const SegmentGraphNode *old, *now;
+        const SegmentGraphNode *old;
+        const SegmentGraphNode *now;
         std::tie(old, now) = q.top();
         q.pop();
         do {
@@ -72,7 +80,8 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
                 return old->index();
             }
 
-            const SegmentGraphNode *nold, *nnow;
+            const SegmentGraphNode *nold;
+            const SegmentGraphNode *nnow;
             for (auto t : boost::combine(old->nexts(), now->nexts())) {
                 nold = &boost::get<0>(t);
                 nnow = &boost::get<1>(t);

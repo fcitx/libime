@@ -6,6 +6,13 @@
 
 #include "lattice.h"
 #include "lattice_p.h"
+#include "segmentgraph.h"
+#include <cstddef>
+#include <fcitx-utils/macros.h>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <unordered_set>
 
 namespace libime {
 

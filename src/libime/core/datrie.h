@@ -12,11 +12,16 @@
 
 #include "libimecore_export.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <functional>
+#include <istream>
 #include <memory>
+#include <ostream>
+#include <string>
 #include <string_view>
+#include <tuple>
 #include <vector>
 
 namespace libime {

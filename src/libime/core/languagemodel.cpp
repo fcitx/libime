@@ -7,12 +7,29 @@
 #include "languagemodel.h"
 #include "config.h"
 #include "constants.h"
+#include "datrie.h"
 #include "lattice.h"
+#include "lm/config.hh"
+#include "lm/lm_exception.hh"
 #include "lm/model.hh"
+#include "lm/state.hh"
+#include "lm/word_index.hh"
+#include "util/string_piece.hh"
+#include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <fcitx-utils/fs.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/stringutils.h>
 #include <fstream>
+#include <ios>
+#include <memory>
+#include <string>
+#include <string_view>
 #include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -74,13 +91,14 @@ float LanguageModelBase::singleWordScore(const State &state,
 float LanguageModelBase::wordsScore(
     const State &_state, const std::vector<std::string_view> &words) const {
     float s = 0;
-    State state = _state, outState;
+    State state = _state;
+    State outState;
     std::vector<WordNode> nodes;
     for (auto word : words) {
         auto idx = index(word);
         nodes.emplace_back(word, idx);
         s += score(state, nodes.back(), outState);
-        state = std::move(outState);
+        state = outState;
     }
     return s;
 }
@@ -188,10 +206,10 @@ float LanguageModel::score(const State &state, const WordNode &node,
         return d->unknown_;
     }
     return d->model()->Score(lmState(state), node.idx(), lmState(out)) +
-           (node.idx() == unknown() ? d->unknown_ : 0.0f);
+           (node.idx() == unknown() ? d->unknown_ : 0.0F);
 }
 
-bool LanguageModel::isUnknown(WordIndex idx, std::string_view) const {
+bool LanguageModel::isUnknown(WordIndex idx, std::string_view /*word*/) const {
     return idx == unknown();
 }
 

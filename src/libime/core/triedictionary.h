@@ -8,11 +8,13 @@
 #define _LIBIME_LIBIME_CORE_TRIEDICTIONARY_H_
 
 #include "libimecore_export.h"
+#include <cstddef>
 #include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <libime/core/datrie.h>
 #include <libime/core/dictionary.h>
 #include <memory>
+#include <string_view>
 
 namespace libime {
 
@@ -67,7 +69,7 @@ public:
 
 protected:
     TrieType *mutableTrie(size_t idx);
-    void addWord(size_t idx, std::string_view key, float cost = 0.0f);
+    void addWord(size_t idx, std::string_view key, float cost = 0.0F);
     bool removeWord(size_t idx, std::string_view key);
 
     std::unique_ptr<TrieDictionaryPrivate> d_ptr;

@@ -7,10 +7,13 @@
 #define _FCITX_LIBIME_CORE_LANGUAGEMODEL_H_
 
 #include "libimecore_export.h"
+#include <array>
+#include <cstddef>
 #include <fcitx-utils/macros.h>
 #include <libime/core/datrie.h>
 #include <limits>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -77,10 +80,10 @@ public:
     WordIndex unknown() const override;
     const State &beginState() const override;
     const State &nullState() const override;
-    WordIndex index(std::string_view view) const override;
-    float score(const State &state, const WordNode &word,
+    WordIndex index(std::string_view word) const override;
+    float score(const State &state, const WordNode &node,
                 State &out) const override;
-    bool isUnknown(WordIndex idx, std::string_view view) const override;
+    bool isUnknown(WordIndex idx, std::string_view word) const override;
     void setUnknownPenalty(float unknown);
     float unknownPenalty() const;
 

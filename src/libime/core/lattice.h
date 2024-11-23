@@ -8,13 +8,22 @@
 
 #include "libimecore_export.h"
 #include <algorithm>
+#include <boost/iterator/iterator_categories.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/any_range.hpp>
+#include <cassert>
+#include <cstddef>
 #include <fcitx-utils/macros.h>
 #include <fcitx-utils/stringutils.h>
 #include <libime/core/languagemodel.h>
 #include <libime/core/segmentgraph.h>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <type_traits>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace libime {
 

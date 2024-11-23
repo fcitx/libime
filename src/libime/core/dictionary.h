@@ -10,25 +10,24 @@
 #include <functional>
 #include <libime/core/lattice.h>
 #include <libime/core/segmentgraph.h>
-#include <string_view>
+#include <memory>
+#include <unordered_set>
 
 namespace libime {
 
 class WordNode;
 
 // The callback accepts the passed path that matches the word.
-typedef std::function<void(const SegmentGraphPath &, WordNode &, float,
-                           std::unique_ptr<LatticeNodeData>)>
-    GraphMatchCallback;
+using GraphMatchCallback =
+    std::function<void(const SegmentGraphPath &, WordNode &, float,
+                       std::unique_ptr<LatticeNodeData>)>;
 
 class LIBIMECORE_EXPORT Dictionary {
 public:
     void
     matchPrefix(const SegmentGraph &graph, const GraphMatchCallback &callback,
                 const std::unordered_set<const SegmentGraphNode *> &ignore = {},
-                void *helper = nullptr) const {
-        matchPrefixImpl(graph, callback, ignore, helper);
-    }
+                void *helper = nullptr) const;
 
 protected:
     virtual void

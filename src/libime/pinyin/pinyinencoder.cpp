@@ -233,20 +233,20 @@ PinyinEncoder::parseUserPinyin(std::string userPinyin,
                                                   fuzzyFlags, pinyinMap);
                     auto nextMatchAlt = longestMatch(iter + str.size() - 1, end,
                                                      fuzzyFlags, pinyinMap);
-                    auto matchSize = str.size() + nextMatch.match.size();
                     auto matchSizeAlt =
                         str.size() - 1 + nextMatchAlt.match.size();
 
-                    // comparator is (validPinyin, wholeMatchSize,
+                    // comparator is (validPinyin, whole size>= lhs pinyin,
                     // isCompletePinyin) validPinyin means it's at least some
                     // pinyin, instead of things startsWith i,u,v. Since
                     // longestMatch will now treat string startsWith iuv a whole
                     // segment, we need to compare validity before the length.
-                    // Always prefer longer match and complete pinyin match.
-                    std::tuple<bool, size_t, bool> compare(
-                        nextMatch.valid, matchSize, nextMatch.isCompletePinyin);
-                    std::tuple<bool, size_t, bool> compareAlt(
-                        nextMatchAlt.valid, matchSizeAlt,
+                    // If whole size is equal to lhs pinyin, then it should be
+                    // handled by inner segement flag.
+                    std::tuple<bool, bool, bool> compare(
+                        nextMatch.valid, true, nextMatch.isCompletePinyin);
+                    std::tuple<bool, bool, bool> compareAlt(
+                        nextMatchAlt.valid, matchSizeAlt > str.size(),
                         nextMatchAlt.isCompletePinyin);
 
                     if (compare >= compareAlt) {

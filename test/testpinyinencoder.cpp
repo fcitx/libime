@@ -233,6 +233,8 @@ int main() {
     check("zhuna", PinyinFuzzyFlag::Inner, {"zhu", "na"});
     check("zhuna", PinyinFuzzyFlag::Inner, {"zhun", "a"});
 
+    check("sangeren", PinyinFuzzyFlag::Inner, {"san", "ge", "ren"});
+
     {
         PinyinCorrectionProfile profile(BuiltinPinyinCorrectionProfile::Qwerty);
         auto graph = PinyinEncoder::parseUserPinyin(

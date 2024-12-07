@@ -24,7 +24,7 @@ target_link_libraries(libime_tabledict LibIME::Table)
 install(TARGETS libime_tabledict DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT tools)
 add_executable(LibIME::tabledict ALIAS libime_tabledict)
 
-add_library(filesystem_helper filesystem_helper.cpp)
+add_library(filesystem_helper STATIC filesystem_helper.cpp)
 if (HAS_STD_FILESYSTEM)
     target_compile_definitions(filesystem_helper PRIVATE -DHAS_STD_FILESYSTEM)
 else()

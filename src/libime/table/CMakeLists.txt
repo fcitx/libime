@@ -23,7 +23,7 @@ ecm_setup_version(PROJECT
                   PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/LibIMETableConfigVersion.cmake")
 set(IMETable_SOVERSION 0)
 
-add_library(IMETable SHARED ${LIBIME_TABLE_SRCS})
+add_library(IMETable ${LIBIME_TABLE_SRCS})
 set_target_properties(IMETable
                       PROPERTIES VERSION ${IMETable_VERSION}
                       SOVERSION ${IMETable_SOVERSION}

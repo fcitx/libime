@@ -9,7 +9,7 @@ foreach(f ${__KENLM_SRCS})
     endif()
 endforeach()
 
-add_library(kenlm STATIC ${KENLM_SRCS})
+add_library(kenlm OBJECT ${KENLM_SRCS})
 target_include_directories(kenlm PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/kenlm>)
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=3 PRIVATE -DNDEBUG)
 target_link_libraries(kenlm PUBLIC Boost::boost PkgConfig::ZSTD)
@@ -69,7 +69,7 @@ ecm_setup_version(PROJECT
 # the cmake if will
 set(IMECore_SOVERSION 0)
 
-add_library(IMECore SHARED ${LIBIME_SRCS})
+add_library(IMECore ${LIBIME_SRCS})
 set_target_properties(IMECore
                       PROPERTIES VERSION ${IMECore_VERSION}
                       SOVERSION ${IMECore_SOVERSION}

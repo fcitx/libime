@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.12)
 project(libime VERSION 1.1.9)
 set(LibIME_VERSION ${PROJECT_VERSION})
 
@@ -8,6 +8,7 @@ set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${C
 #########################################
 # Options
 #########################################
+option(BUILD_SHARED_LIBS "Build library as shared libs" On)
 option(ENABLE_TEST "Build Test" On)
 option(ENABLE_COVERAGE "Build the project with gcov support (Need ENABLE_TEST=On)" Off)
 set(GCOV_TOOL "gcov" CACHE STRING "Path to gcov tool used by coverage.")

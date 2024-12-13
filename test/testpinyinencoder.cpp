@@ -6,6 +6,7 @@
 
 #include "libime/pinyin/pinyincorrectionprofile.h"
 #include "libime/pinyin/pinyinencoder.h"
+#include "libime/pinyin/shuangpinprofile.h"
 #include <fcitx-utils/log.h>
 #include <string>
 #include <vector>
@@ -249,6 +250,16 @@ int main() {
         graph = PinyinEncoder::parseUserPinyin("suang", &profile,
                                                PinyinFuzzyFlag::Correction);
         dfs(graph, {"suan", "g"});
+
+    }
+
+    {
+        ShuangpinProfile sp(ShuangpinBuiltinProfile::Xiaohe);
+        PinyinCorrectionProfile profile(BuiltinPinyinCorrectionProfile::Qwerty);
+
+        auto graph = PinyinEncoder::parseUserShuangpin(
+            "xnhe", sp, PinyinFuzzyFlag::Correction);
+        dfs(graph, {"xn", "he"});
     }
 
     return 0;

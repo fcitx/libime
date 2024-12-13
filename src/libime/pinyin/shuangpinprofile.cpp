@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "shuangpinprofile.h"
+#include "pinyincorrectionprofile.h"
 #include "pinyindata.h"
 #include "pinyinencoder.h"
 #include "shuangpindata.h"
@@ -163,6 +164,12 @@ FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 
 void ShuangpinProfile::buildShuangpinTable() {
     FCITX_D();
+
+    // FIXME: get correctionProfile properly
+    auto correctionProfile = std::make_shared<PinyinCorrectionProfile>(
+        BuiltinPinyinCorrectionProfile::Qwerty);
+    const auto &pinyinMap =
+        correctionProfile ? correctionProfile->pinyinMap() : getPinyinMapV2();
     // Set up valid inputs.
     for (char c = 'a'; c <= 'z'; c++) {
         d->validInputs_.insert(c);
@@ -268,10 +275,10 @@ void ShuangpinProfile::buildShuangpinTable() {
             }
         };
 
-    auto addPinyin = [addPinyinToList](
+    auto addPinyin = [addPinyinToList, pinyinMap](
                          std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
                          const std::string &py) {
-        const auto &map = getPinyinMapV2();
+        const auto &map = pinyinMap;
         auto iterPair = map.equal_range(py);
         if (iterPair.first != iterPair.second) {
             for (const auto &item :
@@ -378,7 +385,7 @@ void ShuangpinProfile::buildShuangpinTable() {
     }
 
     // Add non-existent 2 char pinyin to the map.
-    for (const auto &p : getPinyinMapV2()) {
+    for (const auto &p : pinyinMap) {
         // Don't add "ng" as two char direct pinyin.
         if (p.pinyin() == "ng") {
             continue;

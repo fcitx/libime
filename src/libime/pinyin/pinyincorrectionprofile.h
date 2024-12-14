@@ -64,6 +64,7 @@ public:
      * @see getPinyinMapV2
      */
     const PinyinMap &pinyinMap() const;
+    const std::unordered_map<char, std::vector<char>> &correctionMap() const;
 
 private:
     FCITX_DECLARE_PRIVATE(PinyinCorrectionProfile);

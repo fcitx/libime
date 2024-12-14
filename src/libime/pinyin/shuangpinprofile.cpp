@@ -187,9 +187,6 @@ FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 void ShuangpinProfile::buildShuangpinTable(
     const PinyinCorrectionProfile *correctionProfile) {
     FCITX_D();
-
-    const auto &pinyinMap =
-        correctionProfile ? correctionProfile->pinyinMap() : getPinyinMapV2();
     // Set up valid inputs.
     for (char c = 'a'; c <= 'z'; c++) {
         d->validInputs_.insert(c);
@@ -295,10 +292,10 @@ void ShuangpinProfile::buildShuangpinTable(
             }
         };
 
-    auto addPinyin = [addPinyinToList, pinyinMap](
+    auto addPinyin = [addPinyinToList](
                          std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
                          const std::string &py) {
-        const auto &map = pinyinMap;
+        const auto &map = getPinyinMapV2();
         auto iterPair = map.equal_range(py);
         if (iterPair.first != iterPair.second) {
             for (const auto &item :
@@ -405,7 +402,7 @@ void ShuangpinProfile::buildShuangpinTable(
     }
 
     // Add non-existent 2 char pinyin to the map.
-    for (const auto &p : pinyinMap) {
+    for (const auto &p : getPinyinMapV2()) {
         // Don't add "ng" as two char direct pinyin.
         if (p.pinyin() == "ng") {
             continue;
@@ -451,6 +448,40 @@ void ShuangpinProfile::buildShuangpinTable(
         if (pys.empty()) {
             d->spTable_.erase(input);
         }
+    }
+
+    std::vector<std::tuple<std::string, PinyinSyllable, PinyinFuzzyFlags>>
+        newEntries;
+
+    if (correctionProfile != nullptr) {
+        auto correctionMap = correctionProfile->correctionMap();
+        for (const auto &sp : d->spTable_) {
+            const auto &input = sp.first;
+            auto &pys = sp.second;
+
+            for (size_t i = 0; i < input.size(); i++) {
+                auto chr = input[i];
+                auto swap = correctionMap.find(chr);
+                if (swap == correctionMap.end() || swap->second.empty()) {
+                    continue;
+                }
+                std::string newInput = input;
+                for (auto sub : swap->second) {
+                    newInput[i] = sub;
+                    for (const auto &x : pys) {
+                        newEntries.emplace_back(
+                            newInput, x.first,
+                            x.second | PinyinFuzzyFlag::Correction);
+                    }
+                    newInput[i] = chr;
+                }
+            }
+        }
+    }
+
+    for (const auto &newEntry : newEntries) {
+        auto &pys = d->spTable_[std::get<0>(newEntry)];
+        pys.emplace(std::get<1>(newEntry), std::get<2>(newEntry));
     }
 
     for (const auto &sp : d->spTable_) {

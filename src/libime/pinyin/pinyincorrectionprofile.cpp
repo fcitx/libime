@@ -47,6 +47,7 @@ getProfileMapping(BuiltinPinyinCorrectionProfile profile) {
 class PinyinCorrectionProfilePrivate {
 public:
     PinyinMap pinyinMap_;
+    std::unordered_map<char, std::vector<char>> correctionMap;
 };
 
 PinyinCorrectionProfile::PinyinCorrectionProfile(
@@ -57,6 +58,7 @@ PinyinCorrectionProfile::PinyinCorrectionProfile(
     const std::unordered_map<char, std::vector<char>> &mapping)
     : d_ptr(std::make_unique<PinyinCorrectionProfilePrivate>()) {
     FCITX_D();
+    d->correctionMap = mapping;
     // Fill with the original pinyin map.
     d->pinyinMap_ = getPinyinMapV2();
     if (mapping.empty()) {
@@ -93,4 +95,9 @@ const PinyinMap &PinyinCorrectionProfile::pinyinMap() const {
     return d->pinyinMap_;
 }
 
+const std::unordered_map<char, std::vector<char>> &
+PinyinCorrectionProfile::correctionMap() const {
+    FCITX_D();
+    return d->correctionMap;
+}
 } // namespace libime

@@ -33,6 +33,27 @@ public:
 };
 
 ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
+    : ShuangpinProfile::ShuangpinProfile(profile, nullptr) {}
+
+ShuangpinProfile::ShuangpinProfile(std::istream &in)
+    : ShuangpinProfile::ShuangpinProfile(in, nullptr) {}
+
+ShuangpinProfile::ShuangpinProfile(
+    const ShuangpinProfile &rhs,
+    const PinyinCorrectionProfile *correctionProfile)
+    : d_ptr(std::make_unique<ShuangpinProfilePrivate>()) {
+    FCITX_D();
+    d->zeroS_ = rhs.d_ptr->zeroS_;
+    d->finalMap_ = rhs.d_ptr->finalMap_;
+    d->initialMap_ = rhs.d_ptr->initialMap_;
+    d->initialFinalMap_ = rhs.d_ptr->initialFinalMap_;
+    d->finalSet_ = rhs.d_ptr->finalSet_;
+    buildShuangpinTable(correctionProfile);
+}
+
+ShuangpinProfile::ShuangpinProfile(
+    ShuangpinBuiltinProfile profile,
+    const PinyinCorrectionProfile *correctionProfile)
     : d_ptr(std::make_unique<ShuangpinProfilePrivate>()) {
     FCITX_D();
     const SP_C *c = nullptr;
@@ -84,10 +105,11 @@ ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
                                PinyinEncoder::stringToInitial(s[i].strQP));
     }
 
-    buildShuangpinTable();
+    buildShuangpinTable(correctionProfile);
 }
 
-ShuangpinProfile::ShuangpinProfile(std::istream &in)
+ShuangpinProfile::ShuangpinProfile(
+    std::istream &in, const PinyinCorrectionProfile *correctionProfile)
     : d_ptr(std::make_unique<ShuangpinProfilePrivate>()) {
     FCITX_D();
     std::string line;
@@ -157,17 +179,15 @@ ShuangpinProfile::ShuangpinProfile(std::istream &in)
         }
     }
 
-    buildShuangpinTable();
+    buildShuangpinTable(correctionProfile);
 }
 
 FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 
-void ShuangpinProfile::buildShuangpinTable() {
+void ShuangpinProfile::buildShuangpinTable(
+    const PinyinCorrectionProfile *correctionProfile) {
     FCITX_D();
 
-    // FIXME: get correctionProfile properly
-    auto correctionProfile = std::make_shared<PinyinCorrectionProfile>(
-        BuiltinPinyinCorrectionProfile::Qwerty);
     const auto &pinyinMap =
         correctionProfile ? correctionProfile->pinyinMap() : getPinyinMapV2();
     // Set up valid inputs.

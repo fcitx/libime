@@ -7,6 +7,7 @@
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/pinyincorrectionprofile.h"
 #include "libime/pinyin/pinyinencoder.h"
+#include "libime/pinyin/shuangpinprofile.h"
 #include "pinyindecoder.h"
 
 namespace libime {
@@ -183,6 +184,12 @@ void PinyinIME::setCorrectionProfile(
     FCITX_D();
     if (d->correctionProfile_ != profile) {
         d->correctionProfile_ = std::move(profile);
+        auto sp = shuangpinProfile();
+        if (sp != nullptr) {
+            setShuangpinProfile(std::make_shared<libime::ShuangpinProfile>(
+                *sp, correctionProfile().get()));
+        }
+
         emit<PinyinIME::optionChanged>();
     }
 }

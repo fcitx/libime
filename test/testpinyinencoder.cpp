@@ -250,7 +250,6 @@ int main() {
         graph = PinyinEncoder::parseUserPinyin("suang", &profile,
                                                PinyinFuzzyFlag::Correction);
         dfs(graph, {"suan", "g"});
-
     }
 
     {
@@ -258,8 +257,20 @@ int main() {
         PinyinCorrectionProfile profile(BuiltinPinyinCorrectionProfile::Qwerty);
 
         auto graph = PinyinEncoder::parseUserShuangpin(
-            "xnhe", sp, PinyinFuzzyFlag::Correction);
-        dfs(graph, {"xn", "he"});
+            "xnqiee", sp, PinyinFuzzyFlag::Correction);
+        dfs(graph, {"xn", "qi", "ee"});
+        graph = PinyinEncoder::parseUserShuangpin("znwiee", sp,
+                                                  PinyinFuzzyFlag::Correction);
+        dfs(graph, {"z", "nw", "ie", "e"});
+
+        graph = PinyinEncoder::parseUserShuangpin("wokeyityxxboli", sp,
+                                                  PinyinFuzzyFlag::Correction);
+        dfs(graph, {"wo", "ke", "yi", "ty", "xx", "bo", "li"});
+        graph = PinyinEncoder::parseUserShuangpin("wokeyityxzboli", sp,
+                                                  PinyinFuzzyFlag::Correction);
+        dfs(graph, {"wo", "ke", "yi", "ty", "x", "z", "bo", "li"});
+
+
     }
 
     return 0;

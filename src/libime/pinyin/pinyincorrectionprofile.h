@@ -64,6 +64,14 @@ public:
      * @see getPinyinMapV2
      */
     const PinyinMap &pinyinMap() const;
+    /**
+     * Return the correction mapping.
+     *
+     * E.g. w may be corrected to q,e, the mapping will contain {'w': ['q',
+     * 'e']}.
+     *
+     * @see getPinyinMapV2
+     */
     const std::unordered_map<char, std::vector<char>> &correctionMap() const;
 
 private:

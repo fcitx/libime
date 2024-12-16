@@ -30,6 +30,8 @@ public:
     ShuangpinProfile::ValidInputSetType validInputs_;
     ShuangpinProfile::ValidInputSetType validInitials_;
     ShuangpinProfile::TableType spTable_;
+
+    const PinyinCorrectionProfile *correctionProfile_;
 };
 
 ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
@@ -48,7 +50,8 @@ ShuangpinProfile::ShuangpinProfile(
     d->initialMap_ = rhs.d_ptr->initialMap_;
     d->initialFinalMap_ = rhs.d_ptr->initialFinalMap_;
     d->finalSet_ = rhs.d_ptr->finalSet_;
-    buildShuangpinTable(correctionProfile);
+    d->correctionProfile_ = correctionProfile;
+    buildShuangpinTable();
 }
 
 ShuangpinProfile::ShuangpinProfile(
@@ -105,7 +108,8 @@ ShuangpinProfile::ShuangpinProfile(
                                PinyinEncoder::stringToInitial(s[i].strQP));
     }
 
-    buildShuangpinTable(correctionProfile);
+    d->correctionProfile_ = correctionProfile;
+    buildShuangpinTable();
 }
 
 ShuangpinProfile::ShuangpinProfile(
@@ -179,14 +183,15 @@ ShuangpinProfile::ShuangpinProfile(
         }
     }
 
-    buildShuangpinTable(correctionProfile);
+    d->correctionProfile_ = correctionProfile;
+    buildShuangpinTable();
 }
 
 FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 
-void ShuangpinProfile::buildShuangpinTable(
-    const PinyinCorrectionProfile *correctionProfile) {
+void ShuangpinProfile::buildShuangpinTable() {
     FCITX_D();
+    auto correctionProfile = d->correctionProfile_;
     // Set up valid inputs.
     for (char c = 'a'; c <= 'z'; c++) {
         d->validInputs_.insert(c);
@@ -478,6 +483,9 @@ void ShuangpinProfile::buildShuangpinTable(
             }
         }
     }
+
+    // release it after use.
+    d->correctionProfile_ = nullptr;
 
     for (const auto &newEntry : newEntries) {
         auto &pys = d->spTable_[std::get<0>(newEntry)];

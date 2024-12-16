@@ -54,7 +54,7 @@ public:
 
 
 private:
-    void buildShuangpinTable(const PinyinCorrectionProfile *correctionProfile);
+    void buildShuangpinTable();
     std::unique_ptr<ShuangpinProfilePrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(ShuangpinProfile);
 };

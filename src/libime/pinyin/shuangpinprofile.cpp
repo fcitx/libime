@@ -31,7 +31,312 @@ public:
     ShuangpinProfile::ValidInputSetType validInitials_;
     ShuangpinProfile::TableType spTable_;
 
-    const PinyinCorrectionProfile *correctionProfile_;
+    void buildShuangpinTable(const PinyinCorrectionProfile *correctionProfile) {
+        // Set up valid inputs.
+        for (char c = 'a'; c <= 'z'; c++) {
+            validInputs_.insert(c);
+        }
+        for (const auto &p : initialMap_) {
+            validInputs_.insert(p.first);
+        }
+        std::unordered_map<PinyinFinal, char> singleCharFinal;
+        for (const auto &p : finalMap_) {
+            validInputs_.insert(p.first);
+            if (PinyinEncoder::finalToString(p.second).size() == 1) {
+                singleCharFinal[p.second] = p.first;
+            }
+        }
+
+        for (const auto &p : initialFinalMap_) {
+            for (auto c : p.first) {
+                validInputs_.insert(c);
+            }
+        }
+
+        std::set<char> initialChars;
+        for (auto zero : zeroS_) {
+            if (zero != '*') {
+                validInputs_.insert(zero);
+                initialChars.insert(zero);
+            }
+        }
+
+        // Collect all initial and final chars.
+        // Add single char initial to initialChars.
+        for (auto c = PinyinEncoder::firstInitial;
+             c <= PinyinEncoder::lastInitial; c++) {
+            const auto &initialString =
+                PinyinEncoder::initialToString(static_cast<PinyinInitial>(c));
+            if (initialString.size() == 1) {
+                initialChars.insert(initialString[0]);
+            }
+        }
+        // Add char in map to initialChars.
+        for (auto &p : initialMap_) {
+            initialChars.insert(p.first);
+        }
+
+        // Collect all final chars.
+        // Add single char final to finalChars.
+        std::set<char> finalChars;
+        for (auto c = PinyinEncoder::firstFinal; c <= PinyinEncoder::lastFinal;
+             c++) {
+            auto f = static_cast<PinyinFinal>(c);
+            const auto &finalString = PinyinEncoder::finalToString(f);
+            if (finalString.size() == 1 && !singleCharFinal.count(f)) {
+                finalChars.insert(finalString[0]);
+                singleCharFinal[f] = finalString[0];
+            }
+        }
+        // Add final in map to finalChars
+        for (auto &p : finalMap_) {
+            finalChars.insert(p.first);
+        }
+
+        for (const auto &[final, chr] : singleCharFinal) {
+            auto [begin, end] = finalMap_.equal_range(chr);
+            if (std::find_if(begin, end, [final = final](const auto &item) {
+                    return item.second == final;
+                }) == end) {
+                finalMap_.emplace(chr, final);
+            }
+        }
+
+        auto addPinyinToList =
+            [](std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
+               PinyinInitial i, PinyinFinal f, PinyinFuzzyFlags flags) {
+                PinyinSyllable s(i, f);
+                if (flags == PinyinFuzzyFlag::None) {
+
+                    auto iter = pys.find(s);
+                    // We replace fuzzy with non-fuzzy.
+                    if (iter != pys.end() &&
+                        iter->second != PinyinFuzzyFlag::None) {
+                        pys.erase(s);
+                        iter = pys.end();
+                    }
+                    if (iter == pys.end()) {
+                        pys.emplace(s, flags);
+                    }
+                } else {
+                    auto iterPair = pys.equal_range(s);
+                    // no match
+                    if (iterPair.first != iterPair.second) {
+                        if (iterPair.first->second == PinyinFuzzyFlag::None) {
+                            return;
+                        }
+                        // check dup
+                        for (auto i = iterPair.first; i != iterPair.second;
+                             i++) {
+                            if (i->second == flags) {
+                                return;
+                            }
+                        }
+                    }
+
+                    pys.emplace(s, flags);
+                }
+            };
+
+        auto addPinyin =
+            [addPinyinToList](
+                std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
+                const std::string &py) {
+                const auto &map = getPinyinMapV2();
+                auto iterPair = map.equal_range(py);
+                if (iterPair.first != iterPair.second) {
+                    for (const auto &item : boost::make_iterator_range(
+                             iterPair.first, iterPair.second)) {
+                        // Shuangpin should not consider advanced typo, since
+                        // it's swapping character order and will leads to wrong
+                        // entry. Common typo also have "ng->gn" is ok.
+                        if (item.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
+                            continue;
+                        }
+                        addPinyinToList(pys, item.initial(), item.final(),
+                                        item.flags());
+                    }
+                }
+            };
+
+        // Special handling for Ziranma & Xiaohe style.
+        if (zeroS_.find('*') != std::string::npos) {
+            // length 1: aeiou, repeat it once: e.g. aa
+            // length 2: keep same as quanpin
+            // length 3: use the initial of quanpin and the one in the table.
+            for (auto c : finalChars) {
+                // If c is in final map.
+                auto finalIterPair = finalMap_.equal_range(c);
+                for (auto &item : boost::make_iterator_range(
+                         finalIterPair.first, finalIterPair.second)) {
+                    if (PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
+                                                           item.second)) {
+                        std::string input;
+                        const auto &finalString =
+                            PinyinEncoder::finalToString(item.second);
+                        if (finalString.size() == 1) {
+                            input = std::string{c, c};
+                        } else {
+                            auto final = PinyinEncoder::stringToFinal(
+                                std::string{finalString[0]});
+                            if (final != PinyinFinal::Invalid) {
+                                auto singleCharFinalIter =
+                                    singleCharFinal.find(final);
+                                if (singleCharFinalIter !=
+                                    singleCharFinal.end()) {
+                                    input = std::string{
+                                        singleCharFinalIter->second, c};
+                                }
+                            }
+                        }
+                        spTable_[input].emplace(
+                            PinyinSyllable{PinyinInitial::Zero, item.second},
+                            PinyinFuzzyFlag::None);
+                    }
+                }
+            }
+        }
+
+        // Enumerate the combinition of initial + final
+        for (auto c1 : initialChars) {
+            for (auto c2 : finalChars) {
+                std::string input{c1, c2};
+                auto &pys = spTable_[input];
+
+                std::vector<PinyinInitial> initials;
+                std::vector<PinyinFinal> finals;
+                auto initialIterPair = initialMap_.equal_range(c1);
+                if (initialIterPair.first != initialIterPair.second) {
+                    for (auto &item : boost::make_iterator_range(
+                             initialIterPair.first, initialIterPair.second)) {
+                        initials.push_back(item.second);
+                    }
+                }
+                auto initial = PinyinEncoder::stringToInitial(std::string{c1});
+                if (initial != PinyinInitial::Invalid) {
+                    initials.push_back(initial);
+                }
+
+                if (zeroS_.find(c1) != std::string::npos) {
+                    initials.push_back(PinyinInitial::Zero);
+                }
+
+                auto finalIterPair = finalMap_.equal_range(c2);
+                for (auto &item : boost::make_iterator_range(
+                         finalIterPair.first, finalIterPair.second)) {
+                    finals.push_back(item.second);
+                }
+
+                for (auto i : initials) {
+                    for (auto f : finals) {
+                        auto py = PinyinEncoder::initialToString(i) +
+                                  PinyinEncoder::finalToString(f);
+                        addPinyin(pys, py);
+                    }
+                }
+
+                if (pys.empty()) {
+                    spTable_.erase(input);
+                }
+            }
+        }
+
+        // Populate initial final map.
+        for (const auto &p : initialFinalMap_) {
+            auto &pys = spTable_[p.first];
+            auto py = PinyinEncoder::initialToString(p.second.first) +
+                      PinyinEncoder::finalToString(p.second.second);
+            addPinyin(pys, py);
+        }
+
+        // Add non-existent 2 char pinyin to the map.
+        for (const auto &p : getPinyinMapV2()) {
+            // Don't add "ng" as two char direct pinyin.
+            if (p.pinyin() == "ng") {
+                continue;
+            }
+
+            if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
+                (!spTable_.count(p.pinyin()) ||
+                 zeroS_.find('*') != std::string::npos)) {
+                auto &pys = spTable_[p.pinyin()];
+                pys.emplace(PinyinSyllable{p.initial(), p.final()}, p.flags());
+            }
+        }
+
+        // Add partial pinyin to the table.
+        for (char c : validInputs_) {
+            std::string input{c};
+            auto &pys = spTable_[input];
+            auto initial = PinyinEncoder::stringToInitial(std::string{c});
+            if (initial != PinyinInitial::Invalid) {
+                addPinyinToList(pys, initial, PinyinFinal::Invalid,
+                                PinyinFuzzyFlag::None);
+            }
+            auto initialIterPair = initialMap_.equal_range(c);
+            for (auto &item : boost::make_iterator_range(
+                     initialIterPair.first, initialIterPair.second)) {
+                addPinyinToList(pys, item.second, PinyinFinal::Invalid,
+                                PinyinFuzzyFlag::None);
+            }
+
+            // Add single char final to partial pinyin.
+            auto [begin, end] = finalMap_.equal_range(c);
+            for (auto &item : boost::make_iterator_range(begin, end)) {
+                const auto final = item.second;
+                if (PinyinEncoder::finalToString(final).size() == 1 &&
+                    PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
+                                                       final) &&
+                    pys.empty()) {
+                    addPinyinToList(pys, PinyinInitial::Zero, final,
+                                    PinyinFuzzyFlag::None);
+                }
+            }
+
+            if (pys.empty()) {
+                spTable_.erase(input);
+            }
+        }
+
+        std::vector<std::tuple<std::string, PinyinSyllable, PinyinFuzzyFlags>>
+            newEntries;
+
+        if (correctionProfile != nullptr) {
+            auto correctionMap = correctionProfile->correctionMap();
+            for (const auto &sp : spTable_) {
+                const auto &input = sp.first;
+                auto &pys = sp.second;
+
+                for (size_t i = 0; i < input.size(); i++) {
+                    auto chr = input[i];
+                    auto swap = correctionMap.find(chr);
+                    if (swap == correctionMap.end() || swap->second.empty()) {
+                        continue;
+                    }
+                    std::string newInput = input;
+                    for (auto sub : swap->second) {
+                        newInput[i] = sub;
+                        for (const auto &x : pys) {
+                            newEntries.emplace_back(
+                                newInput, x.first,
+                                x.second | PinyinFuzzyFlag::Correction);
+                        }
+                        newInput[i] = chr;
+                    }
+                }
+            }
+        }
+
+        for (const auto &newEntry : newEntries) {
+            auto &pys = spTable_[std::get<0>(newEntry)];
+            pys.emplace(std::get<1>(newEntry), std::get<2>(newEntry));
+        }
+
+        for (const auto &sp : spTable_) {
+            assert(!sp.first.empty() && sp.first.size() <= 2);
+            validInitials_.insert(sp.first[0]);
+        }
+    }
 };
 
 ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
@@ -50,8 +355,7 @@ ShuangpinProfile::ShuangpinProfile(
     d->initialMap_ = rhs.d_ptr->initialMap_;
     d->initialFinalMap_ = rhs.d_ptr->initialFinalMap_;
     d->finalSet_ = rhs.d_ptr->finalSet_;
-    d->correctionProfile_ = correctionProfile;
-    buildShuangpinTable();
+    d->buildShuangpinTable(correctionProfile);
 }
 
 ShuangpinProfile::ShuangpinProfile(
@@ -108,8 +412,7 @@ ShuangpinProfile::ShuangpinProfile(
                                PinyinEncoder::stringToInitial(s[i].strQP));
     }
 
-    d->correctionProfile_ = correctionProfile;
-    buildShuangpinTable();
+    d->buildShuangpinTable(correctionProfile);
 }
 
 ShuangpinProfile::ShuangpinProfile(
@@ -183,320 +486,13 @@ ShuangpinProfile::ShuangpinProfile(
         }
     }
 
-    d->correctionProfile_ = correctionProfile;
-    buildShuangpinTable();
+    d->buildShuangpinTable(correctionProfile);
 }
 
 FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 
-void ShuangpinProfile::buildShuangpinTable() {
-    FCITX_D();
-    auto correctionProfile = d->correctionProfile_;
-    // Set up valid inputs.
-    for (char c = 'a'; c <= 'z'; c++) {
-        d->validInputs_.insert(c);
-    }
-    for (const auto &p : d->initialMap_) {
-        d->validInputs_.insert(p.first);
-    }
-    std::unordered_map<PinyinFinal, char> singleCharFinal;
-    for (const auto &p : d->finalMap_) {
-        d->validInputs_.insert(p.first);
-        if (PinyinEncoder::finalToString(p.second).size() == 1) {
-            singleCharFinal[p.second] = p.first;
-        }
-    }
-
-    for (const auto &p : d->initialFinalMap_) {
-        for (auto c : p.first) {
-            d->validInputs_.insert(c);
-        }
-    }
-
-    std::set<char> initialChars;
-    for (auto zero : d->zeroS_) {
-        if (zero != '*') {
-            d->validInputs_.insert(zero);
-            initialChars.insert(zero);
-        }
-    }
-
-    // Collect all initial and final chars.
-    // Add single char initial to initialChars.
-    for (auto c = PinyinEncoder::firstInitial; c <= PinyinEncoder::lastInitial;
-         c++) {
-        const auto &initialString =
-            PinyinEncoder::initialToString(static_cast<PinyinInitial>(c));
-        if (initialString.size() == 1) {
-            initialChars.insert(initialString[0]);
-        }
-    }
-    // Add char in map to initialChars.
-    for (auto &p : d->initialMap_) {
-        initialChars.insert(p.first);
-    }
-
-    // Collect all final chars.
-    // Add single char final to finalChars.
-    std::set<char> finalChars;
-    for (auto c = PinyinEncoder::firstFinal; c <= PinyinEncoder::lastFinal;
-         c++) {
-        auto f = static_cast<PinyinFinal>(c);
-        const auto &finalString = PinyinEncoder::finalToString(f);
-        if (finalString.size() == 1 && !singleCharFinal.count(f)) {
-            finalChars.insert(finalString[0]);
-            singleCharFinal[f] = finalString[0];
-        }
-    }
-    // Add final in map to finalChars
-    for (auto &p : d->finalMap_) {
-        finalChars.insert(p.first);
-    }
-
-    for (const auto &[final, chr] : singleCharFinal) {
-        auto [begin, end] = d->finalMap_.equal_range(chr);
-        if (std::find_if(begin, end, [final = final](const auto &item) {
-                return item.second == final;
-            }) == end) {
-            d->finalMap_.emplace(chr, final);
-        }
-    }
-
-    auto addPinyinToList =
-        [](std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
-           PinyinInitial i, PinyinFinal f, PinyinFuzzyFlags flags) {
-            PinyinSyllable s(i, f);
-            if (flags == PinyinFuzzyFlag::None) {
-
-                auto iter = pys.find(s);
-                // We replace fuzzy with non-fuzzy.
-                if (iter != pys.end() &&
-                    iter->second != PinyinFuzzyFlag::None) {
-                    pys.erase(s);
-                    iter = pys.end();
-                }
-                if (iter == pys.end()) {
-                    pys.emplace(s, flags);
-                }
-            } else {
-                auto iterPair = pys.equal_range(s);
-                // no match
-                if (iterPair.first != iterPair.second) {
-                    if (iterPair.first->second == PinyinFuzzyFlag::None) {
-                        return;
-                    }
-                    // check dup
-                    for (auto i = iterPair.first; i != iterPair.second; i++) {
-                        if (i->second == flags) {
-                            return;
-                        }
-                    }
-                }
-
-                pys.emplace(s, flags);
-            }
-        };
-
-    auto addPinyin = [addPinyinToList](
-                         std::multimap<PinyinSyllable, PinyinFuzzyFlags> &pys,
-                         const std::string &py) {
-        const auto &map = getPinyinMapV2();
-        auto iterPair = map.equal_range(py);
-        if (iterPair.first != iterPair.second) {
-            for (const auto &item :
-                 boost::make_iterator_range(iterPair.first, iterPair.second)) {
-                // Shuangpin should not consider advanced typo, since it's
-                // swapping character order and will leads to wrong entry.
-                // Common typo also have "ng->gn" is ok.
-                if (item.flags().test(PinyinFuzzyFlag::AdvancedTypo)) {
-                    continue;
-                }
-                addPinyinToList(pys, item.initial(), item.final(),
-                                item.flags());
-            }
-        }
-    };
-
-    // Special handling for Ziranma & Xiaohe style.
-    if (d->zeroS_.find('*') != std::string::npos) {
-        // length 1: aeiou, repeat it once: e.g. aa
-        // length 2: keep same as quanpin
-        // length 3: use the initial of quanpin and the one in the table.
-        for (auto c : finalChars) {
-            // If c is in final map.
-            auto finalIterPair = d->finalMap_.equal_range(c);
-            for (auto &item : boost::make_iterator_range(
-                     finalIterPair.first, finalIterPair.second)) {
-                if (PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
-                                                       item.second)) {
-                    std::string input;
-                    const auto &finalString =
-                        PinyinEncoder::finalToString(item.second);
-                    if (finalString.size() == 1) {
-                        input = std::string{c, c};
-                    } else {
-                        auto final = PinyinEncoder::stringToFinal(
-                            std::string{finalString[0]});
-                        if (final != PinyinFinal::Invalid) {
-                            auto singleCharFinalIter =
-                                singleCharFinal.find(final);
-                            if (singleCharFinalIter != singleCharFinal.end()) {
-                                input =
-                                    std::string{singleCharFinalIter->second, c};
-                            }
-                        }
-                    }
-                    d->spTable_[input].emplace(
-                        PinyinSyllable{PinyinInitial::Zero, item.second},
-                        PinyinFuzzyFlag::None);
-                }
-            }
-        }
-    }
-
-    // Enumerate the combinition of initial + final
-    for (auto c1 : initialChars) {
-        for (auto c2 : finalChars) {
-            std::string input{c1, c2};
-            auto &pys = d->spTable_[input];
-
-            std::vector<PinyinInitial> initials;
-            std::vector<PinyinFinal> finals;
-            auto initialIterPair = d->initialMap_.equal_range(c1);
-            if (initialIterPair.first != initialIterPair.second) {
-                for (auto &item : boost::make_iterator_range(
-                         initialIterPair.first, initialIterPair.second)) {
-                    initials.push_back(item.second);
-                }
-            }
-            auto initial = PinyinEncoder::stringToInitial(std::string{c1});
-            if (initial != PinyinInitial::Invalid) {
-                initials.push_back(initial);
-            }
-
-            if (d->zeroS_.find(c1) != std::string::npos) {
-                initials.push_back(PinyinInitial::Zero);
-            }
-
-            auto finalIterPair = d->finalMap_.equal_range(c2);
-            for (auto &item : boost::make_iterator_range(
-                     finalIterPair.first, finalIterPair.second)) {
-                finals.push_back(item.second);
-            }
-
-            for (auto i : initials) {
-                for (auto f : finals) {
-                    auto py = PinyinEncoder::initialToString(i) +
-                              PinyinEncoder::finalToString(f);
-                    addPinyin(pys, py);
-                }
-            }
-
-            if (pys.empty()) {
-                d->spTable_.erase(input);
-            }
-        }
-    }
-
-    // Populate initial final map.
-    for (const auto &p : d->initialFinalMap_) {
-        auto &pys = d->spTable_[p.first];
-        auto py = PinyinEncoder::initialToString(p.second.first) +
-                  PinyinEncoder::finalToString(p.second.second);
-        addPinyin(pys, py);
-    }
-
-    // Add non-existent 2 char pinyin to the map.
-    for (const auto &p : getPinyinMapV2()) {
-        // Don't add "ng" as two char direct pinyin.
-        if (p.pinyin() == "ng") {
-            continue;
-        }
-
-        if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
-            (!d->spTable_.count(p.pinyin()) ||
-             d->zeroS_.find('*') != std::string::npos)) {
-            auto &pys = d->spTable_[p.pinyin()];
-            pys.emplace(PinyinSyllable{p.initial(), p.final()}, p.flags());
-        }
-    }
-
-    // Add partial pinyin to the table.
-    for (char c : d->validInputs_) {
-        std::string input{c};
-        auto &pys = d->spTable_[input];
-        auto initial = PinyinEncoder::stringToInitial(std::string{c});
-        if (initial != PinyinInitial::Invalid) {
-            addPinyinToList(pys, initial, PinyinFinal::Invalid,
-                            PinyinFuzzyFlag::None);
-        }
-        auto initialIterPair = d->initialMap_.equal_range(c);
-        for (auto &item : boost::make_iterator_range(initialIterPair.first,
-                                                     initialIterPair.second)) {
-            addPinyinToList(pys, item.second, PinyinFinal::Invalid,
-                            PinyinFuzzyFlag::None);
-        }
-
-        // Add single char final to partial pinyin.
-        auto [begin, end] = d->finalMap_.equal_range(c);
-        for (auto &item : boost::make_iterator_range(begin, end)) {
-            const auto final = item.second;
-            if (PinyinEncoder::finalToString(final).size() == 1 &&
-                PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
-                                                   final) &&
-                pys.empty()) {
-                addPinyinToList(pys, PinyinInitial::Zero, final,
-                                PinyinFuzzyFlag::None);
-            }
-        }
-
-        if (pys.empty()) {
-            d->spTable_.erase(input);
-        }
-    }
-
-    std::vector<std::tuple<std::string, PinyinSyllable, PinyinFuzzyFlags>>
-        newEntries;
-
-    if (correctionProfile != nullptr) {
-        auto correctionMap = correctionProfile->correctionMap();
-        for (const auto &sp : d->spTable_) {
-            const auto &input = sp.first;
-            auto &pys = sp.second;
-
-            for (size_t i = 0; i < input.size(); i++) {
-                auto chr = input[i];
-                auto swap = correctionMap.find(chr);
-                if (swap == correctionMap.end() || swap->second.empty()) {
-                    continue;
-                }
-                std::string newInput = input;
-                for (auto sub : swap->second) {
-                    newInput[i] = sub;
-                    for (const auto &x : pys) {
-                        newEntries.emplace_back(
-                            newInput, x.first,
-                            x.second | PinyinFuzzyFlag::Correction);
-                    }
-                    newInput[i] = chr;
-                }
-            }
-        }
-    }
-
-    // release it after use.
-    d->correctionProfile_ = nullptr;
-
-    for (const auto &newEntry : newEntries) {
-        auto &pys = d->spTable_[std::get<0>(newEntry)];
-        pys.emplace(std::get<1>(newEntry), std::get<2>(newEntry));
-    }
-
-    for (const auto &sp : d->spTable_) {
-        assert(!sp.first.empty() && sp.first.size() <= 2);
-        d->validInitials_.insert(sp.first[0]);
-    }
-}
+// moved to ShuangpinProfilePrivate::buildShuangpinTable
+void ShuangpinProfile::buildShuangpinTable() {}
 
 const ShuangpinProfile::TableType &ShuangpinProfile::table() const {
     FCITX_D();

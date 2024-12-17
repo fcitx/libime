@@ -52,7 +52,6 @@ public:
     const ValidInputSetType &validInput() const;
     const ValidInputSetType &validInitial() const;
 
-
 private:
     void buildShuangpinTable();
     std::unique_ptr<ShuangpinProfilePrivate> d_ptr;

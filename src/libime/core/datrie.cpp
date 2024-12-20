@@ -77,6 +77,13 @@ struct NanValue<float> {
     }
 };
 
+template <typename T>
+constexpr inline T decodeImpl(int32_t raw) {
+    typename DATriePrivate<T>::decoder_type d;
+    d.result = raw;
+    return d.result_value;
+}
+
 } // namespace
 
 #if 0
@@ -352,16 +359,6 @@ public:
             to = from;
         }
     }
-    value_type traverse(const char *key, npos_t &from, size_t &pos) const {
-        return traverse(key, from, pos, std::strlen(key));
-    }
-
-    value_type traverse(const char *key, npos_t &from, size_t &pos,
-                        size_t len) const {
-        decoder_type d;
-        d.result = _find(key, from, pos, len);
-        return d.result_value;
-    }
 
     template <typename U>
     inline void update(const char *key, const U &callback) {
@@ -534,13 +531,13 @@ public:
     }
 
     bool foreach(const callback_type &callback, npos_t root = npos_t()) const {
-        decoder_type b;
+        int32_t resultRaw;
         size_t p(0);
         npos_t from = root;
-        for (b.result = begin(from, p); b.result != CEDAR_NO_PATH;
-             b.result = next(from, p, root)) {
-            if (b.result != CEDAR_NO_VALUE &&
-                !callback(b.result_value, p, from.toInt())) {
+        for (resultRaw = begin(from, p); resultRaw != CEDAR_NO_PATH;
+             resultRaw = next(from, p, root)) {
+            if (resultRaw != CEDAR_NO_VALUE &&
+                !callback(decodeImpl<V>(resultRaw), p, from.toInt())) {
                 return false;
             }
         }
@@ -1111,14 +1108,18 @@ bool DATrie<T>::erase(position_type from) {
 template <typename T>
 typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key,
                                                            size_t len) const {
+    return decodeImpl<T>(exactMatchSearchRaw(key, len));
+}
+
+template <typename T>
+int32_t DATrie<T>::exactMatchSearchRaw(const char *key, size_t len) const {
     size_t pos = 0;
     typename DATriePrivate<value_type>::npos_t npos;
-    typename DATriePrivate<T>::decoder_type decoder;
-    decoder.result = d->_find(key, npos, pos, len);
-    if (decoder.result == DATriePrivate<value_type>::CEDAR_NO_PATH) {
-        decoder.result = DATriePrivate<value_type>::CEDAR_NO_VALUE;
+    auto resultRaw = d->_find(key, npos, pos, len);
+    if (resultRaw == DATriePrivate<value_type>::CEDAR_NO_PATH) {
+        resultRaw = DATriePrivate<value_type>::CEDAR_NO_VALUE;
     }
-    return decoder.result_value;
+    return resultRaw;
 }
 
 template <typename T>
@@ -1129,9 +1130,15 @@ bool DATrie<T>::hasExactMatch(std::string_view key) const {
 template <typename T>
 typename DATrie<T>::value_type DATrie<T>::traverse(const char *key, size_t len,
                                                    position_type &from) const {
+    return decodeImpl<T>(traverseRaw(key, len, from));
+}
+
+template <typename T>
+int32_t DATrie<T>::traverseRaw(const char *key, size_t len,
+                               position_type &from) const {
     size_t pos = 0;
     typename DATriePrivate<T>::npos_t npos(from);
-    auto result = d->traverse(key, npos, pos, len);
+    auto result = d->_find(key, npos, pos, len);
     from = npos.toInt();
     return result;
 }
@@ -1150,33 +1157,51 @@ template <typename T>
 bool DATrie<T>::isNoPath(value_type v) {
     typename DATriePrivate<T>::decoder_type d;
     d.result_value = v;
-    return d.result == DATriePrivate<value_type>::CEDAR_NO_PATH;
+    return isNoPathRaw(d.result);
 }
 
 template <typename T>
 bool DATrie<T>::isNoValue(value_type v) {
     typename DATriePrivate<T>::decoder_type d;
     d.result_value = v;
-    return d.result == DATriePrivate<value_type>::CEDAR_NO_VALUE;
+    return isNoValueRaw(d.result);
 }
 
 template <typename T>
 bool DATrie<T>::isValid(value_type v) {
-    return !(isNoPath(v) || isNoValue(v));
+    typename DATriePrivate<T>::decoder_type d;
+    d.result_value = v;
+    return isValidRaw(d.result);
+}
+
+template <typename T>
+bool DATrie<T>::isNoPathRaw(int32_t v) {
+    return v == DATriePrivate<value_type>::CEDAR_NO_PATH;
+}
+
+template <typename T>
+bool DATrie<T>::isNoValueRaw(int32_t v) {
+    return v == DATriePrivate<value_type>::CEDAR_NO_VALUE;
+}
+
+template <typename T>
+bool DATrie<T>::isValidRaw(int32_t v) {
+    return !(isNoPathRaw(v) || isNoValueRaw(v));
 }
 
 template <typename T>
 T DATrie<T>::noPath() {
-    typename DATriePrivate<T>::decoder_type d;
-    d.result = DATriePrivate<value_type>::CEDAR_NO_PATH;
-    return d.result_value;
+    return decodeImpl<T>(DATriePrivate<value_type>::CEDAR_NO_PATH);
 }
 
 template <typename T>
 T DATrie<T>::noValue() {
-    typename DATriePrivate<T>::decoder_type d;
-    d.result = DATriePrivate<value_type>::CEDAR_NO_VALUE;
-    return d.result_value;
+    return decodeImpl<T>(DATriePrivate<value_type>::CEDAR_NO_VALUE);
+}
+
+template <typename T>
+T DATrie<T>::decode(int32_t raw) {
+    return decodeImpl<T>(raw);
 }
 
 template <typename T>

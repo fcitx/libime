@@ -24,6 +24,7 @@
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
 #include <fstream>
+#include <iterator>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -275,7 +276,7 @@ bool TableBasedDictionaryPrivate::matchTrie(
                     auto curPos = position;
                     auto strCode = fcitx::utf8::UCS4ToUTF8(code);
                     auto result = trie.traverse(strCode, curPos);
-                    if (!trie.isNoPath(result)) {
+                    if (!DATrie<unsigned int>::isNoPath(result)) {
                         newPositions.push_back(curPos);
                     }
                 }
@@ -286,7 +287,7 @@ bool TableBasedDictionaryPrivate::matchTrie(
                     std::distance(charRange.first, charRange.second));
                 auto curPos = position;
                 auto result = trie.traverse(chr, curPos);
-                if (!trie.isNoPath(result)) {
+                if (!DATrie<unsigned int>::isNoPath(result)) {
                     newPositions.push_back(curPos);
                 }
             }

@@ -7,10 +7,20 @@
 #define _FCITX_LIBIME_PINYIN_PINYINDICTIONARY_H_
 
 #include "libimepinyin_export.h"
+#include <cstddef>
+#include <fcitx-utils/flags.h>
 #include <fcitx-utils/macros.h>
+#include <functional>
+#include <istream>
+#include <libime/core/dictionary.h>
+#include <libime/core/segmentgraph.h>
 #include <libime/core/triedictionary.h>
 #include <libime/pinyin/pinyinencoder.h>
 #include <memory>
+#include <optional>
+#include <ostream>
+#include <string_view>
+#include <unordered_set>
 
 namespace libime {
 
@@ -18,9 +28,8 @@ enum class PinyinDictFormat { Text, Binary };
 
 class PinyinDictionaryPrivate;
 
-typedef std::function<bool(std::string_view encodedPinyin,
-                           std::string_view hanzi, float cost)>
-    PinyinMatchCallback;
+using PinyinMatchCallback =
+    std::function<bool(std::string_view, std::string_view, float)>;
 
 using PinyinTrie = typename TrieDictionary::TrieType;
 
@@ -64,7 +73,7 @@ public:
     void save(size_t idx, std::ostream &out, PinyinDictFormat format);
 
     void addWord(size_t idx, std::string_view fullPinyin,
-                 std::string_view hanzi, float cost = 0.0f);
+                 std::string_view hanzi, float cost = 0.0F);
     bool removeWord(size_t idx, std::string_view fullPinyin,
                     std::string_view hanzi);
     std::optional<float> lookupWord(size_t idx, std::string_view fullPinyin,

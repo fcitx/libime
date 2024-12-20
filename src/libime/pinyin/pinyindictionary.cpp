@@ -17,6 +17,8 @@
 #include "pinyinmatchstate_p.h"
 #include <boost/algorithm/string.hpp>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <optional>
@@ -158,10 +160,10 @@ inline void searchOneStep(
     auto iter = nodes.begin();
     while (iter != nodes.end()) {
         if (current != 0) {
-            PinyinTrie::value_type result;
-            result = iter->first->traverse(&current, 1, iter->second);
+            const auto resultRaw =
+                iter->first->traverseRaw(&current, 1, iter->second);
 
-            if (PinyinTrie::isNoPath(result)) {
+            if (PinyinTrie::isNoPathRaw(resultRaw)) {
                 nodes.erase(iter++);
             } else {
                 iter++;
@@ -171,8 +173,8 @@ inline void searchOneStep(
             for (char test = PinyinEncoder::firstFinal;
                  test <= PinyinEncoder::lastFinal; test++) {
                 decltype(extraNodes)::value_type p = *iter;
-                auto result = p.first->traverse(&test, 1, p.second);
-                if (!PinyinTrie::isNoPath(result)) {
+                const auto resultRaw = p.first->traverseRaw(&test, 1, p.second);
+                if (!PinyinTrie::isNoPathRaw(resultRaw)) {
                     extraNodes.push_back(p);
                     changed = true;
                 }
@@ -371,8 +373,8 @@ PinyinTriePositions traverseAlongPathOneStepBySyllables(
             // make a copy
             auto pos = _pos;
             auto initial = static_cast<char>(syl.first);
-            auto result = path.trie()->traverse(&initial, 1, pos);
-            if (PinyinTrie::isNoPath(result)) {
+            const auto resultRaw = path.trie()->traverseRaw(&initial, 1, pos);
+            if (PinyinTrie::isNoPathRaw(resultRaw)) {
                 continue;
             }
             const auto &finals = syl.second;
@@ -381,9 +383,9 @@ PinyinTriePositions traverseAlongPathOneStepBySyllables(
                                                            size_t fuzzyFactor,
                                                            auto pos) {
                 auto final = static_cast<char>(pyFinal);
-                auto result = path.trie()->traverse(&final, 1, pos);
+                const auto resultRaw = path.trie()->traverseRaw(&final, 1, pos);
 
-                if (!PinyinTrie::isNoPath(result)) {
+                if (!PinyinTrie::isNoPathRaw(resultRaw)) {
                     size_t newFuzzies = fuzzies + fuzzyFactor;
                     positions.emplace_back(pos, newFuzzies);
                 }
@@ -446,8 +448,8 @@ void matchWordsOnTrie(const PinyinTrie *userDict, const MatchedPinyinPath &path,
                 pos);
         } else {
             const char sep = pinyinHanziSep;
-            auto result = path.trie()->traverse(&sep, 1, pos);
-            if (PinyinTrie::isNoPath(result)) {
+            const auto resultRaw = path.trie()->traverseRaw(&sep, 1, pos);
+            if (PinyinTrie::isNoPathRaw(resultRaw)) {
                 continue;
             }
 

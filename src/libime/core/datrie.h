@@ -90,6 +90,11 @@ public:
         return exactMatchSearch(key.data(), key.size());
     }
 
+    int32_t exactMatchSearchRaw(const char *key, size_t len) const;
+    int32_t exactMatchSearchRaw(std::string_view key) const {
+        return exactMatchSearchRaw(key.data(), key.size());
+    }
+
     bool hasExactMatch(std::string_view key) const;
 
     DATrie<T>::value_type traverse(std::string_view key,
@@ -98,6 +103,11 @@ public:
     }
     DATrie<T>::value_type traverse(const char *key, size_t len,
                                    position_type &from) const;
+
+    int32_t traverseRaw(std::string_view key, position_type &from) const {
+        return traverseRaw(key.data(), key.size(), from);
+    }
+    int32_t traverseRaw(const char *key, size_t len, position_type &from) const;
 
     // set value
     void set(std::string_view key, value_type val) {
@@ -138,8 +148,14 @@ public:
     static bool isNoPath(value_type v);
     static bool isNoValue(value_type v);
 
+    static bool isValidRaw(int32_t v);
+    static bool isNoPathRaw(int32_t v);
+    static bool isNoValueRaw(int32_t v);
+
     static value_type noPath();
     static value_type noValue();
+
+    static value_type decode(int32_t raw);
 
     size_t mem_size() const;
 

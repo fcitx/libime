@@ -269,8 +269,6 @@ int main() {
         graph = PinyinEncoder::parseUserShuangpin("wokeyityxzboli", sp,
                                                   PinyinFuzzyFlag::Correction);
         dfs(graph, {"wo", "ke", "yi", "ty", "x", "z", "bo", "li"});
-
-
     }
 
     return 0;

@@ -12,7 +12,6 @@
 #include "libime/pinyin/pinyinime.h"
 #include "libime/pinyin/shuangpinprofile.h"
 #include "testdir.h"
-#include <boost/algorithm/string/join.hpp>
 #include <fcitx-utils/log.h>
 #include <iterator>
 #include <memory>
@@ -28,7 +27,8 @@ int main() {
     ime.dict()->load(PinyinDictionary::SystemDict,
                      LIBIME_BINARY_DIR "/data/sc.dict",
                      PinyinDictFormat::Binary);
-    ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
+    PinyinFuzzyFlags flags = PinyinFuzzyFlag::Inner;
+    ime.setFuzzyFlags(flags);
     ime.setScoreFilter(1.0f);
     ime.setShuangpinProfile(
         std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::Xiaohe));
@@ -73,14 +73,11 @@ int main() {
         BuiltinPinyinCorrectionProfile::Qwerty));
     ime.setShuangpinProfile(std::make_shared<libime::ShuangpinProfile>(
         *ime.shuangpinProfile(), ime.correctionProfile().get()));
+    ime.setFuzzyFlags(flags | PinyinFuzzyFlag::Correction);
 
-    // FIXME: test failed
-    // c.type("bkqiln");
-    // FCITX_ASSERT(c.candidates().size() == c.candidateSet().size());
-    // std::cout << boost::algorithm::join(c.candidateSet(), " ") << std::endl;
-    // FCITX_ASSERT(c.candidateSet().count("冰淇淋"));
-    // c.clear();
-
+    c.type("bkqiln");
+    FCITX_ASSERT(c.candidates().size() == c.candidateSet().size());
+    FCITX_ASSERT(c.candidateSet().count("冰淇淋"));
     c.clear();
 
     return 0;

@@ -72,7 +72,7 @@ int main() {
     ime.setCorrectionProfile(std::make_shared<PinyinCorrectionProfile>(
         BuiltinPinyinCorrectionProfile::Qwerty));
     ime.setShuangpinProfile(std::make_shared<libime::ShuangpinProfile>(
-        *ime.shuangpinProfile(), ime.correctionProfile().get()));
+        ShuangpinBuiltinProfile::Xiaohe, ime.correctionProfile().get()));
     ime.setFuzzyFlags(flags | PinyinFuzzyFlag::Correction);
 
     c.type("bkqiln");

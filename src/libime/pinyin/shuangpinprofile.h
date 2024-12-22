@@ -43,9 +43,6 @@ public:
     explicit ShuangpinProfile(std::istream &in,
                               const PinyinCorrectionProfile *correctionProfile);
 
-    explicit ShuangpinProfile(const ShuangpinProfile &rhs,
-                              const PinyinCorrectionProfile *correctionProfile);
-
     FCITX_DECLARE_VIRTUAL_DTOR_COPY_AND_MOVE(ShuangpinProfile)
 
     const TableType &table() const;

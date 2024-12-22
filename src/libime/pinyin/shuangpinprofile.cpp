@@ -8,11 +8,26 @@
 #include "pinyindata.h"
 #include "pinyinencoder.h"
 #include "shuangpindata.h"
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/range/iterator_range.hpp>
+#include <cassert>
+#include <cstddef>
 #include <fcitx-utils/charutils.h>
+#include <fcitx-utils/macros.h>
+#include <istream>
+#include <map>
+#include <memory>
 #include <set>
+#include <stdexcept>
+#include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -302,11 +317,8 @@ public:
             newEntries;
 
         if (correctionProfile != nullptr) {
-            auto correctionMap = correctionProfile->correctionMap();
-            for (const auto &sp : spTable_) {
-                const auto &input = sp.first;
-                auto &pys = sp.second;
-
+            const auto &correctionMap = correctionProfile->correctionMap();
+            for (const auto &[input, pys] : spTable_) {
                 for (size_t i = 0; i < input.size(); i++) {
                     auto chr = input[i];
                     auto swap = correctionMap.find(chr);
@@ -327,9 +339,9 @@ public:
             }
         }
 
-        for (const auto &newEntry : newEntries) {
-            auto &pys = spTable_[std::get<0>(newEntry)];
-            pys.emplace(std::get<1>(newEntry), std::get<2>(newEntry));
+        for (const auto &[input, syllable, flags] : newEntries) {
+            auto &pys = spTable_[input];
+            pys.emplace(syllable, flags);
         }
 
         for (const auto &sp : spTable_) {
@@ -344,19 +356,6 @@ ShuangpinProfile::ShuangpinProfile(ShuangpinBuiltinProfile profile)
 
 ShuangpinProfile::ShuangpinProfile(std::istream &in)
     : ShuangpinProfile::ShuangpinProfile(in, nullptr) {}
-
-ShuangpinProfile::ShuangpinProfile(
-    const ShuangpinProfile &rhs,
-    const PinyinCorrectionProfile *correctionProfile)
-    : d_ptr(std::make_unique<ShuangpinProfilePrivate>()) {
-    FCITX_D();
-    d->zeroS_ = rhs.d_ptr->zeroS_;
-    d->finalMap_ = rhs.d_ptr->finalMap_;
-    d->initialMap_ = rhs.d_ptr->initialMap_;
-    d->initialFinalMap_ = rhs.d_ptr->initialFinalMap_;
-    d->finalSet_ = rhs.d_ptr->finalSet_;
-    d->buildShuangpinTable(correctionProfile);
-}
 
 ShuangpinProfile::ShuangpinProfile(
     ShuangpinBuiltinProfile profile,
@@ -491,7 +490,7 @@ ShuangpinProfile::ShuangpinProfile(
 
 FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 
-// moved to ShuangpinProfilePrivate::buildShuangpinTable
+// Deprecated, keep to only keep ABI stable.
 void ShuangpinProfile::buildShuangpinTable() {}
 
 const ShuangpinProfile::TableType &ShuangpinProfile::table() const {

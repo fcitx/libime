@@ -6,6 +6,7 @@
 
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/pinyincontext.h"
+#include "libime/pinyin/pinyincorrectionprofile.h"
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/pinyinime.h"
@@ -26,7 +27,8 @@ int main() {
     ime.dict()->load(PinyinDictionary::SystemDict,
                      LIBIME_BINARY_DIR "/data/sc.dict",
                      PinyinDictFormat::Binary);
-    ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
+    PinyinFuzzyFlags flags = PinyinFuzzyFlag::Inner;
+    ime.setFuzzyFlags(flags);
     ime.setScoreFilter(1.0f);
     ime.setShuangpinProfile(
         std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::Xiaohe));
@@ -54,5 +56,29 @@ int main() {
     c.learn();
     FCITX_ASSERT(ime.dict()->lookupWord(PinyinDictionary::UserDict,
                                         "ni'hao'zhong'guo", "你好中国"));
+
+    c.setUseShuangpin(true);
+
+    c.type("bkqilb");
+    FCITX_ASSERT(c.candidates().size() == c.candidateSet().size());
+    FCITX_ASSERT(c.candidateSet().count("冰淇淋"));
+    c.clear();
+
+    c.type("bkqiln");
+    FCITX_ASSERT(c.candidates().size() == c.candidateSet().size());
+    FCITX_ASSERT(!c.candidateSet().count("冰淇淋"));
+    c.clear();
+
+    ime.setCorrectionProfile(std::make_shared<PinyinCorrectionProfile>(
+        BuiltinPinyinCorrectionProfile::Qwerty));
+    ime.setShuangpinProfile(std::make_shared<libime::ShuangpinProfile>(
+        ShuangpinBuiltinProfile::Xiaohe, ime.correctionProfile().get()));
+    ime.setFuzzyFlags(flags | PinyinFuzzyFlag::Correction);
+
+    c.type("bkqiln");
+    FCITX_ASSERT(c.candidates().size() == c.candidateSet().size());
+    FCITX_ASSERT(c.candidateSet().count("冰淇淋"));
+    c.clear();
+
     return 0;
 }

@@ -9,6 +9,7 @@
 #include "libimepinyin_export.h"
 #include <fcitx-utils/macros.h>
 #include <istream>
+#include <libime/pinyin/pinyincorrectionprofile.h>
 #include <libime/pinyin/pinyinencoder.h>
 #include <map>
 #include <memory>
@@ -36,6 +37,11 @@ public:
     using ValidInputSetType = std::set<char>;
     explicit ShuangpinProfile(ShuangpinBuiltinProfile profile);
     explicit ShuangpinProfile(std::istream &in);
+
+    explicit ShuangpinProfile(ShuangpinBuiltinProfile profile,
+                              const PinyinCorrectionProfile *correctionProfile);
+    explicit ShuangpinProfile(std::istream &in,
+                              const PinyinCorrectionProfile *correctionProfile);
 
     FCITX_DECLARE_VIRTUAL_DTOR_COPY_AND_MOVE(ShuangpinProfile)
 

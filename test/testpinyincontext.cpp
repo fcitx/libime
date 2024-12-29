@@ -14,7 +14,11 @@
 #include "libime/pinyin/pinyinime.h"
 #include "testdir.h"
 #include <array>
+#include <cstddef>
 #include <fcitx-utils/log.h>
+#include <iostream>
+#include <memory>
+#include <ostream>
 #include <sstream>
 #include <string_view>
 

@@ -4,10 +4,14 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "libime/core/datrie.h"
+#include <cstddef>
+#include <cstdint>
 #include <fcitx-utils/log.h>
+#include <iostream>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <vector>
 
 using namespace libime;
 

@@ -6,6 +6,8 @@
 #include "libime/table/autophrasedict.h"
 #include <fcitx-utils/log.h>
 #include <sstream>
+#include <string>
+#include <string_view>
 #include <unordered_set>
 
 using namespace libime;

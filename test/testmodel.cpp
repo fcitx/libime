@@ -8,13 +8,16 @@
 #include "libime/core/lattice.h"
 #include "testdir.h"
 #include <cmath>
+#include <iostream>
+#include <string>
 
 int main() {
     using namespace libime;
     LanguageModel model(LIBIME_BINARY_DIR "/data/sc.lm");
-    State state(model.nullState()), out_state = model.nullState();
+    State state(model.nullState());
+    State out_state = model.nullState();
     std::string word;
-    float sum = 0.0f;
+    float sum = 0.0F;
     while (std::cin >> word) {
         float s;
         WordNode w(word, model.index(word));

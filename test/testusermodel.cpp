@@ -5,12 +5,17 @@
  */
 
 #include "libime/core/historybigram.h"
+#include "libime/core/languagemodel.h"
 #include "libime/core/lattice.h"
 #include "libime/core/userlanguagemodel.h"
 #include "testdir.h"
 #include <cmath>
 #include <fstream>
+#include <ios>
+#include <iostream>
 #include <list>
+#include <ostream>
+#include <string>
 
 int main(int argc, char *argv[]) {
     using namespace libime;
@@ -19,9 +24,10 @@ int main(int argc, char *argv[]) {
         std::fstream fin(argv[1], std::ios::in | std::ios::binary);
         model.history().load(fin);
     }
-    State state(model.nullState()), out_state = model.nullState();
+    State state(model.nullState());
+    State out_state = model.nullState();
     std::string word;
-    float sum = 0.0f;
+    float sum = 0.0F;
     std::list<WordNode> nodes;
     while (std::cin >> word) {
         float s;

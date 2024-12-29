@@ -43,10 +43,12 @@ int main() {
         auto nan1 = DATrie<float>::noValue();
         auto nan2 = DATrie<float>::noPath();
         // NaN != NaN, we must use memcmp to do this.
+        // NOLINTBEGIN(bugprone-suspicious-memory-comparison)
         FCITX_ASSERT(memcmp(&nan1, &result, sizeof(float)) == 0);
         FCITX_ASSERT(trie.isNoValue(result));
         result = trie.traverse("aaae", pos);
         FCITX_ASSERT(memcmp(&nan2, &result, sizeof(float)) == 0);
+        // NOLINTEND(bugprone-suspicious-memory-comparison)
         FCITX_ASSERT(trie.isNoPath(result));
         trie.erase(pos);
         FCITX_ASSERT(trie.size() == 4);

@@ -7,13 +7,17 @@
 #include "libime/core/historybigram.h"
 #include <boost/range/irange.hpp>
 #include <cmath>
+#include <exception>
 #include <fcitx-utils/log.h>
+#include <iostream>
 #include <sstream>
+#include <string>
+#include <unordered_set>
 
 void testBasic() {
     using namespace libime;
     HistoryBigram history;
-    history.setUnknownPenalty(std::log10(1.0f / 8192));
+    history.setUnknownPenalty(std::log10(1.0F / 8192));
     history.add({"你", "是", "一个", "好人"});
     history.add({"我", "是", "一个", "坏人"});
     history.add({"他"});
@@ -113,7 +117,8 @@ void testOverflow() {
     }
     std::stringstream dump;
     history.dump(dump);
-    int i, expect = total - 1;
+    int i;
+    int expect = total - 1;
     while (dump >> i) {
         FCITX_ASSERT(i == expect);
         --expect;
@@ -183,7 +188,8 @@ void testSaveAndLoadText() {
     }
     std::stringstream dump;
     history.dump(dump);
-    int i, expect = total - 1;
+    int i;
+    int expect = total - 1;
     while (dump >> i) {
         FCITX_ASSERT(i == expect);
         --expect;

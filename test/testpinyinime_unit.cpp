@@ -12,6 +12,7 @@
 #include "libime/pinyin/pinyinime.h"
 #include "libime/pinyin/shuangpinprofile.h"
 #include "testdir.h"
+#include <algorithm>
 #include <fcitx-utils/log.h>
 #include <iterator>
 #include <memory>
@@ -29,7 +30,7 @@ int main() {
                      PinyinDictFormat::Binary);
     PinyinFuzzyFlags flags = PinyinFuzzyFlag::Inner;
     ime.setFuzzyFlags(flags);
-    ime.setScoreFilter(1.0f);
+    ime.setScoreFilter(1.0F);
     ime.setShuangpinProfile(
         std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::Xiaohe));
     PinyinContext c(&ime);

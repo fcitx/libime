@@ -3,18 +3,26 @@
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
+#include "libime/core/decoder.h"
 #include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
 #include "libime/pinyin/pinyindecoder.h"
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include "testdir.h"
 #include "testutils.h"
+#include <cstddef>
 #include <fcitx-utils/log.h>
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <ostream>
 
 using namespace libime;
 
-void testTime(PinyinDictionary &, Decoder &decoder, const char *pinyin,
-              PinyinFuzzyFlags flags, int nbest = 1) {
+void testTime(PinyinDictionary & /*unused*/, Decoder &decoder,
+              const char *pinyin, PinyinFuzzyFlags flags, int nbest = 1) {
     auto printTime = [](int t) {
         std::cout << "Time: " << t / 1000000.0 << " ms" << std::endl;
     };

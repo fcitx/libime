@@ -17,9 +17,16 @@
 #include "testutils.h"
 #include <boost/iostreams/device/null.hpp>
 #include <boost/iostreams/stream.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <fcitx-utils/log.h>
 #include <fstream>
 #include <functional>
+#include <ios>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <string>
 
 using namespace libime;
 
@@ -45,7 +52,7 @@ int main(int argc, char *argv[]) {
     }
     ime.setFuzzyFlags({PinyinFuzzyFlag::Inner, PinyinFuzzyFlag::CommonTypo,
                        PinyinFuzzyFlag::AdvancedTypo});
-    ime.setScoreFilter(1.0f);
+    ime.setScoreFilter(1.0F);
     ime.setShuangpinProfile(
         std::make_shared<ShuangpinProfile>(ShuangpinBuiltinProfile::Xiaohe));
     PinyinContext c(&ime);

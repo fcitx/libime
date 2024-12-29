@@ -7,6 +7,9 @@
 #define _TEST_TESTUTILS_H_
 
 #include <chrono>
+#include <cstdint>
+#include <functional>
+#include <utility>
 
 struct ScopedNanoTimer {
     std::chrono::high_resolution_clock::time_point t0;

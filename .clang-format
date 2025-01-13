@@ -54,5 +54,6 @@ ForEachMacros:   [ Q_FOREACH, BOOST_FOREACH ]
 SpaceBeforeParens: ControlStatements
 DisableFormat:   false
 SortIncludes: true
+AttributeMacros: [ LIBIMECORE_EXPORT, LIBIMETABLE_EXPORT, LIBIMEPINYIN_EXPORT ]
 ...
 

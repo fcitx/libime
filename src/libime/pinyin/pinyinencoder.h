@@ -61,9 +61,8 @@ enum class PinyinFuzzyFlag {
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;
 
-LIBIMEPINYIN_EXPORT
-fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
-                                     PinyinFuzzyFlags final);
+LIBIMEPINYIN_EXPORT fcitx::LogMessageBuilder &
+operator<<(fcitx::LogMessageBuilder &log, PinyinFuzzyFlags final);
 
 enum class PinyinInitial : char {
     Invalid = 0,
@@ -105,9 +104,8 @@ inline bool operator>(PinyinInitial l, PinyinInitial r) { return !(l <= r); }
 
 inline bool operator>=(PinyinInitial l, PinyinInitial r) { return !(l < r); }
 
-LIBIMEPINYIN_EXPORT
-fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
-                                     PinyinInitial initial);
+LIBIMEPINYIN_EXPORT fcitx::LogMessageBuilder &
+operator<<(fcitx::LogMessageBuilder &log, PinyinInitial initial);
 
 enum class PinyinFinal : char {
     Invalid = 0,
@@ -159,9 +157,8 @@ inline bool operator>(PinyinFinal l, PinyinFinal r) { return !(l <= r); }
 
 inline bool operator>=(PinyinFinal l, PinyinFinal r) { return !(l < r); }
 
-LIBIMEPINYIN_EXPORT
-fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
-                                     PinyinFinal final);
+LIBIMEPINYIN_EXPORT fcitx::LogMessageBuilder &
+operator<<(fcitx::LogMessageBuilder &log, PinyinFinal final);
 
 struct LIBIMEPINYIN_EXPORT PinyinSyllable {
 public:
@@ -200,9 +197,8 @@ private:
     PinyinFinal final_;
 };
 
-LIBIMEPINYIN_EXPORT
-fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
-                                     PinyinSyllable syl);
+LIBIMEPINYIN_EXPORT fcitx::LogMessageBuilder &
+operator<<(fcitx::LogMessageBuilder &log, PinyinSyllable syl);
 
 template <typename FuzzyValue>
 using FuzzyPinyinSyllables = std::vector<

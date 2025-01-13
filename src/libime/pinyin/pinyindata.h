@@ -48,10 +48,8 @@ using PinyinMap = boost::multi_index_container<
                                           &PinyinEntry::pinyinView>,
         PinyinHash>>>;
 
-LIBIMEPINYIN_EXPORT
-const PinyinMap &getPinyinMap();
-LIBIMEPINYIN_EXPORT
-const PinyinMap &getPinyinMapV2();
+LIBIMEPINYIN_EXPORT const PinyinMap &getPinyinMap();
+LIBIMEPINYIN_EXPORT const PinyinMap &getPinyinMapV2();
 LIBIMEPINYIN_EXPORT const std::vector<bool> &getEncodedInitialFinal();
 
 LIBIMEPINYIN_EXPORT const

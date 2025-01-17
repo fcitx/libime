@@ -408,7 +408,7 @@ TableBasedDictionaryPrivate::parseDataLine(std::string_view buf, bool user) {
     }
 
     uint32_t firstChar;
-    const auto *next =
+    std::string_view::iterator next =
         fcitx::utf8::getNextChar(key.begin(), key.end(), &firstChar);
     auto *iter = std::find(std::begin(special), std::end(special), firstChar);
     PhraseFlag flag = user ? PhraseFlag::User : PhraseFlag::None;
@@ -1328,7 +1328,7 @@ bool TableBasedDictionary::generateWithHint(
                 index = valueLen - ruleEntry.character();
             }
             iter = fcitx::utf8::nextNChar(value.begin(), index);
-            const auto *prev = iter;
+            std::string_view::iterator prev = iter;
             iter = fcitx::utf8::nextChar(iter);
             std::string_view chr(&*prev, std::distance(prev, iter));
 
@@ -1386,8 +1386,8 @@ bool TableBasedDictionary::isInputCode(uint32_t c) const {
 }
 
 bool TableBasedDictionary::isAllInputCode(std::string_view code) const {
-    const auto *iter = code.begin();
-    const auto *end = code.end();
+    std::string_view::iterator iter = code.begin();
+    std::string_view::iterator end = code.end();
     while (iter != end) {
         uint32_t chr;
         iter = fcitx::utf8::getNextChar(iter, end, &chr);

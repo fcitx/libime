@@ -221,6 +221,10 @@ size_t fuzzyFactor(PinyinFuzzyFlags flags) {
         flags = flags.unset(PinyinFuzzyFlag::Correction);
         factor += PINYIN_CORRECTION_FUZZY_FACTOR;
     }
+    if (flags.test(PinyinFuzzyFlag::AdvancedTypo)) {
+        flags = flags.unset(PinyinFuzzyFlag::AdvancedTypo);
+        factor += PINYIN_ADVACNED_TYPO_FUZZY_FACTOR;
+    }
     if (flags != 0) {
         factor += 1;
     }

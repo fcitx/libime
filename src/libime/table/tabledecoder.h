@@ -6,8 +6,8 @@
 #ifndef _FCITX_LIBIME_TABLE_TABLEDECODER_H_
 #define _FCITX_LIBIME_TABLE_TABLEDECODER_H_
 
-#include "libimetable_export.h"
 #include <libime/core/decoder.h>
+#include <libime/table/libimetable_export.h>
 #include <libime/table/tablebaseddictionary.h>
 
 namespace libime {

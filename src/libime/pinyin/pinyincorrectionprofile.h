@@ -6,8 +6,8 @@
 #ifndef _FCITX_LIBIME_PINYIN_PINYINCORRECTIONPROFILE_H_
 #define _FCITX_LIBIME_PINYIN_PINYINCORRECTIONPROFILE_H_
 
-#include "libimepinyin_export.h"
 #include <fcitx-utils/macros.h>
+#include <libime/pinyin/libimepinyin_export.h>
 #include <libime/pinyin/pinyindata.h>
 #include <memory>
 #include <unordered_map>

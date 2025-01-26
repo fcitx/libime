@@ -8,7 +8,11 @@
 #include "autophrasedict.h"
 #include "constants.h"
 #include "libime/core/datrie.h"
+#include "libime/core/dictionary.h"
+#include "libime/core/languagemodel.h"
 #include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
+#include "libime/core/utils.h"
 #include "libime/core/zstdfilter.h"
 #include "log.h"
 #include "tablebaseddictionary_p.h"
@@ -16,20 +20,34 @@
 #include "tableoptions.h"
 #include "tablerule.h"
 #include <algorithm>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/macros.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
 #include <fstream>
+#include <ios>
+#include <iostream>
+#include <istream>
 #include <iterator>
+#include <memory>
+#include <optional>
+#include <ostream>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace libime {
@@ -70,7 +88,6 @@ const char *strConst[2][STR_LAST] = {
 
 constexpr std::string_view UserDictAutoMark = "[Auto]";
 constexpr std::string_view UserDictDeleteMark = "[Delete]";
-constexpr std::string_view ExtraDictPhraseMark = "[Phrase]";
 
 // A better version of key + keyValueSeparator + value. It tries to avoid
 // multiple allocation.
@@ -154,7 +171,7 @@ void saveTrieToText(const DATrie<uint32_t> &trie, std::ostream &out) {
     });
     for (auto &item : temp) {
         out << std::get<0>(item) << " " << maybeEscapeValue(std::get<1>(item))
-            << std::endl;
+            << '\n';
     }
 }
 
@@ -162,9 +179,7 @@ uint32_t maxValue(const DATrie<uint32_t> &trie) {
     uint32_t max = 0;
     trie.foreach(
         [&max](uint32_t value, size_t, DATrie<uint32_t>::position_type) {
-            if (value + 1 > max) {
-                max = value + 1;
-            }
+            max = std::max(value + 1, max);
             return true;
         });
     return max;
@@ -751,35 +766,35 @@ void TableBasedDictionary::saveText(std::ostream &out) {
     for (auto c : d->inputCode_) {
         out << fcitx::utf8::UCS4ToUTF8(c);
     }
-    out << std::endl;
-    out << strConst[1][STR_CODELEN] << d->codeLength_ << std::endl;
+    out << '\n';
+    out << strConst[1][STR_CODELEN] << d->codeLength_ << '\n';
     if (!d->ignoreChars_.empty()) {
         out << strConst[1][STR_IGNORECHAR];
         for (auto c : d->ignoreChars_) {
             out << fcitx::utf8::UCS4ToUTF8(c);
         }
-        out << std::endl;
+        out << '\n';
     }
     if (d->pinyinKey_) {
         out << strConst[1][STR_PINYIN] << fcitx::utf8::UCS4ToUTF8(d->pinyinKey_)
-            << std::endl;
+            << '\n';
     }
     if (d->promptKey_) {
         out << strConst[1][STR_PROMPT] << fcitx::utf8::UCS4ToUTF8(d->promptKey_)
-            << std::endl;
+            << '\n';
     }
     if (d->phraseKey_) {
         out << strConst[1][STR_CONSTRUCTPHRASE]
-            << fcitx::utf8::UCS4ToUTF8(d->phraseKey_) << std::endl;
+            << fcitx::utf8::UCS4ToUTF8(d->phraseKey_) << '\n';
     }
 
     if (hasRule()) {
-        out << strConst[1][STR_RULE] << std::endl;
+        out << strConst[1][STR_RULE] << '\n';
         for (const auto &rule : d->rules_) {
-            out << rule.toString() << std::endl;
+            out << rule.toString() << '\n';
         }
     }
-    out << strConst[1][STR_DATA] << std::endl;
+    out << strConst[1][STR_DATA] << '\n';
     std::string buf;
     if (d->promptKey_) {
         auto promptString = fcitx::utf8::UCS4ToUTF8(d->promptKey_);
@@ -793,7 +808,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
                 }
                 std::string_view ref(buf);
                 out << promptString << ref.substr(sep + 1) << " "
-                    << maybeEscapeValue(ref.substr(0, sep)) << std::endl;
+                    << maybeEscapeValue(ref.substr(0, sep)) << '\n';
                 return true;
             });
     }
@@ -809,7 +824,7 @@ void TableBasedDictionary::saveText(std::ostream &out) {
                 }
                 std::string_view ref(buf);
                 out << phraseString << ref.substr(sep + 1) << " "
-                    << maybeEscapeValue(ref.substr(0, sep)) << std::endl;
+                    << maybeEscapeValue(ref.substr(0, sep)) << '\n';
                 return true;
             });
     }
@@ -904,7 +919,8 @@ void TableBasedDictionary::loadUser(const char *filename, TableFormat format) {
 
 void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
     FCITX_D();
-    uint32_t magic = 0, version = 0;
+    uint32_t magic = 0;
+    uint32_t version = 0;
     switch (format) {
     case TableFormat::Binary:
         throw_if_io_fail(unmarshall(in, magic));
@@ -945,7 +961,8 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
             if (buf == UserDictAutoMark) {
                 state = UserDictState::Auto;
                 continue;
-            } else if (buf == UserDictDeleteMark) {
+            }
+            if (buf == UserDictDeleteMark) {
                 state = UserDictState::Delete;
                 continue;
             }
@@ -984,10 +1001,10 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
     }
 }
 
-void TableBasedDictionary::saveUser(const char *filename, TableFormat) {
+void TableBasedDictionary::saveUser(const char *filename, TableFormat format) {
     std::ofstream fout(filename, std::ios::out | std::ios::binary);
     throw_if_io_fail(fout);
-    saveUser(fout);
+    saveUser(fout, format);
 }
 
 void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
@@ -1011,7 +1028,7 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
         saveTrieToText(d->userTrie_, out);
 
         if (!d->autoPhraseDict_.empty()) {
-            out << UserDictAutoMark << std::endl;
+            out << UserDictAutoMark << '\n';
             std::vector<std::tuple<std::string, std::string, int32_t>>
                 autoEntries;
             d->autoPhraseDict_.search(
@@ -1023,11 +1040,11 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
                 });
             for (auto &t : autoEntries | boost::adaptors::reversed) {
                 out << std::get<0>(t) << " " << maybeEscapeValue(std::get<1>(t))
-                    << " " << std::get<2>(t) << std::endl;
+                    << " " << std::get<2>(t) << '\n';
             }
         }
         if (!d->deletionTrie_.empty()) {
-            out << UserDictDeleteMark << std::endl;
+            out << UserDictDeleteMark << '\n';
             saveTrieToText(d->deletionTrie_, out);
         }
         break;
@@ -1048,7 +1065,8 @@ size_t TableBasedDictionary::loadExtra(std::istream &in, TableFormat format) {
     FCITX_D();
     DATrie<uint32_t> trie;
     uint32_t index = 0;
-    uint32_t magic = 0, version = 0;
+    uint32_t magic = 0;
+    uint32_t version = 0;
     switch (format) {
     case TableFormat::Binary:
         throw_if_io_fail(unmarshall(in, magic));
@@ -1089,7 +1107,8 @@ size_t TableBasedDictionary::loadExtra(std::istream &in, TableFormat format) {
                 continue;
             }
 
-            std::string key, value;
+            std::string key;
+            std::string value;
             PhraseFlag flag;
             switch (state) {
             case ExtraDictState::Data:
@@ -1268,7 +1287,7 @@ bool TableBasedDictionary::generate(std::string_view value,
 }
 
 bool TableBasedDictionary::generateWithHint(
-    std::string_view value, const std::vector<std::string> &hints_,
+    std::string_view value, const std::vector<std::string> &codeHints,
     std::string &key) const {
     FCITX_D();
     if (!hasRule() || value.empty()) {
@@ -1281,26 +1300,28 @@ bool TableBasedDictionary::generateWithHint(
         return false;
     }
 
-    for (const auto &code : hints_) {
+    for (const auto &code : codeHints) {
         if (!fcitx::utf8::validate(code)) {
             return false;
         }
     }
 
-    auto hints = hints_;
+    auto hints = codeHints;
     hints.resize(valueLen);
 
     std::string newKey;
     for (const auto &rule : d->rules_) {
         // check rule can be applied
-        if (!((rule.flag() == TableRuleFlag::LengthEqual &&
-               valueLen == rule.phraseLength()) ||
-              (rule.flag() == TableRuleFlag::LengthLongerThan &&
-               valueLen >= rule.phraseLength()))) {
+        const bool canApplyRule =
+            ((rule.flag() == TableRuleFlag::LengthEqual &&
+              valueLen == rule.phraseLength()) ||
+             (rule.flag() == TableRuleFlag::LengthLongerThan &&
+              valueLen >= rule.phraseLength()));
+        if (!canApplyRule) {
             continue;
         }
 
-        auto hints = hints_;
+        auto hints = codeHints;
         hints.resize(valueLen);
         // Fill hints first.
         if (!d->validateHints(hints, rule)) {
@@ -1405,13 +1426,12 @@ bool TableBasedDictionary::isEndKey(uint32_t c) const {
 
 void TableBasedDictionary::statistic() const {
     FCITX_D();
-    std::cout << "Phrase Trie: " << d->phraseTrie_.mem_size() << std::endl
-              << "Single Char Trie: " << d->singleCharTrie_.mem_size()
-              << std::endl
+    std::cout << "Phrase Trie: " << d->phraseTrie_.mem_size() << '\n'
+              << "Single Char Trie: " << d->singleCharTrie_.mem_size() << '\n'
               << "Single char const trie: "
               << d->singleCharConstTrie_.mem_size() << " + "
-              << d->singleCharLookupTrie_.mem_size() << std::endl
-              << "Prompt Trie: " << d->promptTrie_.mem_size() << std::endl;
+              << d->singleCharLookupTrie_.mem_size() << '\n'
+              << "Prompt Trie: " << d->promptTrie_.mem_size() << '\n';
 }
 
 void TableBasedDictionary::setTableOptions(TableOptions option) {
@@ -1592,7 +1612,8 @@ std::string TableBasedDictionary::hint(std::string_view key) const {
 
 void TableBasedDictionary::matchPrefixImpl(
     const SegmentGraph &graph, const GraphMatchCallback &callback,
-    const std::unordered_set<const SegmentGraphNode *> &ignore, void *) const {
+    const std::unordered_set<const SegmentGraphNode *> &ignore,
+    void * /*helper*/) const {
     FCITX_D();
     auto range = fcitx::utf8::MakeUTF8CharRange(graph.data());
     auto hasWildcard =

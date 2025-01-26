@@ -6,12 +6,12 @@
 #ifndef _FCITX_LIBIME_TABLE_AUTOPHRASEDICT_H_
 #define _FCITX_LIBIME_TABLE_AUTOPHRASEDICT_H_
 
-#include "libimetable_export.h"
 #include <cstddef>
 #include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <functional>
 #include <istream>
+#include <libime/table/libimetable_export.h>
 #include <memory>
 #include <string>
 #include <string_view>

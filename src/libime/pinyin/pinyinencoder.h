@@ -6,12 +6,15 @@
 #ifndef _FCITX_LIBIME_PINYIN_PINYINENCODER_H_
 #define _FCITX_LIBIME_PINYIN_PINYINENCODER_H_
 
-#include "libimepinyin_export.h"
+#include <cstddef>
 #include <fcitx-utils/flags.h>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/macros.h>
 #include <libime/core/segmentgraph.h>
+#include <libime/pinyin/libimepinyin_export.h>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace libime {
@@ -62,7 +65,7 @@ enum class PinyinFuzzyFlag {
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;
 
 LIBIMEPINYIN_EXPORT fcitx::LogMessageBuilder &
-operator<<(fcitx::LogMessageBuilder &log, PinyinFuzzyFlags final);
+operator<<(fcitx::LogMessageBuilder &log, PinyinFuzzyFlags fuzzy);
 
 enum class PinyinInitial : char {
     Invalid = 0,

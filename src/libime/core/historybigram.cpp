@@ -145,10 +145,7 @@ public:
 private:
     void decWeightedSize(int32_t v) {
         weightedSize_ -= v;
-        if (weightedSize_ < 0) {
-            // This should not happen.
-            weightedSize_ = 0;
-        }
+        weightedSize_ = std::max(weightedSize_, 0);
     }
 
     int32_t weightedSize_ = 0;
@@ -219,7 +216,7 @@ public:
                 }
                 out << s;
             }
-            out << std::endl;
+            out << '\n';
         }
     }
 
@@ -488,13 +485,11 @@ float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
     float bigramWeight = d->useOnlyUnigram_ ? 0.0F : 0.8F;
     // add 0.5 to avoid div 0
     float pr = 0.0F;
-    pr += bigramWeight * float(bf) / float(uf0 + d->poolWeight_[0] / 2);
-    pr += (1.0F - bigramWeight) * float(uf1) /
-          float(d->unigramSize() + d->poolWeight_[0] / 2);
+    pr += bigramWeight * bf / float(uf0 + (d->poolWeight_[0] / 2));
+    pr += (1.0F - bigramWeight) * uf1 /
+          float(d->unigramSize() + (d->poolWeight_[0] / 2));
 
-    if (pr >= 1.0) {
-        pr = 1.0;
-    }
+    pr = std::min<double>(pr, 1.0);
     if (pr == 0) {
         return d->unknown_;
     }

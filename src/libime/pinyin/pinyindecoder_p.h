@@ -6,8 +6,9 @@
 #ifndef _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_
 #define _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_
 
-#include "pinyindecoder.h"
 #include <libime/core/lattice.h>
+#include <string>
+#include <string_view>
 
 namespace libime {
 

@@ -40,7 +40,7 @@ public:
     }
 
     void setWordToState(State &state, const WordNode *node) const {
-        return storeNative<const WordNode *>(
+        storeNative<const WordNode *>(
             reinterpret_cast<char *>(state.data() + sizeof(lm::ngram::State)),
             node);
     }
@@ -81,7 +81,7 @@ void UserLanguageModel::load(std::istream &in) {
 }
 void UserLanguageModel::save(std::ostream &out) {
     FCITX_D();
-    return d->history_.save(out);
+    d->history_.save(out);
 }
 
 void UserLanguageModel::setHistoryWeight(float w) {

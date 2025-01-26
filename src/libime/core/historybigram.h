@@ -6,11 +6,11 @@
 #ifndef _FCITX_LIBIME_CORE_HISTORYBIGRAM_H_
 #define _FCITX_LIBIME_CORE_HISTORYBIGRAM_H_
 
-#include "libimecore_export.h"
 #include <cstddef>
 #include <fcitx-utils/macros.h>
 #include <istream>
 #include <libime/core/lattice.h>
+#include <libime/core/libimecore_export.h>
 #include <memory>
 #include <ostream>
 #include <string>

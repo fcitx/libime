@@ -7,12 +7,12 @@
 #ifndef _LIBIME_LIBIME_CORE_TRIEDICTIONARY_H_
 #define _LIBIME_LIBIME_CORE_TRIEDICTIONARY_H_
 
-#include "libimecore_export.h"
 #include <cstddef>
 #include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <libime/core/datrie.h>
 #include <libime/core/dictionary.h>
+#include <libime/core/libimecore_export.h>
 #include <memory>
 #include <string_view>
 

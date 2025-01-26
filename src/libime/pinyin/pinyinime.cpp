@@ -4,10 +4,17 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "pinyinime.h"
+#include "libime/core/decoder.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/pinyincorrectionprofile.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include "pinyindecoder.h"
+#include <cstddef>
+#include <fcitx-utils/connectableobject.h>
+#include <fcitx-utils/macros.h>
+#include <limits>
+#include <memory>
+#include <utility>
 
 namespace libime {
 

@@ -5,6 +5,10 @@
  */
 #include "pinyincontext.h"
 #include "libime/core/historybigram.h"
+#include "libime/core/inputbuffer.h"
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/constants.h"
 #include "pinyindecoder.h"
@@ -12,15 +16,25 @@
 #include "pinyinime.h"
 #include "pinyinmatchstate.h"
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <fcitx-utils/charutils.h>
+#include <fcitx-utils/inputbuffer.h>
 #include <fcitx-utils/keysym.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/signals.h>
+#include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/utf8.h>
+#include <functional>
 #include <iterator>
+#include <limits>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -388,7 +402,8 @@ int PinyinContext::pinyinBeforeCursor() const {
             for (auto iter = s->path().begin(),
                       end = std::prev(s->path().end());
                  iter < end; iter++) {
-                auto from = (*iter)->index(), to = (*std::next(iter))->index();
+                auto from = (*iter)->index();
+                auto to = (*std::next(iter))->index();
                 if (to >= c) {
                     return from + len;
                 }
@@ -592,12 +607,8 @@ void PinyinContext::update() {
                         !static_cast<const PinyinLatticeNode &>(latticeNode)
                              .isCorrection()) {
                         if (!d->ime_->model()->isNodeUnknown(latticeNode)) {
-                            if (latticeNode.score() < min) {
-                                min = latticeNode.score();
-                            }
-                            if (latticeNode.score() > max) {
-                                max = latticeNode.score();
-                            }
+                            min = std::min(latticeNode.score(), min);
+                            max = std::max(latticeNode.score(), max);
                         }
                         if (d->candidatesSet_.count(latticeNode.word())) {
                             continue;
@@ -719,9 +730,7 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
     auto c = cursor();
     size_t actualCursor = ss.size();
     // should not happen
-    if (c < len) {
-        c = len;
-    }
+    c = std::max(c, len);
 
     auto resultSize = ss.size();
 
@@ -737,7 +746,8 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                 } else {
                     first = false;
                 }
-                auto from = (*iter)->index(), to = (*std::next(iter))->index();
+                auto from = (*iter)->index();
+                auto to = (*std::next(iter))->index();
                 size_t cursorInPinyin = c - from - len;
                 const size_t startPivot = resultSize;
                 auto pinyin = d->segs_.segment(from, to);
@@ -765,12 +775,12 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
 
                     // Try to match the candidate syllables from all possible
                     // none-fuzzy possible syls.
-                    if (static_cast<size_t>(nthPinyin * 2 + 2) <=
+                    if (static_cast<size_t>((nthPinyin * 2) + 2) <=
                         candidatePinyin.size()) {
                         auto candidateInitial = static_cast<PinyinInitial>(
                             candidatePinyin[nthPinyin * 2]);
                         auto candidateFinal = static_cast<PinyinFinal>(
-                            candidatePinyin[nthPinyin * 2 + 1]);
+                            candidatePinyin[(nthPinyin * 2) + 1]);
 
                         bool found = false;
                         for (const auto &initial : syls) {

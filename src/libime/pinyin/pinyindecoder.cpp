@@ -5,7 +5,14 @@
  */
 
 #include "libime/pinyin/pinyindecoder.h"
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
 #include "pinyindecoder_p.h"
+#include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
 
 namespace libime {
 

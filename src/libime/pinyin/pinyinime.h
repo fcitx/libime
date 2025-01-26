@@ -6,9 +6,10 @@
 #ifndef _FCITX_LIBIME_PINYIN_PINYINIME_H_
 #define _FCITX_LIBIME_PINYIN_PINYINIME_H_
 
-#include "libimepinyin_export.h"
+#include <cstddef>
 #include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
+#include <libime/pinyin/libimepinyin_export.h>
 #include <libime/pinyin/pinyincorrectionprofile.h>
 #include <libime/pinyin/pinyinencoder.h>
 #include <limits>

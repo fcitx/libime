@@ -10,6 +10,7 @@
 #include "shuangpindata.h"
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/range/iterator_range.hpp>

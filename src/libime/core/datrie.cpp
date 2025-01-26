@@ -53,8 +53,8 @@ int32_t decodeValue(V raw) {
 
 template <typename T>
 struct NanValue {
-    static inline int32_t NO_VALUE() { return -1; };
-    static inline int32_t NO_PATH() { return -2; }
+    static int32_t NO_VALUE() { return -1; };
+    static int32_t NO_PATH() { return -2; }
 };
 
 // Musl doesn't have nanf implementation we need, just check if they are the
@@ -69,16 +69,16 @@ template <>
 struct NanValue<float> {
     static_assert(std::numeric_limits<float>::has_quiet_NaN,
                   "Require support for quiet NaN.");
-    static inline int32_t NO_VALUE() {
+    static int32_t NO_VALUE() {
         return isGoodNanf() ? decodeValue(std::nanf("1")) : 0x7fc00001;
     }
-    static inline int32_t NO_PATH() {
+    static int32_t NO_PATH() {
         return isGoodNanf() ? decodeValue(std::nanf("2")) : 0x7fc00002;
     }
 };
 
 template <typename T>
-constexpr inline T decodeImpl(int32_t raw) {
+constexpr T decodeImpl(int32_t raw) {
     typename DATriePrivate<T>::decoder_type d;
     d.result = raw;
     return d.result_value;
@@ -86,13 +86,12 @@ constexpr inline T decodeImpl(int32_t raw) {
 
 } // namespace
 
-#if 0
-template<typename T>
-using vector_impl = std::vector<T>;
-#else
+// template<typename T>
+// using vector_impl = std::vector<T>;
+// naivevector is used due to realloc not available with std::vector.
 template <typename T>
 using vector_impl = naivevector<T>;
-#endif
+
 template <typename V, bool ORDERED, int MAX_TRIAL>
 class DATriePrivate {
 public:
@@ -361,20 +360,20 @@ public:
     }
 
     template <typename U>
-    inline void update(const char *key, const U &callback) {
+    void update(const char *key, const U &callback) {
         update(key, std::strlen(key), callback);
     }
 
     template <typename U>
-    inline void update(const char *key, size_t len, const U &callback) {
+    void update(const char *key, size_t len, const U &callback) {
         npos_t from;
         size_t pos(0);
         update(key, from, pos, len, callback);
     }
 
     template <typename U>
-    inline void update(const char *key, npos_t &from, size_t &pos, size_t len,
-                       const U &callback) {
+    void update(const char *key, npos_t &from, size_t &pos, size_t len,
+                const U &callback) {
         update(key, from, pos, len, callback, [](const int, const int) {});
     }
 
@@ -560,7 +559,7 @@ public:
     void shrink_tail() {
         const size_t length_ =
             static_cast<size_t>(m_tail.size()) -
-            static_cast<size_t>(m_tail0.size()) * (1 + sizeof(value_type));
+            (static_cast<size_t>(m_tail0.size()) * (1 + sizeof(value_type)));
         decltype(m_tail) t;
         // a dummy entry
         t.resize(sizeof(int32_t));
@@ -741,8 +740,8 @@ public:
         return _add_block() << 8;
     }
 
-    static void _set_result(result_type *x, value_type r, size_t = 0,
-                            npos_t = npos_t()) {
+    static void _set_result(result_type *x, value_type r, size_t /*len*/ = 0,
+                            npos_t /*npos*/ = npos_t()) {
         *x = r;
     }
     static void _set_result(std::tuple<value_type, size_t, position_type> *x,
@@ -1217,13 +1216,13 @@ size_t DATrie<T>::mem_size() const {
     //               << "ninfo" << sizeof(typename
     //               decltype(d->m_ninfo)::value_type) *
     //               d->m_ninfo.size() << std::endl;
-    return d->m_tail.size() + d->m_tail0.size() * sizeof(int) +
-           sizeof(typename decltype(d->m_array)::value_type) *
-               d->m_array.size() +
-           sizeof(typename decltype(d->m_block)::value_type) *
-               d->m_block.size() +
-           sizeof(typename decltype(d->m_ninfo)::value_type) *
-               d->m_ninfo.size();
+    return d->m_tail.size() + (d->m_tail0.size() * sizeof(int)) +
+           (sizeof(typename decltype(d->m_array)::value_type) *
+            d->m_array.size()) +
+           (sizeof(typename decltype(d->m_block)::value_type) *
+            d->m_block.size()) +
+           (sizeof(typename decltype(d->m_ninfo)::value_type) *
+            d->m_ninfo.size());
 }
 
 template class DATrie<float>;

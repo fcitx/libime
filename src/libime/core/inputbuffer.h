@@ -6,11 +6,11 @@
 #ifndef _FCITX_LIBIME_CORE_INPUTBUFFER_H_
 #define _FCITX_LIBIME_CORE_INPUTBUFFER_H_
 
-#include "libimecore_export.h"
 #include <boost/iterator/iterator_categories.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <cstddef>
 #include <fcitx-utils/inputbuffer.h>
+#include <libime/core/libimecore_export.h>
 #include <string_view>
 
 namespace libime {

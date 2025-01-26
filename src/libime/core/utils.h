@@ -7,13 +7,13 @@
 #ifndef LIBIME_UTILS_H
 #define LIBIME_UTILS_H
 
-#include "libimecore_export.h"
 #include <arpa/inet.h>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <fcitx-utils/log.h>
 #include <iostream>
+#include <libime/core/libimecore_export.h>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -117,7 +117,7 @@ inline std::ostream &marshallString(std::ostream &out, std::string_view str) {
         if (!marshall(out, length)) {
             break;
         }
-        if (!out.write(str.data(), sizeof(char) * length)) {
+        if (!out.write(str.data(), str.size())) {
             break;
         }
     } while (0);

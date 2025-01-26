@@ -7,24 +7,48 @@
 #include "pinyindictionary.h"
 #include "constants.h"
 #include "libime/core/datrie.h"
+#include "libime/core/dictionary.h"
+#include "libime/core/languagemodel.h"
 #include "libime/core/lattice.h"
 #include "libime/core/lrucache.h"
+#include "libime/core/segmentgraph.h"
 #include "libime/core/triedictionary.h"
 #include "libime/core/utils.h"
 #include "libime/core/zstdfilter.h"
+#include "libime/pinyin/pinyinmatchstate.h"
 #include "pinyindecoder_p.h"
 #include "pinyinencoder.h"
 #include "pinyinmatchstate_p.h"
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/container_hash/hash.hpp>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/signals.h>
 #include <fstream>
 #include <iomanip>
+#include <ios>
+#include <istream>
+#include <iterator>
+#include <list>
+#include <memory>
 #include <optional>
+#include <ostream>
 #include <queue>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -422,8 +446,8 @@ void matchWordsOnTrie(const PinyinTrie *userDict, const MatchedPinyinPath &path,
                 [userDict, &path, &callback, extraCost, isCorrection](
                     PinyinTrie::value_type value, size_t len, uint64_t pos) {
                     std::string s;
-                    s.reserve(len + path.size() * 2);
-                    path.trie()->suffix(s, len + path.size() * 2, pos);
+                    s.reserve(len + (path.size() * 2));
+                    path.trie()->suffix(s, len + (path.size() * 2), pos);
                     if (size_t separator =
                             s.find(pinyinHanziSep, path.size() * 2);
                         separator != std::string::npos) {
@@ -431,7 +455,7 @@ void matchWordsOnTrie(const PinyinTrie *userDict, const MatchedPinyinPath &path,
                         auto encodedPinyin = view.substr(0, separator);
                         auto hanzi = view.substr(separator + 1);
                         const size_t lengthDiff =
-                            (encodedPinyin.size() / 2 - path.size());
+                            ((encodedPinyin.size() / 2) - path.size());
                         // Don't match long word for "custom".
                         if (path.trie() == userDict && value < 0 &&
                             lengthDiff > 0) {
@@ -457,11 +481,11 @@ void matchWordsOnTrie(const PinyinTrie *userDict, const MatchedPinyinPath &path,
                 [&path, &callback, extraCost, isCorrection](
                     PinyinTrie::value_type value, size_t len, uint64_t pos) {
                     std::string s;
-                    s.reserve(len + path.size() * 2 + 1);
-                    path.trie()->suffix(s, len + path.size() * 2 + 1, pos);
+                    s.reserve(len + (path.size() * 2) + 1);
+                    path.trie()->suffix(s, len + (path.size() * 2) + 1, pos);
                     std::string_view view(s);
                     auto encodedPinyin = view.substr(0, path.size() * 2);
-                    auto hanzi = view.substr(path.size() * 2 + 1);
+                    auto hanzi = view.substr((path.size() * 2) + 1);
                     callback(encodedPinyin, hanzi, value + extraCost,
                              isCorrection);
                     return true;
@@ -878,7 +902,7 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
         std::string_view ref(buf);
         auto fullPinyin = PinyinEncoder::decodeFullPinyin(ref.data(), sep);
         out << ref.substr(sep + 1) << " " << fullPinyin << " "
-            << std::setprecision(16) << value << std::endl;
+            << std::setprecision(16) << value << '\n';
         return true;
     });
     out.copyfmt(state);

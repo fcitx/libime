@@ -6,12 +6,12 @@
 #ifndef _FCITX_LIBIME_CORE_DECODER_H_
 #define _FCITX_LIBIME_CORE_DECODER_H_
 
-#include "libimecore_export.h"
 #include <cstddef>
 #include <fcitx-utils/macros.h>
 #include <libime/core/dictionary.h>
 #include <libime/core/languagemodel.h>
 #include <libime/core/lattice.h>
+#include <libime/core/libimecore_export.h>
 #include <libime/core/segmentgraph.h>
 #include <limits>
 #include <memory>
@@ -45,7 +45,7 @@ public:
                 void *helper = nullptr) const;
 
 protected:
-    inline LatticeNode *
+    LatticeNode *
     createLatticeNode(const SegmentGraph &graph, const LanguageModelBase *model,
                       std::string_view word, WordIndex idx,
                       SegmentGraphPath path, const State &state, float cost = 0,

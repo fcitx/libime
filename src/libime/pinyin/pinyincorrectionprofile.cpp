@@ -6,6 +6,13 @@
 #include "pinyincorrectionprofile.h"
 #include "pinyindata.h"
 #include "pinyinencoder.h"
+#include <cstddef>
+#include <fcitx-utils/macros.h>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace libime {
 

@@ -8,11 +8,22 @@
 #ifndef _FCITX_LIBIME_TABLE_TABLEBASEDDICTIONARY_H_
 #define _FCITX_LIBIME_TABLE_TABLEBASEDDICTIONARY_H_
 
-#include "libimetable_export.h"
+#include <cstddef>
+#include <cstdint>
+#include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include <fcitx-utils/signals.h>
+#include <functional>
+#include <istream>
 #include <libime/core/dictionary.h>
+#include <libime/core/segmentgraph.h>
+#include <libime/table/libimetable_export.h>
 #include <memory>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <unordered_set>
+#include <vector>
 
 namespace libime {
 class TableBasedDictionaryPrivate;
@@ -28,9 +39,8 @@ enum class PhraseFlag {
     Invalid
 };
 
-typedef std::function<bool(std::string_view code, std::string_view word,
-                           uint32_t index, PhraseFlag flag)>
-    TableMatchCallback;
+using TableMatchCallback = std::function<bool(
+    std::string_view, std::string_view, uint32_t, PhraseFlag)>;
 
 enum class TableFormat { Text, Binary };
 enum class TableMatchMode { Exact, Prefix };

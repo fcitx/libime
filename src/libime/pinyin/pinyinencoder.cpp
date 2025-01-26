@@ -4,19 +4,34 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "pinyinencoder.h"
+#include "libime/core/segmentgraph.h"
 #include "pinyincorrectionprofile.h"
 #include "pinyindata.h"
 #include "shuangpinprofile.h"
 #include <algorithm>
+#include <array>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/bimap.hpp>
 #include <boost/container/static_vector.hpp>
+#include <boost/range/iterator_range_core.hpp>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <fcitx-utils/charutils.h>
+#include <fcitx-utils/log.h>
 #include <functional>
+#include <initializer_list>
+#include <iterator>
 #include <queue>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -466,7 +481,7 @@ std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
             result += '\'';
         }
         result += initialToString(static_cast<PinyinInitial>(data[i * 2]));
-        result += finalToString(static_cast<PinyinFinal>(data[i * 2 + 1]));
+        result += finalToString(static_cast<PinyinFinal>(data[(i * 2) + 1]));
     }
     return result;
 }

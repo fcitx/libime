@@ -11,7 +11,6 @@
 #include <cassert>
 #include <cstddef>
 #include <queue>
-#include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -70,9 +69,7 @@ size_t SegmentGraph::check(const SegmentGraph &graph) const {
 
     q.emplace(&start(), &graph.start());
     while (!q.empty()) {
-        const SegmentGraphNode *old;
-        const SegmentGraphNode *now;
-        std::tie(old, now) = q.top();
+        auto [old, now] = q.top();
         q.pop();
         do {
             assert(old->index() == now->index());

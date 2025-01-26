@@ -6,7 +6,6 @@
 #ifndef _FCITX_LIBIME_CORE_SEGMENTGRAPH_H_
 #define _FCITX_LIBIME_CORE_SEGMENTGRAPH_H_
 
-#include "libimecore_export.h"
 #include <boost/iterator/iterator_categories.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/adaptor/type_erased.hpp>
@@ -17,6 +16,7 @@
 #include <fcitx-utils/element.h>
 #include <fcitx-utils/macros.h>
 #include <functional>
+#include <libime/core/libimecore_export.h>
 #include <list>
 #include <memory>
 #include <string>
@@ -69,7 +69,7 @@ public:
     }
 
     size_t prevSize() const { return parents().size(); }
-    inline size_t index() const { return start_; }
+    size_t index() const { return start_; }
 
     bool operator==(const SegmentGraphNode &other) const {
         return this == &other;
@@ -127,7 +127,7 @@ public:
     virtual const SegmentGraphNode &end() const = 0;
 
     virtual SegmentGraphNodeConstRange nodes(size_t idx) const = 0;
-    inline const SegmentGraphNode &node(size_t idx) const {
+    const SegmentGraphNode &node(size_t idx) const {
         return nodes(idx).front();
     }
 
@@ -137,12 +137,12 @@ public:
     // Return the size of string.
     size_t size() const { return data().size(); }
 
-    inline std::string_view segment(size_t start, size_t end) const {
+    std::string_view segment(size_t start, size_t end) const {
         return {data().data() + start, end - start};
     }
 
-    inline std::string_view segment(const SegmentGraphNode &start,
-                                    const SegmentGraphNode &end) const {
+    std::string_view segment(const SegmentGraphNode &start,
+                             const SegmentGraphNode &end) const {
         return segment(start.index(), end.index());
     }
 
@@ -360,7 +360,7 @@ private:
         return *graph_[idx];
     }
 
-    inline SegmentGraphNode &mutableNode(size_t idx) {
+    SegmentGraphNode &mutableNode(size_t idx) {
         return mutableNodes(idx).front();
     }
 

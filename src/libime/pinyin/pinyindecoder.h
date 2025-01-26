@@ -6,9 +6,15 @@
 #ifndef _FCITX_LIBIME_PINYIN_PINYINDECODER_H_
 #define _FCITX_LIBIME_PINYIN_PINYINDECODER_H_
 
-#include "libimepinyin_export.h"
 #include <libime/core/decoder.h>
+#include <libime/core/languagemodel.h>
+#include <libime/core/lattice.h>
+#include <libime/core/segmentgraph.h>
+#include <libime/pinyin/libimepinyin_export.h>
 #include <libime/pinyin/pinyindictionary.h>
+#include <memory>
+#include <string>
+#include <string_view>
 
 namespace libime {
 

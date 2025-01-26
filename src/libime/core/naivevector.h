@@ -224,7 +224,7 @@ private:
 };
 
 template <typename T>
-void swap(naivevector<T> &lhs, naivevector<T> &rhs) {
+void swap(naivevector<T> &lhs, naivevector<T> &rhs) noexcept {
     lhs.swap(rhs);
 }
 } // namespace libime

@@ -6,7 +6,6 @@
 #ifndef _FCITX_LIBIME_CORE_LATTICE_H_
 #define _FCITX_LIBIME_CORE_LATTICE_H_
 
-#include "libimecore_export.h"
 #include <algorithm>
 #include <boost/iterator/iterator_categories.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -16,6 +15,7 @@
 #include <fcitx-utils/macros.h>
 #include <fcitx-utils/stringutils.h>
 #include <libime/core/languagemodel.h>
+#include <libime/core/libimecore_export.h>
 #include <libime/core/segmentgraph.h>
 #include <memory>
 #include <string>

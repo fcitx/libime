@@ -10,7 +10,7 @@
 /// \file
 /// \brief Provide a DATrie implementation.
 
-#include "libimecore_export.h"
+#include <libime/core/libimecore_export.h>
 
 #include <cstddef>
 #include <cstdint>

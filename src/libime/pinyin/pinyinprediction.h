@@ -6,11 +6,11 @@
 #ifndef _FCITX_LIBIME_PINYIN_PREDICTION_H_
 #define _FCITX_LIBIME_PINYIN_PREDICTION_H_
 
-#include "libimepinyin_export.h"
 #include <cstddef>
 #include <fcitx-utils/macros.h>
 #include <libime/core/languagemodel.h>
 #include <libime/core/prediction.h>
+#include <libime/pinyin/libimepinyin_export.h>
 #include <libime/pinyin/pinyindictionary.h>
 #include <memory>
 #include <string>

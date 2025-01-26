@@ -6,10 +6,10 @@
 #ifndef _FCITX_LIBIME_CORE_PREDICTION_H_
 #define _FCITX_LIBIME_CORE_PREDICTION_H_
 
-#include "libimecore_export.h"
 #include <cstddef>
 #include <fcitx-utils/macros.h>
 #include <libime/core/languagemodel.h>
+#include <libime/core/libimecore_export.h>
 #include <libime/core/userlanguagemodel.h>
 #include <memory>
 #include <string>

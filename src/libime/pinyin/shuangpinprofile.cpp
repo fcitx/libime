@@ -320,6 +320,10 @@ public:
         if (correctionProfile != nullptr) {
             const auto &correctionMap = correctionProfile->correctionMap();
             for (const auto &[input, pys] : spTable_) {
+                // Only apply correction on full shuangpin.
+                if (input.size() < 2) {
+                    continue;
+                }
                 for (size_t i = 0; i < input.size(); i++) {
                     auto chr = input[i];
                     auto swap = correctionMap.find(chr);

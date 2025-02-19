@@ -11,6 +11,7 @@
 #include "constants.h"
 #include "tablebaseddictionary.h"
 #include "tableoptions.h"
+#include "tablerule.h"
 #include <cstdint>
 #include <optional>
 #include <regex>

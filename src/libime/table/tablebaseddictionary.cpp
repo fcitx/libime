@@ -80,7 +80,7 @@ enum {
 
 enum class BuildPhase { PhaseConfig, PhaseRule, PhaseData, PhasePhrase };
 
-const char *strConst[2][STR_LAST] = {
+std::string_view strConst[2][STR_LAST] = {
     {"键码=", "码长=", "规避字符=", "拼音=", "拼音长度=", "[数据]",
      "[组词规则]", "提示=", "构词=", "[词组]"},
     {"KeyCode=", "Length=", "InvalidChar=", "Pinyin=", "PinyinLength=",
@@ -388,13 +388,13 @@ bool TableBasedDictionaryPrivate::validate() const {
     if (inputCode_.empty()) {
         return false;
     }
-    if (inputCode_.count(pinyinKey_)) {
+    if (inputCode_.contains(pinyinKey_)) {
         return false;
     }
-    if (inputCode_.count(promptKey_)) {
+    if (inputCode_.contains(promptKey_)) {
         return false;
     }
-    if (inputCode_.count(phraseKey_)) {
+    if (inputCode_.contains(phraseKey_)) {
         return false;
     }
     return true;
@@ -650,16 +650,14 @@ void TableBasedDictionary::loadText(std::istream &in) {
 
     std::string buf;
 
-    auto check_option = [&buf](int index) {
-        if (buf.compare(0, std::strlen(strConst[0][index]),
-                        strConst[0][index]) == 0) {
-            return 0;
+    auto consumeOptionPrefix = [](std::string_view &buf, int index) {
+        if (fcitx::stringutils::consumePrefix(buf, strConst[0][index])) {
+            return true;
         }
-        if (buf.compare(0, std::strlen(strConst[1][index]),
-                        strConst[1][index]) == 0) {
-            return 1;
+        if (fcitx::stringutils::consumePrefix(buf, strConst[1][index])) {
+            return true;
         }
-        return -1;
+        return false;
     };
 
     auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
@@ -674,55 +672,57 @@ void TableBasedDictionary::loadText(std::istream &in) {
             continue;
         }
 
-        boost::trim_if(buf, isSpaceCheck);
+        auto line = fcitx::stringutils::trimView(buf);
 
         switch (phase) {
         case BuildPhase::PhaseConfig: {
-            if (buf[0] == '#') {
+            if (fcitx::stringutils::startsWith(line, "#")) {
                 continue;
             }
 
-            int match = -1;
-            if ((match = check_option(STR_KEYCODE)) >= 0) {
-                const std::string code =
-                    buf.substr(strlen(strConst[match][STR_KEYCODE]));
-                auto range = fcitx::utf8::MakeUTF8CharRange(code);
+            if (consumeOptionPrefix(line, STR_KEYCODE)) {
+                auto range = fcitx::utf8::MakeUTF8CharRange(line);
                 d->inputCode_ = std::set<uint32_t>(range.begin(), range.end());
-            } else if ((match = check_option(STR_CODELEN)) >= 0) {
-                d->codeLength_ =
-                    std::stoi(buf.substr(strlen(strConst[match][STR_CODELEN])));
-            } else if (check_option(STR_PINYINLEN) >= 0) {
+            } else if (consumeOptionPrefix(line, STR_CODELEN)) {
+                d->codeLength_ = std::stoi(std::string(line));
+            } else if (consumeOptionPrefix(line, STR_PINYINLEN)) {
                 // Deprecated option.
-            } else if ((match = check_option(STR_IGNORECHAR)) >= 0) {
-                const std::string ignoreChars =
-                    buf.substr(strlen(strConst[match][STR_IGNORECHAR]));
-                auto range = fcitx::utf8::MakeUTF8CharRange(ignoreChars);
+            } else if (consumeOptionPrefix(line, STR_IGNORECHAR)) {
+                auto range = fcitx::utf8::MakeUTF8CharRange(line);
                 d->ignoreChars_ =
                     std::set<uint32_t>(range.begin(), range.end());
-            } else if ((match = check_option(STR_PINYIN)) >= 0) {
-                d->pinyinKey_ = buf[strlen(strConst[match][STR_PINYIN])];
-            } else if ((match = check_option(STR_PROMPT)) >= 0) {
-                d->promptKey_ = buf[strlen(strConst[match][STR_PROMPT])];
-            } else if ((match = check_option(STR_CONSTRUCTPHRASE)) >= 0) {
-                d->phraseKey_ =
-                    buf[strlen(strConst[match][STR_CONSTRUCTPHRASE])];
-            } else if (check_option(STR_DATA) >= 0) {
+            } else if (consumeOptionPrefix(line, STR_PINYIN)) {
+                const auto chr = fcitx::utf8::getChar(line);
+                if (fcitx::utf8::isValidChar(chr)) {
+                    d->pinyinKey_ = chr;
+                }
+            } else if (consumeOptionPrefix(line, STR_PROMPT)) {
+                const auto chr = fcitx::utf8::getChar(line);
+                if (fcitx::utf8::isValidChar(chr)) {
+                    d->promptKey_ = chr;
+                }
+            } else if (consumeOptionPrefix(line, STR_CONSTRUCTPHRASE)) {
+                const auto chr = fcitx::utf8::getChar(line);
+                if (fcitx::utf8::isValidChar(chr)) {
+                    d->phraseKey_ = chr;
+                }
+            } else if (consumeOptionPrefix(line, STR_DATA)) {
                 phase = BuildPhase::PhaseData;
                 if (!d->validate()) {
                     throw std::invalid_argument("file format is invalid");
                 }
                 break;
-            } else if (check_option(STR_RULE) >= 0) {
+            } else if (consumeOptionPrefix(line, STR_RULE)) {
                 phase = BuildPhase::PhaseRule;
                 break;
             }
             break;
         }
         case BuildPhase::PhaseRule: {
-            if (buf[0] == '#') {
+            if (fcitx::stringutils::startsWith(line, "#")) {
                 continue;
             }
-            if (check_option(STR_DATA) >= 0) {
+            if (consumeOptionPrefix(line, STR_DATA)) {
                 phase = BuildPhase::PhaseData;
                 if (!d->validate()) {
                     throw std::invalid_argument("file format is invalid");
@@ -730,27 +730,30 @@ void TableBasedDictionary::loadText(std::istream &in) {
                 break;
             }
 
-            if (buf.empty()) {
+            if (line.empty()) {
                 continue;
             }
 
-            d->rules_.emplace_back(buf, d->codeLength_);
+            d->rules_.emplace_back(std::string(line), d->codeLength_);
             break;
         }
         case BuildPhase::PhaseData:
-            if (check_option(STR_PHRASE) >= 0) {
+            if (consumeOptionPrefix(line, STR_PHRASE)) {
                 phase = BuildPhase::PhasePhrase;
                 if (!hasRule()) {
                     throw std::invalid_argument(
                         "file has phrase section but no rule");
                 }
+                break;
             }
-            d->insertDataLine(buf, false);
+            d->insertDataLine(line, false);
             break;
-        case BuildPhase::PhasePhrase:
-            maybeUnescapeValue(buf);
-            insert(buf, PhraseFlag::None);
+        case BuildPhase::PhasePhrase: {
+            std::string phrase{line};
+            maybeUnescapeValue(phrase);
+            insert(phrase, PhraseFlag::None);
             break;
+        }
         }
     }
 
@@ -1240,7 +1243,7 @@ bool TableBasedDictionary::insert(std::string_view key, std::string_view value,
         }
 
         if (flag == PhraseFlag::None && fcitx::utf8::length(value) == 1 &&
-            !d->ignoreChars_.count(fcitx::utf8::getChar(value))) {
+            !d->ignoreChars_.contains(fcitx::utf8::getChar(value))) {
             updateReverseLookupEntry(d->singleCharTrie_, key, value, nullptr);
 
             if (hasRule() && !d->phraseKey_) {
@@ -1382,7 +1385,7 @@ bool TableBasedDictionary::generateWithHint(
             // Avoid same code being referenced twice.
             // This helps for the case like: p11 and p1z point to the same code
             // character.
-            if (usedChar.count(charIndex)) {
+            if (usedChar.contains(charIndex)) {
                 continue;
             }
             usedChar.insert(charIndex);
@@ -1421,7 +1424,7 @@ bool TableBasedDictionary::isAllInputCode(std::string_view code) const {
 
 bool TableBasedDictionary::isEndKey(uint32_t c) const {
     FCITX_D();
-    return !!d->options_.endKey().count(c);
+    return d->options_.endKey().contains(c);
 }
 
 void TableBasedDictionary::statistic() const {
@@ -1629,7 +1632,7 @@ void TableBasedDictionary::matchPrefixImpl(
     graph.bfs(&graph.start(), [this, &ignore, &path, &callback, hasWildcard,
                                mode](const SegmentGraphBase &graph,
                                      const SegmentGraphNode *node) {
-        if (!node->prevSize() || ignore.count(node)) {
+        if (!node->prevSize() || ignore.contains(node)) {
             return true;
         }
         for (const auto &prev : node->prevs()) {

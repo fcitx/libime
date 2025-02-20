@@ -6,9 +6,17 @@
 #ifndef _FCITX_LIBIME_TABLE_TABLEDECODER_H_
 #define _FCITX_LIBIME_TABLE_TABLEDECODER_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <libime/core/decoder.h>
+#include <libime/core/languagemodel.h>
+#include <libime/core/lattice.h>
+#include <libime/core/segmentgraph.h>
 #include <libime/table/libimetable_export.h>
 #include <libime/table/tablebaseddictionary.h>
+#include <memory>
+#include <string>
+#include <string_view>
 
 namespace libime {
 
@@ -47,8 +55,8 @@ protected:
 
     // When segment graph is extremely simple, no need to sort because context
     // will sort it anyway.
-    bool needSort(const SegmentGraph &,
-                  const SegmentGraphNode *) const override;
+    bool needSort(const SegmentGraph &graph,
+                  const SegmentGraphNode *node) const override;
 };
 
 SegmentGraph graphForCode(std::string_view s, const TableBasedDictionary &dict);

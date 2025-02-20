@@ -10,14 +10,22 @@
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
 #include "libime/pinyin/pinyindictionary.h"
+#include <algorithm>
 #include <array>
-#include <boost/iostreams/device/file_descriptor.hpp>
-#include <boost/iostreams/stream.hpp>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <fcitx-utils/fdstreambuf.h>
 #include <fcitx-utils/standardpath.h>
+#include <fcitx-utils/stringutils.h>
+#include <fcitx-utils/unixfd.h>
 #include <fcntl.h>
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 
 static const std::array<std::string, 412> PYFA = {
     "AA", "AB", "AC", "AD", "AE", "AF", "AH", "AI", "AJ", "AU", "AV", "AW",
@@ -185,7 +193,8 @@ void usage(const char *extra = nullptr) {
 
 int main(int argc, char *argv[]) {
     argv0 = argv[0];
-    bool skipDict = false, skipHistory = false;
+    bool skipDict = false;
+    bool skipHistory = false;
     const char *dictFile = nullptr;
     const char *historyFile = nullptr;
     bool merge = true;
@@ -235,10 +244,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<PYMB> pymbs;
     try {
-        boost::iostreams::stream_buffer<
-            boost::iostreams::file_descriptor_source>
-            buffer(sourceFd.fd(),
-                   boost::iostreams::file_descriptor_flags::never_close_handle);
+        IFDStreamBuf buffer(sourceFd.fd());
         std::istream in(&buffer);
         pymbs = LoadPYMB(in);
     } catch (const std::exception &e) {
@@ -261,10 +267,7 @@ int main(int argc, char *argv[]) {
 
     if (dictFD.isValid()) {
         try {
-            boost::iostreams::stream_buffer<
-                boost::iostreams::file_descriptor_source>
-                buffer(dictFD.fd(), boost::iostreams::file_descriptor_flags::
-                                        never_close_handle);
+            IFDStreamBuf buffer(dictFD.fd());
             std::istream in(&buffer);
             dict.load(PinyinDictionary::SystemDict, in,
                       PinyinDictFormat::Binary);
@@ -290,10 +293,7 @@ int main(int argc, char *argv[]) {
 
     if (historyFD.isValid()) {
         try {
-            boost::iostreams::stream_buffer<
-                boost::iostreams::file_descriptor_source>
-                buffer(historyFD.fd(), boost::iostreams::file_descriptor_flags::
-                                           never_close_handle);
+            IFDStreamBuf buffer(historyFD.fd());
             std::istream in(&buffer);
             history.load(in);
         } catch (const std::exception &e) {
@@ -326,7 +326,7 @@ int main(int argc, char *argv[]) {
                 if (!skipHistory) {
                     for (uint32_t i = 0;
                          i <
-                         std::min(static_cast<uint32_t>(10u), userPhrase.freq);
+                         std::min(static_cast<uint32_t>(10U), userPhrase.freq);
                          i++) {
                         history.add({word});
                     }
@@ -347,10 +347,7 @@ int main(int argc, char *argv[]) {
         }
         StandardPath::global().safeSave(
             StandardPath::Type::PkgData, outputDictFile, [&dict](int fd) {
-                boost::iostreams::stream_buffer<
-                    boost::iostreams::file_descriptor_sink>
-                    buffer(fd, boost::iostreams::file_descriptor_flags::
-                                   never_close_handle);
+                OFDStreamBuf buffer(fd);
                 std::ostream out(&buffer);
                 dict.save(PinyinDictionary::SystemDict, out,
                           PinyinDictFormat::Binary);
@@ -367,16 +364,13 @@ int main(int argc, char *argv[]) {
                 outputHistoryFile = absolutePath(historyFile);
             }
         }
-        StandardPath::global().safeSave(
-            StandardPath::Type::PkgData, outputHistoryFile, [&history](int fd) {
-                boost::iostreams::stream_buffer<
-                    boost::iostreams::file_descriptor_sink>
-                    buffer(fd, boost::iostreams::file_descriptor_flags::
-                                   never_close_handle);
-                std::ostream out(&buffer);
-                history.save(out);
-                return true;
-            });
+        StandardPath::global().safeSave(StandardPath::Type::PkgData,
+                                        outputHistoryFile, [&history](int fd) {
+                                            OFDStreamBuf buffer(fd);
+                                            std::ostream out(&buffer);
+                                            history.save(out);
+                                            return true;
+                                        });
     }
 
     return 0;

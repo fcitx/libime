@@ -82,7 +82,7 @@ bool DecoderPrivate::buildLattice(
     LatticeMap &lattice = l.d_ptr->lattice_;
 
     // Create the root node.
-    if (!lattice.count(&graph.start())) {
+    if (!lattice.contains(&graph.start())) {
         lattice[&graph.start()].push_back(
             q->createLatticeNode(graph, model_, "", model_->beginSentence(),
                                  {nullptr, &graph.start()}, state, 0));
@@ -151,7 +151,7 @@ bool DecoderPrivate::buildLattice(
             latticeUnit.push_back(node.release());
         }
     }
-    if (!lattice.count(&graph.end())) {
+    if (!lattice.contains(&graph.end())) {
         return false;
     }
 
@@ -175,8 +175,8 @@ void DecoderPrivate::forwardSearch(
     // forward search
     auto updateForNode = [&](const SegmentGraphBase &,
                              const SegmentGraphNode *graphNode) {
-        if (graphNode == start || !lattice.count(graphNode) ||
-            ignore.count(graphNode)) {
+        if (graphNode == start || !lattice.contains(graphNode) ||
+            ignore.contains(graphNode)) {
             return true;
         }
         auto &latticeNodes = lattice[graphNode];
@@ -285,7 +285,7 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
             q.pop();
             if (bos == node->node_) {
                 auto sentence = concatNBest(node.get());
-                if (dup.count(sentence)) {
+                if (dup.contains(sentence)) {
                     continue;
                 }
 

@@ -6,17 +6,29 @@
 #include "autophrasedict.h"
 #include "libime/core/utils.h"
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/multi_index/indexed_by.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <fcitx-utils/macros.h>
+#include <functional>
+#include <istream>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
 
 namespace libime {
 
 struct AutoPhrase {
-    AutoPhrase(const std::string &entry, uint32_t hit)
-        : entry_(entry), hit_(hit) {}
+    AutoPhrase(std::string entry, uint32_t hit)
+        : entry_(std::move(entry)), hit_(hit) {}
 
     std::string_view entry() const { return entry_; }
 
@@ -25,14 +37,13 @@ struct AutoPhrase {
 };
 
 class AutoPhraseDictPrivate {
-    typedef boost::multi_index_container<
+    using item_list = boost::multi_index_container<
         AutoPhrase,
         boost::multi_index::indexed_by<
             boost::multi_index::sequenced<>,
             boost::multi_index::ordered_unique<
                 boost::multi_index::const_mem_fun<AutoPhrase, std::string_view,
-                                                  &AutoPhrase::entry>>>>
-        item_list;
+                                                  &AutoPhrase::entry>>>>;
 
 public:
     using iterator = item_list::iterator;

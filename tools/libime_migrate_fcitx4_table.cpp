@@ -11,12 +11,26 @@
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
 #include "libime/table/tablebaseddictionary.h"
-#include <boost/iostreams/device/file_descriptor.hpp>
-#include <boost/iostreams/stream.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <fcitx-utils/charutils.h>
+#include <fcitx-utils/fdstreambuf.h>
+#include <fcitx-utils/fs.h>
 #include <fcitx-utils/standardpath.h>
+#include <fcitx-utils/stringutils.h>
+#include <fcitx-utils/unixfd.h>
 #include <fcntl.h>
+#include <functional>
+#include <iostream>
+#include <istream>
+#include <optional>
+#include <ostream>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using namespace libime;
 using namespace fcitx;
@@ -173,9 +187,7 @@ void loadSource(
                        const std::string &, const std::string &, uint32_t)>
         recordCallback) {
     BasicTableInfo info;
-    boost::iostreams::stream_buffer<boost::iostreams::file_descriptor_source>
-        buffer(sourceFd.fd(),
-               boost::iostreams::file_descriptor_flags::never_close_handle);
+    fcitx::IFDStreamBuf buffer(sourceFd.fd());
     std::istream in(&buffer);
 
     uint32_t codeStrLength;
@@ -383,10 +395,7 @@ int migrate(const MigrationWithBaseOption &option) {
 
     TableBasedDictionary tableDict;
     {
-        boost::iostreams::stream_buffer<
-            boost::iostreams::file_descriptor_source>
-            buffer(baseFd.fd(),
-                   boost::iostreams::file_descriptor_flags::never_close_handle);
+        IFDStreamBuf buffer(baseFd.fd());
         std::istream in(&buffer);
         tableDict.load(in);
     }
@@ -394,11 +403,7 @@ int migrate(const MigrationWithBaseOption &option) {
         UnixFD dictFd = option.openMergeFile(dictFile);
         if (dictFd.isValid()) {
             try {
-                boost::iostreams::stream_buffer<
-                    boost::iostreams::file_descriptor_source>
-                    buffer(dictFd.fd(),
-                           boost::iostreams::file_descriptor_flags::
-                               never_close_handle);
+                IFDStreamBuf buffer(dictFd.fd());
                 std::istream in(&buffer);
                 tableDict.loadUser(in);
             } catch (const std::exception &e) {
@@ -413,11 +418,7 @@ int migrate(const MigrationWithBaseOption &option) {
         UnixFD historyFd = option.openMergeFile(historyFile);
         if (historyFd.isValid()) {
             try {
-                boost::iostreams::stream_buffer<
-                    boost::iostreams::file_descriptor_source>
-                    buffer(historyFd.fd(),
-                           boost::iostreams::file_descriptor_flags::
-                               never_close_handle);
+                IFDStreamBuf buffer(historyFd.fd());
                 std::istream in(&buffer);
                 history.load(in);
             } catch (const std::exception &e) {
@@ -461,34 +462,28 @@ int migrate(const MigrationWithBaseOption &option) {
 
     std::cout << "Found " << mergedWord << " new words." << std::endl;
     if (!option.skipDict) {
-        if (!StandardPath::global().safeSave(
-                StandardPath::Type::PkgData, option.pathForSave(dictFile),
-                [&tableDict](int fd) {
-                    boost::iostreams::stream_buffer<
-                        boost::iostreams::file_descriptor_sink>
-                        buffer(fd, boost::iostreams::file_descriptor_flags::
-                                       never_close_handle);
-                    std::ostream out(&buffer);
-                    tableDict.saveUser(out);
-                    return true;
-                })) {
+        if (!StandardPath::global().safeSave(StandardPath::Type::PkgData,
+                                             option.pathForSave(dictFile),
+                                             [&tableDict](int fd) {
+                                                 OFDStreamBuf buffer(fd);
+                                                 std::ostream out(&buffer);
+                                                 tableDict.saveUser(out);
+                                                 return true;
+                                             })) {
             std::cout << "Failed to save to dictionary file." << std::endl;
             return 1;
         }
     }
 
     if (!option.skipHistory) {
-        if (!StandardPath::global().safeSave(
-                StandardPath::Type::PkgData, option.pathForSave(historyFile),
-                [&history](int fd) {
-                    boost::iostreams::stream_buffer<
-                        boost::iostreams::file_descriptor_sink>
-                        buffer(fd, boost::iostreams::file_descriptor_flags::
-                                       never_close_handle);
-                    std::ostream out(&buffer);
-                    history.save(out);
-                    return true;
-                })) {
+        if (!StandardPath::global().safeSave(StandardPath::Type::PkgData,
+                                             option.pathForSave(historyFile),
+                                             [&history](int fd) {
+                                                 OFDStreamBuf buffer(fd);
+                                                 std::ostream out(&buffer);
+                                                 history.save(out);
+                                                 return true;
+                                             })) {
             std::cout << "Failed to save to history file." << std::endl;
             return 1;
         }
@@ -619,34 +614,28 @@ int migrate(const MigrationWithoutBaseOption &option) {
             std::cout << "Failed when construct new dict: " << e.what();
             return 1;
         }
-        if (!StandardPath::global().safeSave(
-                StandardPath::Type::PkgData, option.pathForSave(dictFile),
-                [&tableDict](int fd) {
-                    boost::iostreams::stream_buffer<
-                        boost::iostreams::file_descriptor_sink>
-                        buffer(fd, boost::iostreams::file_descriptor_flags::
-                                       never_close_handle);
-                    std::ostream out(&buffer);
-                    tableDict.save(out);
-                    return true;
-                })) {
+        if (!StandardPath::global().safeSave(StandardPath::Type::PkgData,
+                                             option.pathForSave(dictFile),
+                                             [&tableDict](int fd) {
+                                                 OFDStreamBuf buffer(fd);
+                                                 std::ostream out(&buffer);
+                                                 tableDict.save(out);
+                                                 return true;
+                                             })) {
             std::cout << "Failed to save to dictionary file." << std::endl;
             return 1;
         }
     }
 
     if (!option.skipHistory) {
-        if (!StandardPath::global().safeSave(
-                StandardPath::Type::PkgData, option.pathForSave(historyFile),
-                [&history](int fd) {
-                    boost::iostreams::stream_buffer<
-                        boost::iostreams::file_descriptor_sink>
-                        buffer(fd, boost::iostreams::file_descriptor_flags::
-                                       never_close_handle);
-                    std::ostream out(&buffer);
-                    history.save(out);
-                    return true;
-                })) {
+        if (!StandardPath::global().safeSave(StandardPath::Type::PkgData,
+                                             option.pathForSave(historyFile),
+                                             [&history](int fd) {
+                                                 OFDStreamBuf buffer(fd);
+                                                 std::ostream out(&buffer);
+                                                 history.save(out);
+                                                 return true;
+                                             })) {
             std::cout << "Failed to save to history file." << std::endl;
             return 1;
         }

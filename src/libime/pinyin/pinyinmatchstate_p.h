@@ -96,25 +96,23 @@ public:
 };
 
 // A list of all search paths
-typedef std::vector<MatchedPinyinPath> MatchedPinyinPaths;
+using MatchedPinyinPaths = std::vector<MatchedPinyinPath>;
 
 // Map from SegmentGraphNode to Search Paths.
-typedef std::unordered_map<const SegmentGraphNode *, MatchedPinyinPaths>
-    NodeToMatchedPinyinPathsMap;
+using NodeToMatchedPinyinPathsMap =
+    std::unordered_map<const SegmentGraphNode *, MatchedPinyinPaths>;
 
 // A cache for all PinyinTries. From a pinyin string to its matched
 // PinyinTrieNode
-typedef std::unordered_map<
+using PinyinTrieNodeCache = std::unordered_map<
     const PinyinTrie *,
     LRUCache<std::string, std::shared_ptr<MatchedPinyinTrieNodes>,
-             PinyinStringHasher>>
-    PinyinTrieNodeCache;
+             PinyinStringHasher>>;
 
 // A cache for PinyinMatchResult.
-typedef std::unordered_map<
+using PinyinMatchResultCache = std::unordered_map<
     const PinyinTrie *,
-    LRUCache<std::string, std::vector<PinyinMatchResult>, PinyinStringHasher>>
-    PinyinMatchResultCache;
+    LRUCache<std::string, std::vector<PinyinMatchResult>, PinyinStringHasher>>;
 
 class PinyinMatchStatePrivate {
 public:

@@ -6,17 +6,37 @@
 #include "tablecontext.h"
 #include "constants.h"
 #include "libime/core/historybigram.h"
+#include "libime/core/inputbuffer.h"
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
 #include "libime/core/segmentgraph.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/core/utils.h"
+#include "libime/table/tablebaseddictionary.h"
 #include "log.h"
 #include "tablebaseddictionary_p.h"
 #include "tabledecoder.h"
 #include "tableoptions.h"
-#include "tablerule.h"
+#include <algorithm>
+#include <boost/range/iterator_range_core.hpp>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <fcitx-utils/inputbuffer.h>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/macros.h>
 #include <fcitx-utils/utf8.h>
+#include <iterator>
+#include <limits>
+#include <memory>
 #include <regex>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -177,7 +197,7 @@ public:
             return false;
         }
         FCITX_Q();
-        return q->code(candidates_[0]) == q->currentCode() &&
+        return libime::TableContext::code(candidates_[0]) == q->currentCode() &&
                (!dict_.tableOptions().exactMatch() ||
                 dict_.hasOneMatchingWord(q->currentCode()));
     };
@@ -536,9 +556,7 @@ void TableContext::update() {
 
         float min = 0;
         for (const auto &cand : d->candidates_) {
-            if (min > cand.score()) {
-                min = cand.score();
-            }
+            min = std::min(min, cand.score());
         }
 
         // FIXME: add an option.
@@ -768,7 +786,7 @@ void TableContext::learnLast() {
 }
 
 void TableContext::learnAutoPhrase(std::string_view history) {
-    return learnAutoPhrase(history, {});
+    learnAutoPhrase(history, {});
 }
 
 void TableContext::learnAutoPhrase(std::string_view history,

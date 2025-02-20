@@ -9,12 +9,20 @@
 /// \file
 /// \brief Class provide input method support for table-based ones, like wubi.
 
+#include "libime/core/lattice.h"
+#include <boost/iterator/iterator_categories.hpp>
+#include <boost/range/any_range.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <libime/core/inputbuffer.h>
 #include <libime/table/libimetable_export.h>
 #include <libime/table/tablebaseddictionary.h>
+#include <memory>
+#include <string>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 namespace libime {
 
@@ -25,9 +33,8 @@ class UserLanguageModel;
 /// \brief Input context for table input method.
 class LIBIMETABLE_EXPORT TableContext : public InputBuffer {
 public:
-    typedef boost::any_range<const SentenceResult,
-                             boost::random_access_traversal_tag>
-        CandidateRange;
+    using CandidateRange = boost::any_range<const SentenceResult,
+                                            boost::random_access_traversal_tag>;
 
     TableContext(TableBasedDictionary &dict, UserLanguageModel &model);
     virtual ~TableContext();

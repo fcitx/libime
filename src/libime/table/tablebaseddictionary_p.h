@@ -9,14 +9,21 @@
 
 #include "autophrasedict.h"
 #include "constants.h"
+#include "libime/core/datrie.h"
 #include "tablebaseddictionary.h"
 #include "tableoptions.h"
 #include "tablerule.h"
 #include <cstdint>
+#include <fcitx-utils/connectableobject.h>
+#include <fcitx-utils/macros.h>
+#include <istream>
 #include <optional>
 #include <regex>
 #include <set>
+#include <string>
 #include <string_view>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace libime {

@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "tableoptions.h"
+#include <cstdint>
+#include <fcitx-utils/macros.h>
+#include <memory>
+#include <set>
+#include <string>
+#include <unordered_set>
 
 namespace libime {
 

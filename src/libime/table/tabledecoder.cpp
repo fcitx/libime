@@ -4,11 +4,26 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include "libime/table/tabledecoder.h"
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
+#include "libime/table/libimetable_export.h"
+#include "libime/table/tablebaseddictionary.h"
 #include "tabledecoder_p.h"
 #include "tableoptions.h"
 #include "tablerule.h"
+#include <algorithm>
 #include <boost/range/adaptor/filtered.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <fcitx-utils/utf8.h>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -55,7 +70,7 @@ bool checkRuleCanBeUsedAsAutoRule(const TableRule &rule) {
 } // namespace
 
 uint32_t TableLatticeNode::index() const {
-    return d_ptr ? d_ptr->index_ : 0xFFFFFFFFu;
+    return d_ptr ? d_ptr->index_ : 0xFFFFFFFFU;
 }
 
 PhraseFlag TableLatticeNode::flag() const {
@@ -87,9 +102,10 @@ TableLatticeNode::TableLatticeNode(
 TableLatticeNode::~TableLatticeNode() = default;
 
 LatticeNode *TableDecoder::createLatticeNodeImpl(
-    const SegmentGraphBase &, const LanguageModelBase *, std::string_view word,
-    WordIndex idx, SegmentGraphPath path, const State &state, float cost,
-    std::unique_ptr<LatticeNodeData> data, bool) const {
+    const SegmentGraphBase & /*graph*/, const LanguageModelBase * /*model*/,
+    std::string_view word, WordIndex idx, SegmentGraphPath path,
+    const State &state, float cost, std::unique_ptr<LatticeNodeData> data,
+    bool /*onlyPath*/) const {
     std::unique_ptr<TableLatticeNodePrivate> tableData(
         static_cast<TableLatticeNodePrivate *>(data.release()));
     return new TableLatticeNode(word, idx, std::move(path), state, cost,
@@ -97,7 +113,7 @@ LatticeNode *TableDecoder::createLatticeNodeImpl(
 }
 
 bool TableDecoder::needSort(const SegmentGraph &graph,
-                            const SegmentGraphNode *) const {
+                            const SegmentGraphNode * /*node*/) const {
     return graph.start().nextSize() != 1;
 }
 

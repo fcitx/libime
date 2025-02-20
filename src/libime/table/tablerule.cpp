@@ -5,6 +5,18 @@
  */
 
 #include "tablerule.h"
+#include "libime/core/utils.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <cstdint>
+#include <cstdlib>
+#include <fcitx-utils/charutils.h>
+#include <istream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace libime {
 
@@ -166,9 +178,9 @@ std::string TableRule::toString() const {
         result += static_cast<char>('0' + entry.character());
         auto index = entry.index();
         if (index >= 0) {
-            result += '0' + index;
+            result += static_cast<char>('0' + index);
         } else {
-            result += 'z' + index + 1;
+            result += static_cast<char>('z' + index + 1);
         }
     }
     return result;

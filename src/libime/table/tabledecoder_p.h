@@ -6,9 +6,13 @@
 #ifndef _FCITX_LIBIME_TABLE_TABLEDECODER_P_H_
 #define _FCITX_LIBIME_TABLE_TABLEDECODER_P_H_
 
-#include "tabledecoder.h"
+#include "libime/core/lattice.h"
+#include "libime/table/tablebaseddictionary.h"
+#include <cstddef>
+#include <cstdint>
 #include <fcitx-utils/utf8.h>
 #include <string>
+#include <string_view>
 
 namespace libime {
 

@@ -313,8 +313,7 @@ public:
         const std::unordered_set<const SegmentGraphNode *> &ignore,
         NodeToMatchedPinyinPathsMap &matchedPaths)
         : graph_(graph), hasher_(graph), callback_(callback), ignore_(ignore),
-          matchedPathsMap_(&matchedPaths), nodeCacheMap_(nullptr),
-          matchCacheMap_(nullptr) {}
+          matchedPathsMap_(&matchedPaths) {}
 
     PinyinMatchContext(const PinyinMatchContext &) = delete;
 
@@ -659,7 +658,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
         }
     }
 
-    if (!context.ignore_.count(&currentNode)) {
+    if (!context.ignore_.contains(&currentNode)) {
         // after we match current syllable, we first try to match word.
         if (!matchWords(context, newPaths)) {
             // If we failed to match any length 1 word, add a new empty word
@@ -686,7 +685,7 @@ void PinyinDictionaryPrivate::matchNode(
     const SegmentGraphNode &currentNode) const {
     auto &matchedPathsMap = *context.matchedPathsMap_;
     // Check if the node has been searched already.
-    if (matchedPathsMap.count(&currentNode)) {
+    if (matchedPathsMap.contains(&currentNode)) {
         return;
     }
     auto &currentMatches = matchedPathsMap[&currentNode];

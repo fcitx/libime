@@ -7,6 +7,8 @@
 #ifndef _FCITX_LIBIME_TABLE_TABLERULE_H_
 #define _FCITX_LIBIME_TABLE_TABLERULE_H_
 
+#include <cstddef>
+#include <fcitx-utils/macros.h>
 #include <libime/table/libimetable_export.h>
 
 #include <boost/algorithm/string.hpp>

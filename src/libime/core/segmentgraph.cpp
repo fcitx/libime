@@ -43,7 +43,7 @@ bool SegmentGraphBase::bfs(const SegmentGraphNode *from,
     while (!q.empty()) {
         const auto *node = q.top();
         q.pop();
-        if (!visited.count(node)) {
+        if (!visited.contains(node)) {
             visited.insert(node);
         } else {
             continue;

@@ -5,7 +5,6 @@
  *
  */
 
-#include "filesystem_helper.h"
 #include "libime/core/historybigram.h"
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
@@ -21,6 +20,7 @@
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/unixfd.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -342,7 +342,7 @@ int main(int argc, char *argv[]) {
             if (dictFile[0] == '/') {
                 outputDictFile = dictFile;
             } else {
-                outputDictFile = absolutePath(dictFile);
+                outputDictFile = std::filesystem::absolute(dictFile);
             }
         }
         StandardPath::global().safeSave(
@@ -361,7 +361,7 @@ int main(int argc, char *argv[]) {
             if (historyFile[0] == '/') {
                 outputHistoryFile = historyFile;
             } else {
-                outputHistoryFile = absolutePath(historyFile);
+                outputHistoryFile = std::filesystem::absolute(historyFile);
             }
         }
         StandardPath::global().safeSave(StandardPath::Type::PkgData,

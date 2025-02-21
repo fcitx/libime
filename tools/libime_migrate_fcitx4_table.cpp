@@ -6,7 +6,6 @@
  *
  */
 #include "config.h"
-#include "filesystem_helper.h"
 #include "libime/core/historybigram.h"
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
@@ -21,6 +20,7 @@
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/unixfd.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <istream>
@@ -91,7 +91,7 @@ struct MigrationCommonOption {
                 return stringutils::joinPath("table", path);
             }
 
-            return absolutePath(path);
+            return std::filesystem::absolute(path);
         }
         return path;
     }

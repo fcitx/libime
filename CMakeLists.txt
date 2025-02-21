@@ -41,18 +41,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 include("${FCITX_INSTALL_CMAKECONFIG_DIR}/Fcitx5Utils/Fcitx5CompilerSettings.cmake")
 
-include(CheckCXXSourceCompiles)
-check_cxx_source_compiles("
-#include <filesystem>
-int main() {
-    return std::filesystem::absolute(\".\").string()[0] == '/';
-}
-" HAS_STD_FILESYSTEM)
-
-find_package(Boost 1.61 REQUIRED COMPONENTS iostreams)
-if (NOT HAS_STD_FILESYSTEM)
-    find_package(Boost REQUIRED COMPONENTS filesystem)
-endif()
+find_package(Boost 1.61 CONFIG REQUIRED COMPONENTS iostreams)
 
 set(LIBIME_INSTALL_PKGDATADIR "${CMAKE_INSTALL_FULL_DATADIR}/libime")
 set(LIBIME_INSTALL_LIBDATADIR "${CMAKE_INSTALL_FULL_LIBDIR}/libime")

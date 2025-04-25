@@ -28,6 +28,9 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
         if (boost::algorithm::ends_with(result, "on")) {
             result.push_back('g');
         }
+        if (result == "din") {
+            result.push_back('g');
+        }
         if (boost::algorithm::ends_with(result, "v")) {
             result.back() = 'u';
         }
@@ -164,5 +167,6 @@ int main() {
     FCITX_ASSERT(getPinyinMapV2().count("zhaung"));
     FCITX_ASSERT(getPinyinMapV2().count("jvn"));
     FCITX_ASSERT(getPinyinMapV2().count("yvn"));
+    FCITX_ASSERT(getPinyinMapV2().count("din") > 1);
     return 0;
 }

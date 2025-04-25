@@ -129,6 +129,11 @@ int main() {
                                           {PinyinFinal::EN, true},
                                           {PinyinFinal::ENG, true},
                                           {PinyinFinal::ER, true}}}});
+    FCITX_ASSERT(PinyinEncoder::stringToSyllables(
+                     "din", PinyinFuzzyFlags{PinyinFuzzyFlag::CommonTypo}) ==
+                 MatchedPinyinSyllables{
+                     {PinyinInitial::D,
+                      {{PinyinFinal::ING, true}, {PinyinFinal::IN, false}}}});
 
     for (const auto &syl : PinyinEncoder::stringToSyllables(
              "e", PinyinFuzzyFlags{PinyinFuzzyFlag::PartialFinal})) {

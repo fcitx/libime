@@ -57,7 +57,7 @@ const std::vector<bool> &getEncodedInitialFinal() {
             687, 148, 147, 146, 145, 709, 713, 4,   712, 707, 696, 695, 697,
             565, 569, 570, 568, 563, 552, 547, 545, 544, 540, 692, 691, 689,
             688, 686, 684, 23,  21,  19,  8,   1,   0,   832, 831, 830, 829,
-            828, 230, 20};
+            828, 230, 20,  163, 803, 11};
         a.resize(900);
         std::fill(a.begin(), a.end(), false);
         for (auto i : encodedInitialFinalSet) {
@@ -306,6 +306,11 @@ const PinyinMap &getPinyinMap() {
         {"xi", PinyinInitial::X, PinyinFinal::I, PinyinFuzzyFlag::None},
         {"wu", PinyinInitial::W, PinyinFinal::U, PinyinFuzzyFlag::None},
         {"wo", PinyinInitial::W, PinyinFinal::O, PinyinFuzzyFlag::None},
+        {"wong", PinyinInitial::W, PinyinFinal::ONG, PinyinFuzzyFlag::None},
+        {"won", PinyinInitial::W, PinyinFinal::ONG,
+         PinyinFuzzyFlag::CommonTypo},
+        {"wogn", PinyinInitial::W, PinyinFinal::ONG,
+         PinyinFuzzyFlag::CommonTypo},
         {"wegn", PinyinInitial::W, PinyinFinal::ENG,
          PinyinFuzzyFlag::CommonTypo},
         {"weng", PinyinInitial::W, PinyinFinal::ENG, PinyinFuzzyFlag::None},
@@ -819,7 +824,9 @@ const PinyinMap &getPinyinMap() {
         {"dign", PinyinInitial::D, PinyinFinal::ING,
          PinyinFuzzyFlag::CommonTypo},
         {"ding", PinyinInitial::D, PinyinFinal::ING, PinyinFuzzyFlag::None},
-        {"din", PinyinInitial::D, PinyinFinal::ING, PinyinFuzzyFlag::IN_ING},
+        {"din", PinyinInitial::D, PinyinFinal::IN, PinyinFuzzyFlag::None},
+        {"din", PinyinInitial::D, PinyinFinal::ING,
+         PinyinFuzzyFlag::CommonTypo},
         {"die", PinyinInitial::D, PinyinFinal::IE, PinyinFuzzyFlag::None},
         {"diao", PinyinInitial::D, PinyinFinal::IAO, PinyinFuzzyFlag::None},
         {"diagn",
@@ -910,6 +917,11 @@ const PinyinMap &getPinyinMap() {
         {"cai", PinyinInitial::C, PinyinFinal::AI, PinyinFuzzyFlag::None},
         {"ca", PinyinInitial::C, PinyinFinal::A, PinyinFuzzyFlag::None},
         {"bu", PinyinInitial::B, PinyinFinal::U, PinyinFuzzyFlag::None},
+        {"bogn", PinyinInitial::B, PinyinFinal::ONG,
+         PinyinFuzzyFlag::CommonTypo},
+        {"bong", PinyinInitial::B, PinyinFinal::ONG, PinyinFuzzyFlag::None},
+        {"bon", PinyinInitial::B, PinyinFinal::ONG,
+         PinyinFuzzyFlag::CommonTypo},
         {"bo", PinyinInitial::B, PinyinFinal::O, PinyinFuzzyFlag::None},
         {"bign", PinyinInitial::B, PinyinFinal::ING,
          PinyinFuzzyFlag::CommonTypo},
@@ -950,6 +962,7 @@ const PinyinMap &getPinyinMap() {
 enum class FuzzyUpdatePhase {
     CommonTypo_UV_JQXY,
     CommonTypo_ON_ONG,
+    CommonTypo_IN_ING,
     CommonTypo_Swap_NG_UE_UA_UAN,
     CommonTypo_Swap_UANG,
     AdvancedTypo_Swap_XH_UN,
@@ -963,6 +976,7 @@ PinyinFuzzyFlag fuzzyPhaseToFlag(FuzzyUpdatePhase phase) {
     switch (phase) {
     case FuzzyUpdatePhase::CommonTypo_UV_JQXY:
     case FuzzyUpdatePhase::CommonTypo_ON_ONG:
+    case FuzzyUpdatePhase::CommonTypo_IN_ING:
     case FuzzyUpdatePhase::CommonTypo_Swap_NG_UE_UA_UAN:
     case FuzzyUpdatePhase::CommonTypo_Swap_UANG:
         return PinyinFuzzyFlag::CommonTypo;
@@ -1011,6 +1025,12 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
     case FuzzyUpdatePhase::CommonTypo_ON_ONG:
         // Allow lon -> long
         if (boost::algorithm::ends_with(result, "ong")) {
+            result.pop_back();
+        }
+        break;
+    case FuzzyUpdatePhase::CommonTypo_IN_ING:
+        // Allow din -> ding
+        if (result == "ding") {
             result.pop_back();
         }
         break;
@@ -1267,7 +1287,13 @@ void applyFuzzyToMap(PinyinMap &map, T fuzzy) {
 
     for (const auto &newEntry : newEntries) {
         if (auto iter = map.find(newEntry.pinyin()); iter != map.end()) {
-            if (iter->flags() == PinyinFuzzyFlag::None) {
+            bool force = false;
+            if constexpr (std::is_same_v<T, FuzzyUpdatePhase>) {
+                if (fuzzy == FuzzyUpdatePhase::CommonTypo_IN_ING) {
+                    force = true;
+                }
+            }
+            if (!force && iter->flags() == PinyinFuzzyFlag::None) {
                 continue;
             }
         }
@@ -1298,6 +1324,7 @@ const PinyinMap &getPinyinMapV2() {
         for (auto phase : {
                  FuzzyUpdatePhase::CommonTypo_UV_JQXY,
                  FuzzyUpdatePhase::CommonTypo_ON_ONG,
+                 FuzzyUpdatePhase::CommonTypo_IN_ING,
                  FuzzyUpdatePhase::CommonTypo_Swap_NG_UE_UA_UAN,
                  FuzzyUpdatePhase::CommonTypo_Swap_UANG,
                  FuzzyUpdatePhase::AdvancedTypo_Swap_XH_UN,

@@ -281,22 +281,33 @@ PinyinEncoder::parseUserPinyin(std::string userPinyin,
                 }
 
                 for (size_t i = 0; i < nNextSize; i++) {
-                    if ((nextSize[i] >= 4 &&
-                         fuzzyFlags.test(PinyinFuzzyFlag::Inner)) ||
-                        (nextSize[i] == 3 &&
-                         flags.test(PinyinFuzzyFlag::InnerShort))) {
+                    auto nextPinyin = str.substr(0, nextSize[i]);
+                    if (nextPinyin == "din" || nextPinyin == "bon" ||
+                        nextPinyin == "won") {
+                        result.addNext(top, top + 2);
+                        result.addNext(top + 2, top + 3);
+                    } else if (nextPinyin == "bong" || nextPinyin == "wong") {
+                        // Do a split like {b,w}o n g
+                        result.addNext(top, top + 2);
+                        result.addNext(top + 2, top + 4);
+                        result.addNext(top + 2, top + 3);
+                        // Skip top+3 -> top+4, in case g can have a better
+                        q.push(top + 3);
+                    } else if ((nextPinyin.size() >= 4 &&
+                                fuzzyFlags.test(PinyinFuzzyFlag::Inner)) ||
+                               (nextPinyin.size() == 3 &&
+                                flags.test(PinyinFuzzyFlag::InnerShort))) {
                         const auto &innerSegments = getInnerSegment();
-                        auto iter = innerSegments.find(
-                            std::string{str.substr(0, nextSize[i])});
+                        auto iter = innerSegments.find(std::string(nextPinyin));
                         if (iter != innerSegments.end()) {
                             result.addNext(top,
                                            top + iter->second.first.size());
                             result.addNext(top + iter->second.first.size(),
                                            top + nextSize[i]);
                         }
-                    } else if (nextSize[i] == 2 &&
+                    } else if (nextPinyin.size() == 2 &&
                                flags.test(PinyinFuzzyFlag::InnerShort) &&
-                               str.substr(0, 2) == "ng") {
+                               nextPinyin == "ng") {
                         // Handle ng -> n'g, the condition is so simple so we
                         // don't make it go through the inner segment lookup.
                         result.addNext(top, top + 1);

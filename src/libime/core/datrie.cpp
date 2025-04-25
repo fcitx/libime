@@ -26,6 +26,7 @@
 #include <istream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -895,20 +896,21 @@ public:
         return c_p;
     }
     // enumerate (equal to or more than one) child nodes
-    uchar *_set_child(uchar *p, const int base, uchar c, const int label = -1) {
+    uchar *_set_child(uchar *p, const int base, uchar c,
+                      const std::optional<uchar> label = std::nullopt) {
         --p;
         if (!c) {
             *++p = c;
             c = m_ninfo[base ^ c].sibling;
         } // 0: terminal
-        if (ORDERED) {
-            while (c && c < label) {
+        if (ORDERED && label.has_value()) {
+            while (c && c < *label) {
                 *++p = c;
                 c = m_ninfo[base ^ c].sibling;
             }
         }
-        if (label != -1) {
-            *++p = static_cast<uchar>(label);
+        if (label.has_value()) {
+            *++p = *label;
         }
         while (c) {
             *++p = c;

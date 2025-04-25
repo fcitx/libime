@@ -24,6 +24,7 @@
 #include <fstream>
 #include <ios>
 #include <istream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -710,7 +711,7 @@ public:
     int _find_place(const uchar *const first, const uchar *const last) {
         if (auto bi = m_bheadO) {
             const auto bz = m_block[m_bheadO].prev;
-            const auto nc = static_cast<short>(last - first + 1);
+            const auto nc = std::distance(first, last);
             while (true) { // set candidate block
                 block &b = m_block[bi];
                 if (b.num >= nc && nc < b.reject) { // explore configuration
@@ -718,8 +719,9 @@ public:
                         const int base = e ^ *first;
                         for (const uchar *p = first;
                              m_array[base ^ *++p].check < 0;) {
-                            if (p == last) {
-                                return b.ehead = e; // no conflict
+                            if (p + 1 == last) {
+                                b.ehead = e;
+                                return b.ehead; // no conflict
                             }
                         }
                         e = -m_array[e].check;
@@ -898,22 +900,25 @@ public:
     // enumerate (equal to or more than one) child nodes
     uchar *_set_child(uchar *p, const int base, uchar c,
                       const std::optional<uchar> label = std::nullopt) {
-        --p;
         if (!c) {
-            *++p = c;
+            *p = c;
+            p++;
             c = m_ninfo[base ^ c].sibling;
         } // 0: terminal
         if (ORDERED && label.has_value()) {
             while (c && c < *label) {
-                *++p = c;
+                *p = c;
+                p++;
                 c = m_ninfo[base ^ c].sibling;
             }
         }
         if (label.has_value()) {
-            *++p = *label;
+            *p = *label;
+            p++;
         }
         while (c) {
-            *++p = c;
+            *p = c;
+            p++;
             c = m_ninfo[base ^ c].sibling;
         }
         return p;
@@ -930,23 +935,25 @@ public:
             = _consult(base_n, base_p, m_ninfo[from_n].child,
                        m_ninfo[from_p].child);
         uchar child[256];
-        uchar *const first = &child[0];
+        uchar *const first = child;
         uchar *const last =
             flag ? _set_child(first, base_n, m_ninfo[from_n].child, label_n)
                  : _set_child(first, base_p, m_ninfo[from_p].child);
+        assert(first < last);
         const int base =
-            (first == last ? _find_place() : _find_place(first, last)) ^ *first;
+            (first + 1 == last ? _find_place() : _find_place(first, last)) ^
+            *first;
         // replace & modify empty list
         const int from = flag ? static_cast<int>(from_n) : from_p;
         const int base_ = flag ? base_n : base_p;
         if (flag && *first == label_n) {
             m_ninfo[from].child = label_n; // new child
         }
-        m_array[from].base = base;                     // new base
-        for (const uchar *p = first; p <= last; ++p) { // to_ => to
+        m_array[from].base = base;                    // new base
+        for (const uchar *p = first; p < last; ++p) { // to_ => to
             const int to = _pop_enode(base, *p, from);
             const int to_ = base_ ^ *p;
-            m_ninfo[to].sibling = (p == last ? 0 : *(p + 1));
+            m_ninfo[to].sibling = (p + 1 == last) ? 0 : *(p + 1);
             if (flag && to_ == to_pn) {
                 continue; // skip newcomer (no child)
             }

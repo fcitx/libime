@@ -105,7 +105,8 @@ public:
     static inline const int32_t CEDAR_NO_VALUE = NanValue<V>::NO_VALUE();
     static inline const int32_t CEDAR_NO_PATH = NanValue<V>::NO_PATH();
 
-    static constexpr int MAX_ALLOC_SIZE = 1 << 16; // must be divisible by 256
+    static constexpr size_t MAX_ALLOC_SIZE = 1
+                                             << 16; // must be divisible by 256
     using result_type = value_type;
     using uchar = uint8_t;
     static_assert(sizeof(value_type) <= sizeof(int32_t),
@@ -480,10 +481,7 @@ public:
         if (m_tail.capacity() < m_tail.size() + needed) {
             auto quota =
                 m_tail.capacity() +
-                ((needed > m_tail.size() || needed > MAX_ALLOC_SIZE)
-                     ? needed
-                     : (m_tail.size() >= MAX_ALLOC_SIZE ? MAX_ALLOC_SIZE
-                                                        : m_tail.size()));
+                std::max(needed, std::min(MAX_ALLOC_SIZE, m_tail.size()));
             m_tail.reserve(quota);
         }
         m_array[from].base = -m_tail.size();
@@ -591,8 +589,11 @@ public:
             npos.offset ? -static_cast<int>(npos.offset) : m_array[from].base;
         if (base >= 0) { // on trie
             uchar c = m_ninfo[from].child;
-            if (!from && !(c = m_ninfo[base ^ c].sibling)) { // bug fix
-                return CEDAR_NO_PATH;                        // no entry
+            if (!from) {
+                c = m_ninfo[base ^ c].sibling;
+                if (!c) {                 // bug fix
+                    return CEDAR_NO_PATH; // no entry
+                }
             }
             for (; c && base >= 0; ++len) {
                 from = static_cast<size_t>(base) ^ c;
@@ -637,11 +638,13 @@ public:
     int _follow(uint32_t &from, const uchar label, const T &cf) {
         int to = 0;
         const int base = m_array[from].base;
-        if (base < 0 || m_array[to = base ^ label].check < 0) {
+        if (base < 0 || m_array[base ^ label].check < 0) {
             to = _pop_enode(base, label, static_cast<int>(from));
             _push_sibling(from, to ^ label, label, base >= 0);
-        } else if (m_array[to].check != static_cast<int>(from)) {
+        } else if (m_array[base ^ label].check != static_cast<int>(from)) {
             to = _resolve(from, base, label, cf);
+        } else {
+            to = base ^ label;
         }
         return to;
     }
@@ -718,7 +721,8 @@ public:
                                 return b.ehead = e; // no conflict
                             }
                         }
-                        if ((e = -m_array[e].check) == b.ehead) {
+                        e = -m_array[e].check;
+                        if (e == b.ehead) {
                             break;
                         }
                     }
@@ -947,7 +951,8 @@ public:
             cf(to_, to);
             node &n = m_array[to];
             node &n_ = m_array[to_];
-            if ((n.base = n_.base) > 0 && *p) { // copy base; bug fix
+            n.base = n_.base; // copy base; bug fix
+            if (n.base > 0 && *p) {
                 uchar c = m_ninfo[to].child = m_ninfo[to_].child;
                 do {
                     m_array[n.base ^ c].check = to; // adjust grand son's check

@@ -618,6 +618,7 @@ void getFuzzy(FuzzyPinyinSyllables<FuzzyValue> &syls, PinyinSyllable syl,
             {PinyinInitial::Z, PinyinInitial::ZH, PinyinFuzzyFlag::Z_ZH},
             {PinyinInitial::F, PinyinInitial::H, PinyinFuzzyFlag::F_H},
             {PinyinInitial::L, PinyinInitial::N, PinyinFuzzyFlag::L_N},
+            {PinyinInitial::L, PinyinInitial::R, PinyinFuzzyFlag::L_R},
         };
 
     for (const auto &initialFuzzy : initialFuzzies) {

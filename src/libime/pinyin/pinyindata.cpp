@@ -1266,6 +1266,15 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         }
         break;
     }
+
+    case PinyinFuzzyFlag::L_R: {
+        if (boost::algorithm::starts_with(result, "l")) {
+            result.front() = 'r';
+        } else if (boost::algorithm::starts_with(result, "r")) {
+            result.front() = 'l';
+        }
+        break;
+    }
     default:
         break;
     }
@@ -1317,7 +1326,8 @@ const PinyinMap &getPinyinMapV2() {
                         PinyinFuzzyFlag::UAN_UANG, PinyinFuzzyFlag::IAN_IANG,
                         PinyinFuzzyFlag::VE_UE, PinyinFuzzyFlag::F_H,
                         PinyinFuzzyFlag::L_N, PinyinFuzzyFlag::Z_ZH,
-                        PinyinFuzzyFlag::S_SH, PinyinFuzzyFlag::C_CH}) {
+                        PinyinFuzzyFlag::S_SH, PinyinFuzzyFlag::C_CH,
+                        PinyinFuzzyFlag::L_R}) {
             applyFuzzyToMap(filtered, fz);
         }
 

@@ -60,6 +60,10 @@ enum class PinyinFuzzyFlag {
      * @since 1.1.7
      */
     Correction = 1 << 19,
+    /**
+     * @since 1.1.11
+     */
+    L_R = 1 << 20,
 };
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;

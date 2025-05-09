@@ -137,6 +137,14 @@ static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
         }
     }
 
+    if (flags & PinyinFuzzyFlag::L_R) {
+        if (boost::algorithm::starts_with(result, "l")) {
+            result.front() = 'r';
+        } else if (boost::algorithm::starts_with(result, "r")) {
+            result.front() = 'l';
+        }
+    }
+
     return result;
 }
 

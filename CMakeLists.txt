@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(libime VERSION 1.1.10)
+project(libime VERSION 1.1.11)
 set(LibIME_VERSION ${PROJECT_VERSION})
 
 find_package(ECM 1.0 REQUIRED)

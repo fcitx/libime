@@ -114,6 +114,12 @@ int main() {
                      {PinyinInitial::L, {{PinyinFinal::Invalid, true}}}});
 
     FCITX_ASSERT(PinyinEncoder::stringToSyllables(
+                     "r", PinyinFuzzyFlags{PinyinFuzzyFlag::L_R}) ==
+                 MatchedPinyinSyllables{
+                     {PinyinInitial::R, {{PinyinFinal::Invalid, false}}},
+                     {PinyinInitial::L, {{PinyinFinal::Invalid, true}}}});
+
+    FCITX_ASSERT(PinyinEncoder::stringToSyllables(
                      "cuagn", {PinyinFuzzyFlag::C_CH, PinyinFuzzyFlag::UAN_UANG,
                                PinyinFuzzyFlag::CommonTypo}) ==
                  MatchedPinyinSyllables{

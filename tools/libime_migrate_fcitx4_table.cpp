@@ -10,13 +10,14 @@
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
 #include "libime/table/tablebaseddictionary.h"
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <fcitx-utils/charutils.h>
 #include <fcitx-utils/fdstreambuf.h>
 #include <fcitx-utils/fs.h>
-#include <fcitx-utils/standardpath.h>
+#include <fcitx-utils/standardpaths.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/unixfd.h>
 #include <fcntl.h>
@@ -50,20 +51,16 @@ struct MigrationCommonOption {
         // Fcitx 4's xdg is not following the spec, it's using a xdg_data and
         // xdg_config in mixed way.
         if (useXdgPath && sourceFile[0] != '/') {
-            StandardPath standardPath(/*skipFcitxPath=*/true);
-            sourceFd = UnixFD::own(
-                standardPath
-                    .openUser(StandardPath::Type::Config,
-                              stringutils::joinPath("fcitx/table", sourceFile),
-                              O_RDONLY)
-                    .release());
+            StandardPaths standardPath("fcitx5", {}, /*skipBuiltInPath=*/true,
+                                       /*skipUserPath=*/false);
+            sourceFd = standardPath.open(StandardPathsType::Config,
+                                         std::filesystem::path("fcitx/table") /
+                                             sourceFile,
+                                         StandardPathsMode::User);
             if (!sourceFd.isValid()) {
-                sourceFd = UnixFD::own(
-                    standardPath
-                        .open(StandardPath::Type::Config,
-                              stringutils::joinPath("fcitx/table", sourceFile),
-                              O_RDONLY)
-                        .release());
+                sourceFd = standardPath.open(
+                    StandardPathsType::Config,
+                    std::filesystem::path("fcitx/table") / sourceFile);
             }
         } else {
             sourceFd = UnixFD::own(open(sourceFile.data(), O_RDONLY));
@@ -74,21 +71,19 @@ struct MigrationCommonOption {
     UnixFD openMergeFile(const std::string &path) const {
         UnixFD fd;
         if (useXdgPath && path[0] != '/') {
-            fd = UnixFD::own(StandardPath::global()
-                                 .openUser(StandardPath::Type::PkgData,
-                                           stringutils::joinPath("table", path),
-                                           O_RDONLY)
-                                 .release());
+            fd = StandardPaths::global().open(
+                StandardPathsType::PkgData,
+                std::filesystem::path("table") / path, StandardPathsMode::User);
         } else {
             fd = UnixFD::own(open(path.data(), O_RDONLY));
         }
         return fd;
     }
 
-    std::string pathForSave(const std::string &path) const {
-        if (path[0] != '/') {
+    std::filesystem::path pathForSave(const std::filesystem::path &path) const {
+        if (path.is_relative()) {
             if (useXdgPath) {
-                return stringutils::joinPath("table", path);
+                return std::filesystem::path("table") / path;
             }
 
             return std::filesystem::absolute(path);
@@ -133,20 +128,20 @@ void usage(const char *extra = nullptr) {
         << "Usage: " << argv0
         << " [-o <dict>/-O] [-p <history>/-P] [-b <base>/-B] [-U] [-B] [-X] "
            "<source>"
-        << std::endl
-        << "<source>: the source file of the dictionary." << std::endl
-        << "-o: output dict file path" << std::endl
-        << "-O: Skip dict file." << std::endl
-        << "-p: history file path" << std::endl
-        << "-P: Skip history file" << std::endl
-        << "-b: base file of a libime main dict" << std::endl
-        << "-B: generate full data without base file" << std::endl
+        << '\n'
+        << "<source>: the source file of the dictionary." << '\n'
+        << "-o: output dict file path" << '\n'
+        << "-O: Skip dict file." << '\n'
+        << "-p: history file path" << '\n'
+        << "-P: Skip history file" << '\n'
+        << "-b: base file of a libime main dict" << '\n'
+        << "-B: generate full data without base file" << '\n'
         << "-X: locate non-abstract path by only path instead of Xdg path"
-        << std::endl
-        << "-U: overwrite instead of merge with existing data." << std::endl
-        << "-h: Show this help" << std::endl;
+        << '\n'
+        << "-U: overwrite instead of merge with existing data." << '\n'
+        << "-h: Show this help" << '\n';
     if (extra) {
-        std::cout << extra << std::endl;
+        std::cout << extra << '\n';
     }
 }
 
@@ -182,10 +177,10 @@ char guessValidChar(char prefer, std::string_view invalid) {
 
 void loadSource(
     const UnixFD &sourceFd,
-    std::function<void(const BasicTableInfo &info)> basicInfoCallback,
-    std::function<void(const BasicTableInfo &info, RecordType,
-                       const std::string &, const std::string &, uint32_t)>
-        recordCallback) {
+    const std::function<void(const BasicTableInfo &info)> &basicInfoCallback,
+    const std::function<void(const BasicTableInfo &info, RecordType,
+                             const std::string &, const std::string &,
+                             uint32_t)> &recordCallback) {
     BasicTableInfo info;
     fcitx::IFDStreamBuf buffer(sourceFd.fd());
     std::istream in(&buffer);
@@ -227,7 +222,6 @@ void loadSource(
 
     uint8_t hasRule;
     throw_if_io_fail(unmarshall(in, hasRule));
-    std::string rule;
     if (hasRule) {
         std::stringstream ss;
         for (size_t i = 1; i < len; i++) {
@@ -250,7 +244,7 @@ void loadSource(
                 throw_if_io_fail(unmarshall(in, ruleIndex));
                 ss << static_cast<uint32_t>(ruleIndex);
             }
-            ss << std::endl;
+            ss << '\n';
         }
         info.rule = ss.str();
     }
@@ -329,11 +323,9 @@ int migrate(const MigrationWithBaseOption &option) {
                 stringutils::joinPath(LIBIME_INSTALL_PKGDATADIR, *name).data(),
                 O_RDONLY));
             if (!baseFd.isValid()) {
-                baseFd = UnixFD::own(
-                    StandardPath::global()
-                        .open(fcitx::StandardPath::Type::PkgData,
-                              stringutils::joinPath("table", *name), O_RDONLY)
-                        .release());
+                baseFd = StandardPaths::global().open(
+                    StandardPathsType::PkgData,
+                    std::filesystem::path("table") / *name);
             }
         } else {
             usage("Failed to infer the base file name. Please use -b to "
@@ -460,31 +452,31 @@ int migrate(const MigrationWithBaseOption &option) {
         return 1;
     }
 
-    std::cout << "Found " << mergedWord << " new words." << std::endl;
+    std::cout << "Found " << mergedWord << " new words." << '\n';
     if (!option.skipDict) {
-        if (!StandardPath::global().safeSave(StandardPath::Type::PkgData,
-                                             option.pathForSave(dictFile),
-                                             [&tableDict](int fd) {
-                                                 OFDStreamBuf buffer(fd);
-                                                 std::ostream out(&buffer);
-                                                 tableDict.saveUser(out);
-                                                 return true;
-                                             })) {
-            std::cout << "Failed to save to dictionary file." << std::endl;
+        if (!StandardPaths::global().safeSave(StandardPathsType::PkgData,
+                                              option.pathForSave(dictFile),
+                                              [&tableDict](int fd) {
+                                                  OFDStreamBuf buffer(fd);
+                                                  std::ostream out(&buffer);
+                                                  tableDict.saveUser(out);
+                                                  return true;
+                                              })) {
+            std::cout << "Failed to save to dictionary file." << '\n';
             return 1;
         }
     }
 
     if (!option.skipHistory) {
-        if (!StandardPath::global().safeSave(StandardPath::Type::PkgData,
-                                             option.pathForSave(historyFile),
-                                             [&history](int fd) {
-                                                 OFDStreamBuf buffer(fd);
-                                                 std::ostream out(&buffer);
-                                                 history.save(out);
-                                                 return true;
-                                             })) {
-            std::cout << "Failed to save to history file." << std::endl;
+        if (!StandardPaths::global().safeSave(StandardPathsType::PkgData,
+                                              option.pathForSave(historyFile),
+                                              [&history](int fd) {
+                                                  OFDStreamBuf buffer(fd);
+                                                  std::ostream out(&buffer);
+                                                  history.save(out);
+                                                  return true;
+                                              })) {
+            std::cout << "Failed to save to history file." << '\n';
             return 1;
         }
     }
@@ -543,29 +535,29 @@ int migrate(const MigrationWithoutBaseOption &option) {
         loadSource(
             sourceFd,
             [&ss](const BasicTableInfo &info) {
-                ss << "KeyCode=" << info.code << std::endl;
-                ss << "Length=" << info.length << std::endl;
+                ss << "KeyCode=" << info.code << '\n';
+                ss << "Length=" << info.length << '\n';
 
                 if (!info.ignoreChars.empty()) {
-                    ss << "InvalidChar=" << info.ignoreChars << std::endl;
+                    ss << "InvalidChar=" << info.ignoreChars << '\n';
                 }
 
                 if (info.pinyin) {
-                    ss << "Pinyin=" << info.pinyin << std::endl;
+                    ss << "Pinyin=" << info.pinyin << '\n';
                 }
 
                 if (info.prompt) {
-                    ss << "Prompt=" << info.prompt << std::endl;
+                    ss << "Prompt=" << info.prompt << '\n';
                 }
 
                 if (info.phrase) {
-                    ss << "ConstructPhrase=" << info.phrase << std::endl;
+                    ss << "ConstructPhrase=" << info.phrase << '\n';
                 }
 
                 if (!info.rule.empty()) {
-                    ss << "[Rule]\n" << info.rule << std::endl;
+                    ss << "[Rule]\n" << info.rule << '\n';
                 }
-                ss << "[Data]" << std::endl;
+                ss << "[Data]" << '\n';
             },
             [&option, &ss, &history](const BasicTableInfo &info,
                                      RecordType type, const std::string &code,
@@ -573,24 +565,21 @@ int migrate(const MigrationWithoutBaseOption &option) {
                 if (!option.skipDict) {
                     switch (type) {
                     case RECORDTYPE_NORMAL:
-                        ss << code << " " << value << std::endl;
+                        ss << code << " " << value << '\n';
                         break;
                     case RECORDTYPE_CONSTRUCT:
                         if (info.phrase) {
-                            ss << info.phrase << code << " " << value
-                               << std::endl;
+                            ss << info.phrase << code << " " << value << '\n';
                         }
                         break;
                     case RECORDTYPE_PROMPT:
                         if (info.prompt) {
-                            ss << info.prompt << code << " " << value
-                               << std::endl;
+                            ss << info.prompt << code << " " << value << '\n';
                         }
                         break;
                     case RECORDTYPE_PINYIN:
                         if (info.pinyin) {
-                            ss << info.pinyin << code << " " << value
-                               << std::endl;
+                            ss << info.pinyin << code << " " << value << '\n';
                         }
                         break;
                     }
@@ -614,29 +603,29 @@ int migrate(const MigrationWithoutBaseOption &option) {
             std::cout << "Failed when construct new dict: " << e.what();
             return 1;
         }
-        if (!StandardPath::global().safeSave(StandardPath::Type::PkgData,
-                                             option.pathForSave(dictFile),
-                                             [&tableDict](int fd) {
-                                                 OFDStreamBuf buffer(fd);
-                                                 std::ostream out(&buffer);
-                                                 tableDict.save(out);
-                                                 return true;
-                                             })) {
-            std::cout << "Failed to save to dictionary file." << std::endl;
+        if (!StandardPaths::global().safeSave(StandardPathsType::PkgData,
+                                              option.pathForSave(dictFile),
+                                              [&tableDict](int fd) {
+                                                  OFDStreamBuf buffer(fd);
+                                                  std::ostream out(&buffer);
+                                                  tableDict.save(out);
+                                                  return true;
+                                              })) {
+            std::cout << "Failed to save to dictionary file." << '\n';
             return 1;
         }
     }
 
     if (!option.skipHistory) {
-        if (!StandardPath::global().safeSave(StandardPath::Type::PkgData,
-                                             option.pathForSave(historyFile),
-                                             [&history](int fd) {
-                                                 OFDStreamBuf buffer(fd);
-                                                 std::ostream out(&buffer);
-                                                 history.save(out);
-                                                 return true;
-                                             })) {
-            std::cout << "Failed to save to history file." << std::endl;
+        if (!StandardPaths::global().safeSave(StandardPathsType::PkgData,
+                                              option.pathForSave(historyFile),
+                                              [&history](int fd) {
+                                                  OFDStreamBuf buffer(fd);
+                                                  std::ostream out(&buffer);
+                                                  history.save(out);
+                                                  return true;
+                                              })) {
+            std::cout << "Failed to save to history file." << '\n';
             return 1;
         }
     }
@@ -691,7 +680,6 @@ int main(int argc, char *argv[]) {
     }
 
     withBaseOption.sourceFile = withoutBaseOption.sourceFile = argv[optind];
-    UnixFD baseFd, outputFd;
 
     // Validate the required arguments.
     if (noBasefile) {

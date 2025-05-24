@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <exception>
 #include <fcitx-utils/fdstreambuf.h>
-#include <fcitx-utils/standardpath.h>
+#include <fcitx-utils/standardpaths.h>
 #include <fcitx-utils/stringutils.h>
 #include <fcitx-utils/unixfd.h>
 #include <fcntl.h>
@@ -157,7 +157,7 @@ std::string decodeFcitx4Pinyin(const T &code) {
         } else {
             return {};
         }
-        if (auto iter = consonantMapTable.find(code[2 * i + 1]);
+        if (auto iter = consonantMapTable.find(code[(2 * i) + 1]);
             iter != consonantMapTable.end()) {
             py.append(iter->second);
         } else {
@@ -176,18 +176,18 @@ void usage(const char *extra = nullptr) {
         << "Usage: " << argv0
         << " [-o <dict>/-O] [-p <history>/-P] [-U]"
            "[source]"
-        << std::endl
-        << "source: the source file of the dictionary." << std::endl
+        << '\n'
+        << "source: the source file of the dictionary." << '\n'
         << "        If it's empty, default fcitx 4 user file will be used."
-        << std::endl
-        << "-o: output dict file path" << std::endl
-        << "-O: Skip dict file." << std::endl
-        << "-p: history file path" << std::endl
-        << "-P: Skip history file" << std::endl
-        << "-U: overwrite instead of merge with existing data." << std::endl
-        << "-h: Show this help" << std::endl;
+        << '\n'
+        << "-o: output dict file path" << '\n'
+        << "-O: Skip dict file." << '\n'
+        << "-p: history file path" << '\n'
+        << "-P: Skip history file" << '\n'
+        << "-U: overwrite instead of merge with existing data." << '\n'
+        << "-h: Show this help" << '\n';
     if (extra) {
-        std::cout << extra << std::endl;
+        std::cout << extra << '\n';
     }
 }
 
@@ -231,15 +231,14 @@ int main(int argc, char *argv[]) {
     } else {
         // Fcitx 4's xdg is not following the spec, it's using a xdg_data and
         // xdg_config in mixed way.
-        StandardPath standardPath(/*skipFcitxPath=*/true);
-        sourceFd =
-            UnixFD::own(standardPath
-                            .openUser(StandardPath::Type::Config,
-                                      "fcitx/pinyin/pyusrphrase.mb", O_RDONLY)
-                            .release());
+        StandardPaths standardPath("fcitx5", {}, /*skipFcitxPath=*/true,
+                                   /*skipUserPath=*/false);
+        sourceFd = standardPath.open(StandardPathsType::Config,
+                                     "fcitx/pinyin/pyusrphrase.mb",
+                                     StandardPathsMode::User);
     }
     if (!sourceFd.isValid()) {
-        std::cout << "Failed to open the source file." << std::endl;
+        std::cout << "Failed to open the source file." << '\n';
     }
 
     std::vector<PYMB> pymbs;
@@ -258,10 +257,9 @@ int main(int argc, char *argv[]) {
         if (dictFile) {
             dictFD = UnixFD::own(open(dictFile, O_RDONLY));
         } else {
-            dictFD = UnixFD::own(StandardPath::global()
-                                     .openUser(StandardPath::Type::PkgData,
-                                               "pinyin/user.dict", O_RDONLY)
-                                     .release());
+            dictFD = StandardPaths::global().open(StandardPathsType::PkgData,
+                                                  "pinyin/user.dict",
+                                                  StandardPathsMode::User);
         }
     }
 
@@ -283,11 +281,9 @@ int main(int argc, char *argv[]) {
         if (historyFile) {
             historyFD = UnixFD::own(open(historyFile, O_RDONLY));
         } else {
-            historyFD =
-                UnixFD::own(StandardPath::global()
-                                .openUser(StandardPath::Type::PkgData,
-                                          "pinyin/user.history", O_RDONLY)
-                                .release());
+            historyFD = StandardPaths::global().open(StandardPathsType::PkgData,
+                                                     "pinyin/user.history",
+                                                     StandardPathsMode::User);
         }
     }
 
@@ -345,8 +341,8 @@ int main(int argc, char *argv[]) {
                 outputDictFile = std::filesystem::absolute(dictFile);
             }
         }
-        StandardPath::global().safeSave(
-            StandardPath::Type::PkgData, outputDictFile, [&dict](int fd) {
+        StandardPaths::global().safeSave(
+            StandardPathsType::PkgData, outputDictFile, [&dict](int fd) {
                 OFDStreamBuf buffer(fd);
                 std::ostream out(&buffer);
                 dict.save(PinyinDictionary::SystemDict, out,
@@ -364,13 +360,13 @@ int main(int argc, char *argv[]) {
                 outputHistoryFile = std::filesystem::absolute(historyFile);
             }
         }
-        StandardPath::global().safeSave(StandardPath::Type::PkgData,
-                                        outputHistoryFile, [&history](int fd) {
-                                            OFDStreamBuf buffer(fd);
-                                            std::ostream out(&buffer);
-                                            history.save(out);
-                                            return true;
-                                        });
+        StandardPaths::global().safeSave(StandardPathsType::PkgData,
+                                         outputHistoryFile, [&history](int fd) {
+                                             OFDStreamBuf buffer(fd);
+                                             std::ostream out(&buffer);
+                                             history.save(out);
+                                             return true;
+                                         });
     }
 
     return 0;

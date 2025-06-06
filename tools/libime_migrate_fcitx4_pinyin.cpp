@@ -231,11 +231,9 @@ int main(int argc, char *argv[]) {
     } else {
         // Fcitx 4's xdg is not following the spec, it's using a xdg_data and
         // xdg_config in mixed way.
-        StandardPaths standardPath("fcitx5", {}, /*skipFcitxPath=*/true,
-                                   /*skipUserPath=*/false);
-        sourceFd = standardPath.open(StandardPathsType::Config,
-                                     "fcitx/pinyin/pyusrphrase.mb",
-                                     StandardPathsMode::User);
+        sourceFd = StandardPaths::global().open(StandardPathsType::Config,
+                                                "fcitx/pinyin/pyusrphrase.mb",
+                                                StandardPathsMode::User);
     }
     if (!sourceFd.isValid()) {
         std::cout << "Failed to open the source file." << '\n';

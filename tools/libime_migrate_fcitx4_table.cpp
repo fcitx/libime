@@ -51,16 +51,15 @@ struct MigrationCommonOption {
         // Fcitx 4's xdg is not following the spec, it's using a xdg_data and
         // xdg_config in mixed way.
         if (useXdgPath && sourceFile[0] != '/') {
-            StandardPaths standardPath("fcitx5", {}, /*skipBuiltInPath=*/true,
-                                       /*skipUserPath=*/false);
-            sourceFd = standardPath.open(StandardPathsType::Config,
-                                         std::filesystem::path("fcitx/table") /
-                                             sourceFile,
-                                         StandardPathsMode::User);
+            sourceFd = StandardPaths::global().open(
+                StandardPathsType::Config,
+                std::filesystem::path("fcitx/table") / sourceFile,
+                StandardPathsMode::User);
             if (!sourceFd.isValid()) {
-                sourceFd = standardPath.open(
-                    StandardPathsType::Config,
-                    std::filesystem::path("fcitx/table") / sourceFile);
+                sourceFd = StandardPaths::global().open(
+                    StandardPathsType::Data,
+                    std::filesystem::path("fcitx/table") / sourceFile,
+                    StandardPathsMode::System);
             }
         } else {
             sourceFd = UnixFD::own(open(sourceFile.data(), O_RDONLY));

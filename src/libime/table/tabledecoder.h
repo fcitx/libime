@@ -59,7 +59,8 @@ protected:
                   const SegmentGraphNode *node) const override;
 };
 
-SegmentGraph graphForCode(std::string_view s, const TableBasedDictionary &dict);
+LIBIMETABLE_EXPORT SegmentGraph graphForCode(std::string_view s,
+                                             const TableBasedDictionary &dict);
 } // namespace libime
 
 #endif // _FCITX_LIBIME_TABLE_TABLEDECODER_H_

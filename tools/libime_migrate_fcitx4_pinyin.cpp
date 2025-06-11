@@ -6,7 +6,6 @@
  */
 
 #include "libime/core/historybigram.h"
-#include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
 #include "libime/pinyin/pinyindictionary.h"
 #include <algorithm>
@@ -331,7 +330,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!skipDict) {
-        std::string outputDictFile = "pinyin/user.dict";
+        std::filesystem::path outputDictFile = "pinyin/user.dict";
         if (dictFile) {
             if (dictFile[0] == '/') {
                 outputDictFile = dictFile;
@@ -350,7 +349,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!skipHistory) {
-        std::string outputHistoryFile = "pinyin/user.history";
+        std::filesystem::path outputHistoryFile = "pinyin/user.history";
         if (historyFile) {
             if (historyFile[0] == '/') {
                 outputHistoryFile = historyFile;

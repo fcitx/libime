@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "autophrasedict.h"
-#include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/multi_index/indexed_by.hpp>

@@ -117,8 +117,8 @@ bool TableDecoder::needSort(const SegmentGraph &graph,
     return graph.start().nextSize() != 1;
 }
 
-LIBIMETABLE_EXPORT SegmentGraph graphForCode(std::string_view s,
-                                             const TableBasedDictionary &dict) {
+SegmentGraph graphForCode(std::string_view s,
+                          const TableBasedDictionary &dict) {
     SegmentGraph graph{std::string(s)};
     if (s.empty()) {
         return graph;

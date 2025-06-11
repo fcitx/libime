@@ -12,7 +12,7 @@
 #include "libime/core/languagemodel.h"
 #include "libime/core/lattice.h"
 #include "libime/core/segmentgraph.h"
-#include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
 #include "libime/core/zstdfilter.h"
 #include "log.h"
 #include "tablebaseddictionary_p.h"

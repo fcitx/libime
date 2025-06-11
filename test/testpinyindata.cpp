@@ -6,8 +6,6 @@
 
 #include "libime/pinyin/pinyindata.h"
 #include "libime/pinyin/pinyinencoder.h"
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 #include <cstdint>
 #include <fcitx-utils/log.h>
 #include <iostream>
@@ -21,126 +19,126 @@ using namespace libime;
 static std::string applyFuzzy(const std::string &str, PinyinFuzzyFlags flags) {
     auto result = str;
     if (flags & PinyinFuzzyFlag::CommonTypo) {
-        if (boost::algorithm::ends_with(result, "gn")) {
+        if (result.ends_with("gn")) {
             result[result.size() - 2] = 'n';
             result[result.size() - 1] = 'g';
         }
-        if (boost::algorithm::ends_with(result, "on")) {
+        if (result.ends_with("on")) {
             result.push_back('g');
         }
         if (result == "din") {
             result.push_back('g');
         }
-        if (boost::algorithm::ends_with(result, "v")) {
+        if (result.ends_with("v")) {
             result.back() = 'u';
         }
-        if (boost::algorithm::ends_with(result, "ve")) {
+        if (result.ends_with("ve")) {
             result[result.size() - 2] = 'u';
         }
-        if (boost::algorithm::ends_with(result, "van")) {
+        if (result.ends_with("van")) {
             result[result.size() - 3] = 'u';
         }
-        if (boost::algorithm::ends_with(result, "vang")) {
+        if (result.ends_with("vang")) {
             result[result.size() - 4] = 'u';
         }
     }
 
     if (flags & PinyinFuzzyFlag::VE_UE) {
-        if (boost::algorithm::ends_with(result, "ue")) {
+        if (result.ends_with("ue")) {
             result[result.size() - 2] = 'v';
         }
     }
 
     if (flags & PinyinFuzzyFlag::IAN_IANG) {
-        if (boost::algorithm::ends_with(result, "ian")) {
+        if (result.ends_with("ian")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "iang")) {
+        } else if (result.ends_with("iang")) {
             result.pop_back();
         }
     } else if (flags & PinyinFuzzyFlag::UAN_UANG) {
-        if (boost::algorithm::ends_with(result, "uan")) {
+        if (result.ends_with("uan")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "uang")) {
+        } else if (result.ends_with("uang")) {
             result.pop_back();
         }
     } else if (flags & PinyinFuzzyFlag::AN_ANG) {
-        if (boost::algorithm::ends_with(result, "an")) {
+        if (result.ends_with("an")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "ang")) {
+        } else if (result.ends_with("ang")) {
             result.pop_back();
         }
     }
 
     if (flags & PinyinFuzzyFlag::EN_ENG) {
-        if (boost::algorithm::ends_with(result, "en")) {
+        if (result.ends_with("en")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "eng")) {
+        } else if (result.ends_with("eng")) {
             result.pop_back();
         }
     }
 
     if (flags & PinyinFuzzyFlag::IN_ING) {
-        if (boost::algorithm::ends_with(result, "in")) {
+        if (result.ends_with("in")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "ing")) {
+        } else if (result.ends_with("ing")) {
             result.pop_back();
         }
     }
 
     if (flags & PinyinFuzzyFlag::U_OU) {
-        if (boost::algorithm::ends_with(result, "ou")) {
+        if (result.ends_with("ou")) {
             result.pop_back();
             result.back() = 'u';
-        } else if (boost::algorithm::ends_with(result, "u")) {
+        } else if (result.ends_with("u")) {
             result.back() = 'o';
             result.push_back('u');
         }
     }
 
     if (flags & PinyinFuzzyFlag::C_CH) {
-        if (boost::algorithm::starts_with(result, "ch")) {
+        if (result.starts_with("ch")) {
             result.erase(std::next(result.begin()));
-        } else if (boost::algorithm::starts_with(result, "c")) {
+        } else if (result.starts_with("c")) {
             result.insert(std::next(result.begin()), 'h');
         }
     }
 
     if (flags & PinyinFuzzyFlag::S_SH) {
-        if (boost::algorithm::starts_with(result, "sh")) {
+        if (result.starts_with("sh")) {
             result.erase(std::next(result.begin()));
-        } else if (boost::algorithm::starts_with(result, "s")) {
+        } else if (result.starts_with("s")) {
             result.insert(std::next(result.begin()), 'h');
         }
     }
 
     if (flags & PinyinFuzzyFlag::Z_ZH) {
-        if (boost::algorithm::starts_with(result, "zh")) {
+        if (result.starts_with("zh")) {
             result.erase(std::next(result.begin()));
-        } else if (boost::algorithm::starts_with(result, "z")) {
+        } else if (result.starts_with("z")) {
             result.insert(std::next(result.begin()), 'h');
         }
     }
 
     if (flags & PinyinFuzzyFlag::F_H) {
-        if (boost::algorithm::starts_with(result, "f")) {
+        if (result.starts_with("f")) {
             result.front() = 'h';
-        } else if (boost::algorithm::starts_with(result, "h")) {
+        } else if (result.starts_with("h")) {
             result.front() = 'f';
         }
     }
 
     if (flags & PinyinFuzzyFlag::L_N) {
-        if (boost::algorithm::starts_with(result, "l")) {
+        if (result.starts_with("l")) {
             result.front() = 'n';
-        } else if (boost::algorithm::starts_with(result, "n")) {
+        } else if (result.starts_with("n")) {
             result.front() = 'l';
         }
     }
 
     if (flags & PinyinFuzzyFlag::L_R) {
-        if (boost::algorithm::starts_with(result, "l")) {
+        if (result.starts_with("l")) {
             result.front() = 'r';
-        } else if (boost::algorithm::starts_with(result, "r")) {
+        } else if (result.starts_with("r")) {
             result.front() = 'l';
         }
     }
@@ -169,7 +167,7 @@ int main() {
                 (static_cast<int16_t>(final) - PinyinEncoder::firstFinal);
             FCITX_ASSERT(PinyinEncoder::isValidInitialFinal(initial, final))
                 << " " << encode;
-            std::cout << encode << "," << std::endl;
+            std::cout << encode << "," << '\n';
         }
     }
     FCITX_ASSERT(getPinyinMapV2().count("zhaung"));

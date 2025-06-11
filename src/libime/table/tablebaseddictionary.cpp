@@ -20,9 +20,6 @@
 #include "tableoptions.h"
 #include "tablerule.h"
 #include <algorithm>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/range/adaptor/reversed.hpp>
 #include <cassert>
 #include <chrono>
 #include <cstdint>
@@ -41,6 +38,7 @@
 #include <memory>
 #include <optional>
 #include <ostream>
+#include <ranges>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -405,11 +403,11 @@ TableBasedDictionaryPrivate::parseDataLine(std::string_view buf, bool user) {
     uint32_t special[3] = {pinyinKey_, phraseKey_, promptKey_};
     PhraseFlag specialFlag[] = {PhraseFlag::Pinyin, PhraseFlag::ConstructPhrase,
                                 PhraseFlag::Prompt};
-    auto spacePos = buf.find_first_of(" \n\r\f\v\t");
+    auto spacePos = buf.find_first_of(FCITX_WHITESPACE);
     if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
         return {};
     }
-    auto wordPos = buf.find_first_not_of(" \n\r\f\v\t", spacePos);
+    auto wordPos = buf.find_first_not_of(FCITX_WHITESPACE, spacePos);
     if (spacePos == std::string::npos || spacePos + 1 == buf.size()) {
         return {};
     }
@@ -660,7 +658,6 @@ void TableBasedDictionary::loadText(std::istream &in) {
         return false;
     };
 
-    auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
     auto phase = BuildPhase::PhaseConfig;
     while (!in.eof()) {
         if (!std::getline(in, buf)) {
@@ -946,36 +943,35 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
         }
         break;
     case TableFormat::Text: {
-        std::string buf;
-        auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
+        std::string lineBuf;
         enum class UserDictState { Phrase, Auto, Delete };
 
         UserDictState state = UserDictState::Phrase;
         while (!in.eof()) {
-            if (!std::getline(in, buf)) {
+            if (!std::getline(in, lineBuf)) {
                 break;
             }
 
             // Validate everything first, so it's easier to process.
-            if (!fcitx::utf8::validate(buf)) {
+            if (!fcitx::utf8::validate(lineBuf)) {
                 continue;
             }
-            boost::trim_if(buf, isSpaceCheck);
-            if (buf == UserDictAutoMark) {
+            auto line = fcitx::stringutils::trimView(lineBuf);
+            if (line == UserDictAutoMark) {
                 state = UserDictState::Auto;
                 continue;
             }
-            if (buf == UserDictDeleteMark) {
+            if (line == UserDictDeleteMark) {
                 state = UserDictState::Delete;
                 continue;
             }
 
             switch (state) {
             case UserDictState::Phrase:
-                d->insertDataLine(buf, true);
+                d->insertDataLine(line, true);
                 break;
             case UserDictState::Auto: {
-                auto tokens = fcitx::stringutils::split(buf, " \n\t\r\v\f");
+                auto tokens = fcitx::stringutils::split(line, FCITX_WHITESPACE);
                 if (tokens.size() != 3 || !isAllInputCode(tokens[0])) {
                     continue;
                 }
@@ -989,7 +985,7 @@ void TableBasedDictionary::loadUser(std::istream &in, TableFormat format) {
                 }
             } break;
             case UserDictState::Delete: {
-                if (auto data = d->parseDataLine(buf, true)) {
+                if (auto data = d->parseDataLine(line, true)) {
                     auto &[key, value, flag] = *data;
                     auto entry = generateTableEntry(key, value);
                     d->deletionTrie_.set(entry, 0);
@@ -1041,7 +1037,7 @@ void TableBasedDictionary::saveUser(std::ostream &out, TableFormat format) {
                                              entry.substr(sep + 1), hit);
                     return true;
                 });
-            for (auto &t : autoEntries | boost::adaptors::reversed) {
+            for (auto &t : autoEntries | std::views::reverse) {
                 out << std::get<0>(t) << " " << maybeEscapeValue(std::get<1>(t))
                     << " " << std::get<2>(t) << '\n';
             }
@@ -1089,23 +1085,22 @@ size_t TableBasedDictionary::loadExtra(std::istream &in, TableFormat format) {
         }
         break;
     case TableFormat::Text: {
-        std::string buf;
-        auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
+        std::string lineBuf;
         enum class ExtraDictState { Data, Phrase };
 
         ExtraDictState state = ExtraDictState::Data;
         while (!in.eof()) {
-            if (!std::getline(in, buf)) {
+            if (!std::getline(in, lineBuf)) {
                 break;
             }
 
             // Validate everything first, so it's easier to process.
-            if (!fcitx::utf8::validate(buf)) {
+            if (!fcitx::utf8::validate(lineBuf)) {
                 continue;
             }
-            boost::trim_if(buf, isSpaceCheck);
-            if (buf == strConst[0][STR_PHRASE] ||
-                buf == strConst[1][STR_PHRASE]) {
+            const auto line = fcitx::stringutils::trimView(lineBuf);
+            if (line == strConst[0][STR_PHRASE] ||
+                line == strConst[1][STR_PHRASE]) {
                 state = ExtraDictState::Phrase;
                 continue;
             }
@@ -1115,7 +1110,7 @@ size_t TableBasedDictionary::loadExtra(std::istream &in, TableFormat format) {
             PhraseFlag flag;
             switch (state) {
             case ExtraDictState::Data:
-                if (auto data = d->parseDataLine(buf, false)) {
+                if (auto data = d->parseDataLine(line, false)) {
                     std::tie(key, value, flag) = *data;
                     if (flag != PhraseFlag::None) {
                         continue;
@@ -1124,7 +1119,7 @@ size_t TableBasedDictionary::loadExtra(std::istream &in, TableFormat format) {
                 }
                 break;
             case ExtraDictState::Phrase:
-                value = buf;
+                value = line;
                 maybeUnescapeValue(value);
                 if (!generate(value, key)) {
                     continue;

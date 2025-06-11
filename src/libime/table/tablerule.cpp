@@ -6,11 +6,10 @@
 
 #include "tablerule.h"
 #include "libime/core/utils_p.h"
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <cstdint>
 #include <cstdlib>
 #include <fcitx-utils/charutils.h>
+#include <fcitx-utils/stringutils.h>
 #include <istream>
 #include <ostream>
 #include <stdexcept>
@@ -83,8 +82,8 @@ TableRule::TableRule(const std::string &ruleString, unsigned int maxLength) {
     }
 
     auto afterEqualSign = std::string_view(ruleString).substr(equalSignPos + 1);
-    std::vector<std::string> entryStrings;
-    boost::split(entryStrings, afterEqualSign, boost::is_any_of("+"));
+    std::vector<std::string> entryStrings =
+        fcitx::stringutils::split(afterEqualSign, "+");
     if (entryStrings.empty() || entryStrings.size() > maxLength) {
         throw std::invalid_argument("invalid rule string");
     }
@@ -199,8 +198,15 @@ size_t TableRule::codeLength() const {
 }
 
 std::ostream &operator<<(std::ostream &out, const TableRuleEntry &r) {
-    marshall(out, r.flag()) && marshall(out, r.character()) &&
-        marshall(out, r.encodingIndex());
+    if (!marshall(out, r.flag())) {
+        return out;
+    }
+    if (!marshall(out, r.character())) {
+        return out;
+    }
+    if (!marshall(out, r.encodingIndex())) {
+        return out;
+    }
     return out;
 }
 

@@ -6,7 +6,6 @@
 
 #include "segmentgraph.h"
 #include <boost/range/combine.hpp>
-#include <boost/range/detail/combine_cxx11.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <cassert>
 #include <cstddef>

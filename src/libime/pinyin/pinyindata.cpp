@@ -7,7 +7,6 @@
 #include "pinyindata.h"
 #include "pinyinencoder.h"
 #include <algorithm>
-#include <boost/algorithm/string/predicate.hpp>
 #include <cstdint>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
@@ -1004,27 +1003,25 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         // Allow non standard usage like jv jve jvan jvuang
         if (result[0] == 'j' || result[0] == 'q' || result[0] == 'x' ||
             result[0] == 'y') {
-            if (boost::algorithm::ends_with(result, "u") &&
-                !boost::algorithm::ends_with(result, "iu") &&
-                !boost::algorithm::ends_with(result, "ou")) {
+            if (result.ends_with("u") && !result.ends_with("iu") &&
+                !result.ends_with("ou")) {
                 result.back() = 'v';
             }
 
-            if (boost::algorithm::ends_with(result, "ue") ||
-                boost::algorithm::ends_with(result, "un")) {
+            if (result.ends_with("ue") || result.ends_with("un")) {
                 result[result.size() - 2] = 'v';
             }
-            if (boost::algorithm::ends_with(result, "uan")) {
+            if (result.ends_with("uan")) {
                 result[result.size() - 3] = 'v';
             }
-            if (boost::algorithm::ends_with(result, "uang")) {
+            if (result.ends_with("uang")) {
                 result[result.size() - 4] = 'v';
             }
         }
     } break;
     case FuzzyUpdatePhase::CommonTypo_ON_ONG:
         // Allow lon -> long
-        if (boost::algorithm::ends_with(result, "ong")) {
+        if (result.ends_with("ong")) {
             result.pop_back();
         }
         break;
@@ -1036,46 +1033,43 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         break;
     case FuzzyUpdatePhase::CommonTypo_Swap_NG_UE_UA_UAN:
         // Allow ying -> yign
-        if (boost::algorithm::ends_with(result, "ng")) {
+        if (result.ends_with("ng")) {
             result[result.size() - 2] = 'g';
             result[result.size() - 1] = 'n';
-        } else if (boost::algorithm::ends_with(result, "ue")) {
+        } else if (result.ends_with("ue")) {
             // Allow fuzzy for uv, that does not cause ambiguity.
             result[result.size() - 2] = 'e';
             result[result.size() - 1] = 'u';
-        } else if (boost::algorithm::ends_with(result, "ve")) {
+        } else if (result.ends_with("ve")) {
             result[result.size() - 2] = 'e';
             result[result.size() - 1] = 'v';
-        } else if (boost::algorithm::ends_with(result, "ua")) {
+        } else if (result.ends_with("ua")) {
             result[result.size() - 2] = 'a';
             result[result.size() - 1] = 'u';
-        } else if (boost::algorithm::ends_with(result, "uai") ||
-                   boost::algorithm::ends_with(result, "uan")) {
+        } else if (result.ends_with("uai") || result.ends_with("uan")) {
             result[result.size() - 3] = 'a';
             result[result.size() - 2] = 'u';
-        } else if (boost::algorithm::ends_with(result, "van")) {
+        } else if (result.ends_with("van")) {
             result[result.size() - 3] = 'a';
             result[result.size() - 2] = 'v';
         }
         break;
     case FuzzyUpdatePhase::CommonTypo_Swap_UANG:
         // this conflicts with "ng" rule, so need a separate pass.
-        if (boost::algorithm::ends_with(result, "uang")) {
+        if (result.ends_with("uang")) {
             result[result.size() - 4] = 'a';
             result[result.size() - 3] = 'u';
-        } else if (boost::algorithm::ends_with(result, "vang")) {
+        } else if (result.ends_with("vang")) {
             result[result.size() - 4] = 'a';
             result[result.size() - 3] = 'v';
         }
         break;
     case FuzzyUpdatePhase::AdvancedTypo_Swap_XH_UN:
         // Allow reversed zhe -> hze
-        if (boost::algorithm::starts_with(result, "zh") ||
-            boost::algorithm::starts_with(result, "sh") ||
-            boost::algorithm::starts_with(result, "ch")) {
+        if (result.starts_with("zh") || result.starts_with("sh") ||
+            result.starts_with("ch")) {
             std::swap(result[0], result[1]);
-        } else if (boost::algorithm::ends_with(result, "un") &&
-                   !boost::algorithm::ends_with(result, "aun")) {
+        } else if (result.ends_with("un") && !result.ends_with("aun")) {
             result[result.size() - 2] = 'n';
             result[result.size() - 1] = 'u';
         }
@@ -1086,7 +1080,7 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         }
         for (const auto *const two : {"ai", "ia", "ei", "ie", "ao", "uo", "ou",
                                       "iu", "an", "en", "in"}) {
-            if (boost::algorithm::ends_with(result, two)) {
+            if (result.ends_with(two)) {
                 std::swap(result[result.size() - 2], result[result.size() - 1]);
             }
         }
@@ -1097,7 +1091,7 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         }
         for (const auto *const three :
              {"ang", "eng", "ing", "ong", "iao", "ian"}) {
-            if (boost::algorithm::ends_with(result, three)) {
+            if (result.ends_with(three)) {
                 std::swap(result[result.size() - 3], result[result.size() - 2]);
             }
         }
@@ -1108,7 +1102,7 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
             break;
         }
         for (const auto *const four : {"iang", "iong"}) {
-            if (boost::algorithm::ends_with(result, four)) {
+            if (result.ends_with(four)) {
                 std::swap(result[result.size() - 4], result[result.size() - 3]);
             }
         }
@@ -1139,16 +1133,16 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
     auto result = entry.pinyin();
     switch (fz) {
     case PinyinFuzzyFlag::VE_UE: {
-        if (boost::algorithm::ends_with(result, "ve")) {
+        if (result.ends_with("ve")) {
             result[result.size() - 2] = 'u';
         }
         break;
     }
 
     case PinyinFuzzyFlag::IAN_IANG: {
-        if (boost::algorithm::ends_with(result, "ian")) {
+        if (result.ends_with("ian")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "iang")) {
+        } else if (result.ends_with("iang")) {
             result.pop_back();
         }
         break;
@@ -1158,55 +1152,52 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         if (entry.flags() != PinyinFuzzyFlag::None) {
             break;
         }
-        if (boost::algorithm::ends_with(result, "uan")) {
+        if (result.ends_with("uan")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "uang")) {
+        } else if (result.ends_with("uang")) {
             result.pop_back();
         }
         break;
     }
 
     case PinyinFuzzyFlag::AN_ANG: {
-        if (boost::algorithm::ends_with(result, "uan") ||
-            boost::algorithm::ends_with(result, "uang")) {
+        if (result.ends_with("uan") || result.ends_with("uang")) {
             break;
         }
-        if (boost::algorithm::ends_with(result, "ian") ||
-            boost::algorithm::ends_with(result, "iang")) {
+        if (result.ends_with("ian") || result.ends_with("iang")) {
             break;
         }
-        if (boost::algorithm::ends_with(result, "an")) {
+        if (result.ends_with("an")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "ang")) {
+        } else if (result.ends_with("ang")) {
             result.pop_back();
         }
         break;
     }
 
     case PinyinFuzzyFlag::EN_ENG: {
-        if (boost::algorithm::ends_with(result, "en")) {
+        if (result.ends_with("en")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "eng")) {
+        } else if (result.ends_with("eng")) {
             result.pop_back();
         }
         break;
     }
 
     case PinyinFuzzyFlag::IN_ING: {
-        if (boost::algorithm::ends_with(result, "in")) {
+        if (result.ends_with("in")) {
             result.push_back('g');
-        } else if (boost::algorithm::ends_with(result, "ing")) {
+        } else if (result.ends_with("ing")) {
             result.pop_back();
         }
         break;
     }
 
     case PinyinFuzzyFlag::U_OU: {
-        if (boost::algorithm::ends_with(result, "ou")) {
+        if (result.ends_with("ou")) {
             result.pop_back();
             result.back() = 'u';
-        } else if (boost::algorithm::ends_with(result, "u") &&
-                   !boost::algorithm::ends_with(result, "iu")) {
+        } else if (result.ends_with("u") && !result.ends_with("iu")) {
             result.back() = 'o';
             result.push_back('u');
         }
@@ -1217,9 +1208,9 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         if (entry.flags() != PinyinFuzzyFlag::None) {
             break;
         }
-        if (boost::algorithm::starts_with(result, "ch")) {
+        if (result.starts_with("ch")) {
             result.erase(std::next(result.begin()));
-        } else if (boost::algorithm::starts_with(result, "c")) {
+        } else if (result.starts_with("c")) {
             result.insert(std::next(result.begin()), 'h');
         }
         break;
@@ -1229,9 +1220,9 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         if (entry.flags() != PinyinFuzzyFlag::None) {
             break;
         }
-        if (boost::algorithm::starts_with(result, "sh")) {
+        if (result.starts_with("sh")) {
             result.erase(std::next(result.begin()));
-        } else if (boost::algorithm::starts_with(result, "s")) {
+        } else if (result.starts_with("s")) {
             result.insert(std::next(result.begin()), 'h');
         }
         break;
@@ -1241,36 +1232,36 @@ std::optional<PinyinEntry> applyFuzzy(const PinyinEntry &entry,
         if (entry.flags() != PinyinFuzzyFlag::None) {
             break;
         }
-        if (boost::algorithm::starts_with(result, "zh")) {
+        if (result.starts_with("zh")) {
             result.erase(std::next(result.begin()));
-        } else if (boost::algorithm::starts_with(result, "z")) {
+        } else if (result.starts_with("z")) {
             result.insert(std::next(result.begin()), 'h');
         }
         break;
     }
 
     case PinyinFuzzyFlag::F_H: {
-        if (boost::algorithm::starts_with(result, "f")) {
+        if (result.starts_with("f")) {
             result.front() = 'h';
-        } else if (boost::algorithm::starts_with(result, "h")) {
+        } else if (result.starts_with("h")) {
             result.front() = 'f';
         }
         break;
     }
 
     case PinyinFuzzyFlag::L_N: {
-        if (boost::algorithm::starts_with(result, "l")) {
+        if (result.starts_with("l")) {
             result.front() = 'n';
-        } else if (boost::algorithm::starts_with(result, "n")) {
+        } else if (result.starts_with("n")) {
             result.front() = 'l';
         }
         break;
     }
 
     case PinyinFuzzyFlag::L_R: {
-        if (boost::algorithm::starts_with(result, "l")) {
+        if (result.starts_with("l")) {
             result.front() = 'r';
-        } else if (boost::algorithm::starts_with(result, "r")) {
+        } else if (result.starts_with("r")) {
             result.front() = 'l';
         }
         break;

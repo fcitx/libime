@@ -7,14 +7,20 @@
 #include "libime/core/constants.h"
 #include "libime/core/datrie.h"
 #include "libime/core/languagemodel.h"
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/stringutils.h>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <unistd.h>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 void usage(const char *argv0) {
@@ -41,24 +47,23 @@ void parse(const char *modelFile, const char *arpa, const char *output,
 
     std::ifstream fin;
     std::istream *in;
-    if (strcmp(arpa, "-") == 0) {
+    if (std::string_view(arpa) == "-") {
         in = &std::cin;
     } else {
         fin.open(arpa, std::ios::in | std::ios::binary);
         in = &fin;
     }
 
-    std::string line;
+    std::string lineBuf;
     std::unordered_map<std::string, std::unordered_map<std::string, float>>
         word;
-    auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
     int grams = -1;
     while (!in->eof()) {
-        if (!std::getline(*in, line)) {
+        if (!std::getline(*in, lineBuf)) {
             break;
         }
 
-        boost::trim_if(line, isSpaceCheck);
+        auto line = fcitx::stringutils::trimView(lineBuf);
 
         if (line == "\\2-grams:") {
             grams = 2;
@@ -72,8 +77,8 @@ void parse(const char *modelFile, const char *arpa, const char *output,
         if (grams < 0) {
             continue;
         }
-        std::vector<std::string> tokens;
-        boost::split(tokens, line, isSpaceCheck);
+        std::vector<std::string> tokens =
+            fcitx::stringutils::split(line, FCITX_WHITESPACE);
 
         if (tokens.size() < static_cast<size_t>(grams) + 1) {
             continue;
@@ -93,13 +98,12 @@ void parse(const char *modelFile, const char *arpa, const char *output,
     for (auto &p : word) {
         std::vector<std::pair<std::string, float>> result(p.second.begin(),
                                                           p.second.end());
-        std::sort(result.begin(), result.end(),
-                  [](const auto &lhs, const auto &rhs) {
-                      if (lhs.second != rhs.second) {
-                          return lhs.second > rhs.second;
-                      }
-                      return lhs.first < rhs.first;
-                  });
+        std::ranges::sort(result, [](const auto &lhs, const auto &rhs) {
+            if (lhs.second != rhs.second) {
+                return lhs.second > rhs.second;
+            }
+            return lhs.first < rhs.first;
+        });
         if (result.size() > maxSize) {
             result.resize(maxSize);
         }
@@ -113,7 +117,7 @@ void parse(const char *modelFile, const char *arpa, const char *output,
 
     std::ofstream fout;
     std::ostream *out;
-    if (strcmp(output, "-") == 0) {
+    if (std::string_view(output) == "-") {
         out = &std::cout;
     } else {
         fout.open(output, std::ios::out | std::ios::binary);
@@ -126,7 +130,7 @@ void dump(const char *input, const char *output) {
     using namespace libime;
     std::ifstream fin;
     std::istream *in;
-    if (strcmp(input, "-") == 0) {
+    if (std::string_view(input) == "-") {
         in = &std::cin;
     } else {
         fin.open(input, std::ios::in | std::ios::binary);
@@ -138,7 +142,7 @@ void dump(const char *input, const char *output) {
 
     std::ofstream fout;
     std::ostream *out;
-    if (strcmp(output, "-") == 0) {
+    if (std::string_view(output) == "-") {
         out = &std::cout;
     } else {
         fout.open(output, std::ios::out | std::ios::binary);
@@ -147,7 +151,7 @@ void dump(const char *input, const char *output) {
     trie.foreach([out, &trie](float value, size_t len, uint64_t pos) {
         std::string s;
         trie.suffix(s, len, pos);
-        *out << s << " " << value << std::endl;
+        *out << s << " " << value << '\n';
         return true;
     });
 }

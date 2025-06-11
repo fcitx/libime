@@ -10,21 +10,19 @@
 #include "shuangpinprofile.h"
 #include <algorithm>
 #include <array>
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <boost/bimap.hpp>
 #include <boost/container/static_vector.hpp>
-#include <boost/range/iterator_range_core.hpp>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <fcitx-utils/charutils.h>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/stringutils.h>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <queue>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -116,7 +114,7 @@ bool hasMatchInMap(const PinyinMap &map, std::string_view range,
     auto iterPair = map.equal_range(range);
     if (iterPair.first != iterPair.second) {
         for (const auto &item :
-             boost::make_iterator_range(iterPair.first, iterPair.second)) {
+             std::ranges::subrange(iterPair.first, iterPair.second)) {
             if (flags.test(item.flags())) {
                 // do not consider m/n/r as complete pinyin
                 return true;
@@ -408,8 +406,7 @@ std::vector<char> PinyinEncoder::encodeFullPinyin(std::string_view pinyin) {
 std::vector<char>
 PinyinEncoder::encodeFullPinyinWithFlags(std::string_view pinyin,
                                          PinyinFuzzyFlags flags) {
-    std::vector<std::string> pinyins;
-    boost::split(pinyins, pinyin, boost::is_any_of("'"));
+    std::vector<std::string> pinyins = fcitx::stringutils::split(pinyin, "'");
     std::vector<char> result;
     result.resize(pinyins.size() * 2);
     int idx = 0;
@@ -725,7 +722,7 @@ stringToSyllablesImpl(std::string_view pinyinView, const PinyinMap &map,
     if (pinyin != "m" && pinyin != "n" && pinyin != "r") {
         auto iterPair = map.equal_range(pinyin);
         for (const auto &item :
-             boost::make_iterator_range(iterPair.first, iterPair.second)) {
+             std::ranges::subrange(iterPair.first, iterPair.second)) {
             if (flags.test(item.flags())) {
                 getFuzzy(result, {item.initial(), item.final()}, flags,
                          /*isSp=*/false,

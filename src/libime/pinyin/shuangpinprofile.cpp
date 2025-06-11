@@ -9,18 +9,15 @@
 #include "pinyinencoder.h"
 #include "shuangpindata.h"
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/range/iterator_range.hpp>
 #include <cassert>
 #include <cstddef>
 #include <fcitx-utils/charutils.h>
 #include <fcitx-utils/macros.h>
+#include <fcitx-utils/stringutils.h>
 #include <istream>
 #include <map>
 #include <memory>
+#include <ranges>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -161,7 +158,7 @@ public:
                 const auto &map = getPinyinMapV2();
                 auto iterPair = map.equal_range(py);
                 if (iterPair.first != iterPair.second) {
-                    for (const auto &item : boost::make_iterator_range(
+                    for (const auto &item : std::ranges::subrange(
                              iterPair.first, iterPair.second)) {
                         // Shuangpin should not consider advanced typo, since
                         // it's swapping character order and will leads to wrong
@@ -183,8 +180,8 @@ public:
             for (auto c : finalChars) {
                 // If c is in final map.
                 auto finalIterPair = finalMap_.equal_range(c);
-                for (auto &item : boost::make_iterator_range(
-                         finalIterPair.first, finalIterPair.second)) {
+                for (auto &item : std::ranges::subrange(finalIterPair.first,
+                                                        finalIterPair.second)) {
                     if (PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
                                                            item.second)) {
                         std::string input;
@@ -223,7 +220,7 @@ public:
                 std::vector<PinyinFinal> finals;
                 auto initialIterPair = initialMap_.equal_range(c1);
                 if (initialIterPair.first != initialIterPair.second) {
-                    for (auto &item : boost::make_iterator_range(
+                    for (auto &item : std::ranges::subrange(
                              initialIterPair.first, initialIterPair.second)) {
                         initials.push_back(item.second);
                     }
@@ -238,8 +235,8 @@ public:
                 }
 
                 auto finalIterPair = finalMap_.equal_range(c2);
-                for (auto &item : boost::make_iterator_range(
-                         finalIterPair.first, finalIterPair.second)) {
+                for (auto &item : std::ranges::subrange(finalIterPair.first,
+                                                        finalIterPair.second)) {
                     finals.push_back(item.second);
                 }
 
@@ -290,15 +287,15 @@ public:
                                 PinyinFuzzyFlag::None);
             }
             auto initialIterPair = initialMap_.equal_range(c);
-            for (auto &item : boost::make_iterator_range(
-                     initialIterPair.first, initialIterPair.second)) {
+            for (auto &item : std::ranges::subrange(initialIterPair.first,
+                                                    initialIterPair.second)) {
                 addPinyinToList(pys, item.second, PinyinFinal::Invalid,
                                 PinyinFuzzyFlag::None);
             }
 
             // Add single char final to partial pinyin.
             auto [begin, end] = finalMap_.equal_range(c);
-            for (auto &item : boost::make_iterator_range(begin, end)) {
+            for (auto &item : std::ranges::subrange(begin, end)) {
                 const auto final = item.second;
                 if (PinyinEncoder::finalToString(final).size() == 1 &&
                     PinyinEncoder::isValidInitialFinal(PinyinInitial::Zero,
@@ -423,23 +420,20 @@ ShuangpinProfile::ShuangpinProfile(
     std::istream &in, const PinyinCorrectionProfile *correctionProfile)
     : d_ptr(std::make_unique<ShuangpinProfilePrivate>()) {
     FCITX_D();
-    std::string line;
-    auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
+    std::string lineBuf;
     bool isDefault = false;
-    while (std::getline(in, line)) {
-        boost::trim_if(line, isSpaceCheck);
-        if (line.empty() || line[0] == '#') {
+    while (std::getline(in, lineBuf)) {
+        auto line = fcitx::stringutils::trimView(lineBuf);
+        if (line.empty() || line.starts_with('#')) {
             continue;
         }
-        std::string_view lineView(line);
 
         std::string_view option("方案名称=");
-        if (boost::starts_with(lineView, option)) {
-            std::string name{lineView.substr(option.size())};
-            boost::trim_if(name, isSpaceCheck);
-            isDefault = (name == "自然码" || name == "微软" || name == "紫光" ||
-                         name == "拼音加加" || name == "中文之星" ||
-                         name == "智能ABC" || name == "小鹤");
+        if (fcitx::stringutils::consumePrefix(line, option)) {
+            isDefault = (line == "自然码" || line == "微软" || line == "紫光" ||
+                         line == "拼音加加" || line == "中文之星" ||
+                         line == "智能ABC" || line == "小鹤");
+            continue;
         }
 
         if (isDefault) {
@@ -451,21 +445,21 @@ ShuangpinProfile::ShuangpinProfile(
                            [](char c) { return fcitx::charutils::tolower(c); });
         };
 
-        if (lineView[0] == '=' && lineView.size() > 1) {
-            d->zeroS_ = std::string(lineView.substr(1));
+        if (line[0] == '=' && line.size() > 1) {
+            d->zeroS_ = std::string(line.substr(1));
             tolowerInPlace(d->zeroS_);
             continue;
         }
 
-        auto equal = lineView.find('=');
+        auto equal = line.find('=');
         // no '=', or equal at first char, or len(substr after equal) != 1
         if (equal == std::string_view::npos || equal == 0) {
             continue;
         }
 
         if (equal + 2 == line.size()) {
-            std::string pinyin{lineView.substr(0, equal)};
-            auto key = fcitx::charutils::tolower(lineView[equal + 1]);
+            std::string pinyin{line.substr(0, equal)};
+            auto key = fcitx::charutils::tolower(line[equal + 1]);
             if (auto final = PinyinEncoder::stringToFinal(pinyin);
                 final != PinyinFinal::Invalid) {
                 d->finalMap_.emplace(key, final);
@@ -474,8 +468,8 @@ ShuangpinProfile::ShuangpinProfile(
                 d->initialMap_.emplace(key, initial);
             }
         } else if (equal + 3 == line.size()) {
-            std::string pinyin{lineView.substr(0, equal)};
-            std::string key{lineView.substr(equal + 1)};
+            std::string_view pinyin = line.substr(0, equal);
+            std::string key{line.substr(equal + 1)};
             tolowerInPlace(key);
             try {
                 auto result = PinyinEncoder::encodeFullPinyin(pinyin);

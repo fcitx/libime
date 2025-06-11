@@ -5,14 +5,11 @@
  */
 #include "autophrasedict.h"
 #include "libime/core/utils_p.h"
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/multi_index/indexed_by.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
-#include <boost/range/adaptor/reversed.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <fcitx-utils/macros.h>
@@ -20,6 +17,7 @@
 #include <istream>
 #include <memory>
 #include <ostream>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -89,7 +87,7 @@ bool AutoPhraseDict::search(
     FCITX_D();
     const auto &idx = d->il_.get<1>();
     auto iter = idx.lower_bound(s);
-    while (iter != idx.end() && boost::starts_with(iter->entry(), s)) {
+    while (iter != idx.end() && iter->entry().starts_with(s)) {
         if (!callback(iter->entry(), iter->hit_)) {
             return false;
         }
@@ -140,7 +138,7 @@ void AutoPhraseDict::save(std::ostream &out) {
     FCITX_D();
     uint32_t size = d->il_.size();
     throw_if_io_fail(marshall(out, size));
-    for (const auto &phrase : d->il_ | boost::adaptors::reversed) {
+    for (const auto &phrase : d->il_ | std::views::reverse) {
         throw_if_io_fail(marshallString(out, phrase.entry_));
         throw_if_io_fail(marshall(out, phrase.hit_));
     }

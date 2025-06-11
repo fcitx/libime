@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <boost/iterator/iterator_categories.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/any_range.hpp>
 #include <cassert>
 #include <cstddef>
@@ -18,6 +17,7 @@
 #include <libime/core/libimecore_export.h>
 #include <libime/core/segmentgraph.h>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -152,10 +152,10 @@ protected:
 
 inline std::string SentenceResult::toString() const {
     return fcitx::stringutils::join(
-        sentence_ | boost::adaptors::transformed(
-                        [](const auto &item) -> const std::string & {
-                            return item->word();
-                        }),
+        sentence_ |
+            std::views::transform([](const auto &item) -> const std::string & {
+                return item->word();
+            }),
         "");
 }
 

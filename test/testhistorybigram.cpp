@@ -5,11 +5,11 @@
  */
 
 #include "libime/core/historybigram.h"
-#include <boost/range/irange.hpp>
 #include <cmath>
 #include <exception>
 #include <fcitx-utils/log.h>
 #include <iostream>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <unordered_set>
@@ -23,21 +23,21 @@ void testBasic() {
     history.add({"他"});
 
     history.dump(std::cout);
-    std::cout << history.score("你", "是") << std::endl;
-    std::cout << history.score("他", "是") << std::endl;
-    std::cout << history.score("他", "不是") << std::endl;
+    std::cout << history.score("你", "是") << '\n';
+    std::cout << history.score("他", "是") << '\n';
+    std::cout << history.score("他", "不是") << '\n';
     {
         std::stringstream ss;
         history.save(ss);
         history.clear();
-        std::cout << history.score("你", "是") << std::endl;
-        std::cout << history.score("他", "是") << std::endl;
-        std::cout << history.score("他", "不是") << std::endl;
+        std::cout << history.score("你", "是") << '\n';
+        std::cout << history.score("他", "是") << '\n';
+        std::cout << history.score("他", "不是") << '\n';
         history.load(ss);
     }
-    std::cout << history.score("你", "是") << std::endl;
-    std::cout << history.score("他", "是") << std::endl;
-    std::cout << history.score("他", "不是") << std::endl;
+    std::cout << history.score("你", "是") << '\n';
+    std::cout << history.score("他", "是") << '\n';
+    std::cout << history.score("他", "不是") << '\n';
 
     history.dump(std::cout);
     {
@@ -48,35 +48,35 @@ void testBasic() {
             history.clear();
         }
     }
-    std::cout << history.score("你", "是") << std::endl;
-    std::cout << history.score("他", "是") << std::endl;
-    std::cout << history.score("他", "不是") << std::endl;
+    std::cout << history.score("你", "是") << '\n';
+    std::cout << history.score("他", "是") << '\n';
+    std::cout << history.score("他", "不是") << '\n';
 
-    std::cout << "--------------------" << std::endl;
+    std::cout << "--------------------" << '\n';
     history.clear();
     history.add({"泥浩"});
     std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
-              << std::endl;
+              << '\n';
     history.add({"你好"});
     std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
-              << std::endl;
+              << '\n';
     for (int i = 0; i < 40; i++) {
         history.add({"泥浩"});
         std::cout << history.score("", "泥浩") << " "
-                  << history.score("", "你好") << std::endl;
+                  << history.score("", "你好") << '\n';
     }
     history.add({"你好"});
     std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
-              << std::endl;
+              << '\n';
     history.add({"你好"});
     std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
-              << std::endl;
+              << '\n';
     history.add({"泥浩"});
     std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
-              << std::endl;
+              << '\n';
     history.add({"泥浩"});
     std::cout << history.score("", "泥浩") << " " << history.score("", "你好")
-              << std::endl;
+              << '\n';
 
     history.clear();
     for (int i = 0; i < 1; i++) {
@@ -86,7 +86,7 @@ void testBasic() {
                          history.score("不", "起来")
                   << " "
                   << history.score("", "跑步") + history.score("跑步", "起来")
-                  << std::endl;
+                  << '\n';
     }
     for (int i = 0; i < 100; i++) {
         history.add({"跑步", "起来"});
@@ -95,7 +95,7 @@ void testBasic() {
                          history.score("不", "起来")
                   << " "
                   << history.score("", "跑步") + history.score("跑步", "起来")
-                  << std::endl;
+                  << '\n';
     }
     FCITX_ASSERT(!history.isUnknown("跑步"));
     history.forget("跑步");
@@ -105,14 +105,14 @@ void testBasic() {
                      history.score("不", "起来")
               << " "
               << history.score("", "跑步") + history.score("跑步", "起来")
-              << std::endl;
+              << '\n';
 }
 
 void testOverflow() {
     using namespace libime;
     HistoryBigram history;
     constexpr auto total = 100000;
-    for (auto i : boost::irange(0, total)) {
+    for (auto i : std::views::iota(0, total)) {
         history.add({std::to_string(i)});
     }
     std::stringstream dump;
@@ -129,7 +129,7 @@ void testPredict() {
     using namespace libime;
     HistoryBigram history;
     constexpr auto total = 10000;
-    for (auto i : boost::irange(0, total)) {
+    for (auto i : std::views::iota(0, total)) {
         history.add({std::to_string(i), std::to_string(i + 1)});
     }
 
@@ -183,7 +183,7 @@ void testSaveAndLoadText() {
     using namespace libime;
     HistoryBigram history;
     constexpr auto total = 100000;
-    for (auto i : boost::irange(0, total)) {
+    for (auto i : std::views::iota(0, total)) {
         history.add({std::to_string(i)});
     }
     std::stringstream dump;

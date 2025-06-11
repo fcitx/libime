@@ -5,13 +5,14 @@
  */
 
 #include "tablerule.h"
-#include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <cstdint>
 #include <cstdlib>
 #include <fcitx-utils/charutils.h>
 #include <istream>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -195,5 +196,23 @@ size_t TableRule::codeLength() const {
         sum += 1;
     }
     return sum;
+}
+
+std::ostream &operator<<(std::ostream &out, const TableRuleEntry &r) {
+    marshall(out, r.flag()) && marshall(out, r.character()) &&
+        marshall(out, r.encodingIndex());
+    return out;
+}
+
+std::ostream &operator<<(std::ostream &out, const TableRule &r) {
+    if (marshall(out, r.flag()) && marshall(out, r.phraseLength()) &&
+        marshall(out, static_cast<uint32_t>(r.entries().size()))) {
+        for (const auto &entry : r.entries()) {
+            if (!(out << entry)) {
+                break;
+            }
+        }
+    }
+    return out;
 }
 } // namespace libime

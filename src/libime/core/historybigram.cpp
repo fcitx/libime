@@ -7,7 +7,7 @@
 #include "constants.h"
 #include "datrie.h"
 #include "lattice.h"
-#include "utils.h"
+#include "utils_p.h"
 #include "zstdfilter.h"
 #include <algorithm>
 #include <array>

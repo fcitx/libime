@@ -5,17 +5,20 @@
  */
 
 #include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
 #include "libime/pinyin/pinyindictionary.h"
+#include <chrono>
 #include <fcitx-utils/log.h>
 #include <fstream>
 #include <iostream>
+#include <string_view>
 #include <unistd.h>
 
 void usage(const char *argv0) {
-    std::cout << "Usage: " << argv0 << " [-d] <source> <dest>" << std::endl
-              << "-d: Dump binary to text" << std::endl
-              << "-v: Show debug message" << std::endl
-              << "-h: Show this help" << std::endl;
+    std::cout << "Usage: " << argv0 << " [-d] <source> <dest>\n"
+              << "-d: Dump binary to text\n"
+              << "-v: Show debug message\n"
+              << "-h: Show this help\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -53,7 +56,7 @@ int main(int argc, char *argv[]) {
 
     std::ofstream fout;
     std::ostream *out;
-    if (strcmp(argv[optind + 1], "-") == 0) {
+    if (std::string_view(argv[optind + 1]) == "-") {
         out = &std::cout;
     } else {
         fout.open(argv[optind + 1], std::ios::out | std::ios::binary);

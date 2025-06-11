@@ -6,10 +6,11 @@
 
 #include "decoder.h"
 #include "languagemodel.h"
+#include "lattice.h"
 #include "lattice_p.h"
-#include "libime/core/lattice.h"
-#include "libime/core/segmentgraph.h"
+#include "segmentgraph.h"
 #include "utils.h"
+#include "utils_p.h"
 #include <algorithm>
 #include <boost/container_hash/hash.hpp>
 #include <boost/functional/hash.hpp>

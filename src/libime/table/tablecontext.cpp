@@ -11,7 +11,6 @@
 #include "libime/core/lattice.h"
 #include "libime/core/segmentgraph.h"
 #include "libime/core/userlanguagemodel.h"
-#include "libime/core/utils.h"
 #include "libime/table/tablebaseddictionary.h"
 #include "log.h"
 #include "tablebaseddictionary_p.h"
@@ -46,6 +45,15 @@ size_t sentenceCodeLength(const SentenceResult &sentence) {
     const auto *node =
         static_cast<const TableLatticeNode *>(sentence.sentence()[0]);
     return node->codeLength();
+}
+
+/// Helper function compare length. If limit is less than 0, it means no
+/// limit. Avoid unsigned / signed compare.
+bool lengthLessThanLimit(size_t length, int limit) {
+    if (limit < 0) {
+        return false;
+    }
+    return length < static_cast<size_t>(limit);
 }
 
 template <OrderPolicy policy>

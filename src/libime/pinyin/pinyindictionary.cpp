@@ -14,6 +14,7 @@
 #include "libime/core/segmentgraph.h"
 #include "libime/core/triedictionary.h"
 #include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
 #include "libime/core/zstdfilter.h"
 #include "libime/pinyin/pinyinmatchstate.h"
 #include "pinyindecoder_p.h"

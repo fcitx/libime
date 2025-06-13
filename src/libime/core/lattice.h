@@ -6,6 +6,9 @@
 #ifndef _FCITX_LIBIME_CORE_LATTICE_H_
 #define _FCITX_LIBIME_CORE_LATTICE_H_
 
+// Workaround a boost missing include bug.
+#include <boost/type_traits/add_const.hpp>
+
 #include <algorithm>
 #include <boost/iterator/iterator_categories.hpp>
 #include <boost/range/any_range.hpp>
@@ -136,7 +139,7 @@ public:
             pivot = pivot->prev();
         }
 
-        std::reverse(result.begin(), result.end());
+        std::ranges::reverse(result);
         return {std::move(result), score() + adjust};
     }
 

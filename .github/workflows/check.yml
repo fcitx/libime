@@ -88,11 +88,6 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: fcitx/fcitx5
-          path: fcitx5
-
       - name: Install dependencies
         run: |
           C:/msys64/usr/bin/pacman -Syu --noconfirm
@@ -107,6 +102,11 @@ jobs:
             mingw-w64-clang-x86_64-gettext-tools
           Add-Content $env:GITHUB_PATH "C:/msys64/clang64/bin"
           Add-Content $env:GITHUB_PATH "${{ github.workspace }}/fcitx/bin"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fcitx/fcitx5
+          path: fcitx5
 
       - name: Cache fcitx5 data files
         uses: actions/cache@v4
@@ -124,7 +124,7 @@ jobs:
           shell: pwsh
 
       - uses: actions/checkout@v4
-          repository: fcitx/fcitx5
+        with:
           path: libime
           submodules: true
 

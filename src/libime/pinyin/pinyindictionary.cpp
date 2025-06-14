@@ -21,11 +21,6 @@
 #include "pinyinencoder.h"
 #include "pinyinmatchstate_p.h"
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/container_hash/hash.hpp>
 #include <cassert>
 #include <cmath>
@@ -33,6 +28,7 @@
 #include <cstdint>
 #include <fcitx-utils/macros.h>
 #include <fcitx-utils/signals.h>
+#include <fcitx-utils/stringutils.h>
 #include <fstream>
 #include <iomanip>
 #include <ios>
@@ -170,7 +166,7 @@ const SegmentGraphNode *prevIsSeparator(const SegmentGraph &graph,
         const auto range = node.prevs();
         const auto &prev = range.front();
         auto pinyin = graph.segment(prev, node);
-        if (boost::starts_with(pinyin, "\'")) {
+        if (pinyin.starts_with("\'")) {
             return &prev;
         }
     }
@@ -235,16 +231,15 @@ size_t fuzzyFactor(PinyinFuzzyFlags flags) {
 PinyinDictionary::TrieType loadTextImpl(std::istream &in) {
     PinyinDictionary::TrieType trie;
 
-    std::string buf;
-    auto isSpaceCheck = boost::is_any_of(" \n\t\r\v\f");
+    std::string lineBuf;
     while (!in.eof()) {
-        if (!std::getline(in, buf)) {
+        if (!std::getline(in, lineBuf)) {
             break;
         }
 
-        boost::trim_if(buf, isSpaceCheck);
-        std::vector<std::string> tokens;
-        boost::split(tokens, buf, isSpaceCheck);
+        auto line = fcitx::stringutils::trimView(lineBuf);
+        std::vector<std::string> tokens =
+            fcitx::stringutils::split(line, FCITX_WHITESPACE);
         if (tokens.size() == 3 || tokens.size() == 2) {
             const std::string &hanzi = tokens[0];
             std::string_view pinyin = tokens[1];
@@ -261,7 +256,7 @@ PinyinDictionary::TrieType loadTextImpl(std::istream &in) {
                 trie.set(result.data(), result.size(), prob);
             } catch (const std::invalid_argument &e) {
                 LIBIME_ERROR()
-                    << "Failed to parse line: " << buf << ", skipping.";
+                    << "Failed to parse line: " << line << ", skipping.";
             }
         }
     }
@@ -365,9 +360,8 @@ void PinyinDictionaryPrivate::addEmptyMatch(
     const SegmentGraph &graph = context.graph_;
     // Create a new starting point for current node, and put it in matchResult.
     if (&currentNode != &graph.end() &&
-        !boost::starts_with(
-            graph.segment(currentNode.index(), currentNode.index() + 1),
-            "\'")) {
+        !graph.segment(currentNode.index(), currentNode.index() + 1)
+             .starts_with("\'")) {
         SegmentGraphPath vec;
         if (const auto *prev = prevIsSeparator(graph, currentNode)) {
             vec.push_back(prev);
@@ -594,7 +588,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
     auto pinyin = graph.segment(prevNode, currentNode);
     // If predecessor is a separator, just copy every existing match result
     // over and don't traverse on the trie.
-    if (boost::starts_with(pinyin, "\'")) {
+    if (pinyin.starts_with("\'")) {
         const auto &prevMatches = matchedPathsMap[&prevNode];
         for (const auto &match : prevMatches) {
             // copy the path, and append current node.

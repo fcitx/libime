@@ -17,7 +17,6 @@
 #include "tabledecoder.h"
 #include "tableoptions.h"
 #include <algorithm>
-#include <boost/range/iterator_range_core.hpp>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
@@ -645,8 +644,7 @@ void TableContext::update() {
 
 TableContext::CandidateRange TableContext::candidates() const {
     FCITX_D();
-    return boost::make_iterator_range(d->candidates_.begin(),
-                                      d->candidates_.end());
+    return d->candidates_;
 }
 
 size_t TableContext::selectedLength() const {

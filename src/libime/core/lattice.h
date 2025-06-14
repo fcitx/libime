@@ -6,9 +6,11 @@
 #ifndef _FCITX_LIBIME_CORE_LATTICE_H_
 #define _FCITX_LIBIME_CORE_LATTICE_H_
 
+// Workaround a boost missing include bug.
+#include <boost/type_traits/add_const.hpp>
+
 #include <algorithm>
 #include <boost/iterator/iterator_categories.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/any_range.hpp>
 #include <cassert>
 #include <cstddef>
@@ -18,6 +20,7 @@
 #include <libime/core/libimecore_export.h>
 #include <libime/core/segmentgraph.h>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -136,7 +139,7 @@ public:
             pivot = pivot->prev();
         }
 
-        std::reverse(result.begin(), result.end());
+        std::ranges::reverse(result);
         return {std::move(result), score() + adjust};
     }
 
@@ -152,10 +155,10 @@ protected:
 
 inline std::string SentenceResult::toString() const {
     return fcitx::stringutils::join(
-        sentence_ | boost::adaptors::transformed(
-                        [](const auto &item) -> const std::string & {
-                            return item->word();
-                        }),
+        sentence_ |
+            std::views::transform([](const auto &item) -> const std::string & {
+                return item->word();
+            }),
         "");
 }
 

@@ -15,7 +15,6 @@
 #include <boost/container_hash/hash.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/range/adaptor/sliced.hpp>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
@@ -23,6 +22,7 @@
 #include <limits>
 #include <memory>
 #include <queue>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -208,8 +208,7 @@ void DecoderPrivate::forwardSearch(
                 } else {
                     searchSize = lattice[from].size();
                 }
-                for (auto &parent :
-                     searchFrom | boost::adaptors::sliced(0, searchSize)) {
+                for (auto &parent : searchFrom | std::views::take(searchSize)) {
                     auto score = parent.score() +
                                  model_->score(parent.state(), node, state);
                     if (score > maxScore) {
@@ -310,7 +309,7 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                     searchSize = lattice[node->node_->from()].size();
                 }
                 for (auto &from : lattice[node->node_->from()] |
-                                      boost::adaptors::sliced(0, searchSize)) {
+                                      std::views::take(searchSize)) {
                     auto score =
                         model_->score(from.state(), *node->node_, state) +
                         node->node_->cost();

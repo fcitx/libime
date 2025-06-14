@@ -11,13 +11,6 @@
 #include "zstdfilter.h"
 #include <algorithm>
 #include <array>
-#include <boost/algorithm/cxx11/all_of.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/range/adaptor/reversed.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/range/algorithm/for_each.hpp>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -30,6 +23,7 @@
 #include <list>
 #include <memory>
 #include <ostream>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -114,7 +108,7 @@ public:
                                          TrieType::position_type pos) {
                           std::string buf;
                           trie().suffix(buf, len, pos);
-                          if (boost::ends_with(buf, s)) {
+                          if (buf.ends_with(s)) {
                               values.emplace_back(std::move(buf), value);
                           }
                           return true;
@@ -183,7 +177,7 @@ public:
                 break;
             }
         }
-        for (auto &line : lines | boost::adaptors::reversed) {
+        for (auto &line : lines | std::views::reverse) {
             std::vector<std::string> sentence =
                 fcitx::stringutils::split(line, " ");
             add(sentence);
@@ -196,7 +190,7 @@ public:
         // When we do save, we need to reverse the history order.
         // Because loading the history is done by call "add", which basically
         // expect the history from old to new.
-        for (auto &sentence : recent_ | boost::adaptors::reversed) {
+        for (auto &sentence : recent_ | std::views::reverse) {
             uint32_t size = sentence.size();
             throw_if_io_fail(marshall(out, size));
             for (auto &s : sentence) {
@@ -451,10 +445,10 @@ bool HistoryBigram::useOnlyUnigram() const {
 void HistoryBigram::add(const libime::SentenceResult &sentence) {
     FCITX_D();
     d->populateSentence(d->pools_[0].add(
-        sentence.sentence() | boost::adaptors::transformed(
-                                  [](const auto &item) -> const std::string & {
-                                      return item->word();
-                                  })));
+        sentence.sentence() |
+        std::views::transform([](const auto &item) -> const std::string & {
+            return item->word();
+        })));
 }
 
 void HistoryBigram::add(const std::vector<std::string> &sentence) {
@@ -464,9 +458,9 @@ void HistoryBigram::add(const std::vector<std::string> &sentence) {
 
 bool HistoryBigram::isUnknown(std::string_view v) const {
     FCITX_D();
-    return boost::algorithm::all_of(
-        d->pools_,
-        [v](const HistoryBigramPool &pool) { return pool.isUnknown(v); });
+    return std::ranges::all_of(d->pools_, [v](const HistoryBigramPool &pool) {
+        return pool.isUnknown(v);
+    });
 }
 
 float HistoryBigram::score(std::string_view prev, std::string_view cur) const {
@@ -508,15 +502,15 @@ void HistoryBigram::load(std::istream &in) {
     throw_if_io_fail(unmarshall(in, version));
     switch (version) {
     case 1:
-        std::for_each(d->pools_.begin(), d->pools_.begin() + 2,
-                      [&in](auto &pool) { pool.load(in); });
+        std::ranges::for_each(d->pools_ | std::views::take(2),
+                              [&in](auto &pool) { pool.load(in); });
         break;
     case 2:
-        boost::range::for_each(d->pools_, [&in](auto &pool) { pool.load(in); });
+        std::ranges::for_each(d->pools_, [&in](auto &pool) { pool.load(in); });
         break;
     case historyBinaryFormatVersion:
         readZSTDCompressed(in, [d](std::istream &compressIn) {
-            boost::range::for_each(d->pools_, [&compressIn](auto &pool) {
+            std::ranges::for_each(d->pools_, [&compressIn](auto &pool) {
                 pool.load(compressIn);
             });
         });
@@ -528,7 +522,7 @@ void HistoryBigram::load(std::istream &in) {
 
 void HistoryBigram::loadText(std::istream &in) {
     FCITX_D();
-    boost::range::for_each(d->pools_, [&in](auto &pool) { pool.loadText(in); });
+    std::ranges::for_each(d->pools_, [&in](auto &pool) { pool.loadText(in); });
 }
 
 void HistoryBigram::save(std::ostream &out) {
@@ -537,26 +531,25 @@ void HistoryBigram::save(std::ostream &out) {
     throw_if_io_fail(marshall(out, historyBinaryFormatVersion));
 
     writeZSTDCompressed(out, [d](std::ostream &compressOut) {
-        boost::range::for_each(
+        std::ranges::for_each(
             d->pools_, [&compressOut](auto &pool) { pool.save(compressOut); });
     });
 }
 
 void HistoryBigram::dump(std::ostream &out) {
     FCITX_D();
-    boost::range::for_each(d->pools_,
-                           [&out](const auto &pool) { pool.dump(out); });
+    std::ranges::for_each(d->pools_,
+                          [&out](const auto &pool) { pool.dump(out); });
 }
 
 void HistoryBigram::clear() {
     FCITX_D();
-    boost::range::for_each(d->pools_, std::mem_fn(&HistoryBigramPool::clear));
+    std::ranges::for_each(d->pools_, std::mem_fn(&HistoryBigramPool::clear));
 }
 
 void HistoryBigram::forget(std::string_view word) {
     FCITX_D();
-    boost::range::for_each(d->pools_,
-                           [word](auto &pool) { pool.forget(word); });
+    std::ranges::for_each(d->pools_, [word](auto &pool) { pool.forget(word); });
 }
 
 void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
@@ -573,7 +566,7 @@ void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
         lookup = "<s>";
     }
     lookup += "|";
-    boost::range::for_each(
+    std::ranges::for_each(
         d->pools_, [&words, &lookup, maxSize](const HistoryBigramPool &pool) {
             pool.fillPredict(words, lookup, maxSize);
         });

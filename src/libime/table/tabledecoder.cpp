@@ -8,18 +8,17 @@
 #include "libime/core/languagemodel.h"
 #include "libime/core/lattice.h"
 #include "libime/core/segmentgraph.h"
-#include "libime/table/libimetable_export.h"
 #include "libime/table/tablebaseddictionary.h"
 #include "tabledecoder_p.h"
 #include "tableoptions.h"
 #include "tablerule.h"
 #include <algorithm>
-#include <boost/range/adaptor/filtered.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <fcitx-utils/utf8.h>
 #include <iterator>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -38,7 +37,7 @@ bool checkRuleCanBeUsedAsAutoRule(const TableRule &rule) {
         return false;
     }
 
-    auto range = rule.entries() | boost::adaptors::filtered(isNotPlaceHolder);
+    auto range = rule.entries() | std::views::filter(isNotPlaceHolder);
     auto iter = std::begin(range);
     auto end = std::end(range);
     int currentChar = 1;
@@ -137,8 +136,7 @@ SegmentGraph graphForCode(std::string_view s,
 
             std::vector<int> charSizes(rule->phraseLength());
             for (const auto &entry :
-                 rule->entries() |
-                     boost::adaptors::filtered(isNotPlaceHolder)) {
+                 rule->entries() | std::views::filter(isNotPlaceHolder)) {
                 auto &charSize = charSizes[entry.character() - 1];
                 charSize = std::max(charSize, entry.index());
             }

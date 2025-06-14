@@ -103,8 +103,10 @@ float LanguageModelBase::wordsScore(
     return s;
 }
 
-static_assert(std::is_pod<lm::ngram::State>::value, "State should be pod");
-static_assert(std::is_same<WordIndex, lm::WordIndex>::value,
+static_assert(std::is_standard_layout_v<lm::ngram::State> &&
+                  std::is_trivial_v<lm::ngram::State>,
+              "State should be pod");
+static_assert(std::is_same_v<WordIndex, lm::WordIndex>,
               "word index should be same type");
 
 static inline lm::ngram::State &lmState(State &state) {

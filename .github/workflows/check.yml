@@ -79,3 +79,65 @@ jobs:
           ctest --test-dir libime/build
       - name: CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+
+  check-windows:
+    name: Build on Windows
+    needs: clang-format
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Install dependencies
+        run: |
+          C:/msys64/usr/bin/pacman -Syu --noconfirm
+          C:/msys64/usr/bin/pacman -S --noconfirm `
+            mingw-w64-clang-x86_64-extra-cmake-modules `
+            mingw-w64-clang-x86_64-dlfcn `
+            mingw-w64-clang-x86_64-libuv `
+            mingw-w64-clang-x86_64-clang `
+            mingw-w64-clang-x86_64-cmake `
+            mingw-w64-clang-x86_64-ninja `
+            mingw-w64-clang-x86_64-pkgconf `
+            mingw-w64-clang-x86_64-gettext-tools `
+            mingw-w64-clang-x86_64-boost
+          Add-Content $env:GITHUB_PATH "C:/msys64/clang64/bin"
+          Add-Content $env:GITHUB_PATH "${{ github.workspace }}/fcitx/bin"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: fcitx/fcitx5
+          path: fcitx5
+
+      - name: Cache fcitx5 data files
+        uses: actions/cache@v4
+        with:
+          path: 'fcitx5/**/*.tar.*'
+          key: ${{ runner.os }}-${{ hashFiles('fcitx5/src/modules/spell/CMakeLists.txt') }}
+
+      - name: Build
+        uses: fcitx/github-actions@cmake
+        with:
+          path: fcitx5
+          cmake-option: >-
+            -DENABLE_DBUS=Off -DENABLE_X11=Off -DENABLE_WAYLAND=Off -DENABLE_ENCHANT=Off -DENABLE_SERVER=Off -DENABLE_XDGAUTOSTART=Off -DENABLE_LIBUUID=Off -DENABLE_KEYBOARD=Off
+          install-prefix: ${{ github.workspace }}/fcitx
+          shell: pwsh
+
+      - uses: actions/checkout@v4
+        with:
+          path: libime
+          submodules: true
+
+      - name: Cache libime data files
+        uses: actions/cache@v4
+        with:
+          path: 'libime/**/*.tar.*'
+          key: ${{ runner.os }}-${{ hashFiles('libime/data/CMakeLists.txt') }}
+
+      - name: Build
+        uses: fcitx/github-actions@cmake
+        with:
+          path: libime
+          install-prefix: ${{ github.workspace }}/fcitx
+          shell: pwsh

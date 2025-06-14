@@ -141,3 +141,7 @@ jobs:
           path: libime
           install-prefix: ${{ github.workspace }}/fcitx
           shell: pwsh
+
+      - name: Test
+        run: |
+          ctest --test-dir libime/build

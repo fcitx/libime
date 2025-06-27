@@ -6,13 +6,13 @@
 #ifndef _FCITX_LIBIME_CORE_USERLANGUAGEMODEL_H_
 #define _FCITX_LIBIME_CORE_USERLANGUAGEMODEL_H_
 
-#include <fcitx-utils/macros.h>
 #include <istream>
-#include <libime/core/languagemodel.h>
-#include <libime/core/libimecore_export.h>
 #include <memory>
 #include <ostream>
 #include <string_view>
+#include <fcitx-utils/macros.h>
+#include <libime/core/languagemodel.h>
+#include <libime/core/libimecore_export.h>
 
 namespace libime {
 

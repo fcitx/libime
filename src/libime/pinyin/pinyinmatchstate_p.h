@@ -6,22 +6,22 @@
 #ifndef _FCITX_LIBIME_PINYIN_PINYINMATCHSTATE_P_H_
 #define _FCITX_LIBIME_PINYIN_PINYINMATCHSTATE_P_H_
 
-#include "libime/core/languagemodel.h"
-#include "libime/core/segmentgraph.h"
-#include <boost/container_hash/hash.hpp>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/macros.h>
-#include <libime/core/lattice.h>
-#include <libime/core/lrucache.h>
-#include <libime/pinyin/pinyindictionary.h>
-#include <libime/pinyin/pinyinmatchstate.h>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <boost/container_hash/hash.hpp>
+#include <fcitx-utils/macros.h>
+#include <libime/core/lattice.h>
+#include <libime/core/lrucache.h>
+#include <libime/pinyin/pinyindictionary.h>
+#include <libime/pinyin/pinyinmatchstate.h>
+#include "libime/core/languagemodel.h"
+#include "libime/core/segmentgraph.h"
 
 namespace libime {
 

@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/historybigram.h"
+#include <unistd.h>
 #include <exception>
 #include <fstream>
 #include <iostream>
-#include <unistd.h>
+#include "libime/core/historybigram.h"
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0 << " [-c] <source> <dest>" << std::endl

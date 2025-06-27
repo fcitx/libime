@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/languagemodel.h"
-#include "libime/core/lattice.h"
-#include "testdir.h"
 #include <cmath>
 #include <iostream>
 #include <string>
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "testdir.h"
 
 int main() {
     using namespace libime;

@@ -5,6 +5,21 @@
  */
 
 #include "languagemodel.h"
+#include <cassert>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <ios>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include <fcitx-utils/fs.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/stringutils.h>
 #include "config.h"
 #include "constants.h"
 #include "datrie.h"
@@ -15,21 +30,6 @@
 #include "lm/state.hh"
 #include "lm/word_index.hh"
 #include "util/string_piece.hh"
-#include <cassert>
-#include <cmath>
-#include <cstdlib>
-#include <fcitx-utils/fs.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/stringutils.h>
-#include <fstream>
-#include <ios>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 
 namespace libime {
 

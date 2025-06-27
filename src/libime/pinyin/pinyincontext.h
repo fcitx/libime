@@ -7,17 +7,17 @@
 #define _FCITX_LIBIME_PINYIN_PINYINCONTEXT_H_
 
 #include <cstddef>
-#include <fcitx-utils/macros.h>
-#include <libime/core/inputbuffer.h>
-#include <libime/core/languagemodel.h>
-#include <libime/core/lattice.h>
-#include <libime/pinyin/libimepinyin_export.h>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/macros.h>
+#include <libime/core/inputbuffer.h>
+#include <libime/core/languagemodel.h>
+#include <libime/core/lattice.h>
+#include <libime/pinyin/libimepinyin_export.h>
 
 namespace libime {
 class PinyinIME;

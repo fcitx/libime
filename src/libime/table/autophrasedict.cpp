@@ -4,15 +4,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "autophrasedict.h"
-#include "libime/core/utils_p.h"
-#include <boost/multi_index/indexed_by.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/sequenced_index.hpp>
-#include <boost/multi_index_container.hpp>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/macros.h>
 #include <functional>
 #include <istream>
 #include <memory>
@@ -21,6 +14,13 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <boost/multi_index/indexed_by.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index_container.hpp>
+#include <fcitx-utils/macros.h>
+#include "libime/core/utils_p.h"
 
 namespace libime {
 

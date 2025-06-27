@@ -5,11 +5,8 @@
  */
 
 #include "tablerule.h"
-#include "libime/core/utils_p.h"
 #include <cstdint>
 #include <cstdlib>
-#include <fcitx-utils/charutils.h>
-#include <fcitx-utils/stringutils.h>
 #include <istream>
 #include <ostream>
 #include <stdexcept>
@@ -17,6 +14,9 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/charutils.h>
+#include <fcitx-utils/stringutils.h>
+#include "libime/core/utils_p.h"
 
 namespace libime {
 

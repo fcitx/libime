@@ -6,15 +6,15 @@
 #ifndef _FCITX_LIBIME_PINYIN_SHUANGPINPROFILE_H_
 #define _FCITX_LIBIME_PINYIN_SHUANGPINPROFILE_H_
 
-#include <fcitx-utils/macros.h>
 #include <istream>
-#include <libime/pinyin/libimepinyin_export.h>
-#include <libime/pinyin/pinyincorrectionprofile.h>
-#include <libime/pinyin/pinyinencoder.h>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <fcitx-utils/macros.h>
+#include <libime/pinyin/libimepinyin_export.h>
+#include <libime/pinyin/pinyincorrectionprofile.h>
+#include <libime/pinyin/pinyinencoder.h>
 
 namespace libime {
 

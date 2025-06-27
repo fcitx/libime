@@ -3,6 +3,12 @@
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
+#include <cstddef>
+#include <iostream>
+#include <limits>
+#include <memory>
+#include <ostream>
+#include <fcitx-utils/log.h>
 #include "libime/core/decoder.h"
 #include "libime/core/languagemodel.h"
 #include "libime/core/lattice.h"
@@ -12,12 +18,6 @@
 #include "libime/pinyin/pinyinencoder.h"
 #include "testdir.h"
 #include "testutils.h"
-#include <cstddef>
-#include <fcitx-utils/log.h>
-#include <iostream>
-#include <limits>
-#include <memory>
-#include <ostream>
 
 using namespace libime;
 

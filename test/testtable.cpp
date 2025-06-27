@@ -4,15 +4,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/segmentgraph.h"
-#include "libime/table/tablebaseddictionary.h"
-#include "libime/table/tabledecoder.h"
-#include "libime/table/tableoptions.h"
-#include "libime/table/tablerule.h"
-#include "testdir.h"
+#include <unistd.h>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/log.h>
 #include <ios>
 #include <iostream>
 #include <optional>
@@ -22,8 +16,14 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <unistd.h>
 #include <vector>
+#include <fcitx-utils/log.h>
+#include "libime/core/segmentgraph.h"
+#include "libime/table/tablebaseddictionary.h"
+#include "libime/table/tabledecoder.h"
+#include "libime/table/tableoptions.h"
+#include "libime/table/tablerule.h"
+#include "testdir.h"
 
 using namespace libime;
 

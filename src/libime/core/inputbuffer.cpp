@@ -5,8 +5,8 @@
  */
 #include "inputbuffer.h"
 #include <cstddef>
-#include <fcitx-utils/utf8.h>
 #include <string_view>
+#include <fcitx-utils/utf8.h>
 
 namespace libime {
 

@@ -5,22 +5,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  *
  */
-#include "config.h"
-#include "libime/core/historybigram.h"
-#include "libime/core/utils.h"
-#include "libime/core/utils_p.h"
-#include "libime/table/tablebaseddictionary.h"
+#include <fcntl.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <fcitx-utils/charutils.h>
-#include <fcitx-utils/fdstreambuf.h>
-#include <fcitx-utils/fs.h>
-#include <fcitx-utils/standardpaths.h>
-#include <fcitx-utils/stringutils.h>
-#include <fcitx-utils/unixfd.h>
-#include <fcntl.h>
 #include <filesystem>
 #include <functional>
 #include <iostream>
@@ -32,6 +21,17 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <fcitx-utils/charutils.h>
+#include <fcitx-utils/fdstreambuf.h>
+#include <fcitx-utils/fs.h>
+#include <fcitx-utils/standardpaths.h>
+#include <fcitx-utils/stringutils.h>
+#include <fcitx-utils/unixfd.h>
+#include "libime/core/historybigram.h"
+#include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
+#include "libime/table/tablebaseddictionary.h"
+#include "config.h"
 
 using namespace libime;
 using namespace fcitx;

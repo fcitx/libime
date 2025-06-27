@@ -9,20 +9,23 @@
 /// \file
 /// \brief Class provide input method support for table-based ones, like wubi.
 
-#include "libime/core/lattice.h"
-#include <boost/iterator/iterator_categories.hpp>
-#include <boost/range/any_range.hpp>
+// Workaround a boost missing include bug.
+#include <boost/type_traits/add_const.hpp>
+
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/macros.h>
-#include <libime/core/inputbuffer.h>
-#include <libime/table/libimetable_export.h>
-#include <libime/table/tablebaseddictionary.h>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <vector>
+#include <boost/iterator/iterator_categories.hpp>
+#include <boost/range/any_range.hpp>
+#include <fcitx-utils/macros.h>
+#include <libime/core/inputbuffer.h>
+#include <libime/table/libimetable_export.h>
+#include <libime/table/tablebaseddictionary.h>
+#include "libime/core/lattice.h"
 
 namespace libime {
 

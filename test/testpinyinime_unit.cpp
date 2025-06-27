@@ -4,6 +4,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include <algorithm>
+#include <iterator>
+#include <memory>
+#include <fcitx-utils/log.h>
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/pinyincontext.h"
 #include "libime/pinyin/pinyincorrectionprofile.h"
@@ -12,10 +16,6 @@
 #include "libime/pinyin/pinyinime.h"
 #include "libime/pinyin/shuangpinprofile.h"
 #include "testdir.h"
-#include <algorithm>
-#include <fcitx-utils/log.h>
-#include <iterator>
-#include <memory>
 
 using namespace libime;
 

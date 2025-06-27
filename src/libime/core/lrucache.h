@@ -6,11 +6,11 @@
 #ifndef _FCITX_LIBIME_CORE_LRU_H_
 #define _FCITX_LIBIME_CORE_LRU_H_
 
-#include <boost/container_hash/hash.hpp>
-#include <boost/unordered_map.hpp>
 #include <cstddef>
 #include <list>
 #include <utility>
+#include <boost/container_hash/hash.hpp>
+#include <boost/unordered_map.hpp>
 
 namespace libime {
 

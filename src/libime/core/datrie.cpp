@@ -11,16 +11,13 @@
 // <ynaga@tkl.iis.u-tokyo.ac.jp>
 
 #include "datrie.h"
-#include "naivevector.h"
-#include "utils.h"
-#include "utils_p.h"
+#include <sys/types.h>
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <fcitx-utils/macros.h>
 #include <fstream>
 #include <ios>
 #include <istream>
@@ -32,9 +29,11 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <sys/types.h>
 #include <tuple>
 #include <vector>
+#include <fcitx-utils/macros.h>
+#include "naivevector.h"
+#include "utils_p.h"
 
 namespace libime {
 
@@ -1018,6 +1017,10 @@ DATrie<T> &DATrie<T>::operator=(DATrie<T> &&other) noexcept = default;
 
 template <typename T>
 DATrie<T> &DATrie<T>::operator=(const DATrie<T> &other) {
+    if (this == &other) {
+        return *this;
+    }
+
     if (d) {
         *d = *other.d;
     } else {

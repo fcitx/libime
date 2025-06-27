@@ -5,13 +5,13 @@
  *
  */
 #include "triedictionary.h"
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <cstddef>
-#include <fcitx-utils/connectableobject.h>
-#include <fcitx-utils/macros.h>
 #include <memory>
 #include <string_view>
 #include <utility>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <fcitx-utils/connectableobject.h>
+#include <fcitx-utils/macros.h>
 
 namespace libime {
 

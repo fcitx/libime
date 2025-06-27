@@ -5,26 +5,26 @@
  *
  */
 
-#include "libime/core/historybigram.h"
-#include "libime/core/utils_p.h"
-#include "libime/pinyin/pinyindictionary.h"
+#include <fcntl.h>
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <fcitx-utils/fdstreambuf.h>
-#include <fcitx-utils/standardpaths.h>
-#include <fcitx-utils/stringutils.h>
-#include <fcitx-utils/unixfd.h>
-#include <fcntl.h>
 #include <filesystem>
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <fcitx-utils/fdstreambuf.h>
+#include <fcitx-utils/standardpaths.h>
+#include <fcitx-utils/stringutils.h>
+#include <fcitx-utils/unixfd.h>
+#include "libime/core/historybigram.h"
+#include "libime/core/utils_p.h"
+#include "libime/pinyin/pinyindictionary.h"
 
 static const std::array<std::string, 412> PYFA = {
     "AA", "AB", "AC", "AD", "AE", "AF", "AH", "AI", "AJ", "AU", "AV", "AW",

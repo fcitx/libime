@@ -5,14 +5,14 @@
  */
 
 #include "segmentgraph.h"
-#include <boost/range/combine.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <cassert>
 #include <cstddef>
 #include <queue>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <boost/range/combine.hpp>
+#include <boost/tuple/tuple.hpp>
 
 namespace libime {
 

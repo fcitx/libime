@@ -5,20 +5,6 @@
  */
 
 #include "libime/table/tablebaseddictionary.h"
-#include "autophrasedict.h"
-#include "constants.h"
-#include "libime/core/datrie.h"
-#include "libime/core/dictionary.h"
-#include "libime/core/languagemodel.h"
-#include "libime/core/lattice.h"
-#include "libime/core/segmentgraph.h"
-#include "libime/core/utils_p.h"
-#include "libime/core/zstdfilter.h"
-#include "log.h"
-#include "tablebaseddictionary_p.h"
-#include "tabledecoder_p.h"
-#include "tableoptions.h"
-#include "tablerule.h"
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -26,10 +12,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/stringutils.h>
-#include <fcitx-utils/utf8.h>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -47,6 +29,24 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/log.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/stringutils.h>
+#include <fcitx-utils/utf8.h>
+#include "libime/core/datrie.h"
+#include "libime/core/dictionary.h"
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
+#include "libime/core/utils_p.h"
+#include "libime/core/zstdfilter.h"
+#include "autophrasedict.h"
+#include "constants.h"
+#include "log.h"
+#include "tablebaseddictionary_p.h"
+#include "tabledecoder_p.h"
+#include "tableoptions.h"
+#include "tablerule.h"
 
 namespace libime {
 

@@ -6,11 +6,11 @@
 #ifndef _FCITX_LIBIME_CORE_LATTICE_P_H_
 #define _FCITX_LIBIME_CORE_LATTICE_P_H_
 
+#include <unordered_map>
+#include <vector>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <libime/core/lattice.h>
 #include <libime/core/segmentgraph.h>
-#include <unordered_map>
-#include <vector>
 
 namespace libime {
 

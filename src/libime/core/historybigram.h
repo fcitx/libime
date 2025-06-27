@@ -7,16 +7,16 @@
 #define _FCITX_LIBIME_CORE_HISTORYBIGRAM_H_
 
 #include <cstddef>
-#include <fcitx-utils/macros.h>
 #include <istream>
-#include <libime/core/lattice.h>
-#include <libime/core/libimecore_export.h>
 #include <memory>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
+#include <fcitx-utils/macros.h>
+#include <libime/core/lattice.h>
+#include <libime/core/libimecore_export.h>
 
 namespace libime {
 

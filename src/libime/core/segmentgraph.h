@@ -6,17 +6,12 @@
 #ifndef _FCITX_LIBIME_CORE_SEGMENTGRAPH_H_
 #define _FCITX_LIBIME_CORE_SEGMENTGRAPH_H_
 
-#include <boost/iterator/iterator_categories.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/range/adaptor/type_erased.hpp>
-#include <boost/range/any_range.hpp>
-#include <boost/range/iterator_range_core.hpp>
+// Workaround a boost missing include bug.
+#include <boost/type_traits/add_const.hpp>
+
 #include <cassert>
 #include <cstddef>
-#include <fcitx-utils/element.h>
-#include <fcitx-utils/macros.h>
 #include <functional>
-#include <libime/core/libimecore_export.h>
 #include <list>
 #include <memory>
 #include <string>
@@ -24,6 +19,13 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <boost/iterator/iterator_categories.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/range/any_range.hpp>
+#include <boost/range/iterator_range_core.hpp>
+#include <fcitx-utils/element.h>
+#include <fcitx-utils/macros.h>
+#include <libime/core/libimecore_export.h>
 
 namespace libime {
 

@@ -3,12 +3,12 @@
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
-#include "libime/table/autophrasedict.h"
-#include <fcitx-utils/log.h>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_set>
+#include <fcitx-utils/log.h>
+#include "libime/table/autophrasedict.h"
 
 using namespace libime;
 

@@ -7,11 +7,11 @@
 #define _FCITX_LIBIME_CORE_DICTIONARY_H_
 
 #include <functional>
+#include <memory>
+#include <unordered_set>
 #include <libime/core/lattice.h>
 #include <libime/core/libimecore_export.h>
 #include <libime/core/segmentgraph.h>
-#include <memory>
-#include <unordered_set>
 
 namespace libime {
 

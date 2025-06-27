@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/table/tablerule.h"
 #include <fcitx-utils/log.h>
+#include "libime/table/tablerule.h"
 
 using namespace libime;
 

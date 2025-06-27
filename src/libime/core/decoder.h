@@ -7,16 +7,16 @@
 #define _FCITX_LIBIME_CORE_DECODER_H_
 
 #include <cstddef>
+#include <limits>
+#include <memory>
+#include <string_view>
+#include <utility>
 #include <fcitx-utils/macros.h>
 #include <libime/core/dictionary.h>
 #include <libime/core/languagemodel.h>
 #include <libime/core/lattice.h>
 #include <libime/core/libimecore_export.h>
 #include <libime/core/segmentgraph.h>
-#include <limits>
-#include <memory>
-#include <string_view>
-#include <utility>
 
 namespace libime {
 

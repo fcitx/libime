@@ -5,20 +5,20 @@
  */
 
 #include "userlanguagemodel.h"
-#include "constants.h"
-#include "historybigram.h"
-#include "languagemodel.h"
-#include "lm/state.hh"
-#include "utils_p.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <fcitx-utils/macros.h>
 #include <istream>
 #include <memory>
 #include <ostream>
 #include <string_view>
 #include <utility>
+#include <fcitx-utils/macros.h>
+#include "constants.h"
+#include "historybigram.h"
+#include "languagemodel.h"
+#include "lm/state.hh"
+#include "utils_p.h"
 
 namespace libime {
 

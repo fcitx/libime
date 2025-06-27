@@ -14,7 +14,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/macros.h>
 #include <functional>
 #include <istream>
 #include <memory>
@@ -23,6 +22,7 @@
 #include <string_view>
 #include <tuple>
 #include <vector>
+#include <fcitx-utils/macros.h>
 
 namespace libime {
 

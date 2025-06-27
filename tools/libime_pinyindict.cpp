@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/utils.h"
-#include "libime/core/utils_p.h"
-#include "libime/pinyin/pinyindictionary.h"
+#include <unistd.h>
 #include <chrono>
-#include <fcitx-utils/log.h>
 #include <fstream>
 #include <iostream>
 #include <string_view>
-#include <unistd.h>
+#include <fcitx-utils/log.h>
+#include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
+#include "libime/pinyin/pinyindictionary.h"
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0 << " [-d] <source> <dest>\n"

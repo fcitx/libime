@@ -4,27 +4,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "tablecontext.h"
-#include "constants.h"
-#include "libime/core/historybigram.h"
-#include "libime/core/inputbuffer.h"
-#include "libime/core/languagemodel.h"
-#include "libime/core/lattice.h"
-#include "libime/core/segmentgraph.h"
-#include "libime/core/userlanguagemodel.h"
-#include "libime/table/tablebaseddictionary.h"
-#include "log.h"
-#include "tablebaseddictionary_p.h"
-#include "tabledecoder.h"
-#include "tableoptions.h"
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/inputbuffer.h>
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/utf8.h>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -35,6 +19,22 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/inputbuffer.h>
+#include <fcitx-utils/log.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/utf8.h>
+#include "libime/core/historybigram.h"
+#include "libime/core/inputbuffer.h"
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
+#include "libime/core/userlanguagemodel.h"
+#include "libime/table/tablebaseddictionary.h"
+#include "constants.h"
+#include "log.h"
+#include "tablebaseddictionary_p.h"
+#include "tabledecoder.h"
+#include "tableoptions.h"
 
 namespace libime {
 

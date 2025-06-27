@@ -4,6 +4,26 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "pinyincontext.h"
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+#include <fcitx-utils/charutils.h>
+#include <fcitx-utils/inputbuffer.h>
+#include <fcitx-utils/keysym.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/signals.h>
+#include <fcitx-utils/stringutils.h>
+#include <fcitx-utils/utf8.h>
 #include "libime/core/historybigram.h"
 #include "libime/core/inputbuffer.h"
 #include "libime/core/languagemodel.h"
@@ -15,26 +35,6 @@
 #include "pinyinencoder.h"
 #include "pinyinime.h"
 #include "pinyinmatchstate.h"
-#include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <fcitx-utils/charutils.h>
-#include <fcitx-utils/inputbuffer.h>
-#include <fcitx-utils/keysym.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/signals.h>
-#include <fcitx-utils/stringutils.h>
-#include <fcitx-utils/utf8.h>
-#include <functional>
-#include <iterator>
-#include <limits>
-#include <memory>
-#include <stdexcept>
-#include <string>
-#include <string_view>
-#include <unordered_set>
-#include <utility>
-#include <vector>
 
 namespace libime {
 
@@ -131,7 +131,7 @@ public:
                     continue;
                 }
                 auto text = candidate.toString();
-                if (candidatesToCursorSet_.count(text)) {
+                if (candidatesToCursorSet_.contains(text)) {
                     continue;
                 }
                 candidatesToCursor_.push_back(candidate);
@@ -147,7 +147,7 @@ public:
                     SentenceResult partial(newSentence,
                                            newSentence.back()->score());
                     auto text = partial.toString();
-                    if (candidatesToCursorSet_.count(text)) {
+                    if (candidatesToCursorSet_.contains(text)) {
                         continue;
                     }
                     candidatesToCursor_.push_back(partial);
@@ -610,7 +610,7 @@ void PinyinContext::update() {
                             min = std::min(latticeNode.score(), min);
                             max = std::max(latticeNode.score(), max);
                         }
-                        if (d->candidatesSet_.count(latticeNode.word())) {
+                        if (d->candidatesSet_.contains(latticeNode.word())) {
                             continue;
                         }
                         d->candidates_.push_back(
@@ -628,7 +628,7 @@ void PinyinContext::update() {
                     if (latticeNode.from() == bos &&
                         static_cast<const PinyinLatticeNode &>(latticeNode)
                             .isCorrection()) {
-                        if (d->candidatesSet_.count(latticeNode.word())) {
+                        if (d->candidatesSet_.contains(latticeNode.word())) {
                             continue;
                         }
                         if ((latticeNode.score() > min &&
@@ -656,7 +656,7 @@ void PinyinContext::update() {
                         !static_cast<const PinyinLatticeNode &>(latticeNode)
                              .anyCorrectionOnPath()) {
                         auto fullWord = latticeNode.fullWord();
-                        if (d->candidatesSet_.count(fullWord)) {
+                        if (d->candidatesSet_.contains(fullWord)) {
                             continue;
                         }
                         d->candidates_.push_back(

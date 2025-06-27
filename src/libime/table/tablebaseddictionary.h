@@ -10,20 +10,20 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/connectableobject.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/signals.h>
 #include <functional>
 #include <istream>
-#include <libime/core/dictionary.h>
-#include <libime/core/segmentgraph.h>
-#include <libime/table/libimetable_export.h>
 #include <memory>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
+#include <fcitx-utils/connectableobject.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/signals.h>
+#include <libime/core/dictionary.h>
+#include <libime/core/segmentgraph.h>
+#include <libime/table/libimetable_export.h>
 
 namespace libime {
 class TableBasedDictionaryPrivate;

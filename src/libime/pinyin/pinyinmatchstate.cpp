@@ -5,14 +5,14 @@
  */
 
 #include "libime/pinyin/pinyinmatchstate.h"
+#include <cstddef>
+#include <memory>
+#include <unordered_set>
+#include <fcitx-utils/macros.h>
 #include "libime/pinyin/pinyinencoder.h"
 #include "pinyincontext.h"
 #include "pinyinime.h"
 #include "pinyinmatchstate_p.h"
-#include <cstddef>
-#include <fcitx-utils/macros.h>
-#include <memory>
-#include <unordered_set>
 
 namespace libime {
 
@@ -37,7 +37,7 @@ void PinyinMatchState::discardNode(
         auto &l = p.second;
         auto iter = l.begin();
         while (iter != l.end()) {
-            if (nodes.count(iter->path_.front())) {
+            if (nodes.contains(iter->path_.front())) {
                 iter = l.erase(iter);
             } else {
                 iter++;

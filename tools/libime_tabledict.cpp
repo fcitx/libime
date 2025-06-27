@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/table/tablebaseddictionary.h"
+#include <unistd.h>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
-#include <unistd.h>
+#include "libime/table/tablebaseddictionary.h"
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0

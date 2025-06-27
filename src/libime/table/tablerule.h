@@ -9,11 +9,11 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/macros.h>
 #include <iostream>
-#include <libime/table/libimetable_export.h>
 #include <string>
 #include <vector>
+#include <fcitx-utils/macros.h>
+#include <libime/table/libimetable_export.h>
 
 namespace libime {
 enum class TableRuleEntryFlag : std::uint32_t { FromFront, FromBack };

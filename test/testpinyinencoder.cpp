@@ -4,16 +4,16 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/segmentgraph.h"
-#include "libime/pinyin/pinyincorrectionprofile.h"
-#include "libime/pinyin/pinyinencoder.h"
-#include "libime/pinyin/shuangpinprofile.h"
 #include <cstddef>
-#include <fcitx-utils/log.h>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/log.h>
+#include "libime/core/segmentgraph.h"
+#include "libime/pinyin/pinyincorrectionprofile.h"
+#include "libime/pinyin/pinyinencoder.h"
+#include "libime/pinyin/shuangpinprofile.h"
 
 using namespace libime;
 

@@ -7,13 +7,13 @@
 #ifndef _LIBIME_LIBIME_CORE_UTILS_P_H_
 #define _LIBIME_LIBIME_CORE_UTILS_P_H_
 
-#include "endian_p.h"
 #include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
+#include "endian_p.h"
 
 namespace libime {
 

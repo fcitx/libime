@@ -7,20 +7,20 @@
 #ifndef LIBIME_ZSTDFILTER_H
 #define LIBIME_ZSTDFILTER_H
 
+#include <cstddef>
+#include <cstring>
+#include <ios>
+#include <istream>
+#include <ostream>
+#include <stdexcept>
 #include <boost/iostreams/categories.hpp>
 #include <boost/iostreams/constants.hpp>
 #include <boost/iostreams/filter/symmetric.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/pipeline.hpp>
 #include <boost/throw_exception.hpp>
-#include <cstddef>
-#include <cstring>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/misc.h>
-#include <ios>
-#include <istream>
-#include <ostream>
-#include <stdexcept>
 #include <zstd.h>
 
 namespace libime {

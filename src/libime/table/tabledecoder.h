@@ -8,15 +8,15 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <string>
+#include <string_view>
 #include <libime/core/decoder.h>
 #include <libime/core/languagemodel.h>
 #include <libime/core/lattice.h>
 #include <libime/core/segmentgraph.h>
 #include <libime/table/libimetable_export.h>
 #include <libime/table/tablebaseddictionary.h>
-#include <memory>
-#include <string>
-#include <string_view>
 
 namespace libime {
 

@@ -5,17 +5,9 @@
  */
 
 #include "libime/table/tabledecoder.h"
-#include "libime/core/languagemodel.h"
-#include "libime/core/lattice.h"
-#include "libime/core/segmentgraph.h"
-#include "libime/table/tablebaseddictionary.h"
-#include "tabledecoder_p.h"
-#include "tableoptions.h"
-#include "tablerule.h"
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/utf8.h>
 #include <iterator>
 #include <memory>
 #include <ranges>
@@ -23,6 +15,14 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/utf8.h>
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/segmentgraph.h"
+#include "libime/table/tablebaseddictionary.h"
+#include "tabledecoder_p.h"
+#include "tableoptions.h"
+#include "tablerule.h"
 
 namespace libime {
 

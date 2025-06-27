@@ -4,11 +4,6 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/historybigram.h"
-#include "libime/core/languagemodel.h"
-#include "libime/core/lattice.h"
-#include "libime/core/userlanguagemodel.h"
-#include "testdir.h"
 #include <cmath>
 #include <fstream>
 #include <ios>
@@ -16,6 +11,11 @@
 #include <list>
 #include <ostream>
 #include <string>
+#include "libime/core/historybigram.h"
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/userlanguagemodel.h"
+#include "testdir.h"
 
 int main(int argc, char *argv[]) {
     using namespace libime;

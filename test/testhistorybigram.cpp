@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/historybigram.h"
 #include <cmath>
 #include <exception>
-#include <fcitx-utils/log.h>
 #include <iostream>
 #include <ranges>
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <fcitx-utils/log.h>
+#include "libime/core/historybigram.h"
 
 void testBasic() {
     using namespace libime;

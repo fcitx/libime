@@ -4,14 +4,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "pinyinprediction.h"
-#include "libime/core/languagemodel.h"
-#include "libime/core/prediction.h"
-#include "libime/pinyin/pinyindictionary.h"
 #include <algorithm>
 #include <cstddef>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/misc.h>
-#include <fcitx-utils/stringutils.h>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -20,6 +14,12 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/misc.h>
+#include <fcitx-utils/stringutils.h>
+#include "libime/core/languagemodel.h"
+#include "libime/core/prediction.h"
+#include "libime/pinyin/pinyindictionary.h"
 
 namespace libime {
 
@@ -107,7 +107,7 @@ PinyinPrediction::predict(const State &state,
                 fcitx::stringutils::startsWith(hz, sentence.back())) {
 
                 std::string newWord(hz.substr(sentence.back().size()));
-                if (dup.count(newWord)) {
+                if (dup.contains(newWord)) {
                     return true;
                 }
 

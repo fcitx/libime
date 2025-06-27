@@ -5,11 +5,11 @@
  */
 #include "tableoptions.h"
 #include <cstdint>
-#include <fcitx-utils/macros.h>
 #include <memory>
 #include <set>
 #include <string>
 #include <unordered_set>
+#include <fcitx-utils/macros.h>
 
 namespace libime {
 

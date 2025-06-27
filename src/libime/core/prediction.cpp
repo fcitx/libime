@@ -5,17 +5,17 @@
  */
 
 #include "prediction.h"
-#include "datrie.h"
-#include "historybigram.h"
-#include "languagemodel.h"
 #include <algorithm>
 #include <cstddef>
-#include <fcitx-utils/macros.h>
 #include <memory>
 #include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/macros.h>
+#include "datrie.h"
+#include "historybigram.h"
+#include "languagemodel.h"
 
 namespace libime {
 

@@ -7,15 +7,7 @@
 #ifndef _LIBIME_LIBIME_TABLE_TABLEBASEDDICTIONARY_P_H_
 #define _LIBIME_LIBIME_TABLE_TABLEBASEDDICTIONARY_P_H_
 
-#include "autophrasedict.h"
-#include "constants.h"
-#include "libime/core/datrie.h"
-#include "tablebaseddictionary.h"
-#include "tableoptions.h"
-#include "tablerule.h"
 #include <cstdint>
-#include <fcitx-utils/connectableobject.h>
-#include <fcitx-utils/macros.h>
 #include <istream>
 #include <optional>
 #include <regex>
@@ -25,6 +17,14 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/connectableobject.h>
+#include <fcitx-utils/macros.h>
+#include "libime/core/datrie.h"
+#include "autophrasedict.h"
+#include "constants.h"
+#include "tablebaseddictionary.h"
+#include "tableoptions.h"
+#include "tablerule.h"
 
 namespace libime {
 class TableBasedDictionaryPrivate

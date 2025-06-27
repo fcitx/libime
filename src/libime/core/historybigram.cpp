@@ -4,19 +4,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "historybigram.h"
-#include "constants.h"
-#include "datrie.h"
-#include "lattice.h"
-#include "utils_p.h"
-#include "zstdfilter.h"
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/stringutils.h>
 #include <functional>
 #include <istream>
 #include <iterator>
@@ -30,6 +23,13 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/stringutils.h>
+#include "constants.h"
+#include "datrie.h"
+#include "lattice.h"
+#include "utils_p.h"
+#include "zstdfilter.h"
 
 namespace libime {
 

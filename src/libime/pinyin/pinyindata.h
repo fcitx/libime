@@ -6,19 +6,19 @@
 #ifndef _FCITX_LIBIME_PINYIN_PINYINDATA_H_
 #define _FCITX_LIBIME_PINYIN_PINYINDATA_H_
 
-#include <boost/container_hash/hash.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/indexed_by.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index_container.hpp>
 #include <cstddef>
-#include <libime/pinyin/libimepinyin_export.h>
-#include <libime/pinyin/pinyinencoder.h>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <boost/container_hash/hash.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/indexed_by.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index_container.hpp>
+#include <libime/pinyin/libimepinyin_export.h>
+#include <libime/pinyin/pinyinencoder.h>
 
 namespace libime {
 struct LIBIMEPINYIN_EXPORT PinyinHash {

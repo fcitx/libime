@@ -7,20 +7,20 @@
 #define _FCITX_LIBIME_PINYIN_PINYINDICTIONARY_H_
 
 #include <cstddef>
-#include <fcitx-utils/flags.h>
-#include <fcitx-utils/macros.h>
 #include <functional>
 #include <istream>
-#include <libime/core/dictionary.h>
-#include <libime/core/segmentgraph.h>
-#include <libime/core/triedictionary.h>
-#include <libime/pinyin/libimepinyin_export.h>
-#include <libime/pinyin/pinyinencoder.h>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <string_view>
 #include <unordered_set>
+#include <fcitx-utils/flags.h>
+#include <fcitx-utils/macros.h>
+#include <libime/core/dictionary.h>
+#include <libime/core/segmentgraph.h>
+#include <libime/core/triedictionary.h>
+#include <libime/pinyin/libimepinyin_export.h>
+#include <libime/pinyin/pinyinencoder.h>
 
 namespace libime {
 

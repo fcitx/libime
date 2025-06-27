@@ -3,10 +3,10 @@
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
-#include "libime/core/datrie.h"
 #include <cstdint>
 #include <cstring>
 #include <fcitx-utils/log.h>
+#include "libime/core/datrie.h"
 
 using namespace libime;
 

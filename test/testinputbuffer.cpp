@@ -3,10 +3,10 @@
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
-#include "libime/core/inputbuffer.h"
+#include <stdexcept>
 #include <fcitx-utils/inputbuffer.h>
 #include <fcitx-utils/log.h>
-#include <stdexcept>
+#include "libime/core/inputbuffer.h"
 
 void test_basic(bool ascii) {
     using namespace libime;

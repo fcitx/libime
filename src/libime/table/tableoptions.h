@@ -7,12 +7,12 @@
 #define _FCITX_LIBIME_TABLE_TABLEOPTIONS_H_
 
 #include <cstdint>
-#include <fcitx-utils/macros.h>
-#include <libime/table/libimetable_export.h>
 #include <memory>
 #include <set>
 #include <string>
 #include <unordered_set>
+#include <fcitx-utils/macros.h>
+#include <libime/table/libimetable_export.h>
 
 namespace libime {
 

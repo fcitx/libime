@@ -5,20 +5,10 @@
  */
 
 #include "decoder.h"
-#include "languagemodel.h"
-#include "lattice.h"
-#include "lattice_p.h"
-#include "segmentgraph.h"
-#include "utils.h"
-#include "utils_p.h"
 #include <algorithm>
-#include <boost/container_hash/hash.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
-#include <fcitx-utils/macros.h>
 #include <limits>
 #include <memory>
 #include <queue>
@@ -30,6 +20,16 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <boost/container_hash/hash.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <fcitx-utils/macros.h>
+#include "languagemodel.h"
+#include "lattice.h"
+#include "lattice_p.h"
+#include "segmentgraph.h"
+#include "utils.h"
+#include "utils_p.h"
 
 namespace libime {
 

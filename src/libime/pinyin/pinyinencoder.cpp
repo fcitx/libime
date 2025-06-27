@@ -4,20 +4,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "pinyinencoder.h"
-#include "libime/core/segmentgraph.h"
-#include "pinyincorrectionprofile.h"
-#include "pinyindata.h"
-#include "shuangpinprofile.h"
 #include <algorithm>
 #include <array>
-#include <boost/bimap.hpp>
-#include <boost/container/static_vector.hpp>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/charutils.h>
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/stringutils.h>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
@@ -30,6 +21,15 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <boost/bimap.hpp>
+#include <boost/container/static_vector.hpp>
+#include <fcitx-utils/charutils.h>
+#include <fcitx-utils/log.h>
+#include <fcitx-utils/stringutils.h>
+#include "libime/core/segmentgraph.h"
+#include "pinyincorrectionprofile.h"
+#include "pinyindata.h"
+#include "shuangpinprofile.h"
 
 namespace libime {
 

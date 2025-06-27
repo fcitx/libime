@@ -4,24 +4,24 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
-#include "libime/core/constants.h"
-#include "libime/core/datrie.h"
-#include "libime/core/languagemodel.h"
+#include <unistd.h>
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/stringutils.h>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <string_view>
-#include <unistd.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/log.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/stringutils.h>
+#include "libime/core/constants.h"
+#include "libime/core/datrie.h"
+#include "libime/core/languagemodel.h"
 
 void usage(const char *argv0) {
     std::cout

@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include <string>
+#include <string_view>
+#include <fcitx-utils/log.h>
 #include "libime/core/languagemodel.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/table/tablebaseddictionary.h"
 #include "libime/table/tablecontext.h"
 #include "libime/table/tableoptions.h"
 #include "testdir.h"
-#include <fcitx-utils/log.h>
-#include <string>
-#include <string_view>
 
 using namespace libime;
 

@@ -5,30 +5,11 @@
  */
 
 #include "pinyindictionary.h"
-#include "constants.h"
-#include "libime/core/datrie.h"
-#include "libime/core/dictionary.h"
-#include "libime/core/languagemodel.h"
-#include "libime/core/lattice.h"
-#include "libime/core/lrucache.h"
-#include "libime/core/segmentgraph.h"
-#include "libime/core/triedictionary.h"
-#include "libime/core/utils.h"
-#include "libime/core/utils_p.h"
-#include "libime/core/zstdfilter.h"
-#include "libime/pinyin/pinyinmatchstate.h"
-#include "pinyindecoder_p.h"
-#include "pinyinencoder.h"
-#include "pinyinmatchstate_p.h"
 #include <algorithm>
-#include <boost/container_hash/hash.hpp>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/signals.h>
-#include <fcitx-utils/stringutils.h>
 #include <fstream>
 #include <iomanip>
 #include <ios>
@@ -46,6 +27,25 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <boost/container_hash/hash.hpp>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/signals.h>
+#include <fcitx-utils/stringutils.h>
+#include "libime/core/datrie.h"
+#include "libime/core/dictionary.h"
+#include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
+#include "libime/core/lrucache.h"
+#include "libime/core/segmentgraph.h"
+#include "libime/core/triedictionary.h"
+#include "libime/core/utils.h"
+#include "libime/core/utils_p.h"
+#include "libime/core/zstdfilter.h"
+#include "libime/pinyin/pinyinmatchstate.h"
+#include "constants.h"
+#include "pinyindecoder_p.h"
+#include "pinyinencoder.h"
+#include "pinyinmatchstate_p.h"
 
 namespace libime {
 

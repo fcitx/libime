@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include <string>
+#include <vector>
+#include <fcitx-utils/log.h>
 #include "libime/core/historybigram.h"
 #include "libime/core/prediction.h"
 #include "libime/core/userlanguagemodel.h"
 #include "testdir.h"
-#include <fcitx-utils/log.h>
-#include <string>
-#include <vector>
 
 using namespace libime;
 

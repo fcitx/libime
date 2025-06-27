@@ -8,13 +8,13 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <fcitx-utils/macros.h>
 #include <functional>
 #include <istream>
-#include <libime/table/libimetable_export.h>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <fcitx-utils/macros.h>
+#include <libime/table/libimetable_export.h>
 
 namespace libime {
 

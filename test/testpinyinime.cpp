@@ -4,6 +4,18 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include <cstddef>
+#include <cstdint>
+#include <fstream>
+#include <functional>
+#include <ios>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <boost/iostreams/device/null.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <fcitx-utils/log.h>
 #include "libime/core/historybigram.h"
 #include "libime/core/lattice.h"
 #include "libime/core/userlanguagemodel.h"
@@ -15,18 +27,6 @@
 #include "libime/pinyin/shuangpinprofile.h"
 #include "testdir.h"
 #include "testutils.h"
-#include <boost/iostreams/device/null.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <fcitx-utils/log.h>
-#include <fstream>
-#include <functional>
-#include <ios>
-#include <iostream>
-#include <memory>
-#include <ostream>
-#include <string>
 
 using namespace libime;
 

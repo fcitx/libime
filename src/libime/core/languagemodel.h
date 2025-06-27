@@ -8,14 +8,14 @@
 
 #include <array>
 #include <cstddef>
-#include <fcitx-utils/macros.h>
-#include <libime/core/datrie.h>
-#include <libime/core/libimecore_export.h>
 #include <limits>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
+#include <fcitx-utils/macros.h>
+#include <libime/core/datrie.h>
+#include <libime/core/libimecore_export.h>
 
 namespace libime {
 

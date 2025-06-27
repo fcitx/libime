@@ -4,6 +4,14 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include <array>
+#include <cstddef>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <sstream>
+#include <string_view>
+#include <fcitx-utils/log.h>
 #include "libime/core/historybigram.h"
 #include "libime/core/lattice.h"
 #include "libime/core/userlanguagemodel.h"
@@ -13,14 +21,6 @@
 #include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/pinyinime.h"
 #include "testdir.h"
-#include <array>
-#include <cstddef>
-#include <fcitx-utils/log.h>
-#include <iostream>
-#include <memory>
-#include <ostream>
-#include <sstream>
-#include <string_view>
 
 using namespace libime;
 

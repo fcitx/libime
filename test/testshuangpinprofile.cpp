@@ -3,19 +3,19 @@
  *
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
-#include "libime/core/segmentgraph.h"
-#include "libime/pinyin/pinyindata.h"
-#include "libime/pinyin/pinyinencoder.h"
-#include "libime/pinyin/shuangpinprofile.h"
 #include <algorithm>
 #include <cstddef>
-#include <fcitx-utils/log.h>
 #include <iostream>
 #include <ostream>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <fcitx-utils/log.h>
+#include "libime/core/segmentgraph.h"
+#include "libime/pinyin/pinyindata.h"
+#include "libime/pinyin/pinyinencoder.h"
+#include "libime/pinyin/shuangpinprofile.h"
 using namespace libime;
 
 void checkProfile(const ShuangpinProfile &profile, bool hasSemicolon) {

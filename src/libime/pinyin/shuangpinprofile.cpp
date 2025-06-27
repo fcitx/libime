@@ -4,16 +4,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 #include "shuangpinprofile.h"
-#include "pinyincorrectionprofile.h"
-#include "pinyindata.h"
-#include "pinyinencoder.h"
-#include "shuangpindata.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <fcitx-utils/charutils.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/stringutils.h>
 #include <istream>
 #include <map>
 #include <memory>
@@ -26,6 +19,13 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/charutils.h>
+#include <fcitx-utils/macros.h>
+#include <fcitx-utils/stringutils.h>
+#include "pinyincorrectionprofile.h"
+#include "pinyindata.h"
+#include "pinyinencoder.h"
+#include "shuangpindata.h"
 
 namespace libime {
 
@@ -96,7 +96,7 @@ public:
              c++) {
             auto f = static_cast<PinyinFinal>(c);
             const auto &finalString = PinyinEncoder::finalToString(f);
-            if (finalString.size() == 1 && !singleCharFinal.count(f)) {
+            if (finalString.size() == 1 && !singleCharFinal.contains(f)) {
                 finalChars.insert(finalString[0]);
                 singleCharFinal[f] = finalString[0];
             }
@@ -270,7 +270,7 @@ public:
             }
 
             if (p.pinyin().size() == 2 && p.initial() == PinyinInitial::Zero &&
-                (!spTable_.count(p.pinyin()) ||
+                (!spTable_.contains(p.pinyin()) ||
                  zeroS_.find('*') != std::string::npos)) {
                 auto &pys = spTable_[p.pinyin()];
                 pys.emplace(PinyinSyllable{p.initial(), p.final()}, p.flags());

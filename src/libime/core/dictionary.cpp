@@ -5,8 +5,8 @@
  */
 
 #include "dictionary.h"
-#include "segmentgraph.h"
 #include <unordered_set>
+#include "segmentgraph.h"
 
 void libime::Dictionary::matchPrefix(
     const SegmentGraph &graph, const GraphMatchCallback &callback,

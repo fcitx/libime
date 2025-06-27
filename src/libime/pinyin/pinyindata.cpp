@@ -5,11 +5,8 @@
  */
 
 #include "pinyindata.h"
-#include "pinyinencoder.h"
 #include <algorithm>
 #include <cstdint>
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/stringutils.h>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -17,6 +14,9 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fcitx-utils/log.h>
+#include <fcitx-utils/stringutils.h>
+#include "pinyinencoder.h"
 
 namespace libime {
 

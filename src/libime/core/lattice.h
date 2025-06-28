@@ -106,6 +106,18 @@ public:
     LatticeNode *prev() const { return prev_; }
     void setPrev(LatticeNode *prev) { prev_ = prev; }
 
+    template <typename T>
+        requires(std::is_base_of_v<LatticeNode, T>)
+    T &as() {
+        return static_cast<T &>(*this);
+    }
+
+    template <typename T>
+        requires(std::is_base_of_v<LatticeNode, T>)
+    const T &as() const {
+        return static_cast<const T &>(*this);
+    }
+
     /// Return the full word till the begining of the sentence.
     std::string fullWord() const {
         size_t length = 0;

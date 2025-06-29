@@ -131,8 +131,7 @@ int main() {
     c.type("n");
     for (const auto &candidate : c.candidates()) {
         for (const auto *node : candidate.sentence()) {
-            const auto &pinyin =
-                static_cast<const PinyinLatticeNode *>(node)->encodedPinyin();
+            const auto &pinyin = node->as<PinyinLatticeNode>().encodedPinyin();
             std::cout << node->word();
             if (!pinyin.empty()) {
                 std::cout << " " << PinyinEncoder::decodeFullPinyin(pinyin);

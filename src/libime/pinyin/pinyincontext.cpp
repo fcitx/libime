@@ -180,16 +180,15 @@ public:
     void select(const SentenceResult &sentence) {
         FCITX_Q();
         auto offset = q->selectedLength();
-        selectHelper([offset, &sentence,
-                      this](std::vector<SelectedPinyin> &selection) {
-            for (const auto &p : sentence.sentence()) {
-                selection.emplace_back(
-                    offset + p->to()->index(),
-                    WordNode{p->word(), ime_->model()->index(p->word())},
-                    static_cast<const PinyinLatticeNode *>(p)->encodedPinyin(),
-                    false);
-            }
-        });
+        selectHelper(
+            [offset, &sentence, this](std::vector<SelectedPinyin> &selection) {
+                for (const auto &p : sentence.sentence()) {
+                    selection.emplace_back(
+                        offset + p->to()->index(),
+                        WordNode{p->word(), ime_->model()->index(p->word())},
+                        p->as<PinyinLatticeNode>().encodedPinyin(), false);
+                }
+            });
     }
 
     void selectCustom(size_t inputLength, std::string_view segment,
@@ -584,6 +583,8 @@ void PinyinContext::update() {
                                    d->ime_->frameSize(), &d->matchState_);
 
         d->clearCandidates();
+
+        // Add n-best result.
         for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
             d->candidates_.push_back(d->lattice_.sentence(i));
             d->candidatesSet_.insert(d->candidates_.back().toString());
@@ -597,8 +598,10 @@ void PinyinContext::update() {
             float max = -std::numeric_limits<float>::max();
             auto distancePenalty = d->ime_->model()->unknownPenalty() /
                                    PINYIN_DISTANCE_PENALTY_FACTOR;
-            // Pull the phrase from lattice, this part is the word that's in the
-            // dict.
+
+            // Enumerate over all the lattice node, if from == bos, this is
+            // a dictionary word match.
+            // Add all words that does not contain pinyin correction.
             for (const auto &graphNode : graph.nodes(i)) {
                 auto distance = graph.distanceToEnd(graphNode);
                 auto adjust = static_cast<float>(distance) * distancePenalty;
@@ -610,6 +613,7 @@ void PinyinContext::update() {
                             min = std::min(latticeNode.score(), min);
                             max = std::max(latticeNode.score(), max);
                         }
+                        // Deduplcate.
                         if (d->candidatesSet_.contains(latticeNode.word())) {
                             continue;
                         }
@@ -667,7 +671,34 @@ void PinyinContext::update() {
             }
         }
         std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
-                  std::greater<SentenceResult>());
+                  std::greater<>());
+        if (const auto limit = d->ime_->wordCandidateLimit()) {
+            size_t count = 0;
+            auto &candidatesSet = d->candidatesSet_;
+            d->candidates_.erase(
+                std::remove_if(
+                    d->candidates_.begin() + beginSize, d->candidates_.end(),
+                    [&count, limit,
+                     &candidatesSet](const SentenceResult &candidate) {
+                        const bool isSinglePinyinWord =
+                            candidate.sentence().size() == 1 &&
+                            candidate.sentence()
+                                    .front()
+                                    ->as<PinyinLatticeNode>()
+                                    .encodedPinyin()
+                                    .size() == 2;
+                        if (!isSinglePinyinWord) {
+                            if (count >= limit) {
+                                candidatesSet.erase(candidate.toString());
+                                return true;
+                            }
+                            count++;
+                        }
+                        return false;
+                    }),
+                d->candidates_.end());
+        }
+
         d->candidatesToCursorNeedUpdate_ = true;
     }
 
@@ -767,8 +798,7 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                 std::string actualPinyin;
                 if (!syls.empty() && !syls.front().second.empty()) {
                     std::string_view candidatePinyin =
-                        static_cast<const PinyinLatticeNode *>(node)
-                            ->encodedPinyin();
+                        node->as<PinyinLatticeNode>().encodedPinyin();
                     auto nthPinyin = std::distance(node->path().begin(), iter);
                     PinyinInitial bestInitial = syls[0].first;
                     PinyinFinal bestFinal = syls[0].second[0].first;
@@ -918,7 +948,7 @@ PinyinContext::candidateFullPinyin(const SentenceResult &candidate) const {
                 pinyin.push_back('\'');
             }
             pinyin += PinyinEncoder::decodeFullPinyin(
-                static_cast<const PinyinLatticeNode *>(node)->encodedPinyin());
+                node->as<PinyinLatticeNode>().encodedPinyin());
         }
     }
     return pinyin;

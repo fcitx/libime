@@ -39,6 +39,7 @@ public:
     size_t beamSize_ = Decoder::beamSizeDefault;
     size_t frameSize_ = Decoder::frameSizeDefault;
     size_t partialLongWordLimit_ = 0;
+    size_t wordCandidateLimit_ = 15;
     float maxDistance_ = std::numeric_limits<float>::max();
     float minPath_ = -std::numeric_limits<float>::max();
     PinyinPreeditMode preeditMode_ = PinyinPreeditMode::RawText;
@@ -135,6 +136,19 @@ void PinyinIME::setPartialLongWordLimit(size_t n) {
     FCITX_D();
     if (d->partialLongWordLimit_ != n) {
         d->partialLongWordLimit_ = n;
+        emit<PinyinIME::optionChanged>();
+    }
+}
+
+size_t PinyinIME::wordCandidateLimit() const {
+    FCITX_D();
+    return d->wordCandidateLimit_;
+}
+
+void PinyinIME::setWordCandidateLimit(size_t n) {
+    FCITX_D();
+    if (d->wordCandidateLimit_ != n) {
+        d->wordCandidateLimit_ = n;
         emit<PinyinIME::optionChanged>();
     }
 }

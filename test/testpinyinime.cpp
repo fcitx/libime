@@ -107,8 +107,7 @@ int main(int argc, char *argv[]) {
             std::cout << (count % 10) << ": ";
             for (const auto *node : candidate.sentence()) {
                 const auto &pinyin =
-                    static_cast<const PinyinLatticeNode *>(node)
-                        ->encodedPinyin();
+                    node->as<PinyinLatticeNode>().encodedPinyin();
                 std::cout << node->word();
                 if (!pinyin.empty()) {
                     std::cout << " " << PinyinEncoder::decodeFullPinyin(pinyin);

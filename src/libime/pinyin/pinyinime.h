@@ -41,6 +41,22 @@ public:
     void setFrameSize(size_t n);
     size_t partialLongWordLimit() const;
     void setPartialLongWordLimit(size_t n);
+    /**
+     * \brief The maximum number of candidates that is a word.
+     *
+     * Limit the non single character candidates to avoid need to scroll/next
+     * page too many characters.
+     *
+     * When is 0, it means no limit.
+     *
+     * Since 1.1.12
+     */
+    size_t wordCandidateLimit() const;
+    /**
+     * \brief Set the maximum number of candidates that is a word.
+     * Since 1.1.12
+     */
+    void setWordCandidateLimit(size_t n);
     void setScoreFilter(float maxDistance = std::numeric_limits<float>::max(),
                         float minPath = -std::numeric_limits<float>::max());
     void setShuangpinProfile(std::shared_ptr<const ShuangpinProfile> profile);

@@ -61,9 +61,31 @@ fcitx5_extract(table-dict-extract ${TABLE_DICT_TAR} DEPENDS table-dict-download
 set(TABLE_DICT_FILES)
 foreach(TABLE_TXT_FILE ${TABLE_TXT_FILES})
   string(REPLACE .txt .main.dict TABLE_DICT_FILE ${TABLE_TXT_FILE})
-  add_custom_command(OUTPUT ${TABLE_DICT_FILE}
-                     DEPENDS ${TABLE_TXT_FILE} LibIME::tabledict
-                     COMMAND LibIME::tabledict ${TABLE_TXT_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${TABLE_DICT_FILE})
+
+  # Check if there's a corresponding extend file in source directory
+  string(REPLACE .txt -extend.txt TABLE_EXTEND_FILE ${TABLE_TXT_FILE})
+  set(TABLE_EXTEND_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${TABLE_EXTEND_FILE}")
+  
+  if(EXISTS "${TABLE_EXTEND_PATH}")
+    # Create merged file with extend content appended
+    set(TABLE_MERGED_FILE "${CMAKE_CURRENT_BINARY_DIR}/${TABLE_TXT_FILE}.merged")
+    add_custom_command(OUTPUT ${TABLE_MERGED_FILE}
+                       DEPENDS table-dict-extract "${TABLE_EXTEND_PATH}"
+                       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${TABLE_TXT_FILE} ${TABLE_MERGED_FILE}
+                       COMMAND ${CMAKE_COMMAND} -E cat "${TABLE_EXTEND_PATH}" >> ${TABLE_MERGED_FILE}
+                       COMMENT "Merging ${TABLE_TXT_FILE} with ${TABLE_EXTEND_FILE}")
+    
+    # Use merged file as input for tabledict
+    add_custom_command(OUTPUT ${TABLE_DICT_FILE}
+                       DEPENDS ${TABLE_MERGED_FILE} LibIME::tabledict
+                       COMMAND LibIME::tabledict ${TABLE_MERGED_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${TABLE_DICT_FILE})
+  else()
+    # Use original file if no extend file exists
+    add_custom_command(OUTPUT ${TABLE_DICT_FILE}
+                       DEPENDS ${TABLE_TXT_FILE} LibIME::tabledict
+                       COMMAND LibIME::tabledict ${TABLE_TXT_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${TABLE_DICT_FILE})
+  endif()
+
   list(APPEND TABLE_DICT_FILES ${CMAKE_CURRENT_BINARY_DIR}/${TABLE_DICT_FILE})
 endforeach()
 

@@ -235,6 +235,16 @@ int main() {
         c.type("shounihao");
         FCITX_ASSERT(c.candidatesToCursorSet().count("✋你好") > 0);
     }
+    {
+        c.clear();
+        c.type("er");
+        c.selectCustom(2, "");
+        FCITX_ASSERT(c.selected());
+        FCITX_ASSERT(c.selectedSentence() == "");
+        FCITX_ASSERT(c.selectedWords().size() == 1);
+        FCITX_ASSERT(c.selectedWords().front().empty());
+        FCITX_ASSERT(c.selectedWordsWithPinyin().size() == 1);
+    }
 
     return 0;
 }

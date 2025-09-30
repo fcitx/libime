@@ -137,6 +137,16 @@ getInnerSegment() {
             {"dian", {"di", "an"}},     {"cuan", {"cu", "an"}},
             {"chuang", {"chu", "ang"}}, {"chuan", {"chu", "an"}},
             {"chuai", {"chu", "ai"}},   {"biang", {"bi", "ang"}},
+
+            {"qiao", {"qia", "o"}},     {"niao", {"nia", "o"}},
+            {"liao", {"lia", "o"}},     {"zhuo", {"zhu", "o"}},
+            {"diao", {"dia", "o"}},     {"shao", {"sha", "o"}},
+            {"xiao", {"xia", "o"}},     {"zhua", {"zhu", "a"}},
+            {"shuo", {"shu", "o"}},     {"shua", {"shu", "a"}},
+            {"zhao", {"zha", "o"}},     {"jiao", {"jia", "o"}},
+            {"chuo", {"chu", "o"}},     {"chua", {"chu", "a"}},
+            {"chao", {"cha", "o"}},
+
         };
 
     return innerSegment;

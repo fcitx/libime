@@ -16,6 +16,7 @@
 #include <vector>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/stringutils.h>
+#include "pinyindata_p.h"
 #include "pinyinencoder.h"
 
 namespace libime {
@@ -148,6 +149,39 @@ getInnerSegment() {
             {"chao", {"cha", "o"}},
 
         };
+
+    return innerSegment;
+}
+
+const InnerSegmentMap &getInnerSegmentV2() {
+    static const InnerSegmentMap innerSegment = []() {
+        InnerSegmentMap innerSegmentV2;
+        for (const auto &[key, value] : getInnerSegment()) {
+            innerSegmentV2[key].push_back(value);
+        }
+
+        for (const auto &newItem : std::vector<
+                 std::pair<std::string, std::pair<std::string, std::string>>>{
+                 {"qiao", {"qia", "o"}},
+                 {"niao", {"nia", "o"}},
+                 {"liao", {"lia", "o"}},
+                 {"zhuo", {"zhu", "o"}},
+                 {"diao", {"dia", "o"}},
+                 {"shao", {"sha", "o"}},
+                 {"xiao", {"xia", "o"}},
+                 {"zhua", {"zhu", "a"}},
+                 {"shuo", {"shu", "o"}},
+                 {"shua", {"shu", "a"}},
+                 {"zhao", {"zha", "o"}},
+                 {"jiao", {"jia", "o"}},
+                 {"chuo", {"chu", "o"}},
+                 {"chua", {"chu", "a"}},
+                 {"chao", {"cha", "o"}},
+             }) {
+            innerSegmentV2[newItem.first].push_back(newItem.second);
+        }
+        return innerSegmentV2;
+    }();
 
     return innerSegment;
 }

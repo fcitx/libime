@@ -251,6 +251,10 @@ int main() {
 
     check("sangeren", PinyinFuzzyFlag::Inner, {"san", "ge", "ren"});
 
+    check("jiao", PinyinFuzzyFlag::Inner, {"jiao"});
+    check("jiao", PinyinFuzzyFlag::Inner, {"ji", "ao"});
+    check("jiao", PinyinFuzzyFlag::Inner, {"jia", "o"});
+
     {
         PinyinCorrectionProfile profile(BuiltinPinyinCorrectionProfile::Qwerty);
         auto graph = PinyinEncoder::parseUserPinyin(

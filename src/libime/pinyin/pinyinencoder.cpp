@@ -29,6 +29,7 @@
 #include "libime/core/segmentgraph.h"
 #include "pinyincorrectionprofile.h"
 #include "pinyindata.h"
+#include "pinyindata_p.h"
 #include "shuangpinprofile.h"
 
 namespace libime {
@@ -295,13 +296,15 @@ PinyinEncoder::parseUserPinyin(std::string userPinyin,
                                 fuzzyFlags.test(PinyinFuzzyFlag::Inner)) ||
                                (nextPinyin.size() == 3 &&
                                 flags.test(PinyinFuzzyFlag::InnerShort))) {
-                        const auto &innerSegments = getInnerSegment();
-                        auto iter = innerSegments.find(std::string(nextPinyin));
+                        const auto &innerSegments = getInnerSegmentV2();
+                        auto iter = innerSegments.find(nextPinyin);
                         if (iter != innerSegments.end()) {
-                            result.addNext(top,
-                                           top + iter->second.first.size());
-                            result.addNext(top + iter->second.first.size(),
-                                           top + nextSize[i]);
+                            for (const auto &innerSeg : iter->second) {
+                                result.addNext(top,
+                                               top + innerSeg.first.size());
+                                result.addNext(top + innerSeg.first.size(),
+                                               top + nextSize[i]);
+                            }
                         }
                     } else if (nextPinyin.size() == 2 &&
                                flags.test(PinyinFuzzyFlag::InnerShort) &&

@@ -923,9 +923,8 @@ PinyinDictionary::lookupWord(size_t idx, std::string_view fullPinyin,
         fullPinyin, PinyinFuzzyFlag::VE_UE);
     result.push_back(pinyinHanziSep);
     result.insert(result.end(), hanzi.begin(), hanzi.end());
-    auto value = trie(idx)->exactMatchSearch(
-        std::string_view(result.data(), result.size()));
-    if (PinyinTrie::isValid(value)) {
+    auto value = trie(idx)->exactMatchSearchRaw(result.data(), result.size());
+    if (PinyinTrie::isValidRaw(value)) {
         return value;
     }
     return std::nullopt;

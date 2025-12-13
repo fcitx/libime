@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -135,6 +136,13 @@ public:
 
     /// Opaque language model state.
     State state() const;
+
+    /**
+     * Set context words for better prediction.
+     * @param contextWords The context words.
+     * @since 1.1.13
+     */
+    void setContextWords(const std::vector<std::string> &contextWords);
 
 protected:
     bool typeImpl(const char *s, size_t length) override;

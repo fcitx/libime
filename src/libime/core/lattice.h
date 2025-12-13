@@ -68,9 +68,9 @@ public:
 
     virtual ~WordNode() = default;
     WordNode(WordNode &&other) noexcept(
-        std::is_nothrow_move_constructible<std::string>::value);
+        std::is_nothrow_move_constructible_v<std::string>);
     WordNode &operator=(WordNode &&other) noexcept(
-        std::is_nothrow_move_assignable<std::string>::value);
+        std::is_nothrow_move_assignable_v<std::string>);
 
     const std::string &word() const { return word_; }
     WordIndex idx() const { return idx_; }

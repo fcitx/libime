@@ -11,6 +11,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -80,6 +81,7 @@ public:
     mutable std::vector<SentenceResult> candidatesToCursor_;
     mutable std::unordered_set<std::string> candidatesToCursorSet_;
     std::vector<fcitx::ScopedConnection> conn_;
+    std::vector<WordNode> contextWords_;
 
     size_t alignCursorToNextSegment() const {
         FCITX_Q();
@@ -526,16 +528,19 @@ State PinyinContext::state() const {
     FCITX_D();
     auto *model = d->ime_->model();
     State state = model->nullState();
-    if (!d->selected_.empty()) {
-        for (const auto &s : d->selected_) {
-            for (const auto &item : s) {
-                if (item.word_.word().empty()) {
-                    continue;
-                }
-                State temp;
-                model->score(state, item.word_, temp);
-                state = std::move(temp);
+    for (const auto &word : d->contextWords_) {
+        State temp;
+        model->score(state, word, temp);
+        state = std::move(temp);
+    }
+    for (const auto &s : d->selected_) {
+        for (const auto &item : s) {
+            if (item.word_.word().empty()) {
+                continue;
             }
+            State temp;
+            model->score(state, item.word_, temp);
+            state = std::move(temp);
         }
     }
     return state;
@@ -552,21 +557,9 @@ void PinyinContext::update() {
         d->clearCandidates();
     } else {
         size_t start = 0;
-        auto *model = d->ime_->model();
-        State state = model->nullState();
+        State state = this->state();
         if (!d->selected_.empty()) {
             start = d->selected_.back().back().offset_;
-
-            for (auto &s : d->selected_) {
-                for (auto &item : s) {
-                    if (item.word_.word().empty()) {
-                        continue;
-                    }
-                    State temp;
-                    model->score(state, item.word_, temp);
-                    state = std::move(temp);
-                }
-            }
         }
         SegmentGraph newGraph;
         if (auto spProfile = d->matchState_.shuangpinProfile()) {
@@ -988,6 +981,16 @@ void PinyinContext::learn() {
             }
         }
         d->ime_->model()->history().add(newSentence);
+    }
+}
+
+void PinyinContext::setContextWords(
+    const std::vector<std::string> &contextWords) {
+    FCITX_D();
+    d->contextWords_.clear();
+    for (const auto &word : contextWords) {
+        d->contextWords_.push_back(
+            WordNode(word, d->ime_->model()->index(word)));
     }
 }
 

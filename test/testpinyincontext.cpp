@@ -246,5 +246,34 @@ int main() {
         FCITX_ASSERT(c.selectedWordsWithPinyin().size() == 1);
     }
 
+    // Check that context words can change prediction.
+    {
+        {
+            c.clear();
+            c.type("ta");
+            size_t i = 0;
+            for (const auto &candidate : c.candidatesToCursor()) {
+                if (candidate.toString() == "她") {
+                    break;
+                }
+                i++;
+            }
+            FCITX_ASSERT(i > 0) << i;
+        }
+        {
+            c.clear();
+            c.setContextWords({"他", "爱"});
+            c.type("ta");
+            size_t i = 0;
+            for (const auto &candidate : c.candidatesToCursor()) {
+                if (candidate.toString() == "她") {
+                    break;
+                }
+                i++;
+            }
+            FCITX_ASSERT(i == 0) << i;
+        }
+    }
+
     return 0;
 }

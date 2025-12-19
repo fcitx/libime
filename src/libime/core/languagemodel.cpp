@@ -148,6 +148,8 @@ LanguageModel::LanguageModel(
 
 LanguageModel::~LanguageModel() {}
 
+size_t LanguageModel::maxOrder() { return KENLM_MAX_ORDER; }
+
 std::shared_ptr<const StaticLanguageModelFile>
 LanguageModel::languageModelFile() const {
     FCITX_D();

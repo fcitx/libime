@@ -73,6 +73,8 @@ public:
         std::shared_ptr<const StaticLanguageModelFile> file = nullptr);
     virtual ~LanguageModel();
 
+    static size_t maxOrder();
+
     std::shared_ptr<const StaticLanguageModelFile> languageModelFile() const;
 
     WordIndex beginSentence() const override;

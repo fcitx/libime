@@ -144,6 +144,26 @@ public:
      */
     void setContextWords(const std::vector<std::string> &contextWords);
 
+    /**
+     * Clear context words.
+     * @since 1.1.13
+     */
+    void clearContextWords();
+
+    /**
+     * Append context words for better prediction.
+     * @param contextWords The context words.
+     * @since 1.1.13
+     */
+    void appendContextWords(const std::vector<std::string> &contextWords);
+
+    /**
+     * Get context words for better prediction.
+     * @return current context words
+     * @since 1.1.13
+     */
+    std::vector<std::string> contextWords() const;
+
 protected:
     bool typeImpl(const char *s, size_t length) override;
 

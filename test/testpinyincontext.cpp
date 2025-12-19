@@ -10,7 +10,9 @@
 #include <memory>
 #include <ostream>
 #include <sstream>
+#include <string>
 #include <string_view>
+#include <vector>
 #include <fcitx-utils/log.h>
 #include "libime/core/historybigram.h"
 #include "libime/core/lattice.h"
@@ -262,7 +264,15 @@ int main() {
         }
         {
             c.clear();
-            c.setContextWords({"他", "爱"});
+            c.setContextWords({"我", "不", "知道"});
+            FCITX_ASSERT(c.contextWords() ==
+                         std::vector<std::string>{"不", "知道"});
+            c.setContextWords({"谁", "他"});
+            FCITX_ASSERT(c.contextWords() ==
+                         std::vector<std::string>{"谁", "他"});
+            c.appendContextWords({"爱"});
+            FCITX_ASSERT(c.contextWords() ==
+                         std::vector<std::string>{"他", "爱"});
             c.type("ta");
             size_t i = 0;
             for (const auto &candidate : c.candidatesToCursor()) {

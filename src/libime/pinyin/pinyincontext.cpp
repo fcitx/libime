@@ -10,6 +10,7 @@
 #include <functional>
 #include <iterator>
 #include <limits>
+#include <list>
 #include <memory>
 #include <span>
 #include <stdexcept>
@@ -81,7 +82,7 @@ public:
     mutable std::vector<SentenceResult> candidatesToCursor_;
     mutable std::unordered_set<std::string> candidatesToCursorSet_;
     std::vector<fcitx::ScopedConnection> conn_;
-    std::vector<WordNode> contextWords_;
+    std::list<WordNode> contextWords_;
 
     size_t alignCursorToNextSegment() const {
         FCITX_Q();
@@ -988,10 +989,38 @@ void PinyinContext::setContextWords(
     const std::vector<std::string> &contextWords) {
     FCITX_D();
     d->contextWords_.clear();
-    for (const auto &word : contextWords) {
+    appendContextWords(contextWords);
+}
+
+void PinyinContext::clearContextWords() {
+    FCITX_D();
+    d->contextWords_.clear();
+}
+
+void PinyinContext::appendContextWords(
+    const std::vector<std::string> &contextWords) {
+    FCITX_D();
+
+    size_t needed = LanguageModel::maxOrder() - 1;
+
+    for (const auto &word :
+         std::span{contextWords}.last(std::min(contextWords.size(), needed))) {
         d->contextWords_.push_back(
             WordNode(word, d->ime_->model()->index(word)));
     }
+    while (d->contextWords_.size() > needed) {
+        d->contextWords_.pop_front();
+    }
+}
+
+std::vector<std::string> PinyinContext::contextWords() const {
+    FCITX_D();
+    std::vector<std::string> words;
+    words.reserve(d->contextWords_.size());
+    for (const auto &word : d->contextWords_) {
+        words.push_back(word.word());
+    }
+    return words;
 }
 
 bool PinyinContext::learnWord() { return false; }

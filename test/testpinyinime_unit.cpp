@@ -8,6 +8,7 @@
 #include <iterator>
 #include <memory>
 #include <fcitx-utils/log.h>
+#include "libime/core/historybigram.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/pinyincontext.h"
 #include "libime/pinyin/pinyincorrectionprofile.h"
@@ -55,8 +56,8 @@ int main() {
                                          "ni'hao'zhong'guo", "你好中国"));
     c.select(std::distance(c.candidates().begin(), iter));
     c.learn();
-    FCITX_ASSERT(ime.dict()->lookupWord(PinyinDictionary::UserDict,
-                                        "ni'hao'zhong'guo", "你好中国"));
+    FCITX_ASSERT(ime.model()->history().containsBigram("你", "好"));
+    FCITX_ASSERT(ime.model()->history().containsBigram("好", "中国"));
 
     c.setUseShuangpin(true);
 

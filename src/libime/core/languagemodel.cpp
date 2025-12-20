@@ -5,6 +5,7 @@
  */
 
 #include "languagemodel.h"
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -27,9 +28,11 @@
 #include "lm/config.hh"
 #include "lm/lm_exception.hh"
 #include "lm/model.hh"
+#include "lm/return.hh"
 #include "lm/state.hh"
 #include "lm/word_index.hh"
 #include "util/string_piece.hh"
+#include "utils.h"
 
 namespace libime {
 
@@ -71,6 +74,8 @@ const DATrie<float> &StaticLanguageModelFile::predictionTrie() const {
 }
 
 static_assert(sizeof(void *) + sizeof(lm::ngram::State) <= StateSize, "Size");
+
+LanguageModelBase::~LanguageModelBase() {}
 
 bool LanguageModelBase::isNodeUnknown(const LatticeNode &node) const {
     return isUnknown(node.idx(), node.word());
@@ -215,6 +220,32 @@ float LanguageModel::score(const State &state, const WordNode &node,
 
 bool LanguageModel::isUnknown(WordIndex idx, std::string_view /*word*/) const {
     return idx == unknown();
+}
+
+unsigned int
+LanguageModel::maxNgramLength(const std::vector<std::string> &words) const {
+    FCITX_D();
+    if (!d->model()) {
+        return 0;
+    }
+    State state = nullState();
+    State outState;
+
+    unsigned int maxNgramLength = 0;
+    std::vector<WordNode> nodes;
+    for (const auto &word : words) {
+        const auto idx = index(word);
+        lm::FullScoreReturn full =
+            d->model()->FullScore(lmState(state), idx, lmState(outState));
+        unsigned int ngramLength = full.ngram_length;
+        if (ngramLength == 1 && idx == unknown()) {
+            ngramLength = 0;
+        }
+
+        maxNgramLength = std::max(maxNgramLength, ngramLength);
+        state = outState;
+    }
+    return maxNgramLength;
 }
 
 void LanguageModel::setUnknownPenalty(float unknown) {

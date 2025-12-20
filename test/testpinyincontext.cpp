@@ -285,5 +285,27 @@ int main() {
         }
     }
 
+    {
+        c.clear();
+        c.clearContextWords();
+        FCITX_ASSERT(!ime.model()->history().containsBigram("他", "爱"));
+        c.type("taai");
+        size_t i = 0;
+        for (const auto &candidate : c.candidatesToCursor()) {
+            if (candidate.toString() == "他爱") {
+                break;
+            }
+            i++;
+        }
+        FCITX_ASSERT(i < c.candidatesToCursor().size());
+        c.selectCandidatesToCursor(i);
+
+        FCITX_ASSERT(c.selected());
+        FCITX_ASSERT(c.selectedSentence() == "他爱");
+        c.learn();
+        c.clear();
+        FCITX_ASSERT(ime.model()->history().containsBigram("他", "爱"));
+    }
+
     return 0;
 }

@@ -251,9 +251,17 @@ public:
                 totalPinyinLength += item.encodedPinyin_.size() / 2;
             }
         }
-        if (!isAllSingleWord && !hasCustom && totalPinyinLength > 4) {
-            return LearnWordResult::Ignored;
+
+        FCITX_Q();
+        if (!hasCustom) {
+            if ((!isAllSingleWord && totalPinyinLength > 4)) {
+                return LearnWordResult::Ignored;
+            }
+            if (ime_->model()->containsNonUnigram(q->selectedWords())) {
+                return LearnWordResult::Ignored;
+            }
         }
+
         for (auto &s : selected_) {
             for (auto &item : s) {
                 if (item.type_ == SelectedPinyinType::Separator) {

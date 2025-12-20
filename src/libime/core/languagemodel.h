@@ -32,7 +32,7 @@ class LanguageModelResolverPrivate;
 
 class LIBIMECORE_EXPORT LanguageModelBase {
 public:
-    virtual ~LanguageModelBase() {}
+    virtual ~LanguageModelBase();
 
     virtual WordIndex beginSentence() const = 0;
     virtual WordIndex endSentence() const = 0;
@@ -88,6 +88,8 @@ public:
     bool isUnknown(WordIndex idx, std::string_view word) const override;
     void setUnknownPenalty(float unknown);
     float unknownPenalty() const;
+
+    unsigned int maxNgramLength(const std::vector<std::string> &words) const;
 
 private:
     std::unique_ptr<LanguageModelPrivate> d_ptr;

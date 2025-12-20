@@ -9,7 +9,9 @@
 #include <istream>
 #include <memory>
 #include <ostream>
+#include <string>
 #include <string_view>
+#include <vector>
 #include <fcitx-utils/macros.h>
 #include <libime/core/languagemodel.h>
 #include <libime/core/libimecore_export.h>
@@ -43,6 +45,8 @@ public:
     float score(const State &state, const WordNode &word,
                 State &out) const override;
     bool isUnknown(WordIndex idx, std::string_view view) const override;
+
+    bool containsNonUnigram(const std::vector<std::string> &words) const;
 
 private:
     std::unique_ptr<UserLanguageModelPrivate> d_ptr;

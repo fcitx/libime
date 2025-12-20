@@ -571,4 +571,14 @@ void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
             pool.fillPredict(words, lookup, maxSize);
         });
 }
+
+bool HistoryBigram::containsBigram(std::string_view prev,
+                                   std::string_view cur) const {
+    FCITX_D();
+    return std::ranges::any_of(d->pools_,
+                               [&prev, &cur](const HistoryBigramPool &pool) {
+                                   return pool.bigramFreq(prev, cur) > 0;
+                               });
+}
+
 } // namespace libime

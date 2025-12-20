@@ -57,6 +57,8 @@ public:
                      const std::vector<std::string> &sentence,
                      size_t maxSize) const;
 
+    bool containsBigram(std::string_view prev, std::string_view cur) const;
+
 private:
     std::unique_ptr<HistoryBigramPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(HistoryBigram);

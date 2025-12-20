@@ -9,10 +9,13 @@
 #include <cassert>
 #include <cmath>
 #include <istream>
+#include <iterator>
 #include <memory>
 #include <ostream>
+#include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 #include <fcitx-utils/macros.h>
 #include "constants.h"
 #include "historybigram.h"
@@ -150,4 +153,21 @@ bool UserLanguageModel::useOnlyUnigram() const {
     FCITX_D();
     return d->useOnlyUnigram_;
 }
+
+bool UserLanguageModel::containsNonUnigram(
+    const std::vector<std::string> &words) const {
+    FCITX_D();
+    if (words.size() <= 1 || d->useOnlyUnigram_) {
+        return false;
+    }
+
+    for (auto iter = words.begin(); iter != std::prev(words.end()); ++iter) {
+        if (d->history_.containsBigram(*iter, *(std::next(iter)))) {
+            return true;
+        }
+    }
+
+    return LanguageModel::maxNgramLength(words) > 1;
+}
+
 } // namespace libime

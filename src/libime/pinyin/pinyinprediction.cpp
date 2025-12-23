@@ -104,7 +104,7 @@ PinyinPrediction::predict(const State &state,
         [this, &sentence, &prevState, &cmp, &intermedidateResult, &dup,
          maxSize](std::string_view, std::string_view hz, float cost) {
             if (sentence.back().size() < hz.size() &&
-                fcitx::stringutils::startsWith(hz, sentence.back())) {
+                hz.starts_with(sentence.back())) {
 
                 std::string newWord(hz.substr(sentence.back().size()));
                 if (dup.contains(newWord)) {

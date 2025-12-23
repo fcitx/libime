@@ -148,7 +148,7 @@ std::optional<std::string> replaceSuffix(const std::string &input,
                                          const std::string &suffix,
                                          std::string_view newSuffix) {
     auto name = fs::baseName(input);
-    if (!stringutils::endsWith(name, suffix)) {
+    if (!name.ends_with(suffix)) {
         return {};
     }
     // Strip .mb

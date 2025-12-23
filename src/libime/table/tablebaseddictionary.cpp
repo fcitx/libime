@@ -101,8 +101,7 @@ inline std::string generateTableEntry(uint32_t pinyinKey, std::string_view key,
 }
 
 void maybeUnescapeValue(std::string &value) {
-    if (value.size() >= 2 && fcitx::stringutils::startsWith(value, '"') &&
-        fcitx::stringutils::endsWith(value, '"')) {
+    if (value.size() >= 2 && value.starts_with('"') && value.ends_with('"')) {
         if (auto unescape = fcitx::stringutils::unescapeForValue(value)) {
             value = unescape.value();
         }
@@ -112,8 +111,7 @@ void maybeUnescapeValue(std::string &value) {
 std::string maybeEscapeValue(std::string_view value) {
     auto escaped = fcitx::stringutils::escapeForValue(value);
     if (escaped.size() != value.size()) {
-        if (fcitx::stringutils::startsWith(escaped, "\"") &&
-            fcitx::stringutils::endsWith(escaped, "\"")) {
+        if (escaped.starts_with("\"") && escaped.ends_with("\"")) {
             return escaped;
         }
         return fcitx::stringutils::concat("\"", escaped, "\"");
@@ -673,7 +671,7 @@ void TableBasedDictionary::loadText(std::istream &in) {
 
         switch (phase) {
         case BuildPhase::PhaseConfig: {
-            if (fcitx::stringutils::startsWith(line, "#")) {
+            if (line.starts_with("#")) {
                 continue;
             }
 
@@ -716,7 +714,7 @@ void TableBasedDictionary::loadText(std::istream &in) {
             break;
         }
         case BuildPhase::PhaseRule: {
-            if (fcitx::stringutils::startsWith(line, "#")) {
+            if (line.starts_with("#")) {
                 continue;
             }
             if (consumeOptionPrefix(line, STR_DATA)) {

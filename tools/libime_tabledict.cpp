@@ -5,11 +5,15 @@
  */
 
 #include <unistd.h>
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
+#include <string_view>
 #include "libime/table/tablebaseddictionary.h"
+
+namespace {
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0
@@ -21,6 +25,8 @@ void usage(const char *argv0) {
               << std::endl
               << "-h: Show this help" << std::endl;
 }
+
+} // namespace
 
 int main(int argc, char *argv[]) {
 
@@ -61,7 +67,7 @@ int main(int argc, char *argv[]) {
 
     std::ifstream fin;
     std::istream *in;
-    if (strcmp(argv[optind], "-") == 0) {
+    if (std::string_view{argv[optind]} == "-") {
         in = &std::cin;
     } else {
         fin.open(argv[optind], std::ios::in | std::ios::binary);
@@ -85,7 +91,7 @@ int main(int argc, char *argv[]) {
 
     std::ofstream fout;
     std::ostream *out;
-    if (strcmp(argv[optind + 1], "-") == 0) {
+    if (std::string_view{argv[optind + 1]} == "-") {
         out = &std::cout;
     } else {
         fout.open(argv[optind + 1], std::ios::out | std::ios::binary);

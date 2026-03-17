@@ -231,11 +231,13 @@ size_t fuzzyFactor(PinyinFuzzyFlags flags) {
 PinyinDictionary::TrieType loadTextImpl(std::istream &in) {
     PinyinDictionary::TrieType trie;
 
+    size_t lineNo = 0;
     std::string lineBuf;
     while (!in.eof()) {
         if (!std::getline(in, lineBuf)) {
             break;
         }
+        lineNo++;
 
         auto line = fcitx::stringutils::trimView(lineBuf);
         std::vector<std::string> tokens =
@@ -243,12 +245,12 @@ PinyinDictionary::TrieType loadTextImpl(std::istream &in) {
         if (tokens.size() == 3 || tokens.size() == 2) {
             const std::string &hanzi = tokens[0];
             std::string_view pinyin = tokens[1];
-            float prob = 0.0F;
-            if (tokens.size() == 3) {
-                prob = std::stof(tokens[2]);
-            }
 
             try {
+                float prob = 0.0F;
+                if (tokens.size() == 3) {
+                    prob = std::stof(tokens[2]);
+                }
                 auto result = PinyinEncoder::encodeFullPinyinWithFlags(
                     pinyin, PinyinFuzzyFlag::VE_UE);
                 result.push_back(pinyinHanziSep);
@@ -256,7 +258,7 @@ PinyinDictionary::TrieType loadTextImpl(std::istream &in) {
                 trie.set(result.data(), result.size(), prob);
             } catch (const std::invalid_argument &e) {
                 LIBIME_ERROR()
-                    << "Failed to parse line: " << line << ", skipping.";
+                    << "Skipped line " << lineNo << ", exception: " << e.what();
             }
         }
     }

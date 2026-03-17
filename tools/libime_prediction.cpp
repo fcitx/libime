@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -22,6 +23,8 @@
 #include "libime/core/constants.h"
 #include "libime/core/datrie.h"
 #include "libime/core/languagemodel.h"
+
+namespace {
 
 void usage(const char *argv0) {
     std::cout
@@ -39,8 +42,8 @@ float score(const libime::LanguageModel &model, std::string_view w,
                             std::vector<std::string_view>{w, w2});
 }
 
-void parse(const char *modelFile, const char *arpa, const char *output,
-           float filter, unsigned long maxSize) {
+int parse(const char *modelFile, const char *arpa, const char *output,
+          float filter, unsigned long maxSize) {
     using namespace libime;
     LanguageModel model(modelFile);
     DATrie<float> trie;
@@ -51,6 +54,10 @@ void parse(const char *modelFile, const char *arpa, const char *output,
         in = &std::cin;
     } else {
         fin.open(arpa, std::ios::in | std::ios::binary);
+        if (!fin) {
+            std::cerr << "Error: Failed to open input file: " << arpa << '\n';
+            return 1;
+        }
         in = &fin;
     }
 
@@ -58,62 +65,68 @@ void parse(const char *modelFile, const char *arpa, const char *output,
     std::unordered_map<std::string, std::unordered_map<std::string, float>>
         word;
     int grams = -1;
-    while (!in->eof()) {
-        if (!std::getline(*in, lineBuf)) {
-            break;
-        }
-
-        auto line = fcitx::stringutils::trimView(lineBuf);
-
-        if (line == "\\2-grams:") {
-            grams = 2;
-            continue;
-        }
-
-        if (line == "\\3-grams:") {
-            break;
-        }
-
-        if (grams < 0) {
-            continue;
-        }
-        std::vector<std::string> tokens =
-            fcitx::stringutils::split(line, FCITX_WHITESPACE);
-
-        if (tokens.size() < static_cast<size_t>(grams) + 1) {
-            continue;
-        }
-        // We don't want prediction generate <unk>
-        if (std::find(tokens.begin() + 1, tokens.end(), "<unk>") !=
-            tokens.end()) {
-            continue;
-        }
-
-        auto s = score(model, tokens[grams - 1], tokens[grams]);
-        if (s > filter) {
-            word[tokens[grams - 1]][tokens[grams]] = s;
-        }
-    }
-
-    for (auto &p : word) {
-        std::vector<std::pair<std::string, float>> result(p.second.begin(),
-                                                          p.second.end());
-        std::ranges::sort(result, [](const auto &lhs, const auto &rhs) {
-            if (lhs.second != rhs.second) {
-                return lhs.second > rhs.second;
+    try {
+        while (!in->eof()) {
+            if (!std::getline(*in, lineBuf)) {
+                break;
             }
-            return lhs.first < rhs.first;
-        });
-        if (result.size() > maxSize) {
-            result.resize(maxSize);
+
+            auto line = fcitx::stringutils::trimView(lineBuf);
+
+            if (line == "\\2-grams:") {
+                grams = 2;
+                continue;
+            }
+
+            if (line == "\\3-grams:") {
+                break;
+            }
+
+            if (grams < 0) {
+                continue;
+            }
+            std::vector<std::string> tokens =
+                fcitx::stringutils::split(line, FCITX_WHITESPACE);
+
+            if (tokens.size() < static_cast<size_t>(grams) + 1) {
+                continue;
+            }
+            // We don't want prediction generate <unk>
+            if (std::find(tokens.begin() + 1, tokens.end(), "<unk>") !=
+                tokens.end()) {
+                continue;
+            }
+
+            auto s = score(model, tokens[grams - 1], tokens[grams]);
+            if (s > filter) {
+                word[tokens[grams - 1]][tokens[grams]] = s;
+            }
         }
-        for (auto &p2 : result) {
-            trie.set(p.first + "|" + p2.first, p2.second);
+
+        for (auto &p : word) {
+            std::vector<std::pair<std::string, float>> result(p.second.begin(),
+                                                              p.second.end());
+            std::ranges::sort(result, [](const auto &lhs, const auto &rhs) {
+                if (lhs.second != rhs.second) {
+                    return lhs.second > rhs.second;
+                }
+                return lhs.first < rhs.first;
+            });
+            if (result.size() > maxSize) {
+                result.resize(maxSize);
+            }
+            for (auto &p2 : result) {
+                trie.set(p.first + "|" + p2.first, p2.second);
+            }
         }
+    } catch (const std::exception &e) {
+        std::cerr << "Exception happened when parsing input file " << arpa
+                  << ": " << e.what() << '\n';
+        return 1;
     }
 
-    FCITX_LOG(Info) << "Memory: " << trie.mem_size()
-                    << " Number of entries: " << trie.size();
+    std::cerr << "Memory: " << trie.mem_size()
+              << " Number of entries: " << trie.size();
 
     std::ofstream fout;
     std::ostream *out;
@@ -121,12 +134,24 @@ void parse(const char *modelFile, const char *arpa, const char *output,
         out = &std::cout;
     } else {
         fout.open(output, std::ios::out | std::ios::binary);
+        if (!fout) {
+            std::cerr << "Error: Failed to open output file: " << output
+                      << '\n';
+            return 1;
+        }
         out = &fout;
     }
-    trie.save(*out);
+    try {
+        trie.save(*out);
+    } catch (const std::exception &e) {
+        std::cerr << "Exception happened when saving data to output file "
+                  << output << ": " << e.what() << '\n';
+        return 1;
+    }
+    return 0;
 }
 
-void dump(const char *input, const char *output) {
+int dump(const char *input, const char *output) {
     using namespace libime;
     std::ifstream fin;
     std::istream *in;
@@ -134,11 +159,21 @@ void dump(const char *input, const char *output) {
         in = &std::cin;
     } else {
         fin.open(input, std::ios::in | std::ios::binary);
+        if (!fin) {
+            std::cerr << "Error: Failed to open input file: " << input << '\n';
+            return 1;
+        }
         in = &fin;
     }
 
     DATrie<float> trie;
-    trie.load(*in);
+    try {
+        trie.load(*in);
+    } catch (const std::exception &e) {
+        std::cerr << "Exception happened when loading input file " << input
+                  << ": " << e.what() << '\n';
+        return 1;
+    }
 
     std::ofstream fout;
     std::ostream *out;
@@ -146,15 +181,29 @@ void dump(const char *input, const char *output) {
         out = &std::cout;
     } else {
         fout.open(output, std::ios::out | std::ios::binary);
+        if (!fout) {
+            std::cerr << "Error: Failed to open output file: " << output
+                      << '\n';
+            return 1;
+        }
         out = &fout;
     }
-    trie.foreach([out, &trie](float value, size_t len, uint64_t pos) {
-        std::string s;
-        trie.suffix(s, len, pos);
-        *out << s << " " << value << '\n';
-        return true;
-    });
+    try {
+        trie.foreach([out, &trie](float value, size_t len, uint64_t pos) {
+            std::string s;
+            trie.suffix(s, len, pos);
+            *out << s << " " << value << '\n';
+            return true;
+        });
+    } catch (const std::exception &e) {
+        std::cerr << "Exception happened when dumping data to output file "
+                  << output << ": " << e.what() << '\n';
+        return 1;
+    }
+    return 0;
 }
+
+} // namespace
 
 int main(int argc, char *argv[]) {
     int c;
@@ -188,14 +237,12 @@ int main(int argc, char *argv[]) {
             usage(argv[0]);
             return 1;
         }
-        dump(argv[optind], argv[optind + 1]);
-    } else {
-        if (optind + 2 >= argc) {
-            usage(argv[0]);
-            return 1;
-        }
-        parse(argv[optind], argv[optind + 1], argv[optind + 2], filter,
-              maxSize);
+        return dump(argv[optind], argv[optind + 1]);
     }
-    return 0;
+    if (optind + 2 >= argc) {
+        usage(argv[0]);
+        return 1;
+    }
+    return parse(argv[optind], argv[optind + 1], argv[optind + 2], filter,
+                 maxSize);
 }

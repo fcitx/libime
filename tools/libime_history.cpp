@@ -8,13 +8,19 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <string>
+#include <string_view>
 #include "libime/core/historybigram.h"
 
+namespace {
+
 void usage(const char *argv0) {
-    std::cout << "Usage: " << argv0 << " [-c] <source> <dest>" << std::endl
-              << "-c: Compile text to binary" << std::endl
-              << "-h: Show this help" << std::endl;
+    std::cout << "Usage: " << argv0 << " [-c] <source> <dest>\n"
+              << "-c: Compile text to binary\n"
+              << "-h: Show this help\n";
 }
+
+} // namespace
 
 int main(int argc, char *argv[]) {
     bool compile = false;
@@ -42,6 +48,11 @@ int main(int argc, char *argv[]) {
 
     try {
         std::ifstream in(argv[optind], std::ios::in | std::ios::binary);
+        if (!in) {
+            std::cerr << "Error: Failed to open input file: " << argv[optind]
+                      << '\n';
+            return 1;
+        }
         if (compile) {
             history.loadText(in);
         } else {
@@ -50,11 +61,17 @@ int main(int argc, char *argv[]) {
 
         std::ofstream fout;
         std::ostream *out;
-        if (strcmp(argv[optind + 1], "-") == 0) {
+        std::string_view outputFile(argv[optind + 1]);
+        if (outputFile == "-") {
             out = &std::cout;
         } else {
-            fout.open(argv[optind + 1], std::ios::out | std::ios::binary);
-            out = &fout;
+            fout.open(std::string(outputFile),
+                      std::ios::out | std::ios::binary);
+            if (!fout) {
+                std::cerr << "Error: Failed to open output file: " << outputFile
+                          << '\n';
+                return 1;
+            }
         }
         if (compile) {
             history.save(*out);
@@ -62,7 +79,7 @@ int main(int argc, char *argv[]) {
             history.dump(*out);
         }
     } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << e.what() << '\n';
         return 1;
     }
     return 0;

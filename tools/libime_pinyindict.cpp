@@ -6,13 +6,17 @@
 
 #include <unistd.h>
 #include <chrono>
+#include <exception>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <fcitx-utils/log.h>
 #include "libime/core/utils.h"
 #include "libime/core/utils_p.h"
 #include "libime/pinyin/pinyindictionary.h"
+
+namespace {
 
 void usage(const char *argv0) {
     std::cout << "Usage: " << argv0 << " [-d] <source> <dest>\n"
@@ -20,6 +24,8 @@ void usage(const char *argv0) {
               << "-v: Show debug message\n"
               << "-h: Show this help\n";
 }
+
+} // namespace
 
 int main(int argc, char *argv[]) {
 
@@ -49,20 +55,46 @@ int main(int argc, char *argv[]) {
     using namespace libime;
     PinyinDictionary dict;
 
-    auto t0 = std::chrono::high_resolution_clock::now();
-    dict.load(PinyinDictionary::SystemDict, argv[optind],
-              dump ? PinyinDictFormat::Binary : PinyinDictFormat::Text);
-    LIBIME_DEBUG() << "Load pinyin dict: " << millisecondsTill(t0);
+    try {
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        std::ifstream in(argv[optind], std::ios::in | std::ios::binary);
+        if (!in) {
+            std::cerr << "Error: Failed to open input file: " << argv[optind]
+                      << '\n';
+            return 1;
+        }
+        dict.load(PinyinDictionary::SystemDict, in,
+                  dump ? PinyinDictFormat::Binary : PinyinDictFormat::Text);
+        LIBIME_DEBUG() << "Load pinyin dict: " << millisecondsTill(t0);
+    } catch (const std::exception &e) {
+        std::cerr << "Exception happened when loading input file "
+                  << argv[optind] << ": " << e.what() << '\n';
+        return 1;
+    }
 
     std::ofstream fout;
     std::ostream *out;
-    if (std::string_view(argv[optind + 1]) == "-") {
+    std::string_view outputFile(argv[optind + 1]);
+    if (outputFile == "-") {
         out = &std::cout;
     } else {
-        fout.open(argv[optind + 1], std::ios::out | std::ios::binary);
+        fout.open(std::string(outputFile), std::ios::out | std::ios::binary);
+        if (!fout) {
+            std::cerr << "Error: Failed to open output file: " << outputFile
+                      << '\n';
+            return 1;
+        }
         out = &fout;
     }
-    dict.save(PinyinDictionary::SystemDict, *out,
-              dump ? PinyinDictFormat::Text : PinyinDictFormat::Binary);
+
+    try {
+        dict.save(PinyinDictionary::SystemDict, *out,
+                  dump ? PinyinDictFormat::Text : PinyinDictFormat::Binary);
+    } catch (const std::exception &e) {
+        std::cerr << "Exception happened when saving output file " << outputFile
+                  << ": " << e.what() << '\n';
+        return 1;
+    }
     return 0;
 }

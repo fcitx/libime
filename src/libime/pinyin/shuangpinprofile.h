@@ -26,6 +26,7 @@ enum class ShuangpinBuiltinProfile {
     Zhongwenzhixing,
     PinyinJiajia,
     Xiaohe,
+    GB,
 };
 
 class ShuangpinProfilePrivate;

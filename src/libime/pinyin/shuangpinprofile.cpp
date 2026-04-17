@@ -398,6 +398,11 @@ ShuangpinProfile::ShuangpinProfile(
         c = SPMap_C_XIAOHE;
         s = SPMap_S_XIAOHE;
         break;
+    case ShuangpinBuiltinProfile::GB:
+        d->zeroS_ = "a";
+        c = SPMap_C_GB;
+        s = SPMap_S_GB;
+        break;
     default:
         throw std::invalid_argument("Invalid profile");
     }

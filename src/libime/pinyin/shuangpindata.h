@@ -95,4 +95,26 @@ static const SP_C SPMap_C_XIAOHE[] = {
 static const SP_S SPMap_S_XIAOHE[] = {
     {"ch", 'i'}, {"sh", 'u'}, {"zh", 'v'}, {"\0", '\0'}};
 
+static const SP_C SPMap_C_GB[] = {
+    {.strQP = "ai", .cJP = 'k'},   {.strQP = "an", .cJP = 'f'},
+    {.strQP = "ang", .cJP = 'g'},  {.strQP = "ao", .cJP = 'c'},
+    {.strQP = "ei", .cJP = 'b'},   {.strQP = "en", .cJP = 'r'},
+    {.strQP = "eng", .cJP = 'h'},  {.strQP = "er", .cJP = 'l'},
+    {.strQP = "ia", .cJP = 'q'},   {.strQP = "ian", .cJP = 'd'},
+    {.strQP = "iang", .cJP = 'n'}, {.strQP = "iao", .cJP = 'm'},
+    {.strQP = "ie", .cJP = 't'},   {.strQP = "in", .cJP = 'l'},
+    {.strQP = "ing", .cJP = 'j'},  {.strQP = "iong", .cJP = 's'},
+    {.strQP = "iu", .cJP = 'y'},   {.strQP = "ong", .cJP = 's'},
+    {.strQP = "ou", .cJP = 'p'},   {.strQP = "ua", .cJP = 'q'},
+    {.strQP = "uai", .cJP = 'y'},  {.strQP = "uan", .cJP = 'w'},
+    {.strQP = "uang", .cJP = 'n'}, {.strQP = "ue", .cJP = 'x'},
+    {.strQP = "ui", .cJP = 'v'},   {.strQP = "un", .cJP = 'z'},
+    {.strQP = "uo", .cJP = 'o'},   {.strQP = "ve", .cJP = 'x'},
+    {.strQP = "v", .cJP = 'v'},    {.strQP = "\0", .cJP = '\0'}};
+
+static const SP_S SPMap_S_GB[] = {{.strQP = "ch", .cJP = 'i'},
+                                  {.strQP = "sh", .cJP = 'u'},
+                                  {.strQP = "zh", .cJP = 'v'},
+                                  {.strQP = "\0", .cJP = '\0'}};
+
 #endif

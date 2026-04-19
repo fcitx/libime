@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -34,6 +35,7 @@
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/constants.h"
 #include "pinyindecoder.h"
+#include "pinyindecoder_p.h"
 #include "pinyinencoder.h"
 #include "pinyinime.h"
 #include "pinyinmatchstate.h"
@@ -41,9 +43,9 @@
 namespace libime {
 
 enum class LearnWordResult {
-    Normal,
-    Custom,
-    Ignored,
+    Normal,  /// word is consisted all from regular word from dict.
+    Custom,  /// word is consisted with custom word (e.g. symbol replacement).
+    Ignored, /// not learned as word.
 };
 
 enum class SelectedPinyinType {
@@ -53,13 +55,13 @@ enum class SelectedPinyinType {
 };
 
 struct SelectedPinyin {
-    SelectedPinyin(size_t s, WordNode word, std::string encodedPinyin,
-                   SelectedPinyinType type)
-        : offset_(s), word_(std::move(word)),
-          encodedPinyin_(std::move(encodedPinyin)), type_(type) {}
+    SelectedPinyin(size_t s, PinyinWordNode word, SelectedPinyinType type)
+        : offset_(s), word_(std::move(word)), type_(type) {}
+
+    const std::string &encodedPinyin() const { return word_.encodedPinyin(); }
+
     size_t offset_;
-    WordNode word_;
-    std::string encodedPinyin_;
+    PinyinWordNode word_;
     SelectedPinyinType type_;
 };
 
@@ -82,7 +84,7 @@ public:
     mutable std::vector<SentenceResult> candidatesToCursor_;
     mutable std::unordered_set<std::string> candidatesToCursorSet_;
     std::vector<fcitx::ScopedConnection> conn_;
-    std::list<WordNode> contextWords_;
+    std::list<PinyinWordNode> contextWords_;
 
     size_t alignCursorToNextSegment() const {
         FCITX_Q();
@@ -179,7 +181,7 @@ public:
         if (!remain.empty()) {
             if (std::all_of(remain.begin(), remain.end(),
                             [](char c) { return c == '\''; })) {
-                selection.emplace_back(q->size(), WordNode("", 0), "",
+                selection.emplace_back(q->size(), PinyinWordNode({}, 0),
                                        SelectedPinyinType::Separator);
             }
         }
@@ -190,16 +192,18 @@ public:
     void select(const SentenceResult &sentence) {
         FCITX_Q();
         auto offset = q->selectedLength();
-        selectHelper(
-            [offset, &sentence, this](std::vector<SelectedPinyin> &selection) {
-                for (const auto &p : sentence.sentence()) {
-                    selection.emplace_back(
-                        offset + p->to()->index(),
-                        WordNode{p->word(), ime_->model()->index(p->word())},
-                        p->as<PinyinLatticeNode>().encodedPinyin(),
-                        SelectedPinyinType::Normal);
-                }
-            });
+        selectHelper([offset, &sentence,
+                      this](std::vector<SelectedPinyin> &selection) {
+            for (const auto &p : sentence.sentence()) {
+                selection.emplace_back(
+                    offset + p->to()->index(),
+                    PinyinWordNode{
+                        {p->word(), p->as<PinyinLatticeNode>().encodedPinyin()},
+                        ime_->model()->index(p->word())},
+
+                    SelectedPinyinType::Normal);
+            }
+        });
     }
 
     void selectCustom(size_t inputLength, std::string_view segment,
@@ -210,20 +214,21 @@ public:
                       &encodedPinyin](std::vector<SelectedPinyin> &selection) {
             auto index = ime_->model()->index(segment);
             selection.emplace_back(
-                offset + inputLength, WordNode{segment, index},
-                std::string(encodedPinyin), SelectedPinyinType::Custom);
+                offset + inputLength,
+                PinyinWordNode{{segment, encodedPinyin}, index},
+                SelectedPinyinType::Custom);
         });
     }
 
-    LearnWordResult learnWord() {
+    std::tuple<LearnWordResult, std::string> learnWord() {
         std::string ss;
         std::string pinyin;
         if (selected_.empty()) {
-            return LearnWordResult::Ignored;
+            return {LearnWordResult::Ignored, ""};
         }
         // don't learn existing word.
         if (selected_.size() == 1 && selected_[0].size() == 1) {
-            return LearnWordResult::Ignored;
+            return {LearnWordResult::Ignored, ""};
         }
         // Validate the learning word.
         // All single || custom || length <= 4
@@ -235,7 +240,7 @@ public:
                 isAllSingleWord &&
                 (s.empty() || (s.size() == 1 &&
                                (s[0].type_ == SelectedPinyinType::Separator ||
-                                s[0].encodedPinyin_.size() == 2)));
+                                s[0].encodedPinyin().size() == 2)));
             for (auto &item : s) {
                 if (item.type_ == SelectedPinyinType::Separator) {
                     continue;
@@ -244,21 +249,21 @@ public:
                     hasCustom = true;
                 }
                 // We can't learn non pinyin word.
-                if (item.encodedPinyin_.empty() ||
-                    item.encodedPinyin_.size() % 2 != 0) {
-                    return LearnWordResult::Ignored;
+                if (item.encodedPinyin().empty() ||
+                    item.encodedPinyin().size() % 2 != 0) {
+                    return {LearnWordResult::Ignored, ""};
                 }
-                totalPinyinLength += item.encodedPinyin_.size() / 2;
+                totalPinyinLength += item.encodedPinyin().size() / 2;
             }
         }
 
         FCITX_Q();
         if (!hasCustom) {
             if ((!isAllSingleWord && totalPinyinLength > 4)) {
-                return LearnWordResult::Ignored;
+                return {LearnWordResult::Ignored, ""};
             }
             if (ime_->model()->containsNonUnigram(q->selectedWords())) {
-                return LearnWordResult::Ignored;
+                return {LearnWordResult::Ignored, ""};
             }
         }
 
@@ -267,25 +272,26 @@ public:
                 if (item.type_ == SelectedPinyinType::Separator) {
                     continue;
                 }
-                assert(!item.encodedPinyin_.empty());
-                assert(item.encodedPinyin_.size() % 2 == 0);
+                assert(!item.encodedPinyin().empty());
+                assert(item.encodedPinyin().size() % 2 == 0);
                 ss += item.word_.word();
                 if (!pinyin.empty()) {
                     pinyin.push_back('\'');
                 }
-                pinyin += PinyinEncoder::decodeFullPinyin(item.encodedPinyin_);
+                pinyin += PinyinEncoder::decodeFullPinyin(item.encodedPinyin());
             }
         }
 
         if (auto opt = ime_->dict()->lookupWord(PinyinDictionary::UserDict,
                                                 pinyin, ss)) {
-            return LearnWordResult::Normal;
+            return {LearnWordResult::Ignored, ""};
         }
 
         ime_->dict()->addWord(PinyinDictionary::UserDict, pinyin, ss,
                               hasCustom ? -1 : 0);
 
-        return hasCustom ? LearnWordResult::Custom : LearnWordResult::Normal;
+        return {hasCustom ? LearnWordResult::Custom : LearnWordResult::Normal,
+                pinyin};
     }
 };
 
@@ -921,7 +927,7 @@ PinyinContext::selectedWordsWithPinyin() const {
         for (const auto &item : s) {
             if (item.type_ != SelectedPinyinType::Separator) {
                 newSentence.emplace_back(item.word_.word(),
-                                         item.encodedPinyin_);
+                                         item.encodedPinyin());
             }
         }
     }
@@ -933,11 +939,11 @@ std::string PinyinContext::selectedFullPinyin() const {
     std::string pinyin;
     for (const auto &s : d->selected_) {
         for (const auto &item : s) {
-            if (!item.encodedPinyin_.empty()) {
+            if (!item.encodedPinyin().empty()) {
                 if (!pinyin.empty()) {
                     pinyin.push_back('\'');
                 }
-                pinyin += PinyinEncoder::decodeFullPinyin(item.encodedPinyin_);
+                pinyin += PinyinEncoder::decodeFullPinyin(item.encodedPinyin());
             }
         }
     }
@@ -970,26 +976,30 @@ void PinyinContext::learn() {
         return;
     }
 
-    if (auto result = d->learnWord(); result != LearnWordResult::Ignored) {
+    if (auto [result, encodedWordPinyin] = d->learnWord();
+        result != LearnWordResult::Ignored) {
         // Do not insert custom to history for the first time.
         if (result == LearnWordResult::Normal) {
-            std::vector<std::string> newSentence{sentence()};
-            d->ime_->model()->history().add(newSentence);
+            // Create new sentence with the whole new learned word.
+            std::vector<HistoryBigram::WordWithCode> newSentence{
+                {sentence(), encodedWordPinyin}};
+            d->ime_->model()->history().addWithCode(newSentence);
         }
     } else {
-        std::vector<std::string> newSentence;
+        std::vector<HistoryBigram::WordWithCode> newSentence;
         for (auto &s : d->selected_) {
             for (auto &item : s) {
                 if (item.type_ != SelectedPinyinType::Separator) {
                     // Non pinyin word. Skip it.
-                    if (item.encodedPinyin_.empty()) {
+                    if (item.encodedPinyin().empty()) {
                         return;
                     }
-                    newSentence.push_back(item.word_.word());
+                    newSentence.push_back(
+                        {item.word_.word(), item.encodedPinyin()});
                 }
             }
         }
-        d->ime_->model()->history().add(newSentence);
+        d->ime_->model()->history().addWithCode(newSentence);
     }
 }
 
@@ -1014,7 +1024,7 @@ void PinyinContext::appendContextWords(
     for (const auto &word :
          std::span{contextWords}.last(std::min(contextWords.size(), needed))) {
         d->contextWords_.push_back(
-            WordNode(word, d->ime_->model()->index(word)));
+            PinyinWordNode({word, ""}, d->ime_->model()->index(word)));
     }
     while (d->contextWords_.size() > needed) {
         d->contextWords_.pop_front();
@@ -1027,6 +1037,40 @@ std::vector<std::string> PinyinContext::contextWords() const {
     words.reserve(d->contextWords_.size());
     for (const auto &word : d->contextWords_) {
         words.push_back(word.word());
+    }
+    return words;
+}
+
+void PinyinContext::setContextWordsWithPinyin(
+    const std::vector<HistoryBigram::WordWithCode> &contextWordsWithPinyin) {
+    FCITX_D();
+    d->contextWords_.clear();
+    appendContextWordsWithPinyin(contextWordsWithPinyin);
+}
+
+void PinyinContext::appendContextWordsWithPinyin(
+    const std::vector<HistoryBigram::WordWithCode> &contextWordsWithPinyin) {
+    FCITX_D();
+
+    size_t needed = LanguageModel::maxOrder() - 1;
+
+    for (const auto &word : std::span{contextWordsWithPinyin}.last(
+             std::min(contextWordsWithPinyin.size(), needed))) {
+        d->contextWords_.push_back(
+            PinyinWordNode(word, d->ime_->model()->index(word.first)));
+    }
+    while (d->contextWords_.size() > needed) {
+        d->contextWords_.pop_front();
+    }
+}
+
+std::vector<HistoryBigram::WordWithCode>
+PinyinContext::contextWordsWithPinyin() const {
+    FCITX_D();
+    std::vector<HistoryBigram::WordWithCode> words;
+    words.reserve(d->contextWords_.size());
+    for (const auto &word : d->contextWords_) {
+        words.push_back({word.word(), word.encodedPinyin()});
     }
     return words;
 }

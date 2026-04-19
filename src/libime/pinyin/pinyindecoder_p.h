@@ -8,6 +8,8 @@
 
 #include <string>
 #include <string_view>
+#include <libime/core/historybigram.h>
+#include <libime/core/languagemodel.h>
 #include <libime/core/lattice.h>
 
 namespace libime {
@@ -20,6 +22,17 @@ public:
     std::string encodedPinyin_;
     bool isCorrection_ = false;
 };
+
+class PinyinWordNode : public WordNode {
+public:
+    PinyinWordNode(const HistoryBigram::WordWithCodeView &word, WordIndex idx)
+        : WordNode(word.first, idx), encodedPinyin_(word.second) {}
+    const std::string &encodedPinyin() const { return encodedPinyin_; }
+
+private:
+    std::string encodedPinyin_;
+};
+
 } // namespace libime
 
 #endif // _FCITX_LIBIME_PINYIN_PINYINDECODER_P_H_

@@ -4,10 +4,14 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later
  */
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <fcitx-utils/log.h>
 #include "libime/core/languagemodel.h"
+#include "libime/core/lattice.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/table/tablebaseddictionary.h"
 #include "libime/table/tablecontext.h"
@@ -15,6 +19,8 @@
 #include "testdir.h"
 
 using namespace libime;
+
+namespace {
 
 class TestLmResolver : public LanguageModelResolver {
 public:
@@ -33,7 +39,22 @@ private:
     std::string path_;
 };
 
-int main() {
+size_t candidateIndex(TableContext &c, const std::string &candidate) {
+    auto candidates = c.candidates();
+    auto iter =
+        std::ranges::find(candidates, candidate, &SentenceResult::toString);
+    std::ranges::for_each(candidates, [](const auto &candidate) {
+        FCITX_INFO() << candidate.toString() << " " << candidate.score();
+    });
+    FCITX_ASSERT(iter != candidates.end());
+    return std::distance(candidates.begin(), iter);
+}
+
+void selectCandidate(TableContext &c, const std::string &candidate) {
+    c.select(candidateIndex(c, candidate));
+}
+
+void testBasic() {
     fcitx::Log::setLogRule("*=5");
     TestLmResolver lmresolver(LIBIME_BINARY_DIR "/data/sc.lm");
     auto lm = lmresolver.languageModelFileForLanguage("zh_CN");
@@ -103,6 +124,54 @@ int main() {
         c.clear();
         FCITX_INFO() << "========================";
     }
+}
 
+void testHistory() {
+    fcitx::Log::setLogRule("*=5");
+    TestLmResolver lmresolver(LIBIME_BINARY_DIR "/data/sc.lm");
+    auto lm = lmresolver.languageModelFileForLanguage("zh_CN");
+    TableBasedDictionary dict;
+    UserLanguageModel model(lm);
+    dict.load(LIBIME_BINARY_DIR "/data/wbx.main.dict");
+    TableOptions options;
+    options.setLanguageCode("zh_CN");
+    options.setLearning(true);
+    options.setAutoPhraseLength(-1);
+    options.setAutoSelect(true);
+    options.setAutoSelectLength(-1);
+    options.setNoMatchAutoSelectLength(-1);
+    options.setNoSortInputLength(0);
+    options.setAutoRuleSet({});
+    options.setMatchingKey('z');
+    options.setOrderPolicy(OrderPolicy::Freq);
+    dict.setTableOptions(options);
+    TableContext c(dict, model);
+
+    c.type("a");
+    auto index = candidateIndex(c, "其");
+    c.clear();
+
+    c.type("adw");
+    selectCandidate(c, "其");
+    c.learn();
+    c.clear();
+
+    c.type("a");
+    auto index2 = candidateIndex(c, "其");
+    FCITX_ASSERT(index == index2);
+    c.select(index2);
+    c.learn();
+    c.clear();
+
+    c.type("a");
+    auto index3 = candidateIndex(c, "其");
+    FCITX_ASSERT(index3 < index2);
+}
+
+} // namespace
+
+int main() {
+    testBasic();
+    testHistory();
     return 0;
 }

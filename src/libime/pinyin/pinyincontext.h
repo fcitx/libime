@@ -19,6 +19,7 @@
 #include <libime/core/languagemodel.h>
 #include <libime/core/lattice.h>
 #include <libime/pinyin/libimepinyin_export.h>
+#include "libime/core/historybigram.h"
 
 namespace libime {
 class PinyinIME;
@@ -109,8 +110,7 @@ public:
     std::vector<std::string> selectedWords() const;
 
     /// Selected hanzi with encoded pinyin
-    std::vector<std::pair<std::string, std::string>>
-    selectedWordsWithPinyin() const;
+    std::vector<HistoryBigram::WordWithCode> selectedWordsWithPinyin() const;
 
     /// Get the full pinyin string of the selected part.
     std::string selectedFullPinyin() const;
@@ -163,6 +163,29 @@ public:
      * @since 1.1.13
      */
     std::vector<std::string> contextWords() const;
+
+    /**
+     * Set context words with pinyin for better prediction.
+     * @param contextWordsWithPinyin The context words with encoded pinyin.
+     * @since 1.1.14
+     */
+    void setContextWordsWithPinyin(
+        const std::vector<HistoryBigram::WordWithCode> &contextWordsWithPinyin);
+
+    /**
+     * Append context words with pinyin for better prediction.
+     * @param contextWordsWithPinyin The context words with pinyin.
+     * @since 1.1.14
+     */
+    void appendContextWordsWithPinyin(
+        const std::vector<HistoryBigram::WordWithCode> &contextWordsWithPinyin);
+
+    /**
+     * Get context words with pinyin for better prediction.
+     * @return current context words with pinyin
+     * @since 1.1.14
+     */
+    std::vector<HistoryBigram::WordWithCode> contextWordsWithPinyin() const;
 
 protected:
     bool typeImpl(const char *s, size_t length) override;

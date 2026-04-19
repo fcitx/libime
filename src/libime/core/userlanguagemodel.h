@@ -13,6 +13,7 @@
 #include <string_view>
 #include <vector>
 #include <fcitx-utils/macros.h>
+#include <libime/core/historybigram.h>
 #include <libime/core/languagemodel.h>
 #include <libime/core/libimecore_export.h>
 
@@ -47,6 +48,8 @@ public:
     bool isUnknown(WordIndex idx, std::string_view view) const override;
 
     bool containsNonUnigram(const std::vector<std::string> &words) const;
+
+    void setCodeExtractor(ValidationCodeExtractor extractor);
 
 private:
     std::unique_ptr<UserLanguageModelPrivate> d_ptr;

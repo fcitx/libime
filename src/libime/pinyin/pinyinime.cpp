@@ -7,14 +7,17 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 #include <fcitx-utils/connectableobject.h>
 #include <fcitx-utils/macros.h>
 #include "libime/core/decoder.h"
+#include "libime/core/lattice.h"
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/pinyincorrectionprofile.h"
+#include "libime/pinyin/pinyindecoder.h"
+#include "libime/pinyin/pinyindecoder_p.h"
 #include "libime/pinyin/pinyinencoder.h"
-#include "pinyindecoder.h"
 
 namespace libime {
 
@@ -25,6 +28,17 @@ public:
         : fcitx::QPtrHolder<PinyinIME>(q), dict_(std::move(dict)),
           model_(std::move(model)),
           decoder_(std::make_unique<PinyinDecoder>(dict_.get(), model_.get())) {
+        model_->setCodeExtractor([](const WordNode *node) -> std::string {
+            if (const auto *pinyinNode =
+                    dynamic_cast<const PinyinLatticeNode *>(node)) {
+                return pinyinNode->encodedPinyin();
+            }
+            if (const auto *wordNode =
+                    dynamic_cast<const PinyinWordNode *>(node)) {
+                return wordNode->encodedPinyin();
+            }
+            return "";
+        });
     }
 
     FCITX_DEFINE_SIGNAL_PRIVATE(PinyinIME, optionChanged);

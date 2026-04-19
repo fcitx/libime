@@ -17,6 +17,7 @@
 #include <fcitx-utils/macros.h>
 #include <fcitx-utils/misc.h>
 #include <fcitx-utils/stringutils.h>
+#include "libime/core/historybigram.h"
 #include "libime/core/languagemodel.h"
 #include "libime/core/prediction.h"
 #include "libime/pinyin/pinyindictionary.h"
@@ -66,13 +67,13 @@ PinyinPrediction::predict(const State &state,
     auto result = Prediction::predictWithScore(state, sentence, maxSize);
     std::vector<std::tuple<std::string, float, PinyinPredictionSource>>
         intermedidateResult;
-    std::transform(
-        result.begin(), result.end(), std::back_inserter(intermedidateResult),
-        [](std::pair<std::string, float> &value) {
-            return std::make_tuple(std::move(value.first), value.second,
+    std::ranges::transform(result, std::back_inserter(intermedidateResult),
+                           [](std::pair<std::string, float> &value) {
+                               return std::make_tuple(
+                                   std::move(value.first), value.second,
                                    PinyinPredictionSource::Model);
-        });
-    std::make_heap(intermedidateResult.begin(), intermedidateResult.end(), cmp);
+                           });
+    std::ranges::make_heap(intermedidateResult, cmp);
 
     State prevState = model()->nullState();
     State outState;
@@ -131,15 +132,31 @@ PinyinPrediction::predict(const State &state,
             return true;
         });
 
-    std::sort_heap(intermedidateResult.begin(), intermedidateResult.end(), cmp);
-    std::transform(intermedidateResult.begin(), intermedidateResult.end(),
-                   std::back_inserter(finalResult), [](auto &value) {
-                       return std::make_pair(
-                           std::move(std::get<std::string>(value)),
-                           std::get<PinyinPredictionSource>(value));
-                   });
+    std::ranges::sort_heap(intermedidateResult, cmp);
+    std::ranges::transform(
+        intermedidateResult, std::back_inserter(finalResult), [](auto &value) {
+            return std::make_pair(std::move(std::get<std::string>(value)),
+                                  std::get<PinyinPredictionSource>(value));
+        });
 
     return finalResult;
+}
+
+std::vector<std::pair<std::string, PinyinPredictionSource>>
+PinyinPrediction::predict(
+    const State &state,
+    const std::vector<libime::HistoryBigram::WordWithCode> &sentence,
+    size_t maxSize) {
+    std::vector<std::string> words;
+    words.reserve(sentence.size());
+    for (const auto &[word, code] : sentence) {
+        words.push_back(word);
+    }
+    std::string_view lastPinyin;
+    if (!sentence.empty()) {
+        lastPinyin = sentence.back().second;
+    }
+    return predict(state, words, lastPinyin, maxSize);
 }
 
 std::vector<std::string>

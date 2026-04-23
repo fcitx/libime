@@ -239,9 +239,16 @@ PinyinDictionary::TrieType loadTextImpl(std::istream &in) {
         }
         lineNo++;
 
-        auto line = fcitx::stringutils::trimView(lineBuf);
-        std::vector<std::string> tokens =
-            fcitx::stringutils::split(line, FCITX_WHITESPACE);
+        std::string_view line = lineBuf;
+        std::vector<std::string> tokens;
+        while (!line.empty()) {
+            std::string token;
+            auto consumed = fcitx::stringutils::consumeMaybeEscapedValue(
+                line, FCITX_WHITESPACE, &token);
+            if (!consumed.empty()) {
+                tokens.push_back(std::string(token));
+            }
+        }
         if (tokens.size() == 3 || tokens.size() == 2) {
             const std::string &hanzi = tokens[0];
             std::string_view pinyin = tokens[1];
@@ -899,10 +906,10 @@ void PinyinDictionary::saveText(size_t idx, std::ostream &out) {
         if (sep == std::string::npos) {
             return true;
         }
+        auto fullPinyin = PinyinEncoder::decodeFullPinyin(buf.data(), sep);
         std::string_view ref(buf);
-        auto fullPinyin = PinyinEncoder::decodeFullPinyin(ref.data(), sep);
-        out << ref.substr(sep + 1) << " " << fullPinyin << " "
-            << std::setprecision(16) << value << '\n';
+        out << fcitx::stringutils::escapeForValue(ref.substr(sep + 1)) << " "
+            << fullPinyin << " " << std::setprecision(16) << value << '\n';
         return true;
     });
     out.copyfmt(state);

@@ -16,6 +16,8 @@
 
 using namespace libime;
 
+namespace {
+
 constexpr char testPinyin1[] = "ni'hui";
 constexpr char testHanzi1[] = "倪辉";
 
@@ -64,7 +66,7 @@ bool searchWordPrefix(const PinyinDictionary &dict, const char *data,
     return seenWord;
 }
 
-int main() {
+void testBasic() {
     PinyinDictionary dict;
     dict.load(PinyinDictionary::SystemDict,
               LIBIME_BINARY_DIR "/data/dict_sc.txt", PinyinDictFormat::Text);
@@ -93,5 +95,29 @@ int main() {
 
     dict.save(0, LIBIME_BINARY_DIR "/test/testpinyindictionary.dict",
               PinyinDictFormat::Binary);
+}
+
+void testEscape() {
+    std::stringstream ss;
+    constexpr std::string_view input = R"(
+"你\n好 不\"" ni
+)";
+
+    ss << input;
+    PinyinDictionary dict;
+    dict.load(PinyinDictionary::SystemDict, ss, PinyinDictFormat::Text);
+    FCITX_ASSERT(
+        dict.lookupWord(PinyinDictionary::SystemDict, "ni", "你\n好 不\""));
+    std::stringstream dump;
+    dict.save(PinyinDictionary::SystemDict, dump, PinyinDictFormat::Text);
+    FCITX_ASSERT(dump.str() == "\"你\\n好 不\\\"\" ni 0\n")
+        << "dump: " << dump.str();
+}
+
+} // namespace
+
+int main() {
+    testBasic();
+    testEscape();
     return 0;
 }

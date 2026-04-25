@@ -12,6 +12,7 @@
 #include <string>
 #include <unordered_set>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/stringutils.h>
 #include "libime/core/historybigram.h"
 
 namespace {
@@ -266,6 +267,24 @@ void testWithCodePredict() {
     }
 }
 
+void testAppend() {
+    using namespace libime;
+    HistoryBigram history;
+    history.addWithCode({{"你", "code1"}, {"是", "code2"}, {"一个", "code3"}});
+
+    history.addWithContext({{"是", "code2"}, {"一个", "code3"}},
+                           {{"好人", "code4"}});
+
+    history.addWithContext({{"不是", "code5"}}, {{"你的", "code6"}});
+    std::stringstream ss;
+    history.dump(ss);
+    auto lines = fcitx::stringutils::split(ss.str(), "\n");
+    FCITX_ASSERT(lines.size() == 2) << lines.size();
+    FCITX_ASSERT(lines[0] == "你的\tcode6") << lines[0];
+    FCITX_ASSERT(lines[1] == "你\tcode1 是\tcode2 一个\tcode3 好人\tcode4")
+        << lines[1];
+}
+
 } // namespace
 
 int main() {
@@ -276,5 +295,6 @@ int main() {
     testSaveAndLoadText();
     testWithCode();
     testWithCodePredict();
+    testAppend();
     return 0;
 }

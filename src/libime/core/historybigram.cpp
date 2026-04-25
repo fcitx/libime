@@ -395,6 +395,32 @@ public:
         bigram_.fillPredict(words, word, maxSize);
     }
 
+    bool maybeAppendToLatestSentence(const std::vector<WordWithCode> &context,
+                                     std::vector<WordWithCode> &newSentence) {
+        if (recent_.empty() || newSentence.empty()) {
+            return false;
+        }
+        auto &latestSentence = recent_.front();
+        if (latestSentence.size() < context.size() ||
+            !std::ranges::equal(
+                context,
+                std::views::drop(latestSentence,
+                                 latestSentence.size() - context.size()))) {
+            return false;
+        }
+
+        const int delta = 1;
+        decBigram(latestSentence.back(), {"</s>", ""}, delta);
+        for (auto &item : newSentence) {
+            unigram_.incFreq(item, delta);
+            incBigram(latestSentence.back(), item, delta);
+            latestSentence.push_back(std::move(item));
+        }
+        incBigram(latestSentence.back(), {"</s>", ""}, delta);
+
+        return true;
+    }
+
 private:
     template <typename R>
     void remove(const R &sentence) {
@@ -740,6 +766,15 @@ float HistoryBigram::scoreWithCode(
     return scoreWithCode(
         {prev ? prev->word() : "", extractor && prev ? extractor(prev) : ""},
         {cur ? cur->word() : "", extractor && cur ? extractor(cur) : ""});
+}
+
+void HistoryBigram::addWithContext(const std::vector<WordWithCode> &context,
+                                   std::vector<WordWithCode> newSentence) {
+    FCITX_D();
+    if (context.empty() ||
+        !d->pools_[0].maybeAppendToLatestSentence(context, newSentence)) {
+        addWithCode(newSentence);
+    }
 }
 
 } // namespace libime

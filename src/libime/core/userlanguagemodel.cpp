@@ -32,6 +32,7 @@ public:
     bool useOnlyUnigram_ = false;
 
     HistoryBigram history_;
+    ValidationCodeExtractor extractor_;
     float weight_ = DEFAULT_USER_LANGUAGE_MODEL_USER_WEIGHT;
     // log(wa * exp(a) + wb * exp(b))
     // log(exp(log(wa) + a) + exp(b + log(wb))
@@ -128,7 +129,12 @@ float UserLanguageModel::score(const State &state, const WordNode &word,
         score = LanguageModel::score(state, word, out);
     }
     const auto *prev = d->wordFromState(state);
-    float userScore = d->history_.score(prev, &word);
+    float userScore;
+    if (d->extractor_) {
+        userScore = d->history_.scoreWithCode(prev, &word, d->extractor_);
+    } else {
+        userScore = d->history_.score(prev, &word);
+    }
     d->setWordToState(out, &word);
     return std::max(score, sum_log_prob(score + d->wa_, userScore + d->wb_));
 }
@@ -168,6 +174,11 @@ bool UserLanguageModel::containsNonUnigram(
     }
 
     return LanguageModel::maxNgramLength(words) > 1;
+}
+
+void UserLanguageModel::setCodeExtractor(ValidationCodeExtractor extractor) {
+    FCITX_D();
+    d->extractor_ = std::move(extractor);
 }
 
 } // namespace libime

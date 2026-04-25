@@ -86,6 +86,8 @@ int main() {
             c.autoSelect();
             c.learn();
             c.clear();
+        } else if (word == "history") {
+            model.history().dump(std::cout);
         }
 
         size_t count = 1;

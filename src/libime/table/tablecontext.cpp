@@ -181,6 +181,13 @@ public:
         : QPtrHolder(q), dict_(dict), model_(model), decoder_(&dict, &model) {
         // Maybe use a better heuristics?
         candidates_.reserve(2048);
+        model_.setCodeExtractor([](const WordNode *word) -> std::string {
+            if (const auto *node =
+                    dynamic_cast<const TableLatticeNode *>(word)) {
+                return node->code();
+            }
+            return "";
+        });
     }
 
     // sort should already happened at this point.
@@ -745,22 +752,34 @@ void TableContext::learn() {
             return;
         }
     }
-    std::vector<std::string> newSentence;
+    std::vector<libime::HistoryBigram::WordWithCode> newSentence;
     for (auto &s : d->selected_) {
+        if (s.empty()) {
+            continue;
+        }
+        if (std::ranges::any_of(
+                s, [](const auto &item) { return !item.commit_; })) {
+            continue;
+        }
         std::string word;
-        for (auto &item : s) {
-            if (!item.commit_) {
-                word.clear();
-                break;
+        std::string code;
+        if (s.size() == 1) {
+            word = s[0].word_.word();
+            code = s[0].code_;
+        } else {
+            for (auto &item : s) {
+                word += item.word_.word();
             }
-            word += item.word_.word();
+            if (!d->dict_.generate(word, code)) {
+                return;
+            }
         }
         if (!word.empty()) {
-            newSentence.emplace_back(std::move(word));
+            newSentence.emplace_back(std::move(word), std::move(code));
         }
     }
     if (!newSentence.empty()) {
-        d->model_.history().add(newSentence);
+        d->model_.history().addWithCode(newSentence);
     }
 }
 
@@ -774,20 +793,30 @@ void TableContext::learnLast() {
         return;
     }
 
-    std::vector<std::string> newSentence;
+    std::vector<libime::HistoryBigram::WordWithCode> newSentence;
+    const auto &s = d->selected_.back();
+    if (std::ranges::any_of(s,
+                            [](const auto &item) { return !item.commit_; })) {
+        return;
+    }
     std::string word;
-    for (auto &item : d->selected_.back()) {
-        if (!item.commit_) {
-            word.clear();
+    std::string code;
+    if (s.size() == 1) {
+        word = s[0].word_.word();
+        code = s[0].code_;
+    } else {
+        for (const auto &item : s) {
+            word += item.word_.word();
+        }
+        if (!d->dict_.generate(word, code)) {
             return;
         }
-        word += item.word_.word();
     }
     if (!word.empty()) {
-        newSentence.emplace_back(std::move(word));
+        newSentence.emplace_back(std::move(word), std::move(code));
     }
     if (!newSentence.empty()) {
-        d->model_.history().add(newSentence);
+        d->model_.history().addWithCode(newSentence);
     }
 }
 

@@ -17,6 +17,7 @@
 #include <libime/core/prediction.h>
 #include <libime/pinyin/libimepinyin_export.h>
 #include <libime/pinyin/pinyindictionary.h>
+#include "libime/core/historybigram.h"
 
 namespace libime {
 
@@ -44,6 +45,16 @@ public:
     std::vector<std::pair<std::string, PinyinPredictionSource>>
     predict(const State &state, const std::vector<std::string> &sentence,
             std::string_view lastEncodedPinyin, size_t maxSize = 0);
+
+    /**
+     * Predict from model and pinyin dictionary for the last sentnce being type.
+     *
+     * @since 1.1.14
+     */
+    std::vector<std::pair<std::string, PinyinPredictionSource>>
+    predict(const State &state,
+            const std::vector<libime::HistoryBigram::WordWithCode> &sentence,
+            size_t maxSize = 0);
 
     /**
      * Same as the Prediction::predict with the same signature.

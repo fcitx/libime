@@ -14,6 +14,8 @@
 #include <fcitx-utils/log.h>
 #include "libime/core/historybigram.h"
 
+namespace {
+
 void testBasic() {
     using namespace libime;
     HistoryBigram history;
@@ -209,11 +211,70 @@ void testSaveAndLoadText() {
     FCITX_ASSERT(dump1.str() == dump2.str());
 }
 
+void testWithCode() {
+    using namespace libime;
+    HistoryBigram history;
+    history.addWithCode({{"你", "code1"},
+                         {"是", "code2"},
+                         {"一个", "code3"},
+                         {"好人", "code4"}});
+
+    auto score = history.scoreWithCode({"你", "code1"}, {"是", "code2"});
+    auto scoreWithoutCode = history.score("你", "是");
+    auto scoreWithEmptyCode = history.scoreWithCode({"你", ""}, {"是", ""});
+    auto scoreWithMismatchCode =
+        history.scoreWithCode({"你", "code1"}, {"是", "code5"});
+    FCITX_ASSERT(score == scoreWithoutCode) << score << " " << scoreWithoutCode;
+    FCITX_ASSERT(score == scoreWithEmptyCode)
+        << score << " " << scoreWithEmptyCode;
+    FCITX_ASSERT(score > scoreWithMismatchCode)
+        << score << " " << scoreWithMismatchCode;
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", ""}) == 1);
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", "code1"}) == 1);
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", "code2"}) == 0);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", ""}, {"是", ""}) == 1);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code1"}, {"是", "code2"}) ==
+                 1);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code2"}, {"是", "code2"}) ==
+                 0);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", ""}, {"是", "code2"}) == 1);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code1"}, {"是", ""}) == 1);
+}
+
+void testWithCodePredict() {
+    using namespace libime;
+    HistoryBigram history;
+    history.addWithCode({{"你", "code1"},
+                         {"是", "code2"},
+                         {"一个", "code3"},
+                         {"好人", "code4"}});
+
+    {
+        std::unordered_set<std::string> result;
+        history.fillPredict(result, {"你"}, 10);
+        FCITX_ASSERT(result == std::unordered_set<std::string>{"是"});
+    }
+
+    {
+        std::unordered_set<std::string> result;
+        history.addWithCode({{"你", "code1"}, {"是", "code5"}});
+        history.addWithCode({{"你", "code1"}, {"是", "code6"}});
+        history.addWithCode({{"你", "code1"}, {"是", "code7"}});
+        history.addWithCode({{"你", "code1"}, {"是", "code8"}});
+        history.fillPredict(result, {"你"}, 0);
+        FCITX_ASSERT(result == std::unordered_set<std::string>{"是"}) << result;
+    }
+}
+
+} // namespace
+
 int main() {
     testBasic();
     testOverflow();
     testPredict();
     testSaveAndLoad();
     testSaveAndLoadText();
+    testWithCode();
+    testWithCodePredict();
     return 0;
 }

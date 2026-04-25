@@ -72,6 +72,7 @@ int main(int argc, char *argv[]) {
                           << '\n';
                 return 1;
             }
+            out = &fout;
         }
         if (compile) {
             history.save(*out);

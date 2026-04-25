@@ -328,11 +328,10 @@ public:
             return popedSentence;
         }
         // Validate data.
-        if (std::any_of(std::begin(sentence), std::end(sentence),
-                        [](const auto &item) {
-                            const auto &[word, code] = item;
-                            return word.find('\0') != std::string::npos;
-                        })) {
+        if (std::ranges::any_of(sentence, [](const auto &item) {
+                const auto &[word, code] = item;
+                return word.find('\0') != std::string::npos;
+            })) {
             return popedSentence;
         }
         while (recent_.size() >= maxSize_) {

@@ -96,6 +96,8 @@ public:
         auto v = trie_.traverse(wordAndCode.first, pos);
         if (TrieType::isValid(v)) {
             result += v;
+        } else if (TrieType::isNoPath(v)) {
+            return 0;
         }
         const char separator[] = {wordCodeSeparator, '\0'};
         v = trie_.traverse(separator, pos);

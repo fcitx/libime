@@ -102,6 +102,9 @@ public:
     int32_t rawBigramFrequency(WordWithCodeView prev,
                                WordWithCodeView cur) const;
 
+    void addWithContext(const std::vector<WordWithCode> &context,
+                        std::vector<WordWithCode> newSentence);
+
 private:
     std::unique_ptr<HistoryBigramPrivate> d_ptr;
     FCITX_DECLARE_PRIVATE(HistoryBigram);

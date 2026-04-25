@@ -919,10 +919,10 @@ std::vector<std::string> PinyinContext::selectedWords() const {
     return newSentence;
 }
 
-std::vector<std::pair<std::string, std::string>>
+std::vector<HistoryBigram::WordWithCode>
 PinyinContext::selectedWordsWithPinyin() const {
     FCITX_D();
-    std::vector<std::pair<std::string, std::string>> newSentence;
+    std::vector<HistoryBigram::WordWithCode> newSentence;
     for (const auto &s : d->selected_) {
         for (const auto &item : s) {
             if (item.type_ != SelectedPinyinType::Separator) {
@@ -976,31 +976,30 @@ void PinyinContext::learn() {
         return;
     }
 
+    std::vector<HistoryBigram::WordWithCode> newSentence;
     if (auto [result, encodedWordPinyin] = d->learnWord();
         result != LearnWordResult::Ignored) {
         // Do not insert custom to history for the first time.
         if (result == LearnWordResult::Normal) {
             // Create new sentence with the whole new learned word.
-            std::vector<HistoryBigram::WordWithCode> newSentence{
-                {sentence(), encodedWordPinyin}};
-            d->ime_->model()->history().addWithCode(newSentence);
+            newSentence.push_back({sentence(), encodedWordPinyin});
+        } else {
+            return;
         }
     } else {
-        std::vector<HistoryBigram::WordWithCode> newSentence;
-        for (auto &s : d->selected_) {
-            for (auto &item : s) {
-                if (item.type_ != SelectedPinyinType::Separator) {
-                    // Non pinyin word. Skip it.
-                    if (item.encodedPinyin().empty()) {
-                        return;
-                    }
-                    newSentence.push_back(
-                        {item.word_.word(), item.encodedPinyin()});
-                }
-            }
-        }
-        d->ime_->model()->history().addWithCode(newSentence);
+        newSentence = selectedWordsWithPinyin();
     }
+
+    if (std::ranges::any_of(newSentence, [](const auto &word) {
+            return word.second.empty();
+        })) {
+        // Don't add to history if there is any non-pinyin word.
+        return;
+    }
+
+    auto context = contextWordsWithPinyin();
+    d->ime_->model()->history().addWithContext(contextWordsWithPinyin(),
+                                               std::move(newSentence));
 }
 
 void PinyinContext::setContextWords(

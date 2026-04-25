@@ -10,6 +10,7 @@
 #include "libime/core/userlanguagemodel.h"
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinencoder.h"
+#include "libime/pinyin/pinyinime.h"
 #include "libime/pinyin/pinyinprediction.h"
 #include "testdir.h"
 
@@ -33,14 +34,21 @@ LogMessageBuilder &operator<<(LogMessageBuilder &log,
 } // namespace fcitx
 
 int main() {
-    UserLanguageModel model(LIBIME_BINARY_DIR "/data/sc.lm");
-    PinyinDictionary dict;
-    dict.load(PinyinDictionary::SystemDict,
-              LIBIME_BINARY_DIR "/data/dict_sc.txt", PinyinDictFormat::Text);
+    PinyinIME ime(
+        std::make_unique<PinyinDictionary>(),
+        std::make_unique<UserLanguageModel>(LIBIME_BINARY_DIR "/data/sc.lm"));
+    ime.setNBest(2);
+    ime.dict()->load(PinyinDictionary::SystemDict,
+                     LIBIME_BINARY_DIR "/data/sc.dict",
+                     PinyinDictFormat::Binary);
+    ime.model()->history().addWithCode({{"可", "JF"}});
+    auto &model = *ime.model();
+    auto &dict = *ime.dict();
 
     PinyinPrediction prediction;
-    prediction.setUserLanguageModel(&model);
-    prediction.setPinyinDictionary(&dict);
+    prediction.setUserLanguageModel(ime.model());
+    prediction.setPinyinDictionary(ime.dict());
+
     auto py = PinyinEncoder::encodeFullPinyin("zhong'guo");
     auto result = prediction.predict(model.nullState(), {"我", "喜欢", "中国"},
                                      {py.data(), py.size()}, 20);

@@ -48,12 +48,12 @@ PinyinPrediction::predict(const State &state,
 
     if (lastEncodedPinyin.empty() || sentence.empty()) {
         auto result = Prediction::predictWithScore(state, sentence, maxSize);
-        std::transform(result.begin(), result.end(),
-                       std::back_inserter(finalResult),
-                       [](std::pair<std::string, float> &value) {
-                           return std::make_pair(std::move(value.first),
-                                                 PinyinPredictionSource::Model);
-                       });
+        std::ranges::transform(result, std::back_inserter(finalResult),
+                               [](std::pair<std::string, float> &value) {
+                                   return std::make_pair(
+                                       std::move(value.first),
+                                       PinyinPredictionSource::Model);
+                               });
         return finalResult;
     }
 
@@ -119,11 +119,9 @@ PinyinPrediction::predict(const State &state,
 
                 dup.insert(std::get<std::string>(newItem));
                 intermedidateResult.push_back(std::move(newItem));
-                std::push_heap(intermedidateResult.begin(),
-                               intermedidateResult.end(), cmp);
+                std::ranges::push_heap(intermedidateResult, cmp);
                 while (intermedidateResult.size() > maxSize) {
-                    std::pop_heap(intermedidateResult.begin(),
-                                  intermedidateResult.end(), cmp);
+                    std::ranges::pop_heap(intermedidateResult, cmp);
                     dup.erase(
                         std::get<std::string>(intermedidateResult.back()));
                     intermedidateResult.pop_back();

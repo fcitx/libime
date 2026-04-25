@@ -101,10 +101,8 @@ inline std::string generateTableEntry(uint32_t pinyinKey, std::string_view key,
 }
 
 void maybeUnescapeValue(std::string &value) {
-    if (value.size() >= 2 && value.starts_with('"') && value.ends_with('"')) {
-        if (auto unescape = fcitx::stringutils::unescapeForValue(value)) {
-            value = unescape.value();
-        }
+    if (auto unescape = fcitx::stringutils::unescapeForValue(value)) {
+        value = unescape.value();
     }
 }
 

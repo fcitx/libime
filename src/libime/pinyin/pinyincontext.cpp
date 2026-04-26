@@ -290,8 +290,11 @@ public:
         ime_->dict()->addWord(PinyinDictionary::UserDict, pinyin, ss,
                               hasCustom ? -1 : 0);
 
+        auto encodedPinyin = PinyinEncoder::encodeFullPinyinWithFlags(
+            pinyin, PinyinFuzzyFlag::VE_UE);
+
         return {hasCustom ? LearnWordResult::Custom : LearnWordResult::Normal,
-                pinyin};
+                std::string(encodedPinyin.data(), encodedPinyin.size())};
     }
 };
 

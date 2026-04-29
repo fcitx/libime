@@ -559,7 +559,6 @@ bool HistoryBigram::useOnlyUnigram() const {
 }
 
 void HistoryBigram::add(const libime::SentenceResult &sentence) {
-    FCITX_D();
     addWithCode(sentence, nullptr);
 }
 

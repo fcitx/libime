@@ -67,7 +67,6 @@ const TrieDictionary::TrieType *TrieDictionary::trie(size_t idx) const {
 }
 
 void TrieDictionary::setTrie(size_t idx, TrieType trie) {
-    FCITX_D();
     *mutableTrie(idx) = std::move(trie);
     emit<TrieDictionary::dictionaryChanged>(idx);
 }

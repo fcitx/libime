@@ -141,6 +141,16 @@ int main() {
                      {PinyinInitial::D,
                       {{PinyinFinal::ING, true}, {PinyinFinal::IN, false}}}});
 
+    FCITX_ASSERT(PinyinEncoder::stringToSyllables("E", PinyinFuzzyFlags{}) ==
+                 MatchedPinyinSyllables{
+                     {PinyinInitial::Zero, {{PinyinFinal::Letter_E, false}}}});
+
+    FCITX_ASSERT(PinyinEncoder::stringToSyllables(
+                     "e", PinyinFuzzyFlags{PinyinFuzzyFlag::Letter}) ==
+                 MatchedPinyinSyllables{{PinyinInitial::Zero,
+                                         {{PinyinFinal::E, false},
+                                          {PinyinFinal::Letter_E, true}}}});
+
     for (const auto &syl : PinyinEncoder::stringToSyllables(
              "e", PinyinFuzzyFlags{PinyinFuzzyFlag::PartialFinal})) {
         for (auto f : syl.second) {
@@ -165,7 +175,7 @@ int main() {
         check("xion", PinyinFuzzyFlag::None, {"xi", "o", "n"});
         check("xiana", PinyinFuzzyFlag::None, {"xian", "a"});
 
-        check("Nihao", PinyinFuzzyFlag::None, {"Ni", "hao"});
+        check("Xguang", PinyinFuzzyFlag::None, {"X", "guang"});
     }
 
     {

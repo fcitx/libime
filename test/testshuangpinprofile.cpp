@@ -16,7 +16,10 @@
 #include "libime/pinyin/pinyindata.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/shuangpinprofile.h"
+
 using namespace libime;
+
+namespace {
 
 void checkProfile(const ShuangpinProfile &profile, bool hasSemicolon) {
 
@@ -137,9 +140,12 @@ void checkSimpleParsing() {
         const char *qp;
         const char *sp;
     } zrmZero[] = {
-        {"a", "aa"},   {"ai", "ai"}, {"an", "an"}, {"ang", "ah"},
-        {"ao", "ao"},  {"e", "ee"},  {"ei", "ei"}, {"en", "en"},
-        {"eng", "eg"}, {"er", "er"}, {"o", "oo"},  {"ou", "ou"},
+        {.qp = "a", .sp = "aa"},   {.qp = "ai", .sp = "ai"},
+        {.qp = "an", .sp = "an"},  {.qp = "ang", .sp = "ah"},
+        {.qp = "ao", .sp = "ao"},  {.qp = "e", .sp = "ee"},
+        {.qp = "ei", .sp = "ei"},  {.qp = "en", .sp = "en"},
+        {.qp = "eng", .sp = "eg"}, {.qp = "er", .sp = "er"},
+        {.qp = "o", .sp = "oo"},   {.qp = "ou", .sp = "ou"},
     };
     ShuangpinProfile zrm(ShuangpinBuiltinProfile::Ziranma);
     for (auto [qp, sp] : zrmZero) {
@@ -530,6 +536,8 @@ uo=Y
                      PinyinSyllable(PinyinInitial::Zero, PinyinFinal::EN)) == 1)
         << *ft;
     checkProfile(profile, false);
+}
+
 }
 
 int main() {

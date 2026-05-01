@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
             }
         } else if (word.size() == 1 &&
                    (('a' <= word[0] && word[0] <= 'z') ||
+                    ('A' <= word[0] && word[0] <= 'Z') ||
                     (!c.userInput().empty() && word[0] == '\''))) {
             c.type(word);
         } else if (word.size() == 1 && ('0' <= word[0] && word[0] <= '9')) {

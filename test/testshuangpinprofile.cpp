@@ -33,6 +33,9 @@ void checkProfile(const ShuangpinProfile &profile, bool hasSemicolon) {
 
     std::set<PinyinSyllable> validSyls;
     for (const auto &p : getPinyinMap()) {
+        if (PinyinEncoder::isFinalLetter(p.final())) {
+            continue;
+        }
         validSyls.emplace(p.initial(), p.final());
     }
     validSyls.erase(PinyinSyllable(PinyinInitial::M, PinyinFinal::Zero));

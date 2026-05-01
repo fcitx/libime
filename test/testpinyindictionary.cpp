@@ -114,10 +114,27 @@ void testEscape() {
         << "dump: " << dump.str();
 }
 
+void testLetter() {
+    std::stringstream ss;
+    constexpr std::string_view input = R"(
+X光 X'guang
+)";
+
+    ss << input;
+    PinyinDictionary dict;
+    dict.load(PinyinDictionary::SystemDict, ss, PinyinDictFormat::Text);
+    FCITX_ASSERT(
+        dict.lookupWord(PinyinDictionary::SystemDict, "X'guang", "X光"));
+    std::stringstream dump;
+    dict.save(PinyinDictionary::SystemDict, dump, PinyinDictFormat::Text);
+    FCITX_ASSERT(dump.str() == "X光 X'guang 0\n") << "dump: " << dump.str();
+}
+
 } // namespace
 
 int main() {
     testBasic();
     testEscape();
+    testLetter();
     return 0;
 }

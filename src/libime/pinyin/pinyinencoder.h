@@ -64,6 +64,10 @@ enum class PinyinFuzzyFlag {
      * @since 1.1.11
      */
     L_R = 1 << 20,
+    /**
+     * Enable matching for lower case single pinyin as English letter.
+     */
+    Letter = 1 << 21,
 };
 
 using PinyinFuzzyFlags = fcitx::Flags<PinyinFuzzyFlag>;
@@ -151,7 +155,33 @@ enum class PinyinFinal : char {
     VE,
     UE,
     NG,
-    Zero
+    Zero,
+    Letter_A,
+    Letter_B,
+    Letter_C,
+    Letter_D,
+    Letter_E,
+    Letter_F,
+    Letter_G,
+    Letter_H,
+    Letter_I,
+    Letter_J,
+    Letter_K,
+    Letter_L,
+    Letter_M,
+    Letter_N,
+    Letter_O,
+    Letter_P,
+    Letter_Q,
+    Letter_R,
+    Letter_S,
+    Letter_T,
+    Letter_U,
+    Letter_V,
+    Letter_W,
+    Letter_X,
+    Letter_Y,
+    Letter_Z,
 };
 
 inline bool operator<(PinyinFinal l, PinyinFinal r) {
@@ -278,6 +308,15 @@ public:
     }
 
     static bool isValidInitialFinal(PinyinInitial initial, PinyinFinal final);
+
+    /**
+     * Check if the final is a letter.
+     * @since 1.1.14
+     */
+    static bool isFinalLetter(PinyinFinal final);
+
+    static PinyinFinal letterToFinal(char c);
+
     // This will use "ü" when possible.
     static std::string initialFinalToPinyinString(PinyinInitial initial,
                                                   PinyinFinal final);
@@ -298,10 +337,13 @@ public:
                                        const ShuangpinProfile &sp,
                                        PinyinFuzzyFlags flags);
 
-    static const char firstInitial = static_cast<char>(PinyinInitial::B);
-    static const char lastInitial = static_cast<char>(PinyinInitial::Zero);
-    static const char firstFinal = static_cast<char>(PinyinFinal::A);
-    static const char lastFinal = static_cast<char>(PinyinFinal::Zero);
+    static constexpr char firstInitial = static_cast<char>(PinyinInitial::B);
+    static constexpr char lastInitial = static_cast<char>(PinyinInitial::Zero);
+    static constexpr char firstFinal = static_cast<char>(PinyinFinal::A);
+    static constexpr char lastFinal = static_cast<char>(PinyinFinal::Zero);
+    static constexpr char firstLetter =
+        static_cast<char>(PinyinFinal::Letter_A);
+    static constexpr char lastLetter = static_cast<char>(PinyinFinal::Letter_Z);
 };
 } // namespace libime
 

@@ -538,7 +538,7 @@ uo=Y
     checkProfile(profile, false);
 }
 
-}
+} // namespace
 
 int main() {
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma), false);

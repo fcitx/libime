@@ -760,6 +760,12 @@ stringToSyllablesImpl(std::string_view pinyinView, const PinyinMap &map,
         }
     }
 
+    auto iter = initialMap.right.find(pinyin);
+    if (initialMap.right.end() != iter) {
+        getFuzzy(result, {iter->second, PinyinFinal::Invalid}, flags,
+                 /*isSp=*/false, adjuster);
+    }
+
     if (pinyin.size() == 1 && fcitx::charutils::islower(pinyin[0]) &&
         flags.test(PinyinFuzzyFlag::Letter)) {
         getFuzzy(result,
@@ -768,12 +774,6 @@ stringToSyllablesImpl(std::string_view pinyinView, const PinyinMap &map,
                  /*isSp=*/false, [&adjuster](PinyinFuzzyFlags flags) {
                      return adjuster(flags | PinyinFuzzyFlag::Letter);
                  });
-    }
-
-    auto iter = initialMap.right.find(pinyin);
-    if (initialMap.right.end() != iter) {
-        getFuzzy(result, {iter->second, PinyinFinal::Invalid}, flags,
-                 /*isSp=*/false, adjuster);
     }
 
     if (result.empty()) {

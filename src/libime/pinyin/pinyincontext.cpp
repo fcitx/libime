@@ -17,6 +17,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -606,7 +607,6 @@ void PinyinContext::update() {
         // Add n-best result.
         for (size_t i = 0, e = d->lattice_.sentenceSize(); i < e; i++) {
             d->candidates_.push_back(d->lattice_.sentence(i));
-            d->candidatesSet_.insert(d->candidates_.back().toString());
         }
 
         const auto *bos = &graph.start();
@@ -632,13 +632,8 @@ void PinyinContext::update() {
                             min = std::min(latticeNode.score(), min);
                             max = std::max(latticeNode.score(), max);
                         }
-                        // Deduplcate.
-                        if (d->candidatesSet_.contains(latticeNode.word())) {
-                            continue;
-                        }
                         d->candidates_.push_back(
                             latticeNode.toSentenceResult(adjust));
-                        d->candidatesSet_.insert(latticeNode.word());
                     }
                 }
             }
@@ -651,9 +646,6 @@ void PinyinContext::update() {
                     if (latticeNode.from() == bos &&
                         static_cast<const PinyinLatticeNode &>(latticeNode)
                             .isCorrection()) {
-                        if (d->candidatesSet_.contains(latticeNode.word())) {
-                            continue;
-                        }
                         if ((latticeNode.score() > min &&
                              latticeNode.score() + d->ime_->maxDistance() >
                                  max) ||
@@ -662,7 +654,6 @@ void PinyinContext::update() {
                                     .size() <= 2) {
                             d->candidates_.push_back(
                                 latticeNode.toSentenceResult(adjust));
-                            d->candidatesSet_.insert(latticeNode.word());
                         }
                     }
                 }
@@ -678,44 +669,48 @@ void PinyinContext::update() {
                         latticeNode.score() + d->ime_->maxDistance() > max &&
                         !static_cast<const PinyinLatticeNode &>(latticeNode)
                              .anyCorrectionOnPath()) {
-                        auto fullWord = latticeNode.fullWord();
-                        if (d->candidatesSet_.contains(fullWord)) {
-                            continue;
-                        }
                         d->candidates_.push_back(
                             latticeNode.toSentenceResult(adjust));
-                        d->candidatesSet_.insert(fullWord);
                     }
                 }
             }
         }
         std::sort(d->candidates_.begin() + beginSize, d->candidates_.end(),
                   std::greater<>());
-        if (const auto limit = d->ime_->wordCandidateLimit()) {
+        {
+            size_t index = 0;
             size_t count = 0;
+            const auto limit = d->ime_->wordCandidateLimit();
             auto &candidatesSet = d->candidatesSet_;
-            d->candidates_.erase(
-                std::remove_if(
-                    d->candidates_.begin() + beginSize, d->candidates_.end(),
-                    [&count, limit,
-                     &candidatesSet](const SentenceResult &candidate) {
-                        const bool isSinglePinyinWord =
-                            candidate.sentence().size() == 1 &&
-                            candidate.sentence()
-                                    .front()
-                                    ->as<PinyinLatticeNode>()
-                                    .encodedPinyin()
-                                    .size() == 2;
-                        if (!isSinglePinyinWord) {
-                            if (count >= limit) {
-                                candidatesSet.erase(candidate.toString());
-                                return true;
-                            }
-                            count++;
-                        }
-                        return false;
-                    }),
-                d->candidates_.end());
+            candidatesSet.clear();
+            std::erase_if(d->candidates_,
+                          [&candidatesSet, &index, &count, beginSize,
+                           limit](const SentenceResult &candidate) {
+                              bool beforeBeginSize = index++ < beginSize;
+                              auto candidateString = candidate.toString();
+                              if (candidatesSet.contains(candidateString)) {
+                                  return true;
+                              }
+
+                              if (!beforeBeginSize && limit) {
+                                  const bool isSinglePinyinWord =
+                                      candidate.sentence().size() == 1 &&
+                                      candidate.sentence()
+                                              .front()
+                                              ->as<PinyinLatticeNode>()
+                                              .encodedPinyin()
+                                              .size() == 2;
+                                  if (!isSinglePinyinWord) {
+                                      if (count >= limit) {
+                                          return true;
+                                      }
+                                      count++;
+                                  }
+                              }
+
+                              candidatesSet.insert(std::move(candidateString));
+                              return false;
+                          });
         }
 
         d->candidatesToCursorNeedUpdate_ = true;

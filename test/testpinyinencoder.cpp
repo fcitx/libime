@@ -280,6 +280,28 @@ int main() {
                                                PinyinFuzzyFlag::Correction);
         dfs(graph, {"suan", "g"});
     }
+    {
+        PinyinCorrectionProfile defaultProfile(
+            BuiltinPinyinCorrectionProfile::Qwerty);
+        FCITX_ASSERT(
+            PinyinEncoder::stringToSyllablesWithFuzzyFlags(
+                "zhogn", &defaultProfile, PinyinFuzzyFlag::Correction) !=
+            MatchedPinyinSyllablesWithFuzzyFlags{
+                {PinyinInitial::ZH,
+                 {{PinyinFinal::ONG, PinyinFuzzyFlag::Correction}}}});
+
+        PinyinCorrectionProfile profile(BuiltinPinyinCorrectionProfile::Qwerty,
+                                        true);
+        auto graph = PinyinEncoder::parseUserPinyin(
+            "zhogn", &profile, PinyinFuzzyFlag::Correction);
+        dfs(graph, {"zhogn"});
+
+        FCITX_ASSERT(PinyinEncoder::stringToSyllablesWithFuzzyFlags(
+                         "zhogn", &profile, PinyinFuzzyFlag::Correction) ==
+                     MatchedPinyinSyllablesWithFuzzyFlags{
+                         {PinyinInitial::ZH,
+                          {{PinyinFinal::ONG, PinyinFuzzyFlag::Correction}}}});
+    }
 
     {
         ShuangpinProfile sp(ShuangpinBuiltinProfile::Xiaohe);

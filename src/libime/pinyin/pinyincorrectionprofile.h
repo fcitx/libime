@@ -44,6 +44,16 @@ public:
     explicit PinyinCorrectionProfile(BuiltinPinyinCorrectionProfile profile);
 
     /**
+     * Construct the profile based on builtin layout.
+     *
+     * @param profile built-in profile
+     * @param enableTransposition enable correction for adjacent letter
+     * transposition, e.g. zhong -> zhogn.
+     */
+    explicit PinyinCorrectionProfile(BuiltinPinyinCorrectionProfile profile,
+                                     bool enableTransposition);
+
+    /**
      * Construct the profile based on customized mapping.
      *
      * E.g. w may be corrected to q,e, the mapping will contain {'w': ['q',
@@ -53,6 +63,17 @@ public:
      */
     explicit PinyinCorrectionProfile(
         const std::unordered_map<char, std::vector<char>> &mapping);
+
+    /**
+     * Construct the profile based on customized mapping.
+     *
+     * @param mapping pinyin character and the corresponding possible wrong key.
+     * @param enableTransposition enable correction for adjacent letter
+     * transposition, e.g. zhong -> zhogn.
+     */
+    explicit PinyinCorrectionProfile(
+        const std::unordered_map<char, std::vector<char>> &mapping,
+        bool enableTransposition);
 
     virtual ~PinyinCorrectionProfile();
 

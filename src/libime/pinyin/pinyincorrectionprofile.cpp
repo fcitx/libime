@@ -62,16 +62,27 @@ PinyinCorrectionProfile::PinyinCorrectionProfile(
     : PinyinCorrectionProfile(getProfileMapping(profile)) {}
 
 PinyinCorrectionProfile::PinyinCorrectionProfile(
+    BuiltinPinyinCorrectionProfile profile, bool enableTransposition)
+    : PinyinCorrectionProfile(getProfileMapping(profile), enableTransposition) {
+}
+
+PinyinCorrectionProfile::PinyinCorrectionProfile(
     const std::unordered_map<char, std::vector<char>> &mapping)
+    : PinyinCorrectionProfile(mapping, false) {}
+
+PinyinCorrectionProfile::PinyinCorrectionProfile(
+    const std::unordered_map<char, std::vector<char>> &mapping,
+    bool enableTransposition)
     : d_ptr(std::make_unique<PinyinCorrectionProfilePrivate>()) {
     FCITX_D();
     d->correctionMap_ = mapping;
     // Fill with the original pinyin map.
     d->pinyinMap_ = getPinyinMapV2();
-    if (mapping.empty()) {
+    if (mapping.empty() && !enableTransposition) {
         return;
     }
-    // Re-map all entry with the correction mapping.
+    // Re-map all entry with the correction mapping and optional adjacent
+    // transposition.
     std::vector<PinyinEntry> newEntries;
     for (const auto &item : d->pinyinMap_) {
         for (size_t i = 0; i < item.pinyin().size(); i++) {
@@ -87,6 +98,19 @@ PinyinCorrectionProfile::PinyinCorrectionProfile(
                     PinyinEntry(newEntry.data(), item.initial(), item.final(),
                                 item.flags() | PinyinFuzzyFlag::Correction));
                 newEntry[i] = chr;
+            }
+        }
+        if (enableTransposition) {
+            auto newEntry = item.pinyin();
+            for (size_t i = 0; i + 1 < item.pinyin().size(); i++) {
+                if (newEntry[i] == newEntry[i + 1]) {
+                    continue;
+                }
+                std::swap(newEntry[i], newEntry[i + 1]);
+                newEntries.push_back(
+                    PinyinEntry(newEntry.data(), item.initial(), item.final(),
+                                item.flags() | PinyinFuzzyFlag::Correction));
+                std::swap(newEntry[i], newEntry[i + 1]);
             }
         }
     }

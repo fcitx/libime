@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 #include <fcitx-utils/log.h>
 #include "libime/core/historybigram.h"
@@ -25,6 +26,28 @@
 #include "testdir.h"
 
 using namespace libime;
+
+void checkCandidateSet(const PinyinContext &context) {
+    std::unordered_set<std::string> candidates;
+    for (const auto &candidate : context.candidates()) {
+        auto candidateString = candidate.toString();
+        FCITX_ASSERT(candidates.insert(candidateString).second)
+            << "Duplicate candidate: " << candidateString;
+    }
+
+    FCITX_ASSERT(candidates == context.candidateSet());
+}
+
+void checkCandidatesToCursorSet(const PinyinContext &context) {
+    std::unordered_set<std::string> candidates;
+    for (const auto &candidate : context.candidatesToCursor()) {
+        auto candidateString = candidate.toString();
+        FCITX_ASSERT(candidates.insert(candidateString).second)
+            << "Duplicate candidate to cursor: " << candidateString;
+    }
+
+    FCITX_ASSERT(candidates == context.candidatesToCursorSet());
+}
 
 int main() {
     PinyinIME ime(
@@ -176,6 +199,7 @@ int main() {
     {
         c.clear();
         c.type("nianglanghang");
+        checkCandidatesToCursorSet(c);
         size_t i = 0;
         for (const auto &candidate : c.candidatesToCursor()) {
             if (candidate.toString() == "娘") {
@@ -189,7 +213,7 @@ int main() {
         while (i > 0) {
             --i;
             c.setCursor(i);
-            c.candidatesToCursor();
+            checkCandidatesToCursorSet(c);
         }
     }
 
@@ -288,8 +312,23 @@ int main() {
     {
         c.clear();
         c.clearContextWords();
+        auto wordCandidateLimit = ime.wordCandidateLimit();
+        ime.setWordCandidateLimit(1);
+        c.type("ziran");
+        checkCandidateSet(c);
+        ime.setWordCandidateLimit(wordCandidateLimit);
+    }
+
+    {
+        c.clear();
+        c.clearContextWords();
+        c.type("ziran");
+        checkCandidateSet(c);
+        c.clear();
         FCITX_ASSERT(!ime.model()->history().containsBigram("他", "爱"));
         c.type("taai");
+        checkCandidateSet(c);
+        checkCandidatesToCursorSet(c);
         size_t i = 0;
         for (const auto &candidate : c.candidatesToCursor()) {
             if (candidate.toString() == "他爱") {

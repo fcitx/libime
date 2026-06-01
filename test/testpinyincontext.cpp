@@ -27,12 +27,12 @@
 
 using namespace libime;
 
+namespace {
+
 void checkCandidateSet(const PinyinContext &context) {
     std::unordered_set<std::string> candidates;
     for (const auto &candidate : context.candidates()) {
-        auto candidateString = candidate.toString();
-        FCITX_ASSERT(candidates.insert(candidateString).second)
-            << "Duplicate candidate: " << candidateString;
+        candidates.insert(candidate.toString());
     }
 
     FCITX_ASSERT(candidates == context.candidateSet());
@@ -41,13 +41,13 @@ void checkCandidateSet(const PinyinContext &context) {
 void checkCandidatesToCursorSet(const PinyinContext &context) {
     std::unordered_set<std::string> candidates;
     for (const auto &candidate : context.candidatesToCursor()) {
-        auto candidateString = candidate.toString();
-        FCITX_ASSERT(candidates.insert(candidateString).second)
-            << "Duplicate candidate to cursor: " << candidateString;
+        candidates.insert(candidate.toString());
     }
 
     FCITX_ASSERT(candidates == context.candidatesToCursorSet());
 }
+
+} // namespace
 
 int main() {
     PinyinIME ime(
@@ -64,6 +64,20 @@ int main() {
     ime.dict()->addWord(1, "zi'ji'ge'zi", "自机各自");
     ime.setFuzzyFlags(PinyinFuzzyFlag::Inner);
     PinyinContext c(&ime);
+
+    {
+        c.type("xian");
+        std::unordered_set<size_t> xiEndIndexes;
+        for (const auto &candidate : c.candidates()) {
+            if (candidate.toString() == "洗") {
+                xiEndIndexes.insert(candidate.sentence().back()->to()->index());
+            }
+        }
+        FCITX_ASSERT(xiEndIndexes.size() == 2) << xiEndIndexes.size();
+        FCITX_ASSERT(c.candidateSet().count("洗") == 1);
+        c.clear();
+    }
+
     c.type("xianshi");
 
     std::cout << c.sentence() << std::endl;

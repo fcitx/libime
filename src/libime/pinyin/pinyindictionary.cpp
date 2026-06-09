@@ -544,6 +544,10 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
         if (!result) {
             result =
                 matchCache.insert(context.hasher_.pathToPinyins(path.path_));
+            if (!result) {
+                FCITX_ERROR() << "Unexpected nullptr from insert";
+                return false;
+            }
             result->clear();
 
             auto &items = *result;

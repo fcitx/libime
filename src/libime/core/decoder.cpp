@@ -35,21 +35,34 @@ namespace libime {
 
 constexpr int MAX_BACKWARD_SEARCH_SIZE = 10000;
 
-struct NBestNode {
-    NBestNode(const LatticeNode *node) : node_(node) {}
+class NBestNode {
+public:
+    NBestNode(const LatticeNode *node,
+              size_t next = std::numeric_limits<size_t>::max())
+        : node_(node), next_(next) {}
 
-    const LatticeNode *node_;
+    const NBestNode *next(const std::vector<NBestNode> &pool) const {
+        return next_ == std::numeric_limits<size_t>::max() ? nullptr
+                                                           : &pool[next_];
+    }
+
+    const LatticeNode *node() const { return node_; }
+
     // for nbest
     float gn_ = 0.0F;
     float fn_ = -std::numeric_limits<float>::max();
-    std::shared_ptr<NBestNode> next_;
+
+private:
+    const LatticeNode *const node_;
+    size_t next_ = std::numeric_limits<size_t>::max();
 };
 
-template <typename T>
 struct NBestNodeLess {
-    bool operator()(const T &lhs, const T &rhs) const {
-        return lhs->fn_ < rhs->fn_;
+    NBestNodeLess(const std::vector<NBestNode> &pool) : pool_(pool) {}
+    bool operator()(size_t lhs, size_t rhs) const {
+        return pool_[lhs].fn_ < pool_[rhs].fn_;
     }
+    const std::vector<NBestNode> &pool_;
 };
 
 class DecoderPrivate {
@@ -243,12 +256,13 @@ void DecoderPrivate::forwardSearch(
     updateForNode(graph, nullptr);
 }
 
-std::string concatNBest(NBestNode *node, std::string_view sep = "") {
+std::string concatNBest(const std::vector<NBestNode> &pool,
+                        const NBestNode *node, std::string_view sep = "") {
     std::string result;
     while (node) {
-        result.append(node->node_->word());
+        result.append(node->node()->word());
         result.append(sep.data(), sep.size());
-        node = node->next_.get();
+        node = node->next(pool);
     }
     return result;
 }
@@ -266,33 +280,41 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
     if (nbest > 1) {
         std::unordered_set<std::string> dup;
         dup.insert(l.d_ptr->nbests_[0].toString());
+
+        std::vector<NBestNode> pool;
+        pool.reserve(MAX_BACKWARD_SEARCH_SIZE);
+
+        NBestNodeLess cmp(pool);
         using PriorityQueueType =
-            std::priority_queue<std::shared_ptr<NBestNode>,
-                                std::vector<std::shared_ptr<NBestNode>>,
-                                NBestNodeLess<std::shared_ptr<NBestNode>>>;
-        PriorityQueueType q;
-        PriorityQueueType result;
+            std::priority_queue<size_t, std::vector<size_t>, NBestNodeLess>;
+        PriorityQueueType q(cmp);
+        PriorityQueueType result(cmp);
 
         auto *eos = &lattice[nullptr][0];
-        auto newNBestNode = [](const LatticeNode *node) {
-            return std::make_shared<NBestNode>(node);
+        auto pushNewNBestNode =
+            [&](const LatticeNode *node,
+                size_t next = std::numeric_limits<size_t>::max()) -> size_t {
+            pool.emplace_back(node, next);
+            return pool.size() - 1;
         };
-        q.push(newNBestNode(eos));
+
+        q.push(pushNewNBestNode(eos));
         int acc = 0;
         auto *bos = &lattice[&graph.start()][0];
         while (!q.empty()) {
-            std::shared_ptr<NBestNode> node = q.top();
+            size_t nodeIdx = q.top();
             q.pop();
-            if (bos == node->node_) {
-                auto sentence = concatNBest(node.get());
+            const auto &node = pool[nodeIdx];
+            if (bos == node.node()) {
+                auto sentence = concatNBest(pool, &node);
                 if (dup.contains(sentence)) {
                     continue;
                 }
 
-                if (eos->score() - node->fn_ > max) {
+                if (eos->score() - node.fn_ > max) {
                     break;
                 }
-                result.push(node);
+                result.push(nodeIdx);
                 if (result.size() >= nbest) {
                     break;
                 }
@@ -302,27 +324,32 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                     continue;
                 }
                 auto searchSize = beamSize;
+                const auto *from_node = node.node();
                 if (searchSize) {
-                    searchSize = std::min(searchSize,
-                                          lattice[node->node_->from()].size());
+                    searchSize =
+                        std::min(searchSize, lattice[from_node->from()].size());
                 } else {
-                    searchSize = lattice[node->node_->from()].size();
+                    searchSize = lattice[from_node->from()].size();
                 }
-                for (auto &from : lattice[node->node_->from()] |
+                float node_gn = node.gn_;
+                // In the loop below, don't read node sine it may be
+                // invalidated.
+                for (auto &from : lattice[from_node->from()] |
                                       std::views::take(searchSize)) {
                     auto score =
-                        model_->score(from.state(), *node->node_, state) +
-                        node->node_->cost();
+                        model_->score(from.state(), *from_node, state) +
+                        from_node->cost();
                     if (&from != bos && score < min) {
                         continue;
                     }
-                    std::shared_ptr<NBestNode> parent = newNBestNode(&from);
-                    parent->gn_ = score + node->gn_;
-                    parent->fn_ = parent->gn_ + parent->node_->score();
-                    parent->next_ = node;
+                    float gn = score + node_gn;
+                    float fn = gn + from.score();
 
-                    if (eos->score() - parent->gn_ <= max) {
-                        q.push(std::move(parent));
+                    if (eos->score() - gn <= max) {
+                        size_t parentIdx = pushNewNBestNode(&from, nodeIdx);
+                        pool[parentIdx].gn_ = gn;
+                        pool[parentIdx].fn_ = fn;
+                        q.push(parentIdx);
                         acc++;
                         if (acc >= MAX_BACKWARD_SEARCH_SIZE) {
                             break;
@@ -333,26 +360,27 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
         }
 
         while (!result.empty()) {
-            auto node = result.top();
+            size_t nodeIdx = result.top();
             result.pop();
+            const auto &node = pool[nodeIdx];
             // loop twice to avoid problem
             size_t count = 0;
             // skip bos
-            auto pivot = node->next_;
+            const auto *pivot = node.next(pool);
             while (pivot) {
-                pivot = pivot->next_;
+                pivot = pivot->next(pool);
                 count++;
             }
-            SentenceResult::Sentence result;
-            result.reserve(count);
-            pivot = node->next_;
+            SentenceResult::Sentence sentence;
+            sentence.reserve(count);
+            pivot = node.next(pool);
             while (pivot) {
-                if (pivot->node_->to()) {
-                    result.emplace_back(pivot->node_);
+                if (pivot->node()->to()) {
+                    sentence.emplace_back(pivot->node());
                 }
-                pivot = pivot->next_;
+                pivot = pivot->next(pool);
             }
-            l.d_ptr->nbests_.emplace_back(std::move(result), node->fn_);
+            l.d_ptr->nbests_.emplace_back(std::move(sentence), node.fn_);
         }
     }
 }

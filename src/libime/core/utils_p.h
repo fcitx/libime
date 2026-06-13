@@ -7,6 +7,7 @@
 #ifndef _LIBIME_LIBIME_CORE_UTILS_P_H_
 #define _LIBIME_LIBIME_CORE_UTILS_P_H_
 
+#include <bit>
 #include <chrono>
 #include <cstdint>
 #include <iostream>
@@ -71,15 +72,10 @@ template <typename T>
 std::ostream &marshall(std::ostream &out, T data)
     requires(sizeof(T) == sizeof(uint32_t))
 {
-    union {
-        uint32_t i;
-        T v;
-    } c;
     static_assert(sizeof(T) == sizeof(uint32_t),
                   "this function is only for 4 byte data");
-    c.v = data;
-    c.i = htobe32(c.i);
-    return out.write(reinterpret_cast<char *>(&c.i), sizeof(c.i));
+    auto i = htobe32(std::bit_cast<uint32_t>(data));
+    return out.write(reinterpret_cast<const char *>(&i), sizeof(i));
 }
 
 template <typename T>
@@ -93,30 +89,22 @@ template <typename T>
 std::ostream &marshall(std::ostream &out, T data)
     requires(sizeof(T) == sizeof(uint16_t))
 {
-    union {
-        uint16_t i;
-        T v;
-    } c;
     static_assert(sizeof(T) == sizeof(uint16_t),
                   "this function is only for 2 byte data");
-    c.v = data;
-    c.i = htobe16(c.i);
-    return out.write(reinterpret_cast<char *>(&c.i), sizeof(c.i));
+    auto i = htobe16(std::bit_cast<uint16_t>(data));
+    return out.write(reinterpret_cast<const char *>(&i), sizeof(i));
 }
 
 template <typename T>
 std::istream &unmarshall(std::istream &in, T &data)
     requires(sizeof(T) == sizeof(uint32_t))
 {
-    union {
-        uint32_t i;
-        T v;
-    } c;
     static_assert(sizeof(T) == sizeof(uint32_t),
                   "this function is only for 4 byte data");
-    if (in.read(reinterpret_cast<char *>(&c.i), sizeof(c.i))) {
-        c.i = be32toh(c.i);
-        data = c.v;
+    uint32_t i;
+    if (in.read(reinterpret_cast<char *>(&i), sizeof(i))) {
+        i = be32toh(i);
+        data = std::bit_cast<T>(i);
     }
     return in;
 }
@@ -132,15 +120,12 @@ template <typename T>
 std::istream &unmarshall(std::istream &in, T &data)
     requires(sizeof(T) == sizeof(uint16_t))
 {
-    union {
-        uint16_t i;
-        T v;
-    } c;
     static_assert(sizeof(T) == sizeof(uint16_t),
                   "this function is only for 2 byte data");
-    if (in.read(reinterpret_cast<char *>(&c.i), sizeof(c.i))) {
-        c.i = be16toh(c.i);
-        data = c.v;
+    uint16_t i;
+    if (in.read(reinterpret_cast<char *>(&i), sizeof(i))) {
+        i = be16toh(i);
+        data = std::bit_cast<T>(i);
     }
     return in;
 }

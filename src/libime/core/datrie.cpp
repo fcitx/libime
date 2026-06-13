@@ -14,8 +14,10 @@
 #include <sys/types.h>
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -32,6 +34,7 @@
 #include <tuple>
 #include <vector>
 #include <fcitx-utils/macros.h>
+#include "endian_p.h"
 #include "naivevector.h"
 #include "utils_p.h"
 
@@ -85,6 +88,24 @@ constexpr T decodeImpl(int32_t raw) {
     return d.result_value;
 }
 
+template <typename T>
+void decodeBigEndian(T &data)
+    requires(sizeof(T) == sizeof(uint32_t))
+{
+    auto raw = std::bit_cast<uint32_t>(data);
+    raw = be32toh(raw);
+    data = std::bit_cast<T>(raw);
+}
+
+template <typename T>
+void decodeBigEndian(T &data)
+    requires(sizeof(T) == sizeof(uint16_t))
+{
+    auto raw = std::bit_cast<uint16_t>(data);
+    raw = be16toh(raw);
+    data = std::bit_cast<T>(raw);
+}
+
 } // namespace
 
 // template<typename T>
@@ -127,6 +148,11 @@ public:
         }
 
         FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(node);
+
+        void decode() {
+            decodeBigEndian(base);
+            decodeBigEndian(check);
+        }
 
         friend std::ostream &operator<<(std::ostream &out, const node &n) {
             marshall(out, n.base) && marshall(out, n.check);
@@ -177,6 +203,15 @@ public:
             throw_if_io_fail(unmarshall(in, ehead));
         }
 
+        void decode() {
+            decodeBigEndian(prev);
+            decodeBigEndian(next);
+            decodeBigEndian(num);
+            decodeBigEndian(reject);
+            decodeBigEndian(trial);
+            decodeBigEndian(ehead);
+        }
+
         friend std::ostream &operator<<(std::ostream &out, const block &b) {
             marshall(out, b.prev) && marshall(out, b.next) &&
                 marshall(out, b.num) && marshall(out, b.reject) &&
@@ -210,6 +245,16 @@ public:
     int32_t m_bheadC; // first block of Closed; 0 if no Closed
     int32_t m_bheadO; // first block of Open;   0 if no Open
     std::array<int, 257> m_reject;
+
+    static_assert(sizeof(node) == 8);
+    static_assert(offsetof(block, prev) == 0);
+    static_assert(offsetof(block, next) == 4);
+    static_assert(offsetof(block, num) == 8);
+    static_assert(offsetof(block, reject) == 10);
+    static_assert(offsetof(block, trial) == 12);
+    static_assert(offsetof(block, ehead) == 16);
+    static_assert(sizeof(block) == 20);
+    static_assert(sizeof(ninfo) == 2);
 
     DATriePrivate() { init(); }
     FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(DATriePrivate)
@@ -248,31 +293,32 @@ public:
 
         m_tail.resize(length_);
         m_tail0.resize(0);
-        m_array.reserve(size_);
-        m_array.resize(0);
-        m_ninfo.reserve(size_);
-        m_ninfo.resize(0);
-        m_block.reserve(size_ >> 8);
-        m_block.resize(0);
+        m_array.resize(size_);
+        m_ninfo.resize(size_);
+        const auto blockSize = size_ >> 8;
+        m_block.resize(blockSize);
 
         throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_tail.data()),
                                   sizeof(char) * length_));
 
-        for (auto i = 0U; i < size_; i++) {
-            m_array.emplace_back(fin);
+        throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_array.data()),
+                                  sizeof(node) * size_));
+        for (auto &node : m_array) {
+            node.decode();
         }
-        m_array.resize(size_);
 
         throw_if_io_fail(unmarshall(fin, m_bheadF));
         throw_if_io_fail(unmarshall(fin, m_bheadC));
         throw_if_io_fail(unmarshall(fin, m_bheadO));
 
-        for (auto i = 0U; i < size_; i++) {
-            m_ninfo.emplace_back(fin);
-        }
+        throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_ninfo.data()),
+                                  sizeof(ninfo) * size_));
+        // ninfo is not endian issue.
 
-        for (auto i = 0U, end = size_ >> 8; i < end; i++) {
-            m_block.emplace_back(fin);
+        throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_block.data()),
+                                  sizeof(block) * blockSize));
+        for (auto &block : m_block) {
+            block.decode();
         }
     }
 

@@ -618,11 +618,11 @@ float HistoryBigram::scoreWithCode(WordWithCodeView prev,
     float bigramWeight = d->useOnlyUnigram_ ? 0.0F : 0.8F;
     // add 0.5 to avoid div 0
     float pr = 0.0F;
-    pr += bigramWeight * bf / float(uf0 + (d->poolWeight_[0] / 2));
+    pr += bigramWeight * bf / (uf0 + (d->poolWeight_[0] / 2.0F));
     pr += (1.0F - bigramWeight) * uf1 /
-          float(d->unigramSize() + (d->poolWeight_[0] / 2));
+          (d->unigramSize() + (d->poolWeight_[0] / 2.0F));
 
-    pr = std::min<double>(pr, 1.0);
+    pr = std::min<float>(pr, 1.0F);
     if (pr == 0) {
         return d->unknown_;
     }

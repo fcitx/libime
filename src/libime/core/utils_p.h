@@ -161,15 +161,10 @@ inline std::ostream &marshallString(std::ostream &out, std::string_view str) {
     return out;
 }
 
-template <typename E>
-void throw_if_fail(bool fail, E &&e) {
-    if (fail) {
-        throw e;
-    }
-}
-
 inline void throw_if_io_fail(const std::ios &s) {
-    throw_if_fail(!s, std::ios_base::failure("io fail"));
+    if (!s) {
+        throw std::ios_base::failure("io fail");
+    }
 }
 
 template <typename T>

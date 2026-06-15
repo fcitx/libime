@@ -751,7 +751,9 @@ void TableBasedDictionary::loadText(std::istream &in) {
     }
 
     if (phase != BuildPhase::PhaseData && phase != BuildPhase::PhasePhrase) {
-        throw_if_fail(in.bad(), std::ios_base::failure("io failed"));
+        if (in.bad()) {
+            throw std::ios_base::failure("io failed");
+        }
         throw std::invalid_argument("file format is invalid");
     }
 }

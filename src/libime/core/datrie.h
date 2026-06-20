@@ -12,6 +12,7 @@
 
 #include <libime/core/libimecore_export.h>
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -104,9 +105,30 @@ public:
     DATrie<T>::value_type traverse(const char *key, size_t len,
                                    position_type &from) const;
 
+    template <typename... Args>
+        requires(sizeof...(Args) > 0 &&
+                 (std::convertible_to<Args, std::string_view> && ...))
+    value_type traverse(position_type &from, Args &&...args) const {
+        return decode(traverseRaw(from, std::forward<Args>(args)...));
+    }
+
     int32_t traverseRaw(std::string_view key, position_type &from) const {
         return traverseRaw(key.data(), key.size(), from);
     }
+
+    template <typename... Args>
+        requires(sizeof...(Args) > 0 &&
+                 (std::convertible_to<Args, std::string_view> && ...))
+    int32_t traverseRaw(position_type &from, Args &&...args) const {
+        int32_t result = 0;
+        auto handle = [this, &from, &result](std::string_view str) -> bool {
+            result = traverseRaw(str, from);
+            return !isNoPathRaw(result);
+        };
+        (handle(args) && ...);
+        return result;
+    }
+
     int32_t traverseRaw(const char *key, size_t len, position_type &from) const;
 
     // set value

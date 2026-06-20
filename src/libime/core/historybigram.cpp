@@ -364,9 +364,7 @@ public:
 
     int32_t unigramFreq(WordWithCodeView s) const { return unigram_.freq(s); }
 
-    int32_t bigramFreq(WordWithCodeView s1, WordWithCodeView s2) const {
-        return bigram_.freq(bigramWordWithCode(s1, s2));
-    }
+    int32_t bigramFreq(WordWithCodeView s) const { return bigram_.freq(s); }
 
     bool isUnknown(WordWithCodeView word) const {
         return unigramFreq(word) == 0;
@@ -494,8 +492,9 @@ public:
     float bigramFreq(WordWithCodeView prev, WordWithCodeView cur) const {
         assert(pools_.size() == poolWeight_.size());
         float freq = 0;
+        auto bigram = bigramWordWithCode(prev, cur);
         for (size_t i = 0; i < pools_.size(); i++) {
-            freq += pools_[i].bigramFreq(prev, cur) * poolWeight_[i];
+            freq += pools_[i].bigramFreq(bigram) * poolWeight_[i];
         }
         return freq;
     }
@@ -721,10 +720,11 @@ void HistoryBigram::fillPredict(std::unordered_set<std::string> &words,
 bool HistoryBigram::containsBigram(std::string_view prev,
                                    std::string_view cur) const {
     FCITX_D();
-    return std::ranges::any_of(
-        d->pools_, [&prev, &cur](const HistoryBigramPool &pool) {
-            return pool.bigramFreq({prev, ""}, {cur, ""}) > 0;
-        });
+    auto bigram = bigramWordWithCode({prev, ""}, {cur, ""});
+    return std::ranges::any_of(d->pools_,
+                               [&bigram](const HistoryBigramPool &pool) {
+                                   return pool.bigramFreq(bigram) > 0;
+                               });
 }
 
 float HistoryBigram::unigramFrequency(WordWithCodeView word) const {
@@ -751,8 +751,9 @@ int32_t HistoryBigram::rawBigramFrequency(WordWithCodeView prev,
                                           WordWithCodeView cur) const {
     FCITX_D();
     int32_t freq = 0;
+    auto bigram = bigramWordWithCode(prev, cur);
     for (const auto &pool : d->pools_) {
-        freq += pool.bigramFreq(prev, cur);
+        freq += pool.bigramFreq(bigram);
     }
     return freq;
 }

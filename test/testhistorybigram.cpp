@@ -242,6 +242,47 @@ void testWithCode() {
     FCITX_ASSERT(history.rawBigramFrequency({"你", "code1"}, {"是", ""}) == 1);
 }
 
+void testWithEmptyCode() {
+    using namespace libime;
+    HistoryBigram history;
+    history.addWithCode({{"你", "code1"}, {"是", ""}});
+
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", ""}) == 1);
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", "code1"}) == 1);
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", "code2"}) == 0);
+    FCITX_ASSERT(history.rawUnigramFrequency({"是", ""}) == 1);
+    FCITX_ASSERT(history.rawUnigramFrequency({"是", "code1"}) == 1);
+    FCITX_ASSERT(history.rawUnigramFrequency({"是", "code2"}) == 1);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", ""}, {"是", ""}) == 1);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code1"}, {"是", "code2"}) ==
+                 0);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code2"}, {"是", "code2"}) ==
+                 0);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", ""}, {"是", "code2"}) == 0);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code1"}, {"是", ""}) == 1);
+}
+
+void testWithEmptyAndNonEmptyCode() {
+    using namespace libime;
+    HistoryBigram history;
+    history.addWithCode({{"你", "code1"}, {"是", ""}});
+    history.addWithCode({{"你", "code1"}, {"是", "code2"}});
+
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", ""}) == 2);
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", "code1"}) == 2);
+    FCITX_ASSERT(history.rawUnigramFrequency({"你", "code2"}) == 0);
+    FCITX_ASSERT(history.rawUnigramFrequency({"是", ""}) == 2);
+    FCITX_ASSERT(history.rawUnigramFrequency({"是", "code1"}) == 1);
+    FCITX_ASSERT(history.rawUnigramFrequency({"是", "code2"}) == 2);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", ""}, {"是", ""}) == 2);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code1"}, {"是", "code2"}) ==
+                 1);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code2"}, {"是", "code2"}) ==
+                 0);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", ""}, {"是", "code2"}) == 1);
+    FCITX_ASSERT(history.rawBigramFrequency({"你", "code1"}, {"是", ""}) == 2);
+}
+
 void testWithCodePredict() {
     using namespace libime;
     HistoryBigram history;
@@ -294,6 +335,8 @@ int main() {
     testSaveAndLoad();
     testSaveAndLoadText();
     testWithCode();
+    testWithEmptyCode();
+    testWithEmptyAndNonEmptyCode();
     testWithCodePredict();
     testAppend();
     return 0;

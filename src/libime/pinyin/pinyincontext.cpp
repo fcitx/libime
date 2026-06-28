@@ -57,6 +57,30 @@ enum class SelectedPinyinType {
     Separator,
 };
 
+// Get encoded full pinyin.
+std::string sentenceEncodedFullPinyin(const SentenceResult &candidate) {
+    std::string pinyin;
+    size_t length = 0;
+    for (const auto &node : candidate.sentence()) {
+        if (!node->as<PinyinLatticeNode>().encodedPinyin().empty()) {
+            length += node->as<PinyinLatticeNode>().encodedPinyin().size();
+        }
+    }
+    pinyin.reserve(length);
+    for (const auto &node : candidate.sentence()) {
+        if (!node->as<PinyinLatticeNode>().encodedPinyin().empty()) {
+            pinyin += node->as<PinyinLatticeNode>().encodedPinyin();
+        }
+    }
+    return pinyin;
+}
+
+size_t candidateSelectTo(const SentenceResult &candidate) {
+    return candidate.sentence().empty()
+               ? 0
+               : candidate.sentence().back()->to()->index();
+}
+
 struct SelectedPinyin {
     SelectedPinyin(size_t s, PinyinWordNode word, SelectedPinyinType type)
         : offset_(s), word_(std::move(word)), type_(type) {}
@@ -70,26 +94,24 @@ struct SelectedPinyin {
 
 struct CandidateDedupKey {
     std::string text_;
-    size_t end_ = 0;
+    std::string fullPinyin_;
 
     bool operator==(const CandidateDedupKey &other) const {
-        return text_ == other.text_ && end_ == other.end_;
+        return text_ == other.text_ && fullPinyin_ == other.fullPinyin_;
     }
 };
 
 struct CandidateDedupKeyHash {
     size_t operator()(const CandidateDedupKey &key) const {
         size_t seed = std::hash<std::string>()(key.text_);
-        boost::hash_combine(seed, key.end_);
+        boost::hash_combine(seed, std::hash<std::string>()(key.fullPinyin_));
         return seed;
     }
 };
 
 CandidateDedupKey candidateDedupKey(const SentenceResult &candidate) {
     return {.text_ = candidate.toString(),
-            .end_ = candidate.sentence().empty()
-                        ? 0
-                        : candidate.sentence().back()->to()->index()};
+            .fullPinyin_ = sentenceEncodedFullPinyin(candidate)};
 }
 
 } // namespace
@@ -163,7 +185,10 @@ public:
             auto iter = duplicateCandidates.find(key);
             if (iter != duplicateCandidates.end()) {
                 auto &oldCandidate = candidatesToCursor_[iter->second];
-                if (candidate.score() > oldCandidate.score()) {
+                if (std::make_tuple(candidateSelectTo(candidate),
+                                    candidate.score()) >
+                    std::make_tuple(candidateSelectTo(oldCandidate),
+                                    oldCandidate.score())) {
                     oldCandidate = std::move(candidate);
                 }
                 return;
@@ -184,15 +209,14 @@ public:
         for (const auto &candidate : candidates_) {
             const auto &sentence = candidate.sentence();
             if (sentence.size() == 1) {
-                if (sentence.back()->to()->index() + start > currentCursor) {
+                if (candidateSelectTo(candidate) + start > currentCursor) {
                     continue;
                 }
                 insertCandidate(candidate);
             } else if (sentence.size() > 1) {
                 auto newSentence = sentence;
                 while (!newSentence.empty() &&
-                       newSentence.back()->to()->index() + start >
-                           currentCursor) {
+                       candidateSelectTo(candidate) + start > currentCursor) {
                     newSentence.pop_back();
                 }
                 if (!newSentence.empty()) {

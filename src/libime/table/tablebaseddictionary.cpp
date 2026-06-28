@@ -208,6 +208,9 @@ bool TableBasedDictionaryPrivate::validateKeyValue(std::string_view key,
         !q->isAllInputCode(key)) {
         return false;
     }
+    if (keyLength == 0) {
+        return false;
+    }
 
     return true;
 }
@@ -1236,7 +1239,7 @@ bool TableBasedDictionary::insert(std::string_view key, std::string_view value,
         }
 
         if (flag == PhraseFlag::None && fcitx::utf8::length(value) == 1 &&
-            !d->ignoreChars_.contains(fcitx::utf8::getChar(value))) {
+            !d->ignoreChars_.contains(fcitx::utf8::getChar(key))) {
             updateReverseLookupEntry(d->singleCharTrie_, key, value, nullptr);
 
             if (hasRule() && !d->phraseKey_) {

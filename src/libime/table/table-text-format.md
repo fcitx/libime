@@ -94,7 +94,9 @@ abc another
 ## 1. Configuration
 
 The file starts with configuration lines. Leading and trailing whitespace is
-ignored. Lines whose first non-space character is `#` are comments.
+ignored. Lines whose first non-space character is `#` are comments. This comment
+rule applies only to the configuration and rule sections, not to the `[Data]`
+and `[Phrase]` sections.
 
 Supported keys:
 

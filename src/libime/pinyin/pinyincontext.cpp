@@ -92,26 +92,56 @@ struct SelectedPinyin {
     SelectedPinyinType type_;
 };
 
-struct CandidateDedupKey {
+struct CandidateDedupByPinyin {
     std::string text_;
     std::string fullPinyin_;
 
-    bool operator==(const CandidateDedupKey &other) const {
+    bool operator==(const CandidateDedupByPinyin &other) const {
         return text_ == other.text_ && fullPinyin_ == other.fullPinyin_;
     }
 };
 
-struct CandidateDedupKeyHash {
-    size_t operator()(const CandidateDedupKey &key) const {
+struct CandidateDedupByPinyinHash {
+    size_t operator()(const CandidateDedupByPinyin &key) const {
         size_t seed = std::hash<std::string>()(key.text_);
         boost::hash_combine(seed, std::hash<std::string>()(key.fullPinyin_));
         return seed;
     }
 };
 
-CandidateDedupKey candidateDedupKey(const SentenceResult &candidate) {
+CandidateDedupByPinyin candidateDedupByPinyin(const SentenceResult &candidate) {
     return {.text_ = candidate.toString(),
             .fullPinyin_ = sentenceEncodedFullPinyin(candidate)};
+}
+
+struct CandidateDedupBySelectRange {
+    std::string text_;
+    std::string end_;
+
+    bool operator==(const CandidateDedupBySelectRange &other) const {
+        return text_ == other.text_ && end_ == other.end_;
+    }
+};
+
+struct CandidateDedupBySelectRangeHash {
+    size_t operator()(const CandidateDedupBySelectRange &key) const {
+        size_t seed = std::hash<std::string>()(key.text_);
+        boost::hash_combine(seed, std::hash<std::string>()(key.end_));
+        return seed;
+    }
+};
+
+CandidateDedupBySelectRange
+candidateDedupBySelectRange(const SentenceResult &candidate) {
+    return {.text_ = candidate.toString(),
+            .end_ = std::to_string(candidateSelectTo(candidate))};
+}
+
+bool hasCorrection(const SentenceResult &candidate) {
+    return std::ranges::any_of(
+        candidate.sentence(), [](const LatticeNode *node) {
+            return node->as<PinyinLatticeNode>().isCorrection();
+        });
 }
 
 } // namespace
@@ -177,14 +207,15 @@ public:
         candidatesToCursor_.clear();
         candidatesToCursorSet_.clear();
 
-        std::unordered_map<CandidateDedupKey, size_t, CandidateDedupKeyHash>
-            duplicateCandidates;
-        auto insertCandidate = [this, &duplicateCandidates](
-                                   SentenceResult candidate) {
-            auto key = candidateDedupKey(candidate);
-            auto iter = duplicateCandidates.find(key);
-            if (iter != duplicateCandidates.end()) {
-                auto &oldCandidate = candidatesToCursor_[iter->second];
+        std::unordered_map<CandidateDedupByPinyin, size_t,
+                           CandidateDedupByPinyinHash>
+            duplicateByPinyin;
+        auto insertCandidate = [this,
+                                &duplicateByPinyin](SentenceResult candidate) {
+            auto byPinyin = candidateDedupByPinyin(candidate);
+            auto byPinyinIter = duplicateByPinyin.find(byPinyin);
+            if (byPinyinIter != duplicateByPinyin.end()) {
+                auto &oldCandidate = candidatesToCursor_[byPinyinIter->second];
                 if (std::make_tuple(candidateSelectTo(candidate),
                                     candidate.score()) >
                     std::make_tuple(candidateSelectTo(oldCandidate),
@@ -195,8 +226,8 @@ public:
             }
 
             candidatesToCursor_.push_back(std::move(candidate));
-            duplicateCandidates.emplace(key, candidatesToCursor_.size() - 1);
-            candidatesToCursorSet_.insert(std::move(key.text_));
+            duplicateByPinyin.emplace(byPinyin, candidatesToCursor_.size() - 1);
+            candidatesToCursorSet_.insert(std::move(byPinyin.text_));
         };
 
         auto start = q->selectedLength();
@@ -226,6 +257,20 @@ public:
                 }
             }
         }
+
+        std::unordered_set<CandidateDedupBySelectRange,
+                           CandidateDedupBySelectRangeHash>
+            duplicateByRange;
+        std::erase_if(
+            candidatesToCursor_,
+            [&duplicateByRange](const SentenceResult &candidate) {
+                if (duplicateByRange
+                        .insert(candidateDedupBySelectRange(candidate))
+                        .second) {
+                    return false;
+                }
+                return hasCorrection(candidate);
+            });
     }
 
     template <typename FillSentence>
@@ -740,39 +785,50 @@ void PinyinContext::update() {
             size_t index = 0;
             size_t count = 0;
             const auto limit = d->ime_->wordCandidateLimit();
-            std::unordered_set<CandidateDedupKey, CandidateDedupKeyHash>
-                duplicateCandidates;
+            std::unordered_set<CandidateDedupByPinyin,
+                               CandidateDedupByPinyinHash>
+                duplicateByPinyin;
+            std::unordered_set<CandidateDedupBySelectRange,
+                               CandidateDedupBySelectRangeHash>
+                duplicateByRange;
             auto &candidatesSet = d->candidatesSet_;
             candidatesSet.clear();
-            std::erase_if(d->candidates_,
-                          [&candidatesSet, &duplicateCandidates, &index, &count,
-                           beginSize, limit](const SentenceResult &candidate) {
-                              bool beforeBeginSize = index++ < beginSize;
-                              auto key = candidateDedupKey(candidate);
-                              if (duplicateCandidates.contains(key)) {
-                                  return true;
-                              }
+            std::erase_if(
+                d->candidates_,
+                [&candidatesSet, &duplicateByPinyin, &duplicateByRange, &index,
+                 &count, beginSize, limit](const SentenceResult &candidate) {
+                    bool beforeBeginSize = index++ < beginSize;
+                    auto byPinyin = candidateDedupByPinyin(candidate);
+                    if (duplicateByPinyin.contains(byPinyin)) {
+                        return true;
+                    }
+                    auto byRange = candidateDedupBySelectRange(candidate);
+                    if (duplicateByRange.contains(byRange) &&
+                        hasCorrection(candidate)) {
+                        return true;
+                    }
 
-                              if (!beforeBeginSize && limit) {
-                                  const bool isSinglePinyinWord =
-                                      candidate.sentence().size() == 1 &&
-                                      candidate.sentence()
-                                              .front()
-                                              ->as<PinyinLatticeNode>()
-                                              .encodedPinyin()
-                                              .size() == 2;
-                                  if (!isSinglePinyinWord) {
-                                      if (count >= limit) {
-                                          return true;
-                                      }
-                                      count++;
-                                  }
-                              }
+                    if (!beforeBeginSize && limit) {
+                        const bool isSinglePinyinWord =
+                            candidate.sentence().size() == 1 &&
+                            candidate.sentence()
+                                    .front()
+                                    ->as<PinyinLatticeNode>()
+                                    .encodedPinyin()
+                                    .size() == 2;
+                        if (!isSinglePinyinWord) {
+                            if (count >= limit) {
+                                return true;
+                            }
+                            count++;
+                        }
+                    }
 
-                              candidatesSet.insert(key.text_);
-                              duplicateCandidates.insert(std::move(key));
-                              return false;
-                          });
+                    candidatesSet.insert(byPinyin.text_);
+                    duplicateByPinyin.insert(std::move(byPinyin));
+                    duplicateByRange.insert(std::move(byRange));
+                    return false;
+                });
         }
 
         d->candidatesToCursorNeedUpdate_ = true;

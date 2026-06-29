@@ -266,6 +266,9 @@ PinyinDictionary::TrieType loadTextImpl(std::istream &in) {
             } catch (const std::invalid_argument &e) {
                 LIBIME_ERROR()
                     << "Skipped line " << lineNo << ", exception: " << e.what();
+            } catch (const std::out_of_range &e) {
+                LIBIME_ERROR()
+                    << "Skipped line " << lineNo << ", exception: " << e.what();
             }
         }
     }

@@ -1,9 +1,9 @@
-set(LM_TAR "lm_sc.arpa-20260606.tar.zst")
+set(LM_TAR "lm_sc.arpa-20260629.tar.zst")
 # Use our own file server for convenience.
 set(LM_URL "https://download.fcitx-im.org/data/${LM_TAR}")
 
 fcitx5_download(lm-download ${LM_URL} ${LM_TAR}
-                8c7da1b03770060269b92c0e6172552a2a9041cb74ef0be0b2659e10f0a703f1)
+                06808333b9173e5374cf2cb5afc12d08f5625bf9abb536489cac376fc05f2e7f)
 fcitx5_extract(lm-extract ${LM_TAR} DEPENDS lm-download
                OUTPUT lm_sc.arpa)
 
@@ -13,7 +13,7 @@ set(LM_PREDICT_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sc.lm.predict")
 add_custom_command(
   OUTPUT "${LM_OUTPUT}"
   DEPENDS "${LM_SRC}" LibIME::slm_build_binary
-  COMMAND LibIME::slm_build_binary -s -a 22 -q 8 trie "${LM_SRC}" "${LM_OUTPUT}")
+  COMMAND LibIME::slm_build_binary -s -a 22 -q 4 trie "${LM_SRC}" "${LM_OUTPUT}")
 add_custom_target(lm ALL DEPENDS "${LM_OUTPUT}")
 
 add_custom_command(

@@ -29,7 +29,7 @@ set(DICT_TAR "dict-20260703.tar.zst")
 set(DICT_URL "https://download.fcitx-im.org/data/${DICT_TAR}")
 
 fcitx5_download(dict-download ${DICT_URL} ${DICT_TAR}
-               4ae75533c7214c152a9b34013865c938b76b6c772af8998cdb1a238f4d7e7937)
+               c686cab6df8964c48d596f57d205bac31fc72870b06a83017e44503df8c09697)
 fcitx5_extract(dict-extract ${DICT_TAR} DEPENDS dict-download
                OUTPUT dict_sc.txt dict_extb.txt)
 

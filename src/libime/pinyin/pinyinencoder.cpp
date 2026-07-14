@@ -322,18 +322,15 @@ PinyinEncoder::parseUserPinyin(std::string userPinyin,
                         auto iter = innerSegments.find(nextPinyin);
                         if (iter != innerSegments.end()) {
                             for (const auto &innerSeg : iter->second) {
-                                if (innerSeg.second == "n") {
-                                    bool accept =
-                                        (top + nextSize[i] < pinyin.size()) ||
-                                        (i == 0 && nNextSize == 1);
-                                    if (!accept) {
-                                        continue;
-                                    }
-                                }
                                 result.addNext(top,
                                                top + innerSeg.first.size());
-                                result.addNext(top + innerSeg.first.size(),
-                                               top + nextSize[i]);
+                                // Skip "n", in case n can have a better match.
+                                if (innerSeg.second == "n") {
+                                    q.push(top + innerSeg.first.size());
+                                } else {
+                                    result.addNext(top + innerSeg.first.size(),
+                                                   top + nextSize[i]);
+                                }
                             }
                         }
                     } else if (nextPinyin.size() == 2 &&

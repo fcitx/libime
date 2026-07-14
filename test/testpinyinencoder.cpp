@@ -291,6 +291,12 @@ int main() {
         graph = PinyinEncoder::parseUserPinyin("to", &profile,
                                                PinyinFuzzyFlag::InnerShort);
         dfs(graph, {"t", "o"});
+        graph = PinyinEncoder::parseUserPinyin(
+            "xiana", &profile,
+            {PinyinFuzzyFlag::PartialFinal, PinyinFuzzyFlag::InnerShort});
+        dfs(graph, {"xian", "a"});
+        dfs(graph, {"xia", "na"});
+        dfs(graph, {"xi", "a", "na"});
     }
 
     {

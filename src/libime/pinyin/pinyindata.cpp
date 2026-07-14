@@ -6,9 +6,13 @@
 
 #include "pinyindata.h"
 #include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -20,6 +24,95 @@
 #include "pinyinencoder.h"
 
 namespace libime {
+
+namespace {
+
+void applyPartialFinalFuzzy(PinyinMap &map) {
+    // There are some finals won't generate any entries, just skip them from
+    // map.
+    const auto partialFinalFuzzyMap =
+        std::to_array<std::pair<std::string, std::vector<PinyinFinal>>>({
+            {"a",
+             {PinyinFinal::AN, PinyinFinal::AI, PinyinFinal::AO,
+              PinyinFinal::ANG}},
+            {"e",
+             {PinyinFinal::EI, PinyinFinal::EN, PinyinFinal::ENG,
+              PinyinFinal::ER}},
+            {"i",
+             {PinyinFinal::IA, PinyinFinal::IAN, PinyinFinal::IAO,
+              PinyinFinal::IANG, PinyinFinal::IE, PinyinFinal::IN,
+              PinyinFinal::ING, PinyinFinal::IONG, PinyinFinal::IU}},
+            {"ia", {PinyinFinal::IAN, PinyinFinal::IAO, PinyinFinal::IANG}},
+            {"ion", {PinyinFinal::IONG}},
+            {"o", {PinyinFinal::ONG, PinyinFinal::OU}},
+            {"on", {PinyinFinal::ONG}},
+
+#if 0
+            // Item won't generate anything below.
+            {"an", {PinyinFinal::ANG}},
+            {"en", {PinyinFinal::ENG}},
+            {"ian", {PinyinFinal::IANG}},
+            {"in", {PinyinFinal::ING}},
+            {"io", {PinyinFinal::IONG}},
+
+            {"u",
+             {PinyinFinal::UA, PinyinFinal::UAI, PinyinFinal::UAN,
+              PinyinFinal::UANG, PinyinFinal::UE, PinyinFinal::UI,
+              PinyinFinal::UN, PinyinFinal::UO}},
+            {"ua", {PinyinFinal::UAI, PinyinFinal::UAN, PinyinFinal::UANG}},
+            {"uan", {PinyinFinal::UANG}},
+            {"v", {PinyinFinal::VE}},
+#endif
+        });
+    std::vector<PinyinEntry> newEntries;
+    std::map<std::string, int> statistic;
+    for (const auto initial : std::views::iota(PinyinEncoder::firstInitial,
+                                               PinyinEncoder::lastInitial) |
+                                  std::views::transform([](auto i) {
+                                      return static_cast<PinyinInitial>(i);
+                                  })) {
+        if (initial == PinyinInitial::Zero) {
+            continue;
+        }
+        for (const auto &[str, finals] : partialFinalFuzzyMap) {
+            assert(std::ranges::all_of(finals, [&str](auto f) {
+                const auto &finalString = PinyinEncoder::finalToString(f);
+                return finalString.starts_with(str) &&
+                       finalString.size() > str.size();
+            }));
+            const auto &initialString = PinyinEncoder::initialToString(initial);
+            const auto partialFinalString = initialString + str;
+            bool ignore = false;
+            for (size_t i = std::max<size_t>(initialString.size() + 1,
+                                             partialFinalString.size() - 1);
+                 i <= partialFinalString.size(); i++) {
+                if (map.contains(partialFinalString.substr(0, i))) {
+                    ignore = true;
+                    break;
+                }
+            }
+            if (ignore) {
+                continue;
+            }
+            for (auto final : finals) {
+                auto pinyin =
+                    PinyinEncoder::initialFinalToPinyinString(initial, final);
+                if (auto iter = map.find(pinyin);
+                    iter != map.end() &&
+                    iter->flags() == PinyinFuzzyFlag::None) {
+                    newEntries.push_back(
+                        PinyinEntry(partialFinalString.data(), initial, final,
+                                    PinyinFuzzyFlag::PartialFinal));
+                }
+            }
+        }
+    }
+    for (const auto &newEntry : newEntries) {
+        FCITX_ASSERT(map.insert(newEntry).second);
+    }
+}
+
+} // namespace
 
 const std::vector<bool> &getEncodedInitialFinal() {
     static const auto encodedInitialFinal = []() {
@@ -164,32 +257,46 @@ getInnerSegment() {
 
 const InnerSegmentMap &getInnerSegmentV2() {
     static const InnerSegmentMap innerSegment = []() {
-        InnerSegmentMap innerSegmentV2;
-        for (const auto &[key, value] : getInnerSegment()) {
-            innerSegmentV2[key].push_back(value);
+        InnerSegmentMap innerSegmentV2Generate;
+        const auto &pinyinMap = getPinyinMapV2();
+        for (const auto &entry : getPinyinMapV2()) {
+            if (entry.pinyin().size() < 3) {
+                continue;
+            }
+            if (innerSegmentV2Generate.contains(entry.pinyin())) {
+                continue;
+            }
+            // We want to support 2 + 1, 2 + 2, 3 + 1, 2 + 3, 3 + 2, 3 + 3.
+            for (size_t i = 2; i <= 3 && i < entry.pinyin().size(); i++) {
+                if (entry.pinyin().size() <= i) {
+                    continue;
+                }
+                auto part1 = entry.pinyinView().substr(0, i);
+                auto part2 = entry.pinyinView().substr(i);
+                if (part2 == "ng") {
+                    continue;
+                }
+                auto range1 = pinyinMap.equal_range(part1);
+                if (!std::any_of(
+                        range1.first, range1.second, [&](const auto &entry) {
+                            return entry.flags() == PinyinFuzzyFlag::None;
+                        })) {
+                    continue;
+                }
+                auto range2 = pinyinMap.equal_range(part2);
+                if (!std::any_of(
+                        range2.first, range2.second, [&](const auto &entry) {
+                            return entry.flags() == PinyinFuzzyFlag::None;
+                        })) {
+                    continue;
+                }
+
+                innerSegmentV2Generate[entry.pinyin()].push_back(
+                    {std::string(part1), std::string(part2)});
+            }
         }
 
-        for (const auto &newItem : std::vector<
-                 std::pair<std::string, std::pair<std::string, std::string>>>{
-                 {"qiao", {"qia", "o"}},
-                 {"niao", {"nia", "o"}},
-                 {"liao", {"lia", "o"}},
-                 {"zhuo", {"zhu", "o"}},
-                 {"diao", {"dia", "o"}},
-                 {"shao", {"sha", "o"}},
-                 {"xiao", {"xia", "o"}},
-                 {"zhua", {"zhu", "a"}},
-                 {"shuo", {"shu", "o"}},
-                 {"shua", {"shu", "a"}},
-                 {"zhao", {"zha", "o"}},
-                 {"jiao", {"jia", "o"}},
-                 {"chuo", {"chu", "o"}},
-                 {"chua", {"chu", "a"}},
-                 {"chao", {"cha", "o"}},
-             }) {
-            innerSegmentV2[newItem.first].push_back(newItem.second);
-        }
-        return innerSegmentV2;
+        return innerSegmentV2Generate;
     }();
 
     return innerSegment;
@@ -1416,6 +1523,8 @@ const PinyinMap &getPinyinMapV2() {
                 filtered.insert(entry);
             }
         }
+
+        applyPartialFinalFuzzy(filtered);
 
         for (auto fz : {PinyinFuzzyFlag::U_OU, PinyinFuzzyFlag::IN_ING,
                         PinyinFuzzyFlag::EN_ENG, PinyinFuzzyFlag::AN_ANG,

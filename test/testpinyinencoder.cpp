@@ -279,6 +279,18 @@ int main() {
         graph = PinyinEncoder::parseUserPinyin("suang", &profile,
                                                PinyinFuzzyFlag::Correction);
         dfs(graph, {"suan", "g"});
+
+        graph = PinyinEncoder::parseUserPinyin(
+            "to", &profile,
+            {PinyinFuzzyFlag::PartialFinal, PinyinFuzzyFlag::InnerShort});
+        dfs(graph, {"to"});
+        graph = PinyinEncoder::parseUserPinyin(
+            "ton", &profile,
+            {PinyinFuzzyFlag::PartialFinal, PinyinFuzzyFlag::InnerShort});
+        dfs(graph, {"ton"});
+        graph = PinyinEncoder::parseUserPinyin("to", &profile,
+                                               PinyinFuzzyFlag::InnerShort);
+        dfs(graph, {"t", "o"});
     }
 
     {

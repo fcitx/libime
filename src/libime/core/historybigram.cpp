@@ -667,16 +667,17 @@ float HistoryBigram::scoreWithCode(WordWithCodeView prev,
         cur.first = "<unk>";
     }
 
-    auto uf0 = d->unigramFreq(prev);
-    auto bf = d->bigramFreq(prev, cur);
-    auto uf1 = d->unigramFreq(cur);
+    const float bigramWeight = d->useOnlyUnigram_ ? 0.0F : 0.8F;
+    const float unigramWeight = 1.0F - bigramWeight;
+    const float poolWeightHalf = d->poolWeight_[0] / 2.0F;
 
-    float bigramWeight = d->useOnlyUnigram_ ? 0.0F : 0.8F;
     // add 0.5 to avoid div 0
-    float pr = 0.0F;
-    pr += bigramWeight * bf / (uf0 + (d->poolWeight_[0] / 2.0F));
-    pr += (1.0F - bigramWeight) * uf1 /
-          (d->unigramSize() + (d->poolWeight_[0] / 2.0F));
+    float pr = unigramWeight * d->unigramFreq(cur) /
+               (d->unigramSize() + poolWeightHalf);
+    if (!d->useOnlyUnigram_) {
+        pr += bigramWeight * d->bigramFreq(prev, cur) /
+              (d->unigramFreq(prev) + poolWeightHalf);
+    }
 
     pr = std::min<float>(pr, 1.0F);
     if (pr == 0) {

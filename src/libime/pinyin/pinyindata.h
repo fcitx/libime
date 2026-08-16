@@ -55,7 +55,8 @@ using PinyinMap = boost::multi_index_container<
 
 LIBIMEPINYIN_EXPORT const PinyinMap &getPinyinMap();
 LIBIMEPINYIN_EXPORT const PinyinMap &getPinyinMapV2();
-LIBIMEPINYIN_EXPORT const std::vector<bool> &getEncodedInitialFinal();
+LIBIMEPINYIN_DEPRECATED_EXPORT const std::vector<bool> &
+getEncodedInitialFinal();
 
 LIBIMEPINYIN_EXPORT const
     std::unordered_map<std::string, std::pair<std::string, std::string>> &

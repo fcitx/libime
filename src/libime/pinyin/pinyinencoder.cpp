@@ -61,59 +61,68 @@ fcitx::LogMessageBuilder &operator<<(fcitx::LogMessageBuilder &log,
 }
 
 template <typename L, typename R>
-boost::bimap<L, R>
-makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
-    return boost::bimap<L, R>(list.begin(), list.end());
+boost::bimap<L, R> makeBimap(auto &&list) {
+    boost::bimap<L, R> b;
+    b.left.insert(list.begin(), list.end());
+    return b;
 }
 
-static const auto initialMap = makeBimap<PinyinInitial, std::string>({
-    {PinyinInitial::B, "b"},   {PinyinInitial::P, "p"},
-    {PinyinInitial::M, "m"},   {PinyinInitial::F, "f"},
-    {PinyinInitial::D, "d"},   {PinyinInitial::T, "t"},
-    {PinyinInitial::N, "n"},   {PinyinInitial::L, "l"},
-    {PinyinInitial::G, "g"},   {PinyinInitial::K, "k"},
-    {PinyinInitial::H, "h"},   {PinyinInitial::J, "j"},
-    {PinyinInitial::Q, "q"},   {PinyinInitial::X, "x"},
-    {PinyinInitial::ZH, "zh"}, {PinyinInitial::CH, "ch"},
-    {PinyinInitial::SH, "sh"}, {PinyinInitial::R, "r"},
-    {PinyinInitial::Z, "z"},   {PinyinInitial::C, "c"},
-    {PinyinInitial::S, "s"},   {PinyinInitial::Y, "y"},
-    {PinyinInitial::W, "w"},   {PinyinInitial::Zero, ""},
-});
+constexpr std::array initialMapArray =
+    std::to_array<std::pair<PinyinInitial, std::string_view>>({
+        {PinyinInitial::B, "b"},   {PinyinInitial::P, "p"},
+        {PinyinInitial::M, "m"},   {PinyinInitial::F, "f"},
+        {PinyinInitial::D, "d"},   {PinyinInitial::T, "t"},
+        {PinyinInitial::N, "n"},   {PinyinInitial::L, "l"},
+        {PinyinInitial::G, "g"},   {PinyinInitial::K, "k"},
+        {PinyinInitial::H, "h"},   {PinyinInitial::J, "j"},
+        {PinyinInitial::Q, "q"},   {PinyinInitial::X, "x"},
+        {PinyinInitial::ZH, "zh"}, {PinyinInitial::CH, "ch"},
+        {PinyinInitial::SH, "sh"}, {PinyinInitial::R, "r"},
+        {PinyinInitial::Z, "z"},   {PinyinInitial::C, "c"},
+        {PinyinInitial::S, "s"},   {PinyinInitial::Y, "y"},
+        {PinyinInitial::W, "w"},   {PinyinInitial::Zero, ""},
+    });
 
-static const auto finalMap = makeBimap<PinyinFinal, std::string>({
-    {PinyinFinal::A, "a"},        {PinyinFinal::AI, "ai"},
-    {PinyinFinal::AN, "an"},      {PinyinFinal::ANG, "ang"},
-    {PinyinFinal::AO, "ao"},      {PinyinFinal::E, "e"},
-    {PinyinFinal::EI, "ei"},      {PinyinFinal::EN, "en"},
-    {PinyinFinal::ENG, "eng"},    {PinyinFinal::ER, "er"},
-    {PinyinFinal::O, "o"},        {PinyinFinal::ONG, "ong"},
-    {PinyinFinal::OU, "ou"},      {PinyinFinal::I, "i"},
-    {PinyinFinal::IA, "ia"},      {PinyinFinal::IE, "ie"},
-    {PinyinFinal::IAO, "iao"},    {PinyinFinal::IU, "iu"},
-    {PinyinFinal::IAN, "ian"},    {PinyinFinal::IN, "in"},
-    {PinyinFinal::IANG, "iang"},  {PinyinFinal::ING, "ing"},
-    {PinyinFinal::IONG, "iong"},  {PinyinFinal::U, "u"},
-    {PinyinFinal::UA, "ua"},      {PinyinFinal::UO, "uo"},
-    {PinyinFinal::UAI, "uai"},    {PinyinFinal::UI, "ui"},
-    {PinyinFinal::UAN, "uan"},    {PinyinFinal::UN, "un"},
-    {PinyinFinal::UANG, "uang"},  {PinyinFinal::V, "v"},
-    {PinyinFinal::UE, "ue"},      {PinyinFinal::VE, "ve"},
-    {PinyinFinal::NG, "ng"},      {PinyinFinal::Zero, ""},
-    {PinyinFinal::Letter_A, "A"}, {PinyinFinal::Letter_B, "B"},
-    {PinyinFinal::Letter_C, "C"}, {PinyinFinal::Letter_D, "D"},
-    {PinyinFinal::Letter_E, "E"}, {PinyinFinal::Letter_F, "F"},
-    {PinyinFinal::Letter_G, "G"}, {PinyinFinal::Letter_H, "H"},
-    {PinyinFinal::Letter_I, "I"}, {PinyinFinal::Letter_J, "J"},
-    {PinyinFinal::Letter_K, "K"}, {PinyinFinal::Letter_L, "L"},
-    {PinyinFinal::Letter_M, "M"}, {PinyinFinal::Letter_N, "N"},
-    {PinyinFinal::Letter_O, "O"}, {PinyinFinal::Letter_P, "P"},
-    {PinyinFinal::Letter_Q, "Q"}, {PinyinFinal::Letter_R, "R"},
-    {PinyinFinal::Letter_S, "S"}, {PinyinFinal::Letter_T, "T"},
-    {PinyinFinal::Letter_U, "U"}, {PinyinFinal::Letter_V, "V"},
-    {PinyinFinal::Letter_W, "W"}, {PinyinFinal::Letter_X, "X"},
-    {PinyinFinal::Letter_Y, "Y"}, {PinyinFinal::Letter_Z, "Z"},
-});
+static const auto initialMap =
+    makeBimap<PinyinInitial, std::string_view>(initialMapArray);
+
+constexpr auto finalMapArray =
+    std::to_array<std::pair<PinyinFinal, std::string_view>>({
+        {PinyinFinal::A, "a"},        {PinyinFinal::AI, "ai"},
+        {PinyinFinal::AN, "an"},      {PinyinFinal::ANG, "ang"},
+        {PinyinFinal::AO, "ao"},      {PinyinFinal::E, "e"},
+        {PinyinFinal::EI, "ei"},      {PinyinFinal::EN, "en"},
+        {PinyinFinal::ENG, "eng"},    {PinyinFinal::ER, "er"},
+        {PinyinFinal::O, "o"},        {PinyinFinal::ONG, "ong"},
+        {PinyinFinal::OU, "ou"},      {PinyinFinal::I, "i"},
+        {PinyinFinal::IA, "ia"},      {PinyinFinal::IE, "ie"},
+        {PinyinFinal::IAO, "iao"},    {PinyinFinal::IU, "iu"},
+        {PinyinFinal::IAN, "ian"},    {PinyinFinal::IN, "in"},
+        {PinyinFinal::IANG, "iang"},  {PinyinFinal::ING, "ing"},
+        {PinyinFinal::IONG, "iong"},  {PinyinFinal::U, "u"},
+        {PinyinFinal::UA, "ua"},      {PinyinFinal::UO, "uo"},
+        {PinyinFinal::UAI, "uai"},    {PinyinFinal::UI, "ui"},
+        {PinyinFinal::UAN, "uan"},    {PinyinFinal::UN, "un"},
+        {PinyinFinal::UANG, "uang"},  {PinyinFinal::V, "v"},
+        {PinyinFinal::UE, "ue"},      {PinyinFinal::VE, "ve"},
+        {PinyinFinal::NG, "ng"},      {PinyinFinal::Zero, ""},
+        {PinyinFinal::Letter_A, "A"}, {PinyinFinal::Letter_B, "B"},
+        {PinyinFinal::Letter_C, "C"}, {PinyinFinal::Letter_D, "D"},
+        {PinyinFinal::Letter_E, "E"}, {PinyinFinal::Letter_F, "F"},
+        {PinyinFinal::Letter_G, "G"}, {PinyinFinal::Letter_H, "H"},
+        {PinyinFinal::Letter_I, "I"}, {PinyinFinal::Letter_J, "J"},
+        {PinyinFinal::Letter_K, "K"}, {PinyinFinal::Letter_L, "L"},
+        {PinyinFinal::Letter_M, "M"}, {PinyinFinal::Letter_N, "N"},
+        {PinyinFinal::Letter_O, "O"}, {PinyinFinal::Letter_P, "P"},
+        {PinyinFinal::Letter_Q, "Q"}, {PinyinFinal::Letter_R, "R"},
+        {PinyinFinal::Letter_S, "S"}, {PinyinFinal::Letter_T, "T"},
+        {PinyinFinal::Letter_U, "U"}, {PinyinFinal::Letter_V, "V"},
+        {PinyinFinal::Letter_W, "W"}, {PinyinFinal::Letter_X, "X"},
+        {PinyinFinal::Letter_Y, "Y"}, {PinyinFinal::Letter_Z, "Z"},
+    });
+
+static const auto finalMap =
+    makeBimap<PinyinFinal, std::string_view>(finalMapArray);
 
 static const int maxPinyinLength = 6;
 
@@ -161,7 +170,7 @@ LongestMatchResult longestMatch(Iter iter, Iter end, PinyinFuzzyFlags flags,
                         (range != "m" && range != "n" && range != "r")};
         }
         if (range.size() <= 2) {
-            auto iter = initialMap.right.find(std::string{range});
+            auto iter = initialMap.right.find(range);
             if (iter != initialMap.right.end()) {
                 return {
                     .valid = true, .match = range, .isCompletePinyin = false};
@@ -529,15 +538,15 @@ std::string PinyinEncoder::decodeFullPinyin(const char *data, size_t size) {
 }
 
 const std::string &PinyinEncoder::initialToString(PinyinInitial initial) {
-    const static std::vector<std::string> s = []() {
-        std::vector<std::string> s;
-        s.resize(lastInitial - firstInitial + 1);
-        for (char c = firstInitial; c <= lastInitial; c++) {
-            auto iter = initialMap.left.find(static_cast<PinyinInitial>(c));
-            s[c - firstInitial] = iter->second;
-        }
-        return s;
-    }();
+    const static std::array<std::string, lastInitial - firstInitial + 1> s =
+        []() {
+            std::array<std::string, lastInitial - firstInitial + 1> s;
+            for (const auto &initialValue : initialMapArray) {
+                s[static_cast<char>(initialValue.first) - firstInitial] =
+                    initialValue.second;
+            }
+            return s;
+        }();
     auto c = static_cast<char>(initial);
     if (c >= firstInitial && c <= lastInitial) {
         return s[c - firstInitial];
@@ -554,12 +563,11 @@ PinyinInitial PinyinEncoder::stringToInitial(const std::string &str) {
 }
 
 const std::string &PinyinEncoder::finalToString(PinyinFinal final) {
-    const static std::vector<std::string> s = []() {
-        std::vector<std::string> s;
-        s.resize(lastLetter - firstFinal + 1);
-        for (char c = firstFinal; c <= lastLetter; c++) {
-            auto iter = finalMap.left.find(static_cast<PinyinFinal>(c));
-            s[c - firstFinal] = iter->second;
+    const static std::array<std::string, lastLetter - firstFinal + 1> s = []() {
+        std::array<std::string, lastLetter - firstFinal + 1> s;
+        for (const auto &finalValue : finalMapArray) {
+            s[static_cast<char>(finalValue.first) - firstFinal] =
+                finalValue.second;
         }
         return s;
     }();
@@ -585,7 +593,7 @@ bool PinyinEncoder::isValidInitialFinal(PinyinInitial initial,
             ((static_cast<int16_t>(initial) - PinyinEncoder::firstInitial) *
              (PinyinEncoder::lastLetter - PinyinEncoder::firstFinal + 1)) +
             (static_cast<int16_t>(final) - PinyinEncoder::firstFinal);
-        const auto &a = getEncodedInitialFinal();
+        const auto &a = validInitialFinal;
         return encode < static_cast<int>(a.size()) && a[encode];
     }
     return false;

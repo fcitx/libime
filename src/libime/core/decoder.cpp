@@ -351,6 +351,8 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                     if (node.node()->prev() == &from) {
                         // We can skip the model call if the node is the same as
                         // the previous one from forward search.
+                        // Following should hold:
+                        // node.score = from.score + model_score + node.cost
                         score = node.node()->score() - from.score();
                     } else {
                         auto it =
@@ -370,15 +372,24 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                     }
 
                     const float gn = score + node.gn_;
-                    if (eos->score() - gn <= max) {
+                    const float fn = gn + from.score();
+                    // fn should be the best possible score for the current
+                    // sentence, if diff is worse than the diff max, we can skip
+                    // it.
+                    if (eos->score() - fn <= max) {
                         size_t parentIdx = pushNewNBestNode(&from, nodeIdx);
                         pool[parentIdx].gn_ = gn;
-                        pool[parentIdx].fn_ = gn + from.score();
-                        ;
+                        pool[parentIdx].fn_ = fn;
                         q.push(parentIdx);
                         if (pool.size() >= MAX_BACKWARD_SEARCH_SIZE) {
                             break;
                         }
+                    } else if (node.node()->prev() == &from) {
+                        // lattice should be sorted. So this is the best
+                        // possible score for the current sentence, if diff is
+                        // larger than max, we can skip the rest of the parent
+                        // nodes.
+                        break;
                     }
                 }
             }

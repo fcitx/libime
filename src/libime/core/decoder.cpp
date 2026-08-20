@@ -9,6 +9,7 @@
 #include <cassert>
 #include <chrono>
 #include <cstddef>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <queue>
@@ -277,12 +278,25 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
     assert(lattice[nullptr].size() == 1);
     auto *pos = &lattice[nullptr][0];
     l.d_ptr->nbests_.push_back(pos->toSentenceResult());
+
+    struct ModelLookupCacheHash {
+        size_t operator()(const std::pair<const LatticeNode *,
+                                          const LatticeNode *> &key) const {
+            size_t seed = std::hash<const LatticeNode *>()(key.first);
+            boost::hash_combine(seed,
+                                std::hash<const LatticeNode *>()(key.second));
+            return seed;
+        }
+    };
+    std::unordered_map<std::pair<const LatticeNode *, const LatticeNode *>,
+                       float, ModelLookupCacheHash>
+        cache;
     if (nbest > 1) {
         std::unordered_set<std::string> dup;
         dup.insert(l.d_ptr->nbests_[0].toString());
 
         std::vector<NBestNode> pool;
-        pool.reserve(MAX_BACKWARD_SEARCH_SIZE);
+        pool.reserve(MAX_BACKWARD_SEARCH_SIZE + 1);
 
         NBestNodeLess cmp(pool);
         using PriorityQueueType =
@@ -299,7 +313,6 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
         };
 
         q.push(pushNewNBestNode(eos));
-        int acc = 0;
         auto *bos = &lattice[&graph.start()][0];
         while (!q.empty()) {
             size_t nodeIdx = q.top();
@@ -320,7 +333,7 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                 }
                 dup.insert(sentence);
             } else {
-                if (acc >= MAX_BACKWARD_SEARCH_SIZE) {
+                if (pool.size() >= MAX_BACKWARD_SEARCH_SIZE) {
                     continue;
                 }
                 auto searchSize = beamSize;
@@ -331,27 +344,39 @@ void DecoderPrivate::backwardSearch(const SegmentGraph &graph, Lattice &l,
                 } else {
                     searchSize = lattice[from_node->from()].size();
                 }
-                float node_gn = node.gn_;
-                // In the loop below, don't read node sine it may be
-                // invalidated.
                 for (auto &from : lattice[from_node->from()] |
                                       std::views::take(searchSize)) {
-                    auto score =
-                        model_->score(from.state(), *from_node, state) +
-                        from_node->cost();
+                    float score;
+
+                    if (node.node()->prev() == &from) {
+                        // We can skip the model call if the node is the same as
+                        // the previous one from forward search.
+                        score = node.node()->score() - from.score();
+                    } else {
+                        auto it =
+                            cache.find(std::make_pair(&from, node.node()));
+                        if (it != cache.end()) {
+                            score = it->second;
+                        } else {
+                            score = model_->score(from.state(), *node.node(),
+                                                  state);
+                            cache[std::make_pair(&std::as_const(from),
+                                                 node.node())] = score;
+                        }
+                        score += node.node()->cost();
+                    }
                     if (&from != bos && score < min) {
                         continue;
                     }
-                    float gn = score + node_gn;
-                    float fn = gn + from.score();
 
+                    const float gn = score + node.gn_;
                     if (eos->score() - gn <= max) {
                         size_t parentIdx = pushNewNBestNode(&from, nodeIdx);
                         pool[parentIdx].gn_ = gn;
-                        pool[parentIdx].fn_ = fn;
+                        pool[parentIdx].fn_ = gn + from.score();
+                        ;
                         q.push(parentIdx);
-                        acc++;
-                        if (acc >= MAX_BACKWARD_SEARCH_SIZE) {
+                        if (pool.size() >= MAX_BACKWARD_SEARCH_SIZE) {
                             break;
                         }
                     }
@@ -424,7 +449,7 @@ bool Decoder::decode(Lattice &l, const SegmentGraph &graph, size_t nbest,
     LIBIME_DEBUG() << "Build Lattice: " << millisecondsTill(t0);
     d->forwardSearch(this, graph, l, ignore, beamSize);
     LIBIME_DEBUG() << "Forward Search: " << millisecondsTill(t0);
-    d->backwardSearch(graph, l, nbest, max, min, beamSize);
+    d->backwardSearch(graph, l, nbest, max, min, nbest * 2);
     LIBIME_DEBUG() << "Backward Search: " << millisecondsTill(t0);
     return true;
 }

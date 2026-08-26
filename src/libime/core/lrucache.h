@@ -40,19 +40,31 @@ public:
 
     template <typename... Args>
     value_type *insert(const key_type &key, Args &&...args) {
-        auto iter = dict_.find(key);
-        if (iter == dict_.end()) {
-            if (size() >= sz_) {
-                evict();
-            }
+        if (sz_ == 0) {
+            return nullptr;
+        }
 
-            order_.push_front(key);
-            auto r = dict_.emplace(
-                key, std::make_pair(value_type(std::forward<Args>(args)...),
-                                    order_.begin()));
+        auto iter = dict_.find(key);
+        if (iter != dict_.end()) {
+            return &iter->second.first;
+        }
+
+        if (size() >= sz_) {
+            evict();
+        }
+
+        auto listIter = order_.insert(order_.begin(), key);
+
+        auto r = dict_.emplace(key,
+                               std::make_pair(value_type(std::forward<Args>(args)...),
+                                              listIter));
+
+        if (!r.second) {
+            order_.erase(listIter);
             return &r.first->second.first;
         }
-        return nullptr;
+
+        return &r.first->second.first;
     }
 
     void erase(const key_type &key) {
@@ -86,6 +98,7 @@ public:
 private:
     void evict() {
         // evict item from the end of most recently used list
+        assert(!order_.empty());
         auto i = std::prev(order_.end());
         dict_.erase(*i);
         order_.erase(i);

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(libime VERSION 1.1.15)
+project(libime VERSION 1.1.16)
 set(LibIME_VERSION ${PROJECT_VERSION})
 
 set(REQUIRED_FCITX_VERSION 5.1.20)

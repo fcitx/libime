@@ -1,7 +1,7 @@
 libime
 ==============================================
 
-[![Jenkins Build Status](https://img.shields.io/jenkins/s/https/jenkins.fcitx-im.org/job/libime.svg)](https://jenkins.fcitx-im.org/job/libime/)
+[![Jenkins Build](https://img.shields.io/jenkins/build?jobUrl=https%3A%2F%2Fjenkins.fcitx-im.org%2Fjob%2Flibime%2F)](https://jenkins.fcitx-im.org/job/libime/)
 [![Coverity Scan Status](https://img.shields.io/coverity/scan/12101.svg)](https://scan.coverity.com/projects/fcitx-libime)
 [![Documentation](https://codedocs.xyz/fcitx/libime.svg)](https://codedocs.xyz/fcitx/libime/)
 

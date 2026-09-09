@@ -1,0 +1,22 @@
+version = 1
+SPDX-PackageName = "fcitx5"
+SPDX-PackageSupplier = "fcitx-dev <fcitx-dev@googlegroups.com>"
+SPDX-PackageDownloadLocation = "https://github.com/fcitx/libime"
+
+[[annotations]]
+path = "data/lm_sc.**.tar.**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2022~2026 CSSlayer <wengxt@gmail.com>"
+SPDX-License-Identifier = "LGPL-2.1-or-later"
+
+[[annotations]]
+path = "data/table-**.tar.**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2002-2005 Yuking <yuking_net@sohu.com>", "2014~2026 CSSlayer <wengxt@gmail.com>"]
+SPDX-License-Identifier = "LGPL-2.1-or-later"
+
+[[annotations]]
+path = "data/dict-**.tar.**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2002-2005 Yuking <yuking_net@sohu.com>", "2014~2026 CSSlayer <wengxt@gmail.com>"]
+SPDX-License-Identifier = "LGPL-2.1-or-later"

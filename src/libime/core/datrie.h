@@ -44,9 +44,7 @@ struct NaN<float> {
 /**
  * This is a trie based on cedar<www.tkl.iis.u-tokyo.ac.jp/~ynaga/cedar/>.
  *
- * comparing with original version, this version takes care of endianness when
- * doing serialization, and handle the possible unaligned memory access on some
- * platform.
+ * Serialized tries use the host byte order and ABI.
  *
  * It also exploits the C++11 feature which can let you implement update easily
  * with lambda, comparing with the original version's add/set.

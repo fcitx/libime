@@ -5,6 +5,7 @@
  */
 #include <cstdint>
 #include <cstring>
+#include <sstream>
 #include <fcitx-utils/log.h>
 #include "libime/core/datrie.h"
 
@@ -69,6 +70,38 @@ int main() {
         FCITX_ASSERT(trie.isNoPath(result));
         trie.erase(pos);
         FCITX_ASSERT(trie.size() == 4);
+    }
+
+    {
+        DATrie<float> source;
+        source.set("hello|world", 1.25F);
+        source.set("hello|there", 2.5F);
+        source.set("help|me", 3.75F);
+
+        std::stringstream stream(std::ios::in | std::ios::out |
+                                 std::ios::binary);
+        source.save(stream);
+
+        const auto serialized = stream.str();
+        uint32_t tailSize;
+        uint32_t nodeCount;
+        std::memcpy(&tailSize, serialized.data(), sizeof(tailSize));
+        std::memcpy(&nodeCount, serialized.data() + sizeof(tailSize),
+                    sizeof(nodeCount));
+        FCITX_ASSERT(nodeCount % 256 == 0);
+        FCITX_ASSERT(serialized.size() ==
+                     sizeof(tailSize) + sizeof(nodeCount) + tailSize +
+                         nodeCount * 8 + 3 * sizeof(int32_t) + nodeCount * 2 +
+                         (nodeCount / 256) * 20);
+
+        stream.seekg(0);
+
+        DATrie<float> loaded;
+        loaded.load(stream);
+        FCITX_ASSERT(loaded.size() == source.size());
+        FCITX_ASSERT(loaded.exactMatchSearch("hello|world") == 1.25F);
+        FCITX_ASSERT(loaded.exactMatchSearch("hello|there") == 2.5F);
+        FCITX_ASSERT(loaded.exactMatchSearch("help|me") == 3.75F);
     }
     return 0;
 }

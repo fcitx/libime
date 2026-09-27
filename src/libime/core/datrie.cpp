@@ -14,7 +14,6 @@
 #include <sys/types.h>
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -34,7 +33,6 @@
 #include <tuple>
 #include <vector>
 #include <fcitx-utils/macros.h>
-#include "endian_p.h"
 #include "naivevector.h"
 #include "utils_p.h"
 
@@ -88,24 +86,6 @@ constexpr T decodeImpl(int32_t raw) {
     return d.result_value;
 }
 
-template <typename T>
-void decodeBigEndian(T &data)
-    requires(sizeof(T) == sizeof(uint32_t))
-{
-    auto raw = std::bit_cast<uint32_t>(data);
-    raw = be32toh(raw);
-    data = std::bit_cast<T>(raw);
-}
-
-template <typename T>
-void decodeBigEndian(T &data)
-    requires(sizeof(T) == sizeof(uint16_t))
-{
-    auto raw = std::bit_cast<uint16_t>(data);
-    raw = be16toh(raw);
-    data = std::bit_cast<T>(raw);
-}
-
 } // namespace
 
 // template<typename T>
@@ -142,22 +122,7 @@ public:
         node(const int32_t base_ = 0, const int32_t check_ = 0)
             : base(base_), check(check_) {}
 
-        node(std::istream &in) : base(0), check(0) {
-            throw_if_io_fail(unmarshall(in, base));
-            throw_if_io_fail(unmarshall(in, check));
-        }
-
         FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(node);
-
-        void decode() {
-            decodeBigEndian(base);
-            decodeBigEndian(check);
-        }
-
-        friend std::ostream &operator<<(std::ostream &out, const node &n) {
-            marshall(out, n.base) && marshall(out, n.check);
-            return out;
-        }
     };
 
     struct npos_t {
@@ -193,46 +158,11 @@ public:
         int32_t trial;  // # trial
         int32_t ehead;  // first empty item
         block() : prev(0), next(0), num(256), reject(257), trial(0), ehead(0) {}
-
-        block(std::istream &in) : block() {
-            throw_if_io_fail(unmarshall(in, prev));
-            throw_if_io_fail(unmarshall(in, next));
-            throw_if_io_fail(unmarshall(in, num));
-            throw_if_io_fail(unmarshall(in, reject));
-            throw_if_io_fail(unmarshall(in, trial));
-            throw_if_io_fail(unmarshall(in, ehead));
-        }
-
-        void decode() {
-            decodeBigEndian(prev);
-            decodeBigEndian(next);
-            decodeBigEndian(num);
-            decodeBigEndian(reject);
-            decodeBigEndian(trial);
-            decodeBigEndian(ehead);
-        }
-
-        friend std::ostream &operator<<(std::ostream &out, const block &b) {
-            marshall(out, b.prev) && marshall(out, b.next) &&
-                marshall(out, b.num) && marshall(out, b.reject) &&
-                marshall(out, b.trial) && marshall(out, b.ehead);
-            return out;
-        }
     };
     struct ninfo {     // x1.5 update speed; +.25 % memory (8n -> 10n)
         uchar sibling; // right sibling (= 0 if not exist)
         uchar child;   // first child
         ninfo() : sibling(0), child(0) {}
-
-        ninfo(std::istream &in) {
-            throw_if_io_fail(unmarshall(in, sibling));
-            throw_if_io_fail(unmarshall(in, child));
-        }
-
-        friend std::ostream &operator<<(std::ostream &out, const ninfo &n) {
-            marshall(out, n.sibling) && marshall(out, n.child);
-            return out;
-        }
     };
 
     vector_impl<node> m_array;
@@ -286,8 +216,9 @@ public:
     void open(std::istream &fin) {
         uint32_t len = 0;
         uint32_t size_ = 0;
-        throw_if_io_fail(unmarshall(fin, len));
-        throw_if_io_fail(unmarshall(fin, size_));
+        throw_if_io_fail(fin.read(reinterpret_cast<char *>(&len), sizeof(len)));
+        throw_if_io_fail(
+            fin.read(reinterpret_cast<char *>(&size_), sizeof(size_)));
 
         const size_t length_ = static_cast<size_t>(len);
 
@@ -303,13 +234,13 @@ public:
 
         throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_array.data()),
                                   sizeof(node) * size_));
-        for (auto &node : m_array) {
-            node.decode();
-        }
 
-        throw_if_io_fail(unmarshall(fin, m_bheadF));
-        throw_if_io_fail(unmarshall(fin, m_bheadC));
-        throw_if_io_fail(unmarshall(fin, m_bheadO));
+        throw_if_io_fail(
+            fin.read(reinterpret_cast<char *>(&m_bheadF), sizeof(m_bheadF)));
+        throw_if_io_fail(
+            fin.read(reinterpret_cast<char *>(&m_bheadC), sizeof(m_bheadC)));
+        throw_if_io_fail(
+            fin.read(reinterpret_cast<char *>(&m_bheadO), sizeof(m_bheadO)));
 
         throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_ninfo.data()),
                                   sizeof(ninfo) * size_));
@@ -317,9 +248,6 @@ public:
 
         throw_if_io_fail(fin.read(reinterpret_cast<char *>(m_block.data()),
                                   sizeof(block) * blockSize));
-        for (auto &block : m_block) {
-            block.decode();
-        }
     }
 
     void save(std::ostream &fout) {
@@ -329,30 +257,28 @@ public:
         const uint32_t size_ = size();
 
         assert(m_block.size() << 8 == m_ninfo.size());
-        throw_if_io_fail(marshall(fout, length));
-        throw_if_io_fail(marshall(fout, size_));
-        throw_if_io_fail(fout.write(reinterpret_cast<char *>(m_tail.data()),
-                                    sizeof(char) * length));
-
-        auto s = size_;
-        for (auto &n : m_array) {
-            throw_if_io_fail(fout << n);
-            if (--s == 0) {
-                break;
-            }
-        }
-
-        throw_if_io_fail(marshall(fout, m_bheadF));
-        throw_if_io_fail(marshall(fout, m_bheadC));
-        throw_if_io_fail(marshall(fout, m_bheadO));
-
-        for (auto &n : m_ninfo) {
-            throw_if_io_fail(fout << n);
-        }
-
-        for (auto &b : m_block) {
-            throw_if_io_fail(fout << b);
-        }
+        throw_if_io_fail(fout.write(reinterpret_cast<const char *>(&length),
+                                    sizeof(length)));
+        throw_if_io_fail(
+            fout.write(reinterpret_cast<const char *>(&size_), sizeof(size_)));
+        throw_if_io_fail(
+            fout.write(reinterpret_cast<const char *>(m_tail.data()),
+                       sizeof(char) * length));
+        throw_if_io_fail(
+            fout.write(reinterpret_cast<const char *>(m_array.data()),
+                       sizeof(node) * size_));
+        throw_if_io_fail(fout.write(reinterpret_cast<const char *>(&m_bheadF),
+                                    sizeof(m_bheadF)));
+        throw_if_io_fail(fout.write(reinterpret_cast<const char *>(&m_bheadC),
+                                    sizeof(m_bheadC)));
+        throw_if_io_fail(fout.write(reinterpret_cast<const char *>(&m_bheadO),
+                                    sizeof(m_bheadO)));
+        throw_if_io_fail(
+            fout.write(reinterpret_cast<const char *>(m_ninfo.data()),
+                       sizeof(ninfo) * size_));
+        throw_if_io_fail(
+            fout.write(reinterpret_cast<const char *>(m_block.data()),
+                       sizeof(block) * m_block.size()));
     }
 
     void init() {
@@ -459,7 +385,7 @@ public:
                     npos.offset = offset + moved;
                 }
                 char *const data = &tail[len + 1];
-                storeDWord(data, callback(loadDWord<value_type>(data)));
+                storeNative(data, callback(loadNative<value_type>(data)));
                 return;
             }
             // otherwise, insert the common prefix in tail if any
@@ -509,7 +435,7 @@ public:
                 // tail[pos] == 0, so the actual content in tail can be get rid
                 // of
                 // and tail0 is used to track those hole
-                m_array[to].value = loadDWord<value_type>(&tail[pos + 1]);
+                m_array[to].value = loadNative<value_type>(&tail[pos + 1]);
             }
             from = static_cast<size_t>(
                 _follow(from, static_cast<uchar>(key[pos]), cf));
@@ -522,7 +448,7 @@ public:
             m_array[from].base = -offset0;
             m_tail0.pop_back();
             char *const data = &m_tail[offset0 + 1];
-            storeDWord(data, callback(0));
+            storeNative(data, callback(0));
             return;
         }
         if (m_tail.capacity() < m_tail.size() + needed) {
@@ -543,7 +469,7 @@ public:
             npos.offset = old_length + len - pos_orig;
         }
         char *const data = &tail[len + 1];
-        storeDWord(data, callback(loadDWord<value_type>(data)));
+        storeNative(data, callback(loadNative<value_type>(data)));
     }
 
     // easy-going erase () without compression
@@ -619,8 +545,8 @@ public:
                     t.push_back(tail_[i]);
                 } while (tail_[i++]);
                 t.resize(t.size() + sizeof(value_type));
-                storeDWord(&t[t.size() - sizeof(value_type)],
-                           loadDWord<value_type>(&tail_[i]));
+                storeNative(&t[t.size() - sizeof(value_type)],
+                            loadNative<value_type>(&tail_[i]));
             }
         }
         using std::swap;
@@ -654,7 +580,7 @@ public:
         const size_t len_ = std::strlen(&m_tail[-base]);
         npos.offset = static_cast<size_t>(-base) + len_;
         len += len_;
-        return loadDWord<int32_t>(&m_tail[-base] + len_ + 1);
+        return loadNative<int32_t>(&m_tail[-base] + len_ + 1);
     }
     // return the next child if any
     int32_t next(npos_t &npos, size_t &len,
@@ -740,7 +666,7 @@ public:
         if (tail[pos]) {
             return CEDAR_NO_VALUE; // input < tail
         }
-        return loadDWord<int32_t>(&tail[len + 1]);
+        return loadNative<int32_t>(&tail[len + 1]);
     }
 
     // explore new block to settle down

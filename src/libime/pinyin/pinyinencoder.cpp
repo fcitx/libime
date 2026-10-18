@@ -658,7 +658,7 @@ void getFuzzy(FuzzyPinyinSyllables<FuzzyValue> &syls, PinyinSyllable syl,
             {PinyinInitial::F, PinyinInitial::H, PinyinFuzzyFlag::F_H},
             {PinyinInitial::L, PinyinInitial::N, PinyinFuzzyFlag::L_N},
             {PinyinInitial::L, PinyinInitial::R, PinyinFuzzyFlag::L_R},
-        };
+    };
 
     for (const auto &initialFuzzy : initialFuzzies) {
         if ((syl.initial() == std::get<0>(initialFuzzy) ||
@@ -683,7 +683,7 @@ void getFuzzy(FuzzyPinyinSyllables<FuzzyValue> &syls, PinyinSyllable syl,
             {PinyinFinal::U, PinyinFinal::OU, PinyinFuzzyFlag::U_OU},
             {PinyinFinal::UAN, PinyinFinal::UANG, PinyinFuzzyFlag::UAN_UANG},
             {PinyinFinal::VE, PinyinFinal::UE, PinyinFuzzyFlag::VE_UE},
-        };
+    };
 
     for (const auto &finalFuzzy : finalFuzzies) {
         if ((syl.final() == std::get<0>(finalFuzzy) ||
@@ -711,7 +711,7 @@ void getFuzzy(FuzzyPinyinSyllables<FuzzyValue> &syls, PinyinSyllable syl,
             {PinyinFinal::E, PinyinFinal::ER},
             {PinyinFinal::O, PinyinFinal::OU},
             {PinyinFinal::O, PinyinFinal::ONG},
-        };
+    };
     if (initials.size() == 1 &&
         std::get<0>(initials[0]) == PinyinInitial::Zero &&
         flags.test(PinyinFuzzyFlag::PartialFinal)) {

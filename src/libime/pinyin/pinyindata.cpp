@@ -203,7 +203,7 @@ getInnerSegment() {
             {"chuo", {"chu", "o"}},     {"chua", {"chu", "a"}},
             {"chao", {"cha", "o"}},
 
-        };
+    };
 
     return innerSegment;
 }

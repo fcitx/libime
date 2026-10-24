@@ -106,6 +106,107 @@ void decodeBigEndian(T &data)
     data = std::bit_cast<T>(raw);
 }
 
+using uchar = uint8_t;
+
+template <typename V>
+struct base_node {
+    union {
+        int32_t base;
+        V value;
+    };
+    int32_t check;
+    base_node(const int32_t base_ = 0, const int32_t check_ = 0)
+        : base(base_), check(check_) {}
+
+    base_node(std::istream &in) : base(0), check(0) {
+        throw_if_io_fail(unmarshall(in, base));
+        throw_if_io_fail(unmarshall(in, check));
+    }
+
+    FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(base_node);
+
+    void decode() {
+        decodeBigEndian(base);
+        decodeBigEndian(check);
+    }
+
+    friend std::ostream &operator<<(std::ostream &out, const base_node &n) {
+        marshall(out, n.base) && marshall(out, n.check);
+        return out;
+    }
+};
+
+struct npos_t {
+    uint32_t offset;
+    uint32_t index;
+
+    npos_t() : offset(0), index(0) {}
+
+    explicit npos_t(uint64_t i) {
+        offset = i >> 32;
+        index = i & 0xffffffffULL;
+    }
+
+    operator bool() { return offset != 0 && index != 0; }
+
+    bool operator==(const npos_t &other) const {
+        return offset == other.offset && index == other.index;
+    }
+
+    bool operator!=(const npos_t &other) const { return !operator==(other); }
+
+    uint64_t toInt() { return (static_cast<uint64_t>(offset) << 32) | index; }
+};
+struct block {      // a block w/ 256 elements
+    int32_t prev;   // prev block; 3 bytes
+    int32_t next;   // next block; 3 bytes
+    int16_t num;    // # empty elements; 0 - 256
+    int16_t reject; // minimum # branching failed to locate; soft limit
+    int32_t trial;  // # trial
+    int32_t ehead;  // first empty item
+    block() : prev(0), next(0), num(256), reject(257), trial(0), ehead(0) {}
+
+    block(std::istream &in) : block() {
+        throw_if_io_fail(unmarshall(in, prev));
+        throw_if_io_fail(unmarshall(in, next));
+        throw_if_io_fail(unmarshall(in, num));
+        throw_if_io_fail(unmarshall(in, reject));
+        throw_if_io_fail(unmarshall(in, trial));
+        throw_if_io_fail(unmarshall(in, ehead));
+    }
+
+    void decode() {
+        decodeBigEndian(prev);
+        decodeBigEndian(next);
+        decodeBigEndian(num);
+        decodeBigEndian(reject);
+        decodeBigEndian(trial);
+        decodeBigEndian(ehead);
+    }
+
+    friend std::ostream &operator<<(std::ostream &out, const block &b) {
+        marshall(out, b.prev) && marshall(out, b.next) &&
+            marshall(out, b.num) && marshall(out, b.reject) &&
+            marshall(out, b.trial) && marshall(out, b.ehead);
+        return out;
+    }
+};
+struct ninfo {     // x1.5 update speed; +.25 % memory (8n -> 10n)
+    uchar sibling; // right sibling (= 0 if not exist)
+    uchar child;   // first child
+    ninfo() : sibling(0), child(0) {}
+
+    ninfo(std::istream &in) {
+        throw_if_io_fail(unmarshall(in, sibling));
+        throw_if_io_fail(unmarshall(in, child));
+    }
+
+    friend std::ostream &operator<<(std::ostream &out, const ninfo &n) {
+        marshall(out, n.sibling) && marshall(out, n.child);
+        return out;
+    }
+};
+
 } // namespace
 
 // template<typename T>
@@ -123,6 +224,7 @@ public:
     using updater_type = typename base_type::updater_type;
     using callback_type = typename base_type::callback_type;
     using decoder_type = DecoderUnion<V>;
+    using node = base_node<V>;
 
     static inline const int32_t CEDAR_NO_VALUE = NanValue<V>::NO_VALUE();
     static inline const int32_t CEDAR_NO_PATH = NanValue<V>::NO_PATH();
@@ -130,110 +232,8 @@ public:
     static constexpr size_t MAX_ALLOC_SIZE = 1
                                              << 16; // must be divisible by 256
     using result_type = value_type;
-    using uchar = uint8_t;
     static_assert(sizeof(value_type) <= sizeof(int32_t),
                   "value size need to be same as int32_t");
-    struct node {
-        union {
-            int32_t base;
-            value_type value;
-        };
-        int32_t check;
-        node(const int32_t base_ = 0, const int32_t check_ = 0)
-            : base(base_), check(check_) {}
-
-        node(std::istream &in) : base(0), check(0) {
-            throw_if_io_fail(unmarshall(in, base));
-            throw_if_io_fail(unmarshall(in, check));
-        }
-
-        FCITX_INLINE_DEFINE_DEFAULT_DTOR_AND_COPY(node);
-
-        void decode() {
-            decodeBigEndian(base);
-            decodeBigEndian(check);
-        }
-
-        friend std::ostream &operator<<(std::ostream &out, const node &n) {
-            marshall(out, n.base) && marshall(out, n.check);
-            return out;
-        }
-    };
-
-    struct npos_t {
-        uint32_t offset;
-        uint32_t index;
-
-        npos_t() : offset(0), index(0) {}
-
-        explicit npos_t(position_type i) {
-            offset = i >> 32;
-            index = i & 0xffffffffULL;
-        }
-
-        operator bool() { return offset != 0 && index != 0; }
-
-        bool operator==(const npos_t &other) const {
-            return offset == other.offset && index == other.index;
-        }
-
-        bool operator!=(const npos_t &other) const {
-            return !operator==(other);
-        }
-
-        position_type toInt() {
-            return (static_cast<position_type>(offset) << 32) | index;
-        }
-    };
-    struct block {      // a block w/ 256 elements
-        int32_t prev;   // prev block; 3 bytes
-        int32_t next;   // next block; 3 bytes
-        int16_t num;    // # empty elements; 0 - 256
-        int16_t reject; // minimum # branching failed to locate; soft limit
-        int32_t trial;  // # trial
-        int32_t ehead;  // first empty item
-        block() : prev(0), next(0), num(256), reject(257), trial(0), ehead(0) {}
-
-        block(std::istream &in) : block() {
-            throw_if_io_fail(unmarshall(in, prev));
-            throw_if_io_fail(unmarshall(in, next));
-            throw_if_io_fail(unmarshall(in, num));
-            throw_if_io_fail(unmarshall(in, reject));
-            throw_if_io_fail(unmarshall(in, trial));
-            throw_if_io_fail(unmarshall(in, ehead));
-        }
-
-        void decode() {
-            decodeBigEndian(prev);
-            decodeBigEndian(next);
-            decodeBigEndian(num);
-            decodeBigEndian(reject);
-            decodeBigEndian(trial);
-            decodeBigEndian(ehead);
-        }
-
-        friend std::ostream &operator<<(std::ostream &out, const block &b) {
-            marshall(out, b.prev) && marshall(out, b.next) &&
-                marshall(out, b.num) && marshall(out, b.reject) &&
-                marshall(out, b.trial) && marshall(out, b.ehead);
-            return out;
-        }
-    };
-    struct ninfo {     // x1.5 update speed; +.25 % memory (8n -> 10n)
-        uchar sibling; // right sibling (= 0 if not exist)
-        uchar child;   // first child
-        ninfo() : sibling(0), child(0) {}
-
-        ninfo(std::istream &in) {
-            throw_if_io_fail(unmarshall(in, sibling));
-            throw_if_io_fail(unmarshall(in, child));
-        }
-
-        friend std::ostream &operator<<(std::ostream &out, const ninfo &n) {
-            marshall(out, n.sibling) && marshall(out, n.child);
-            return out;
-        }
-    };
 
     vector_impl<node> m_array;
     vector_impl<char> m_tail;
@@ -1118,7 +1118,7 @@ template <typename T>
 bool DATrie<T>::foreach(const char *prefix, size_t size, callback_type func,
                         position_type _pos) const {
     size_t pos = 0;
-    typename DATriePrivate<value_type>::npos_t from(_pos);
+    npos_t from(_pos);
     if (d->_find(prefix, from, pos, size) ==
         DATriePrivate<value_type>::CEDAR_NO_PATH) {
         return true;
@@ -1129,13 +1129,13 @@ bool DATrie<T>::foreach(const char *prefix, size_t size, callback_type func,
 
 template <typename T>
 bool DATrie<T>::foreach(callback_type func, position_type pos) const {
-    typename DATriePrivate<value_type>::npos_t from(pos);
+    npos_t from(pos);
     return d->foreach(func, from);
 }
 
 template <typename T>
 void DATrie<T>::suffix(std::string &s, size_t len, position_type pos) const {
-    d->suffix(s, len, typename DATriePrivate<T>::npos_t(pos));
+    d->suffix(s, len, npos_t(pos));
 }
 
 template <typename T>
@@ -1159,12 +1159,12 @@ void DATrie<T>::dump(
 
 template <typename T>
 bool DATrie<T>::erase(const char *key, size_t len, position_type from) {
-    return d->erase(key, len, typename DATriePrivate<T>::npos_t(from)) == 0;
+    return d->erase(key, len, npos_t(from)) == 0;
 }
 
 template <typename T>
 bool DATrie<T>::erase(position_type from) {
-    return d->erase("", 0, typename DATriePrivate<T>::npos_t(from)) == 0;
+    return d->erase("", 0, npos_t(from)) == 0;
 }
 
 template <typename T>
@@ -1176,7 +1176,7 @@ typename DATrie<T>::value_type DATrie<T>::exactMatchSearch(const char *key,
 template <typename T>
 int32_t DATrie<T>::exactMatchSearchRaw(const char *key, size_t len) const {
     size_t pos = 0;
-    typename DATriePrivate<value_type>::npos_t npos;
+    npos_t npos;
     auto resultRaw = d->_find(key, npos, pos, len);
     if (resultRaw == DATriePrivate<value_type>::CEDAR_NO_PATH) {
         resultRaw = DATriePrivate<value_type>::CEDAR_NO_VALUE;
@@ -1199,7 +1199,7 @@ template <typename T>
 int32_t DATrie<T>::traverseRaw(const char *key, size_t len,
                                position_type &from) const {
     size_t pos = 0;
-    typename DATriePrivate<T>::npos_t npos(from);
+    npos_t npos(from);
     auto result = d->_find(key, npos, pos, len);
     from = npos.toInt();
     return result;

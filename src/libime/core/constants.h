@@ -13,7 +13,8 @@ constexpr float DEFAULT_USER_LANGUAGE_MODEL_BIGRAM_WEIGHT = 15;
 constexpr float DEFAULT_LANGUAGE_MODEL_UNKNOWN_PROBABILITY_PENALTY =
     1 / 60000000.0F;
 // -38... is log10(2^-127)
-constexpr float HISTORY_BIGRAM_ALPHA_VALUE = 1.0F;
+// Keep older selections at 64% of total history weight.
+constexpr float HISTORY_BIGRAM_ALPHA_VALUE = 0.25F;
 constexpr float MIN_FLOAT_LOG10 = -38.23080944932561;
 constexpr float DEFAULT_USER_LANGUAGE_MODEL_USER_WEIGHT = 0.2F;
 } // namespace libime

@@ -128,6 +128,22 @@ void testOverflow() {
     }
 }
 
+void testRetention() {
+    using namespace libime;
+    HistoryBigram history;
+    history.add({"previous", "remember"});
+    for (auto i : std::views::iota(0, 128 + 8192)) {
+        history.add({std::to_string(i)});
+    }
+
+    // A once-selected word and bigram have reached the oldest pool. Keep
+    // enough weight that they remain useful until they are evicted.
+    FCITX_ASSERT(history.unigramFrequency({"remember", ""}) >
+                 8.0F / 1000000.0F);
+    FCITX_ASSERT(history.bigramFrequency({"previous", ""}, {"remember", ""}) >
+                 8.0F / 1000000.0F);
+}
+
 void testPredict() {
     using namespace libime;
     HistoryBigram history;
@@ -331,6 +347,7 @@ void testAppend() {
 int main() {
     testBasic();
     testOverflow();
+    testRetention();
     testPredict();
     testSaveAndLoad();
     testSaveAndLoadText();

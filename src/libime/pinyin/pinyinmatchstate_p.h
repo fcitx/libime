@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -81,9 +82,12 @@ struct MatchedPinyinPath {
     PinyinDictFlags flags_;
 };
 
-// This need to be keep sync with PinyinSegmentGraphPathHasher
 class PinyinStringHasher {
 public:
+    explicit PinyinStringHasher(const SegmentGraph &graph) : graph_(graph) {}
+
+    using is_transparent = void;
+
     size_t operator()(const std::string &s) const {
         boost::hash<char> hasher;
 
@@ -93,6 +97,108 @@ public:
         }
         return seed;
     }
+
+    std::string stringFor(const SegmentGraphPath &path) const {
+        std::string result;
+        result.reserve(path.size() + path.back()->index() -
+                       path.front()->index() + 1);
+        const auto &data = graph_.data();
+        auto iter = path.begin();
+        while (iter + 1 < path.end()) {
+            auto begin = (*iter)->index();
+            auto end = (*std::next(iter))->index();
+            iter++;
+            if (data[begin] == '\'') {
+                continue;
+            }
+            while (begin < end) {
+                result.push_back(data[begin]);
+                begin++;
+            }
+            result.push_back('|');
+        }
+        return result;
+    }
+
+    size_t operator()(const SegmentGraphPath &path) const {
+        if (path.size() <= 1) {
+            return 0;
+        }
+
+        boost::hash<char> hasher;
+        size_t seed = 0;
+        const auto &data = graph_.data();
+        auto iter = path.begin();
+        while (iter + 1 < path.end()) {
+            auto begin = (*iter)->index();
+            auto end = (*std::next(iter))->index();
+            iter++;
+            if (data[begin] == '\'') {
+                continue;
+            }
+            while (begin < end) {
+                boost::hash_combine(seed, hasher(data[begin]));
+                begin++;
+            }
+            boost::hash_combine(seed, hasher('|'));
+        }
+        return seed;
+    }
+
+private:
+    const SegmentGraph &graph_;
+};
+
+class PinyinStringEqual {
+public:
+    explicit PinyinStringEqual(const SegmentGraph &graph) : graph_(graph) {}
+
+    using is_transparent = void;
+
+    bool operator()(const std::string &lhs, const std::string &rhs) const {
+        return lhs == rhs;
+    }
+
+    bool operator()(const SegmentGraphPath &path, const std::string &s) const {
+        if (path.size() <= 1) {
+            return false;
+        }
+
+        auto is = s.begin();
+        const auto &data = graph_.data();
+        auto iter = path.begin();
+        while (iter + 1 < path.end() && is != s.end()) {
+            auto begin = (*iter)->index();
+            auto end = (*std::next(iter))->index();
+            iter++;
+            if (data[begin] == '\'') {
+                continue;
+            }
+            while (begin < end && is != s.end()) {
+                if (*is != data[begin]) {
+                    return false;
+                }
+                is++;
+                begin++;
+            }
+            if (begin != end) {
+                return false;
+            }
+
+            if (is == s.end() || *is != '|') {
+                return false;
+            }
+            is++;
+        }
+        return iter + 1 == path.end() && is == s.end();
+    }
+
+    bool operator()(const std::string &s, const SegmentGraphPath &path) const {
+        return (*this)(path, s);
+    }
+
+private:
+    const SegmentGraph &graph_;
 };
 
 // A list of all search paths
@@ -107,12 +213,13 @@ using NodeToMatchedPinyinPathsMap =
 using PinyinTrieNodeCache = std::unordered_map<
     const PinyinTrie *,
     LRUCache<std::string, std::shared_ptr<MatchedPinyinTrieNodes>,
-             PinyinStringHasher>>;
+             PinyinStringHasher, PinyinStringEqual>>;
 
 // A cache for PinyinMatchResult.
-using PinyinMatchResultCache = std::unordered_map<
-    const PinyinTrie *,
-    LRUCache<std::string, std::vector<PinyinMatchResult>, PinyinStringHasher>>;
+using PinyinMatchResultCache =
+    std::unordered_map<const PinyinTrie *,
+                       LRUCache<std::string, std::vector<PinyinMatchResult>,
+                                PinyinStringHasher, PinyinStringEqual>>;
 
 class PinyinMatchStatePrivate {
 public:

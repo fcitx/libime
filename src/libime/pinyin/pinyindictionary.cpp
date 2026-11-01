@@ -448,11 +448,11 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
     };
 
     if (context.matchCacheMap_) {
-        auto &matchCache = context.matchCacheMap_
-                               ->try_emplace(path.trie(), 80,
-                                             PinyinStringHasher(context.graph_),
-                                             PinyinStringEqual(context.graph_))
-                               .first->second;
+        auto &matchCache =
+            context.matchCacheMap_
+                ->try_emplace(path.trie(), PinyinStringHasher(context.graph_),
+                              PinyinStringEqual(context.graph_))
+                .first->second;
         auto *result = matchCache.find(path.path_);
         if (!result) {
             result = matchCache.insert(context.hasher_.stringFor(path.path_));
@@ -543,7 +543,7 @@ void PinyinDictionaryPrivate::findMatchesBetween(
         if (context.nodeCacheMap_) {
             auto &nodeCache =
                 context.nodeCacheMap_
-                    ->try_emplace(path.trie(), 80,
+                    ->try_emplace(path.trie(),
                                   PinyinStringHasher(context.graph_),
                                   PinyinStringEqual(context.graph_))
                     .first->second;

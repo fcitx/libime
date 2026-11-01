@@ -23,6 +23,7 @@
 #include "libime/pinyin/pinyindictionary.h"
 #include "libime/pinyin/pinyinencoder.h"
 #include "libime/pinyin/pinyinime.h"
+#include "libime/pinyin/shuangpinprofile.h"
 #include "testdir.h"
 
 using namespace libime;
@@ -45,6 +46,16 @@ void checkCandidatesToCursorSet(const PinyinContext &context) {
     }
 
     FCITX_ASSERT(candidates == context.candidatesToCursorSet());
+}
+
+bool anyCandidatePinyinStartsWith(const PinyinContext &context,
+                                  std::string_view prefix) {
+    for (const auto &candidate : context.candidates()) {
+        if (context.candidateFullPinyin(candidate).starts_with(prefix)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace
@@ -358,6 +369,154 @@ int main() {
         c.learn();
         c.clear();
         FCITX_ASSERT(ime.model()->history().containsBigram("他", "爱"));
+    }
+
+    // Pinyin fixes can force a syllable and a segmentation.
+    {
+        ime.dict()->addWord(PinyinDictionary::UserDict, "nu", "怒");
+        ime.dict()->addWord(PinyinDictionary::UserDict, "ni", "你");
+        ime.dict()->addWord(PinyinDictionary::UserDict, "xian", "线");
+        ime.dict()->addWord(PinyinDictionary::UserDict, "xi'an", "西安");
+
+        // Force "xian" to be read as "xi" + "an".
+        c.clear();
+        c.type("xian");
+        checkCandidateSet(c);
+        FCITX_ASSERT(c.pinyinFixes().empty());
+        // "xian" as a whole is a valid match of 线.
+        FCITX_ASSERT(c.candidateSet().count("线") > 0);
+        // 西安 crosses the edge but its syllables match the natural parse.
+        FCITX_ASSERT(c.candidateSet().count("西安") > 0);
+
+        c.setPinyinFixes({{0, 2, {PinyinInitial::X, PinyinFinal::I}}});
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        FCITX_ASSERT(c.pinyinFixes().front().start_ == 0);
+        FCITX_ASSERT(c.pinyinFixes().front().end_ == 2);
+        checkCandidateSet(c);
+        // 线 is read as a whole "xian", which crosses the fix.
+        FCITX_ASSERT(c.candidateSet().count("线") == 0);
+        // 西安 spans the fixed boundary but its syllables match the fix.
+        FCITX_ASSERT(c.candidateSet().count("西安") > 0);
+
+        // Clearing the fixes restores everything.
+        c.setPinyinFixes({});
+        FCITX_ASSERT(c.pinyinFixes().empty());
+        checkCandidateSet(c);
+        FCITX_ASSERT(c.candidateSet().count("线") > 0);
+    }
+
+    // A fix can force a syllable to be read differently.
+    {
+        c.clear();
+        c.type("nuhaoxian");
+        checkCandidateSet(c);
+        const auto baseline = c.candidateSet();
+        FCITX_ASSERT(!baseline.empty());
+        FCITX_ASSERT(anyCandidatePinyinStartsWith(c, "nu"));
+        FCITX_ASSERT(!anyCandidatePinyinStartsWith(c, "ni"));
+
+        // Force "nu" to be read as "ni".
+        c.setPinyinFixes({{0, 2, {PinyinInitial::N, PinyinFinal::I}}});
+        checkCandidateSet(c);
+        FCITX_ASSERT(c.candidateSet() != baseline);
+        FCITX_ASSERT(!anyCandidatePinyinStartsWith(c, "nu"));
+        FCITX_ASSERT(anyCandidatePinyinStartsWith(c, "ni"));
+        FCITX_ASSERT(!c.candidates().empty());
+        FCITX_ASSERT(
+            c.candidateFullPinyin(c.candidates()[0]).starts_with("ni"));
+
+        // Selecting a word makes the fix dormant, cancelling it brings the fix
+        // back.
+        c.select(0);
+        FCITX_ASSERT(c.selectedLength() > 2);
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        c.cancel();
+        FCITX_ASSERT(c.selectedLength() == 0);
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        FCITX_ASSERT(!c.candidates().empty());
+        FCITX_ASSERT(!anyCandidatePinyinStartsWith(c, "nu"));
+    }
+
+    // Editing the input cancels the affected fixes.
+    {
+        c.clear();
+        c.type("nuhaoxian");
+        c.setPinyinFixes({{0, 2, {PinyinInitial::N, PinyinFinal::I}}});
+        // Typing at the end does not affect the fix.
+        c.type("hao");
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        // Erasing after the fix does not affect it.
+        c.erase(11, 12);
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        // Erasing from the fix boundary does not affect it.
+        c.erase(2, 4);
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        // Erasing from the fix itself cancels it.
+        c.erase(1, 3);
+        FCITX_ASSERT(c.pinyinFixes().empty());
+    }
+
+    // Moving the cursor cancels all fixes from the cursor to the end.
+    {
+        const auto setup = [&]() {
+            c.clear();
+            c.type("nuhaoxian");
+            c.setPinyinFixes({{0, 2, {PinyinInitial::N, PinyinFinal::I}},
+                              {5, 7, {PinyinInitial::X, PinyinFinal::I}}});
+            FCITX_ASSERT(c.pinyinFixes().size() == 2);
+        };
+
+        // Cursor at the end of the first fix keeps that fix but cancels the
+        // later one.
+        setup();
+        c.setCursor(2);
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        FCITX_ASSERT(c.pinyinFixes().front().end_ == 2);
+
+        // Cursor between the fixes keeps the earlier one only.
+        setup();
+        c.setCursor(3);
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        FCITX_ASSERT(c.pinyinFixes().front().end_ == 2);
+
+        // Cursor inside a fix cancels it and everything after it.
+        setup();
+        c.setCursor(6);
+        FCITX_ASSERT(c.pinyinFixes().size() == 1);
+        FCITX_ASSERT(c.pinyinFixes().front().end_ == 2);
+
+        // Cursor at the very beginning cancels every fix.
+        setup();
+        c.setCursor(0);
+        FCITX_ASSERT(c.pinyinFixes().empty());
+
+        // Cursor at the end keeps every fix.
+        setup();
+        c.setCursor(9);
+        FCITX_ASSERT(c.pinyinFixes().size() == 2);
+    }
+
+    // Fixes work the same in shuangpin.
+    {
+        c.clear();
+        ime.setShuangpinProfile(std::make_shared<ShuangpinProfile>(
+            ShuangpinBuiltinProfile::Ziranma));
+        c.setUseShuangpin(true);
+        c.type("nu");
+        checkCandidateSet(c);
+        FCITX_ASSERT(c.candidateSet().count("怒") > 0);
+        FCITX_ASSERT(c.candidateSet().count("你") == 0);
+
+        // Force "nu" to be read as "ni".
+        c.setPinyinFixes({{0, 2, {PinyinInitial::N, PinyinFinal::I}}});
+        checkCandidateSet(c);
+        FCITX_ASSERT(c.candidateSet().count("你") > 0);
+        FCITX_ASSERT(c.candidateSet().count("怒") == 0);
+
+        c.setPinyinFixes({});
+        c.setUseShuangpin(false);
+        c.clear();
+        ime.setShuangpinProfile(nullptr);
     }
 
     return 0;

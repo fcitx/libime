@@ -5,6 +5,7 @@
  */
 #include "pinyincontext.h"
 #include <algorithm>
+#include <any>
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -12,6 +13,7 @@
 #include <limits>
 #include <list>
 #include <memory>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -144,6 +146,21 @@ bool hasCorrection(const SentenceResult &candidate) {
         });
 }
 
+// Input: 10, [(2,4), (4,5), (8,9)]
+// Output: [(0,2), (5,8), (9,10)]
+template <std::ranges::random_access_range R>
+auto makeComplement(size_t size, R excluded) {
+    const size_t count = std::ranges::size(excluded);
+    return std::views::iota(size_t{0}, count + 1) |
+           std::views::transform(
+               [size, count, excluded = std::move(excluded)](size_t i) {
+                   const size_t begin = i == 0 ? 0 : excluded[i - 1].second;
+                   const size_t end = i == count ? size : excluded[i].first;
+                   return std::pair{begin, end};
+               }) |
+           std::views::filter([](auto gap) { return gap.first != gap.second; });
+}
+
 } // namespace
 
 class PinyinContextPrivate : public fcitx::QPtrHolder<PinyinContext> {
@@ -166,6 +183,103 @@ public:
     mutable std::unordered_set<std::string> candidatesToCursorSet_;
     std::vector<fcitx::ScopedConnection> conn_;
     std::list<PinyinWordNode> contextWords_;
+
+    std::vector<PinyinSegmentFix> fixes_;
+
+    SegmentGraph buildGraph() const {
+        FCITX_Q();
+        const size_t start = q->selectedLength();
+        const std::string_view input =
+            std::string_view{q->userInput()}.substr(start);
+        SegmentGraph graph{std::string{input}};
+        const auto spProfile = matchState_.shuangpinProfile();
+
+        // [] is a fix, a fixed span no need to parse
+        //                  ↓
+        // userInput: nihao[xi]an
+        //              ↑      ↑
+        // Others are free span, parse with parseUserInput
+        const auto firstFix = std::ranges::lower_bound(
+            fixes_, start, {}, &PinyinSegmentFix::start_);
+        const auto relativeFixes =
+            std::span{fixes_}.subspan(
+                static_cast<size_t>(firstFix - fixes_.begin())) |
+            std::views::transform([start](const PinyinSegmentFix &fix) {
+                return PinyinSegmentFix{fix.start_ - start, fix.end_ - start,
+                                        fix.fixed_};
+            });
+        auto fixedSpans =
+            relativeFixes |
+            std::views::transform([start](const PinyinSegmentFix &fix) {
+                return std::pair{fix.start_, fix.end_};
+            });
+
+        for (const auto &[from, to, fixed] : relativeFixes) {
+            graph.ensureNode(from).setAnnotation(fixed);
+            graph.addNext(from, to);
+        }
+        for (const auto &[from, to] :
+             makeComplement(input.size(), fixedSpans)) {
+            const std::string freeSpan{input.substr(from, to - from)};
+            const SegmentGraph subGraph =
+                spProfile ? PinyinEncoder::parseUserShuangpin(
+                                freeSpan, *spProfile, ime_->fuzzyFlags())
+                          : PinyinEncoder::parseUserPinyin(
+                                freeSpan, ime_->correctionProfile().get(),
+                                ime_->fuzzyFlags());
+            for (size_t i = 0, e = subGraph.size(); i <= e; i++) {
+                for (const auto &node : subGraph.nodes(i)) {
+                    for (const auto &next : node.nexts()) {
+                        graph.addNext(from + node.index(), from + next.index());
+                    }
+                }
+            }
+        }
+        return graph;
+    }
+
+    // Discard the decode state attached to the graph nodes after the
+    // absolute input position pos, keeping everything up to and including
+    // the node at pos. Only the node keyed state is dropped; the graph
+    // itself and the LRU caches in matchState_ are kept. Callers must run
+    // update() afterwards.
+    void discardDecodeStateAfter(size_t pos) {
+        FCITX_Q();
+        const size_t start = q->selectedLength();
+        size_t begin = 0;
+        if (pos >= start) {
+            begin = pos - start + 1;
+        }
+        std::unordered_set<const SegmentGraphNode *> nodes;
+        for (size_t i = begin; i <= segs_.size(); i++) {
+            for (const auto &node : segs_.nodes(i)) {
+                nodes.insert(&node);
+            }
+        }
+        if (nodes.empty()) {
+            return;
+        }
+        lattice_.discardNode(nodes);
+        matchState_.discardNode(nodes);
+    }
+
+    // Remove the fixes that are affected by an edit starting at from.
+    // Return the start of the first removed fix, if any. If any fix is
+    // removed, the decode state after that point is discarded as well,
+    // callers must run update() afterwards.
+    std::optional<size_t> discardFixesAfter(size_t from) {
+        // The fixes are ordered and non-overlapping, so their end_ is
+        // strictly increasing: the removed fixes always form a suffix.
+        auto iter =
+            std::ranges::upper_bound(fixes_, from, {}, &PinyinSegmentFix::end_);
+        if (iter == fixes_.end()) {
+            return std::nullopt;
+        }
+        const size_t first = iter->start_;
+        fixes_.erase(iter, fixes_.end());
+        discardDecodeStateAfter(first);
+        return first;
+    }
 
     size_t alignCursorToNextSegment() const {
         FCITX_Q();
@@ -476,29 +590,35 @@ bool PinyinContext::typeImpl(const char *s, size_t length) {
             return false;
         }
     }
-    auto changed = cancelTill(cursor());
-    changed = InputBuffer::typeImpl(s, length) || changed;
-    if (changed) {
+    const size_t pos = cursor();
+    const bool cancelled = cancelTill(pos);
+    const bool typed = InputBuffer::typeImpl(s, length);
+    if (typed) {
+        d->discardFixesAfter(pos);
+    }
+    if (cancelled || typed) {
         update();
     }
-    return changed;
+    return cancelled || typed;
 }
 
 void PinyinContext::erase(size_t from, size_t to) {
+    FCITX_D();
     if (from == to) {
         return;
     }
 
     // check if erase everything
     if (from == 0 && to >= size()) {
-        FCITX_D();
         d->clearCandidates();
         d->selected_.clear();
         d->lattice_.clear();
         d->matchState_.clear();
         d->segs_ = SegmentGraph();
+        d->fixes_.clear();
     } else {
         cancelTill(from);
+        d->discardFixesAfter(from);
     }
     InputBuffer::erase(from, to);
 
@@ -511,8 +631,9 @@ void PinyinContext::setCursor(size_t pos) {
     FCITX_D();
     auto oldCursor = cursor();
     auto cancelled = cancelTill(pos);
+    const auto touchedFix = d->discardFixesAfter(pos);
     InputBuffer::setCursor(pos);
-    if (cancelled) {
+    if (cancelled || touchedFix) {
         update();
     } else {
         if (cursor() != oldCursor) {
@@ -632,6 +753,50 @@ bool PinyinContext::cancelTill(size_t pos) {
     return cancelled;
 }
 
+void PinyinContext::setPinyinFixes(std::vector<PinyinSegmentFix> fixes) {
+    FCITX_D();
+    if (d->fixes_ == fixes) {
+        return;
+    }
+
+    for (size_t i = 0; i < fixes.size(); ++i) {
+        const auto &fix = fixes[i];
+        if (fix.start_ > fix.end_ || (i && (fixes[i - 1].start_ > fix.start_ ||
+                                            fixes[i - 1].end_ > fix.start_))) {
+            throw std::invalid_argument("Invalid pinyin fixes");
+        }
+    }
+
+    const size_t start = selectedLength();
+    auto it1 = std::ranges::lower_bound(d->fixes_, start, {},
+                                        &PinyinSegmentFix::start_);
+    auto it2 =
+        std::ranges::lower_bound(fixes, start, {}, &PinyinSegmentFix::start_);
+    // Both sequences are strictly ordered and non-overlapping, the first
+    // mismatched position between the two sequences inherently corresponds to
+    // the earliest `start_` offset across all added, removed or modified
+    // fixes.
+    auto [m1, m2] =
+        std::ranges::mismatch(it1, d->fixes_.end(), it2, fixes.end());
+    size_t firstChanged = std::numeric_limits<size_t>::max();
+    if (m1 != d->fixes_.end()) {
+        firstChanged = std::min(firstChanged, m1->start_);
+    }
+    if (m2 != fixes.end()) {
+        firstChanged = std::min(firstChanged, m2->start_);
+    }
+    d->fixes_ = std::move(fixes);
+    if (firstChanged != std::numeric_limits<size_t>::max()) {
+        d->discardDecodeStateAfter(firstChanged);
+    }
+    update();
+}
+
+const std::vector<PinyinSegmentFix> &PinyinContext::pinyinFixes() const {
+    FCITX_D();
+    return d->fixes_;
+}
+
 void PinyinContext::cancel() {
     FCITX_D();
     if (!d->selected_.empty()) {
@@ -679,20 +844,8 @@ void PinyinContext::update() {
     if (selected()) {
         d->clearCandidates();
     } else {
-        size_t start = 0;
         State state = this->state();
-        if (!d->selected_.empty()) {
-            start = d->selected_.back().back().offset_;
-        }
-        SegmentGraph newGraph;
-        if (auto spProfile = d->matchState_.shuangpinProfile()) {
-            newGraph = PinyinEncoder::parseUserShuangpin(
-                userInput().substr(start), *spProfile, d->ime_->fuzzyFlags());
-        } else {
-            newGraph = PinyinEncoder::parseUserPinyin(
-                userInput().substr(start), d->ime_->correctionProfile().get(),
-                d->ime_->fuzzyFlags());
-        }
+        SegmentGraph newGraph = d->buildGraph();
         d->segs_.merge(
             newGraph,
             [d](const std::unordered_set<const SegmentGraphNode *> &nodes) {

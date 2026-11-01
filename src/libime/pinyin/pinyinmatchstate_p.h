@@ -6,6 +6,7 @@
 #ifndef _FCITX_LIBIME_PINYIN_PINYINMATCHSTATE_P_H_
 #define _FCITX_LIBIME_PINYIN_PINYINMATCHSTATE_P_H_
 
+#include <any>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -107,13 +108,20 @@ public:
         while (iter + 1 < path.end()) {
             auto begin = (*iter)->index();
             auto end = (*std::next(iter))->index();
+            const auto *fixed =
+                std::any_cast<PinyinSyllable>(&(*iter)->annotation());
             iter++;
             if (data[begin] == '\'') {
                 continue;
             }
-            while (begin < end) {
-                result.push_back(data[begin]);
-                begin++;
+            if (fixed) {
+                result.push_back(static_cast<char>(fixed->initial()));
+                result.push_back(static_cast<char>(fixed->final()));
+            } else {
+                while (begin < end) {
+                    result.push_back(data[begin]);
+                    begin++;
+                }
             }
             result.push_back('|');
         }
@@ -132,13 +140,22 @@ public:
         while (iter + 1 < path.end()) {
             auto begin = (*iter)->index();
             auto end = (*std::next(iter))->index();
+            const auto *fixed =
+                std::any_cast<PinyinSyllable>(&(*iter)->annotation());
             iter++;
             if (data[begin] == '\'') {
                 continue;
             }
-            while (begin < end) {
-                boost::hash_combine(seed, hasher(data[begin]));
-                begin++;
+            if (fixed) {
+                boost::hash_combine(
+                    seed, hasher(static_cast<char>(fixed->initial())));
+                boost::hash_combine(seed,
+                                    hasher(static_cast<char>(fixed->final())));
+            } else {
+                while (begin < end) {
+                    boost::hash_combine(seed, hasher(data[begin]));
+                    begin++;
+                }
             }
             boost::hash_combine(seed, hasher('|'));
         }
@@ -170,19 +187,33 @@ public:
         while (iter + 1 < path.end() && is != s.end()) {
             auto begin = (*iter)->index();
             auto end = (*std::next(iter))->index();
+            const auto *fixed =
+                std::any_cast<PinyinSyllable>(&(*iter)->annotation());
             iter++;
             if (data[begin] == '\'') {
                 continue;
             }
-            while (begin < end && is != s.end()) {
-                if (*is != data[begin]) {
+            if (fixed) {
+                if (is == s.end() ||
+                    *is != static_cast<char>(fixed->initial())) {
                     return false;
                 }
                 is++;
-                begin++;
-            }
-            if (begin != end) {
-                return false;
+                if (is == s.end() || *is != static_cast<char>(fixed->final())) {
+                    return false;
+                }
+                is++;
+            } else {
+                while (begin < end && is != s.end()) {
+                    if (*is != data[begin]) {
+                        return false;
+                    }
+                    is++;
+                    begin++;
+                }
+                if (begin != end) {
+                    return false;
+                }
             }
 
             if (is == s.end() || *is != '|') {

@@ -19,6 +19,7 @@
 #include <libime/core/languagemodel.h>
 #include <libime/core/lattice.h>
 #include <libime/pinyin/libimepinyin_export.h>
+#include <libime/pinyin/pinyinencoder.h>
 #include "libime/core/historybigram.h"
 
 namespace libime {
@@ -63,6 +64,26 @@ public:
     void selectCandidatesToCursor(size_t idx);
     void cancel();
     bool cancelTill(size_t pos);
+
+    /**
+     * Set the pinyin fixes.
+     *
+     * A fix forces the pinyin in [start, end) to be read as the given
+     * syllable. The offsets are relative to the whole user input. The fixes
+     * are expected to be ordered, non-overlapping and valid, i.e. the range
+     * must correspond to a real segment of the pinyin input.
+     * A fix that covers the part that has already been selected has no
+     * effect, unless the selection is cancelled.
+     * An empty list clears all the fixes.
+     */
+    void setPinyinFixes(std::vector<PinyinSegmentFix> fixes);
+
+    /**
+     * Return the current pinyin fixes.
+     *
+     * @see setPinyinFixes
+     */
+    const std::vector<PinyinSegmentFix> &pinyinFixes() const;
 
     /**
      * Create a custom selection

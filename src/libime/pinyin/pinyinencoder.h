@@ -237,6 +237,26 @@ private:
 LIBIMEPINYIN_EXPORT fcitx::LogMessageBuilder &
 operator<<(fcitx::LogMessageBuilder &log, PinyinSyllable syl);
 
+/**
+ * A fix that forces the input range [start_, end_) to be read as fixed_.
+ *
+ * The offsets are relative to the whole user input. The fixes are expected
+ * to be ordered, non-overlapping and valid, i.e. the range must correspond
+ * to a real segment of the parsed pinyin.
+ *
+ * fixed_.final() may be PinyinFinal::Invalid for an incomplete syllable.
+ * In that case the range is still forced to be a separate segment, but the
+ * final is not restricted and all finals are allowed.
+ */
+struct LIBIMEPINYIN_EXPORT PinyinSegmentFix {
+    size_t start_;
+    size_t end_;
+    // The normalized syllable (initial, final).
+    PinyinSyllable fixed_;
+
+    bool operator==(const PinyinSegmentFix &other) const = default;
+};
+
 template <typename FuzzyValue>
 using FuzzyPinyinSyllables = std::vector<
     std::pair<PinyinInitial, std::vector<std::pair<PinyinFinal, FuzzyValue>>>>;

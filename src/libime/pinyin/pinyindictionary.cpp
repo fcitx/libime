@@ -58,99 +58,6 @@ const char pinyinHanziSep = '!';
 constexpr uint32_t pinyinBinaryFormatMagic = 0x000fc613;
 constexpr uint32_t pinyinBinaryFormatVersion = 0x2;
 
-struct PinyinSegmentGraphPathHasher {
-    PinyinSegmentGraphPathHasher(const SegmentGraph &graph) : graph_(graph) {}
-
-    // Generate a "|" separated raw pinyin string from given path, skip all
-    // separator.
-    std::string pathToPinyins(const SegmentGraphPath &path) const {
-        std::string result;
-        result.reserve(path.size() + path.back()->index() -
-                       path.front()->index() + 1);
-        const auto &data = graph_.data();
-        auto iter = path.begin();
-        while (iter + 1 < path.end()) {
-            auto begin = (*iter)->index();
-            auto end = (*std::next(iter))->index();
-            iter++;
-            if (data[begin] == '\'') {
-                continue;
-            }
-            while (begin < end) {
-                result.push_back(data[begin]);
-                begin++;
-            }
-            result.push_back('|');
-        }
-        return result;
-    }
-
-    // Generate hash for path but avoid allocate the string.
-    size_t operator()(const SegmentGraphPath &path) const {
-        if (path.size() <= 1) {
-            return 0;
-        }
-        boost::hash<char> hasher;
-
-        size_t seed = 0;
-        const auto &data = graph_.data();
-        auto iter = path.begin();
-        while (iter + 1 < path.end()) {
-            auto begin = (*iter)->index();
-            auto end = (*std::next(iter))->index();
-            iter++;
-            if (data[begin] == '\'') {
-                continue;
-            }
-            while (begin < end) {
-                boost::hash_combine(seed, hasher(data[begin]));
-                begin++;
-            }
-            boost::hash_combine(seed, hasher('|'));
-        }
-        return seed;
-    }
-
-    // Check equality of pinyin string and the path. The string s should be
-    // equal to pathToPinyins(path), but this function just try to avoid
-    // allocate a string for comparison.
-    bool operator()(const SegmentGraphPath &path, const std::string &s) const {
-        if (path.size() <= 1) {
-            return false;
-        }
-        auto is = s.begin();
-        const auto &data = graph_.data();
-        auto iter = path.begin();
-        while (iter + 1 < path.end() && is != s.end()) {
-            auto begin = (*iter)->index();
-            auto end = (*std::next(iter))->index();
-            iter++;
-            if (data[begin] == '\'') {
-                continue;
-            }
-            while (begin < end && is != s.end()) {
-                if (*is != data[begin]) {
-                    return false;
-                }
-                is++;
-                begin++;
-            }
-            if (begin != end) {
-                return false;
-            }
-
-            if (is == s.end() || *is != '|') {
-                return false;
-            }
-            is++;
-        }
-        return iter + 1 == path.end() && is == s.end();
-    }
-
-private:
-    const SegmentGraph &graph_;
-};
-
 struct SegmentGraphNodeGreater {
     bool operator()(const SegmentGraphNode *lhs,
                     const SegmentGraphNode *rhs) const {
@@ -326,7 +233,7 @@ public:
     PinyinMatchContext(const PinyinMatchContext &) = delete;
 
     const SegmentGraph &graph_;
-    PinyinSegmentGraphPathHasher hasher_;
+    PinyinStringHasher hasher_;
 
     const GraphMatchCallback &callback_;
     const std::unordered_set<const SegmentGraphNode *> &ignore_;
@@ -541,12 +448,14 @@ bool PinyinDictionaryPrivate::matchWordsForOnePath(
     };
 
     if (context.matchCacheMap_) {
-        auto &matchCache = (*context.matchCacheMap_)[path.trie()];
-        auto *result =
-            matchCache.find(path.path_, context.hasher_, context.hasher_);
+        auto &matchCache = context.matchCacheMap_
+                               ->try_emplace(path.trie(), 80,
+                                             PinyinStringHasher(context.graph_),
+                                             PinyinStringEqual(context.graph_))
+                               .first->second;
+        auto *result = matchCache.find(path.path_);
         if (!result) {
-            result =
-                matchCache.insert(context.hasher_.pathToPinyins(path.path_));
+            result = matchCache.insert(context.hasher_.stringFor(path.path_));
             result->clear();
 
             auto &items = *result;
@@ -632,14 +541,18 @@ void PinyinDictionaryPrivate::findMatchesBetween(
 
         // A map from trie (dict) to a lru cache.
         if (context.nodeCacheMap_) {
-            auto &nodeCache = (*context.nodeCacheMap_)[path.trie()];
-            auto *p =
-                nodeCache.find(segmentPath, context.hasher_, context.hasher_);
+            auto &nodeCache =
+                context.nodeCacheMap_
+                    ->try_emplace(path.trie(), 80,
+                                  PinyinStringHasher(context.graph_),
+                                  PinyinStringEqual(context.graph_))
+                    .first->second;
+            auto *p = nodeCache.find(segmentPath);
             std::shared_ptr<MatchedPinyinTrieNodes> result;
             if (!p) {
                 result = std::make_shared<MatchedPinyinTrieNodes>(
                     path.trie(), path.size() + 1);
-                nodeCache.insert(context.hasher_.pathToPinyins(segmentPath),
+                nodeCache.insert(context.hasher_.stringFor(segmentPath),
                                  result);
                 result->triePositions_ =
                     traverseAlongPathOneStepBySyllables(path, syls);

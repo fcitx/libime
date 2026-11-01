@@ -6,6 +6,7 @@
 #ifndef _FCITX_LIBIME_CORE_LRU_H_
 #define _FCITX_LIBIME_CORE_LRU_H_
 
+#include <concepts>
 #include <cstddef>
 #include <functional>
 #include <list>
@@ -25,8 +26,12 @@ public:
         std::unordered_map<K, std::pair<V, typename std::list<K>::iterator>, H,
                            E>;
 
-    LRUCache(size_t sz = 80, const H &hash = H(), const E &equal = E())
+    LRUCache(const H &hash, const E &equal, size_t sz = 80)
         : dict_(0, hash, equal), sz_(sz) {}
+
+    LRUCache(size_t sz = 80)
+        requires(std::default_initializable<H> && std::default_initializable<E>)
+        : LRUCache(H(), E(), sz) {}
 
     size_t size() const { return dict_.size(); }
 

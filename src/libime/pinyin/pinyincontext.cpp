@@ -1035,19 +1035,32 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
     return preeditWithCursor(ime()->preeditMode());
 }
 
+std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+PinyinContext::preeditWithCursorHighlight() const {
+    return preeditWithCursorHighlight(ime()->preeditMode());
+}
+
 std::string PinyinContext::preedit(PinyinPreeditMode mode) const {
     return preeditWithCursor(mode).first;
 }
 
 std::pair<std::string, size_t>
 PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
-    return preeditWithCursorImpl(mode, cursor());
+    auto [text, cursor, highlights] = preeditWithCursorHighlight(mode);
+    (void)highlights;
+    return {std::move(text), cursor};
 }
 
-std::pair<std::string, size_t>
-PinyinContext::preeditWithCursorImpl(PinyinPreeditMode mode,
-                                     size_t inputCursor) const {
+std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+PinyinContext::preeditWithCursorHighlight(PinyinPreeditMode mode) const {
+    return preeditWithCursorHighlightImpl(mode, cursor());
+}
+
+std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+PinyinContext::preeditWithCursorHighlightImpl(PinyinPreeditMode mode,
+                                              size_t inputCursor) const {
     FCITX_D();
+    std::vector<std::pair<size_t, size_t>> highlights;
     std::string ss = selectedSentence();
     const auto len = selectedLength();
     auto c = inputCursor;
@@ -1074,8 +1087,17 @@ PinyinContext::preeditWithCursorImpl(PinyinPreeditMode mode,
                 size_t cursorInPinyin = c - from - len;
                 const size_t startPivot = resultSize;
                 auto pinyin = d->segs_.segment(from, to);
+                const auto *fixed =
+                    std::any_cast<PinyinSyllable>(&(*iter)->annotation());
                 MatchedPinyinSyllables syls;
-                if (mode == PinyinPreeditMode::Pinyin) {
+                std::string actualPinyin;
+                if (fixed) {
+                    // A fixed syllable is displayed as the fixed pinyin, not
+                    // as the raw input.
+                    syls = {{fixed->initial(), {{fixed->final(), false}}}};
+                    actualPinyin = PinyinEncoder::initialFinalToPinyinString(
+                        fixed->initial(), fixed->final());
+                } else if (mode == PinyinPreeditMode::Pinyin) {
                     // The reason that we don't use fuzzy flag from option is
                     // that we'd like to keep the preedit as is. Otherwise,
                     // "qign" would be displayed as "qing", which would be
@@ -1086,9 +1108,7 @@ PinyinContext::preeditWithCursorImpl(PinyinPreeditMode mode,
                                      PinyinFuzzyFlag::None)
                                : PinyinEncoder::stringToSyllables(
                                      pinyin, PinyinFuzzyFlag::None);
-                }
-                std::string actualPinyin;
-                if (!syls.empty() && !syls.front().second.empty()) {
+
                     std::string_view candidatePinyin =
                         node->as<PinyinLatticeNode>().encodedPinyin();
                     auto nthPinyin = std::distance(node->path().begin(), iter);
@@ -1133,6 +1153,7 @@ PinyinContext::preeditWithCursorImpl(PinyinPreeditMode mode,
                         matchPinyinCase(pinyin, actualPinyin);
                     }
                 }
+
                 if (!actualPinyin.empty()) {
                     if (c > from + len && c <= to + len) {
                         if (useShuangpin()) {
@@ -1158,10 +1179,22 @@ PinyinContext::preeditWithCursorImpl(PinyinPreeditMode mode,
                                 break;
                             }
                         } else {
-                            cursorInPinyin =
-                                std::min(actualPinyin.size(), cursorInPinyin);
-                            cursorInPinyin = fcitx::utf8::ncharByteLength(
-                                actualPinyin.begin(), cursorInPinyin);
+                            // |012345 → |012
+                            // 0|12345 → 0|12
+                            // 01|2345 → 01|2
+                            // 012|345 → 01|2
+                            // 0123|45 → 01|2
+                            // 01234|5 → 01|2
+                            // 012345| → 012|
+                            if (c == to + len) {
+                                cursorInPinyin = actualPinyin.size();
+                            } else {
+                                cursorInPinyin = std::min(
+                                    fcitx::utf8::length(actualPinyin) - 1,
+                                    cursorInPinyin);
+                                cursorInPinyin = fcitx::utf8::ncharByteLength(
+                                    actualPinyin.begin(), cursorInPinyin);
+                            }
                         }
                     }
                     ss.append(actualPinyin);
@@ -1169,6 +1202,9 @@ PinyinContext::preeditWithCursorImpl(PinyinPreeditMode mode,
                 } else {
                     ss.append(pinyin.data(), pinyin.size());
                     resultSize += pinyin.size();
+                }
+                if (fixed) {
+                    highlights.emplace_back(startPivot, resultSize);
                 }
                 if (c > from + len && c <= to + len) {
                     actualCursor = startPivot + cursorInPinyin;
@@ -1179,7 +1215,7 @@ PinyinContext::preeditWithCursorImpl(PinyinPreeditMode mode,
     if (c == size()) {
         actualCursor = resultSize;
     }
-    return {ss, actualCursor};
+    return {std::move(ss), actualCursor, std::move(highlights)};
 }
 
 // A fix can render shorter than the raw input. With "012345" fixed to
@@ -1223,7 +1259,8 @@ PinyinContext::cursorForPreeditPosition(size_t preeditByteCursor,
     const auto positions = std::views::iota(selectedLength(), size() + 1);
     const auto firstAfter =
         std::ranges::partition_point(positions, [&](size_t p) {
-            return preeditWithCursorImpl(mode, p).second < preeditByteCursor;
+            return std::get<1>(preeditWithCursorHighlightImpl(mode, p)) <
+                   preeditByteCursor;
         });
     // Every position is before the clicked position, i.e. it is past the end
     // of the preedit.
@@ -1234,8 +1271,8 @@ PinyinContext::cursorForPreeditPosition(size_t preeditByteCursor,
     size_t target = *firstAfter;
     // The first position already moved past the clicked position, so step
     // back to the previous one.
-    if (target > selectedLength() &&
-        preeditWithCursorImpl(mode, target).second > preeditByteCursor) {
+    if (target > selectedLength() && std::get<1>(preeditWithCursorHighlightImpl(
+                                         mode, target)) > preeditByteCursor) {
         --target;
     }
     return target;

@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_set>
 #include <vector>
 #include <fcitx-utils/log.h>
@@ -405,6 +406,37 @@ int main() {
         FCITX_ASSERT(c.candidateSet().count("线") > 0);
     }
 
+    // A fix with an invalid final keeps the initial and allows any final.
+    {
+        c.clear();
+        c.type("h");
+        checkCandidateSet(c);
+        FCITX_ASSERT(!c.candidates().empty());
+
+        c.setPinyinFixes({{0, 1, {PinyinInitial::H, PinyinFinal::Invalid}}});
+        checkCandidateSet(c);
+        FCITX_ASSERT(!c.candidates().empty());
+        FCITX_ASSERT(anyCandidatePinyinStartsWith(c, "h"));
+
+        [[maybe_unused]] auto [preedit, cursor, highlights] =
+            c.preeditWithCursorHighlight(PinyinPreeditMode::RawText);
+        FCITX_ASSERT(preedit == "h") << preedit;
+        FCITX_ASSERT(highlights.size() == 1);
+        FCITX_ASSERT(highlights.front() == std::pair<size_t, size_t>(0, 1));
+
+        // The same wildcard reading works for a longer input.
+        c.clear();
+        c.type("hhh");
+        c.setPinyinFixes({{0, 1, {PinyinInitial::H, PinyinFinal::Invalid}}});
+        checkCandidateSet(c);
+        FCITX_ASSERT(!c.candidates().empty());
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(PinyinPreeditMode::RawText);
+        FCITX_ASSERT(preedit == "h h h") << preedit;
+        FCITX_ASSERT(highlights.size() == 1);
+        FCITX_ASSERT(highlights.front() == std::pair<size_t, size_t>(0, 1));
+    }
+
     // A fix can force a syllable to be read differently.
     {
         c.clear();
@@ -437,6 +469,65 @@ int main() {
         FCITX_ASSERT(!anyCandidatePinyinStartsWith(c, "nu"));
     }
 
+    // Preedit displays the fixed syllable instead of the raw input.
+    {
+        ime.dict()->addWord(PinyinDictionary::UserDict, "shui", "水");
+        c.clear();
+        c.type("nuhaoxian");
+
+        auto [preedit, cursor, highlights] =
+            c.preeditWithCursorHighlight(PinyinPreeditMode::RawText);
+        FCITX_ASSERT(preedit == "nu hao xian") << preedit;
+        FCITX_ASSERT(highlights.empty());
+
+        c.setPinyinFixes({{0, 2, {PinyinInitial::N, PinyinFinal::I}}});
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(PinyinPreeditMode::RawText);
+        FCITX_ASSERT(preedit == "ni hao xian") << preedit;
+        FCITX_ASSERT(highlights.size() == 1);
+        FCITX_ASSERT(highlights.front() == std::pair<size_t, size_t>(0, 2));
+
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(PinyinPreeditMode::Pinyin);
+        FCITX_ASSERT(preedit == "ni hao xian") << preedit;
+        FCITX_ASSERT(highlights.size() == 1);
+        FCITX_ASSERT(highlights.front() == std::pair<size_t, size_t>(0, 2));
+
+        // The overload without an explicit mode uses the IME's mode.
+        auto [defaultPreedit, defaultCursor, defaultHighlights] =
+            c.preeditWithCursorHighlight();
+        FCITX_ASSERT(defaultPreedit == "ni hao xian") << defaultPreedit;
+        FCITX_ASSERT(defaultHighlights.size() == 1);
+        FCITX_ASSERT(defaultHighlights.front() ==
+                     std::pair<size_t, size_t>(0, 2));
+        (void)defaultCursor;
+
+        // A fixed syllable can be longer than the raw input. A cursor at the
+        // end of the fix maps to the end of the fixed pinyin.
+        c.clear();
+        c.type("nuhaoxian");
+        c.setPinyinFixes({{0, 2, {PinyinInitial::SH, PinyinFinal::UI}}});
+        c.setCursor(2);
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(PinyinPreeditMode::RawText);
+        FCITX_ASSERT(preedit == "shui hao xian") << preedit;
+        FCITX_ASSERT(cursor == 4) << cursor;
+        FCITX_ASSERT(highlights.size() == 1);
+        FCITX_ASSERT(highlights.front() == std::pair<size_t, size_t>(0, 4));
+
+        // A selected word makes the fix dormant, so nothing is fixed in the
+        // preedit. Cancelling the selection brings the fix back.
+        c.setPinyinFixes({{0, 2, {PinyinInitial::N, PinyinFinal::I}}});
+        c.select(0);
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(PinyinPreeditMode::RawText);
+        FCITX_ASSERT(highlights.empty());
+        c.cancel();
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(PinyinPreeditMode::RawText);
+        FCITX_ASSERT(!highlights.empty());
+    }
+
     // Preedit positions can be mapped back to the input cursor.
     {
         c.clear();
@@ -449,6 +540,105 @@ int main() {
         // Positions 3 and 5 are gaps caused by the inserted spaces; they
         // snap to the input cursor on their left.
         const std::array<size_t, 9> expected = {0, 1, 2, 2, 3, 3, 4, 5, 5};
+        for (size_t i = 0; i < expected.size(); i++) {
+            auto target = c.cursorForPreeditPosition(i, mode);
+            FCITX_ASSERT(target.has_value());
+            FCITX_ASSERT(*target == expected[i])
+                << "Preedit position " << i << " target " << *target
+                << " expected " << expected[i];
+        }
+    }
+
+    // Cursor mapping works when a fixed syllable renders shorter or longer
+    // than its raw input.
+    {
+        const auto checkCursorMapping =
+            [&](std::string_view rawInput, std::string_view fixedPinyin,
+                PinyinInitial initial, PinyinFinal final,
+                const std::vector<size_t> &inputToPreedit,
+                const std::vector<std::pair<size_t, size_t>> &preeditToInput) {
+                const auto mode = PinyinPreeditMode::RawText;
+                for (size_t i = 0; i < inputToPreedit.size(); i++) {
+                    c.clear();
+                    c.type(rawInput);
+                    c.setCursor(i);
+                    c.setPinyinFixes({{0, rawInput.size(), {initial, final}}});
+
+                    auto [preedit, cursor, highlights] =
+                        c.preeditWithCursorHighlight(mode);
+                    FCITX_ASSERT(preedit == fixedPinyin) << preedit;
+                    FCITX_ASSERT(cursor == inputToPreedit[i])
+                        << "Input cursor " << i << " preedit cursor " << cursor
+                        << " expected " << inputToPreedit[i];
+                    FCITX_ASSERT(highlights.size() == 1);
+                }
+
+                c.clear();
+                c.type(rawInput);
+                c.setPinyinFixes({{0, rawInput.size(), {initial, final}}});
+                auto [preedit, cursor, highlights] =
+                    c.preeditWithCursorHighlight(mode);
+                FCITX_ASSERT(preedit == fixedPinyin) << preedit;
+                FCITX_ASSERT(preeditToInput.front().first == 0);
+                FCITX_ASSERT(preeditToInput.back().first == preedit.size());
+                for (const auto &[preeditPos, inputCursor] : preeditToInput) {
+                    auto target = c.cursorForPreeditPosition(preeditPos, mode);
+                    FCITX_ASSERT(target.has_value());
+                    FCITX_ASSERT(*target == inputCursor)
+                        << "Preedit cursor " << preeditPos << " input cursor "
+                        << *target << " expected " << inputCursor;
+                }
+                (void)cursor;
+                (void)highlights;
+            };
+
+        // "shuang" fixed to "san".
+        checkCursorMapping("shuang", "san", PinyinInitial::S, PinyinFinal::AN,
+                           {0, 1, 2, 2, 2, 2, 3},
+                           {{0, 0}, {1, 1}, {2, 2}, {3, 6}});
+        // "san" fixed to "shuang".
+        checkCursorMapping(
+            "san", "shuang", PinyinInitial::SH, PinyinFinal::UANG, {0, 1, 2, 6},
+            {{0, 0}, {1, 1}, {2, 2}, {3, 2}, {4, 2}, {5, 2}, {6, 3}});
+        // "shuang" fixed to "nü" renders 2 code points in 3 bytes. A raw
+        // cursor inside the fix stays before the rendered end, so that only
+        // the rendered end maps back to the fix end. Byte 2 is in the middle
+        // of "ü", so only character boundaries are checked.
+        checkCursorMapping("shuang", "nü", PinyinInitial::N, PinyinFinal::V,
+                           {0, 1, 1, 1, 1, 1, 3}, {{0, 0}, {1, 1}, {3, 6}});
+    }
+
+    // The end of a fixed syllable maps to the fix end. Positions inside the
+    // rendered text keep the linear mapping and stay before the fix end, so
+    // that entering the fix still cancels it.
+    {
+        c.clear();
+        c.type("sui");
+        c.setPinyinFixes({{0, 3, {PinyinInitial::SH, PinyinFinal::UI}}});
+        const auto mode = PinyinPreeditMode::RawText;
+        auto [preedit, cursor, highlights] = c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "shui") << preedit;
+        (void)cursor;
+        (void)highlights;
+
+        FCITX_ASSERT(c.cursorForPreeditPosition(0, mode).value() == 0);
+        FCITX_ASSERT(c.cursorForPreeditPosition(1, mode).value() == 1);
+        FCITX_ASSERT(c.cursorForPreeditPosition(3, mode).value() == 2);
+        FCITX_ASSERT(c.cursorForPreeditPosition(4, mode).value() == 3);
+        FCITX_ASSERT(c.cursorForPreeditPosition(5, mode).value() == 3);
+
+        // The same rule applies when the fix is not at the end of the input.
+        // In particular, only the rendered end maps to the raw fix end.
+        c.clear();
+        c.type("suihao");
+        c.setPinyinFixes({{0, 3, {PinyinInitial::SH, PinyinFinal::UI}}});
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "shui hao") << preedit;
+        (void)cursor;
+        (void)highlights;
+
+        const std::array<size_t, 9> expected = {0, 1, 2, 2, 3, 3, 4, 5, 6};
         for (size_t i = 0; i < expected.size(); i++) {
             auto target = c.cursorForPreeditPosition(i, mode);
             FCITX_ASSERT(target.has_value());

@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -117,10 +118,36 @@ public:
     std::pair<std::string, size_t>
     preeditWithCursor(PinyinPreeditMode mode) const;
 
+    /**
+     * Mixed preedit (selected hanzi + pinyin) with the cursor position and
+     * the byte ranges of the fixed syllables.
+     *
+     * A fixed syllable is rendered as its fixed pinyin instead of the raw
+     * input. The ranges refer to the returned preedit string, are sorted in
+     * ascending order, and do not overlap.
+     *
+     * @param mode how the unselected pinyin is rendered.
+     * @return a tuple containing:
+     *         - the preedit string,
+     *         - the byte offset of the cursor in the preedit string,
+     *         - the byte ranges of the fixed syllables in the preedit string.
+     */
+    std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+    preeditWithCursorHighlight(PinyinPreeditMode mode) const;
+
     std::string preedit() const;
 
     /// Mixed preedit (selected hanzi + pinyin).
     std::pair<std::string, size_t> preeditWithCursor() const;
+
+    /**
+     * Mixed preedit (selected hanzi + pinyin) with the cursor position and
+     * the byte ranges of the fixed syllables.
+     *
+     * @see preeditWithCursorHighlight(PinyinPreeditMode) const
+     */
+    std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+    preeditWithCursorHighlight() const;
 
     /**
      * Return the input cursor corresponding to a cursor position in the
@@ -237,8 +264,9 @@ protected:
     bool typeImpl(const char *s, size_t length) override;
 
 private:
-    std::pair<std::string, size_t>
-    preeditWithCursorImpl(PinyinPreeditMode mode, size_t inputCursor) const;
+    std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+    preeditWithCursorHighlightImpl(PinyinPreeditMode mode,
+                                   size_t inputCursor) const;
     void update();
     bool learnWord();
     std::unique_ptr<PinyinContextPrivate> d_ptr;

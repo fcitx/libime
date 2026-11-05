@@ -14,6 +14,7 @@
 #include <list>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -1040,10 +1041,16 @@ std::string PinyinContext::preedit(PinyinPreeditMode mode) const {
 
 std::pair<std::string, size_t>
 PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
+    return preeditWithCursorImpl(mode, cursor());
+}
+
+std::pair<std::string, size_t>
+PinyinContext::preeditWithCursorImpl(PinyinPreeditMode mode,
+                                     size_t inputCursor) const {
     FCITX_D();
     std::string ss = selectedSentence();
     const auto len = selectedLength();
-    auto c = cursor();
+    auto c = inputCursor;
     size_t actualCursor = ss.size();
     // should not happen
     c = std::max(c, len);
@@ -1173,6 +1180,70 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
         actualCursor = resultSize;
     }
     return {ss, actualCursor};
+}
+
+// A fix can render shorter than the raw input. With "012345" fixed to
+// "012":
+//
+//   ┌─────────┬─────────┐
+//   │ preedit │   raw   │
+//   ├─────────┼─────────┤
+//   │ |012    │ |012345 │
+//   │ 0|12    │ 0|12345 │
+//   │ 01|2    │ 01|2345 │
+//   │ 012|    │ 012345| │
+//   └─────────┴─────────┘
+//
+// A fix can also render longer than the raw input. With "012" fixed to
+// "012345":
+//
+//   ┌─────────┬──────┐
+//   │ preedit │ raw  │
+//   ├─────────┼──────┤
+//   │ |012345 │ |012 │
+//   │ 0|12345 │ 0|12 │
+//   │ 01|2345 │ 01|2 │
+//   │ 012|345 │ 01|2 │
+//   │ 0123|45 │ 01|2 │
+//   │ 01234|5 │ 01|2 │
+//   │ 012345| │ 012| │
+//   └─────────┴──────┘
+std::optional<size_t>
+PinyinContext::cursorForPreeditPosition(size_t preeditByteCursor,
+                                        PinyinPreeditMode mode) const {
+    const auto selectedBytes = selectedSentence().size();
+    // The selected sentence has no raw input cursor.
+    if (preeditByteCursor < selectedBytes) {
+        return std::nullopt;
+    }
+
+    // The preedit cursor only moves forward as the input cursor grows, so the
+    // positions whose preedit cursor is before the clicked position form a
+    // prefix. Find the first position that reaches the clicked position.
+    const auto positions = std::views::iota(selectedLength(), size() + 1);
+    const auto firstAfter =
+        std::ranges::partition_point(positions, [&](size_t p) {
+            return preeditWithCursorImpl(mode, p).second < preeditByteCursor;
+        });
+    // Every position is before the clicked position, i.e. it is past the end
+    // of the preedit.
+    if (firstAfter == positions.end()) {
+        return size();
+    }
+
+    size_t target = *firstAfter;
+    // The first position already moved past the clicked position, so step
+    // back to the previous one.
+    if (target > selectedLength() &&
+        preeditWithCursorImpl(mode, target).second > preeditByteCursor) {
+        --target;
+    }
+    return target;
+}
+
+std::optional<size_t>
+PinyinContext::cursorForPreeditPosition(size_t preeditByteCursor) const {
+    return cursorForPreeditPosition(preeditByteCursor, ime()->preeditMode());
 }
 
 std::vector<std::string> PinyinContext::selectedWords() const {

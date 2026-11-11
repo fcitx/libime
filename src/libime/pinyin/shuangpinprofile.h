@@ -47,14 +47,6 @@ public:
 
     FCITX_DECLARE_VIRTUAL_DTOR_COPY_AND_MOVE(ShuangpinProfile)
 
-    /**
-     * Return flattened triples of key, compound initials, and compound finals.
-     *
-     * Keys are ordered, and multiple labels in a field are sorted and joined
-     * with '/'. Single-letter initials/finals and correction aliases are
-     * omitted. Non-alphabetic input keys are retained with empty fields when
-     * they have no compound label, so frontends can expose the required key.
-     */
     std::vector<std::string> keyHints() const;
 
     const TableType &table() const;

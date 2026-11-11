@@ -540,7 +540,50 @@ uo=Y
 
 } // namespace
 
+void checkKeyHints() {
+    const auto hint = [](const ShuangpinProfile &profile, const std::string &key, size_t part) {
+        auto hints = profile.keyHints();
+        FCITX_ASSERT(hints.size() % 3 == 0);
+        for (size_t i = 0; i < hints.size(); i += 3) {
+            if (hints[i] == key) {
+                return hints[i + part];
+            }
+        }
+        return std::string{};
+    };
+    const ShuangpinProfile xiaohe(ShuangpinBuiltinProfile::Xiaohe);
+    FCITX_ASSERT(hint(xiaohe, "v", 1) == "zh");
+    FCITX_ASSERT(hint(xiaohe, "u", 1) == "sh");
+    FCITX_ASSERT(hint(xiaohe, "i", 1) == "ch");
+    FCITX_ASSERT(hint(xiaohe, "l", 2) == "iang/uang");
+    FCITX_ASSERT(hint(xiaohe, ";", 2).empty());
+    const PinyinCorrectionProfile correction(BuiltinPinyinCorrectionProfile::Qwerty);
+    const ShuangpinProfile corrected(ShuangpinBuiltinProfile::Xiaohe, &correction);
+    FCITX_ASSERT(corrected.keyHints() == xiaohe.keyHints());
+    const ShuangpinProfile ms(ShuangpinBuiltinProfile::MS);
+    FCITX_ASSERT(hint(ms, ";", 2) == "ing");
+    const ShuangpinProfile ziguang(ShuangpinBuiltinProfile::Ziguang);
+    FCITX_ASSERT(hint(ziguang, "a", 1) == "ch");
+    FCITX_ASSERT(hint(ziguang, "g", 2) == "iang/uang");
+    std::istringstream custom("方案名称=Test\nch=q\nzh=w\nsh=e\niang=r\nuang=r\ning=;\n");
+    const ShuangpinProfile profile(custom);
+    FCITX_ASSERT(hint(profile, "q", 1) == "ch");
+    FCITX_ASSERT(hint(profile, "r", 2) == "iang/uang");
+    FCITX_ASSERT(hint(profile, ";", 2) == "ing");
+    std::istringstream singleFinal("方案名称=Test\nv=;\n");
+    const auto markerHints = ShuangpinProfile(singleFinal).keyHints();
+    FCITX_ASSERT(std::find(markerHints.begin(), markerHints.end(), ";") != markerHints.end());
+    for (auto builtin : {ShuangpinBuiltinProfile::Ziranma, ShuangpinBuiltinProfile::MS,
+         ShuangpinBuiltinProfile::Ziguang, ShuangpinBuiltinProfile::ABC,
+         ShuangpinBuiltinProfile::Zhongwenzhixing, ShuangpinBuiltinProfile::PinyinJiajia,
+         ShuangpinBuiltinProfile::Xiaohe, ShuangpinBuiltinProfile::GB}) {
+        const ShuangpinProfile p(builtin);
+        FCITX_ASSERT(!p.keyHints().empty());
+    }
+}
+
 int main() {
+    checkKeyHints();
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::Ziranma), false);
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::MS), false);
     checkProfile(ShuangpinProfile(ShuangpinBuiltinProfile::ABC), false);

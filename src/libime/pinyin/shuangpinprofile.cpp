@@ -497,6 +497,44 @@ FCITX_DEFINE_DPTR_COPY_AND_DEFAULT_DTOR_AND_MOVE(ShuangpinProfile)
 // Deprecated, keep to only keep ABI stable.
 void ShuangpinProfile::buildShuangpinTable() {}
 
+std::vector<std::string> ShuangpinProfile::keyHints() const {
+    FCITX_D();
+    std::map<char, std::pair<std::set<std::string>, std::set<std::string>>> hints;
+    for (const auto &[key, initial] : d->initialMap_) {
+        const auto &text = PinyinEncoder::initialToString(initial);
+        if (text.size() > 1) {
+            hints[key].first.insert(text);
+        }
+    }
+    for (const auto &[key, final] : d->finalMap_) {
+        const auto &text = PinyinEncoder::finalToString(final);
+        if (text.size() > 1) {
+            hints[key].second.insert(text);
+        }
+    }
+    for (auto key : d->validInputs_) {
+        if (key < 'a' || key > 'z') {
+            hints.try_emplace(key);
+        }
+    }
+    const auto join = [](const std::set<std::string> &parts) {
+        std::string result;
+        for (const auto &part : parts) {
+            if (!result.empty()) {
+                result += "/";
+            }
+            result += part;
+        }
+        return result;
+    };
+    std::vector<std::string> result;
+    for (const auto &[key, parts] : hints) {
+        result.insert(result.end(), {std::string(1, key), join(parts.first),
+                                     join(parts.second)});
+    }
+    return result;
+}
+
 const ShuangpinProfile::TableType &ShuangpinProfile::table() const {
     FCITX_D();
     return d->spTable_;

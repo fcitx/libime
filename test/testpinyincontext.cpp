@@ -752,5 +752,190 @@ int main() {
         ime.setShuangpinProfile(nullptr);
     }
 
+    // When the cursor is inside a partial zero-initial syllable, the preedit
+    // is displayed with a "_" marker. Positions after it must be mapped
+    // against that displayed text, not against a rendering without the
+    // marker.
+    {
+        c.clear();
+        ime.setShuangpinProfile(std::make_shared<ShuangpinProfile>(
+            ShuangpinBuiltinProfile::Ziranma));
+        c.setUseShuangpin(true);
+        c.type("aahk");
+        c.setCursor(1);
+
+        const auto mode = PinyinPreeditMode::Pinyin;
+        auto [preedit, cursor, highlights] = c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "_a hao") << preedit;
+        FCITX_ASSERT(cursor == 1) << cursor;
+        FCITX_ASSERT(highlights.empty());
+
+        // "hao" is "hk" and occupies bytes 3..6 of "_a hao". Position 5 is
+        // ha|o, so it snaps left to raw position 3, the end of the initial.
+        // _a h|ao -> aah|k
+        // _a ha|o -> aah|k
+        // _a hao| -> aahk|
+        FCITX_ASSERT(c.cursorForPreeditPosition(4, mode).value() == 3);
+        FCITX_ASSERT(c.cursorForPreeditPosition(5, mode).value() == 3);
+        FCITX_ASSERT(c.cursorForPreeditPosition(6, mode).value() == 4);
+
+        // Moving to raw 3 leaves the zero-initial syllable, so the "_" marker
+        // disappears: the preedit becomes "a hao" with the cursor after "h",
+        // i.e. "a h|ao".
+        c.setCursor(3);
+        auto [afterPreedit, afterCursor, afterHighlights] =
+            c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(afterPreedit == "a hao") << afterPreedit;
+        FCITX_ASSERT(afterCursor == 3) << afterCursor;
+        (void)afterHighlights;
+
+        c.setUseShuangpin(false);
+        c.clear();
+        ime.setShuangpinProfile(nullptr);
+    }
+
+    // A separator inserted between shuangpin syllables belongs to the
+    // syllable on its left. Moving the cursor into a partial zero-initial
+    // syllable changes how that syllable is rendered, so a click at the
+    // separator must not map to a position inside it.
+    {
+        c.clear();
+        ime.setShuangpinProfile(std::make_shared<ShuangpinProfile>(
+            ShuangpinBuiltinProfile::Ziranma));
+        c.setUseShuangpin(true);
+        c.type("aahk");
+
+        const auto mode = PinyinPreeditMode::Pinyin;
+        auto [preedit, cursor, highlights] = c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "a hao") << preedit;
+        FCITX_ASSERT(cursor == preedit.size()) << cursor;
+        FCITX_ASSERT(highlights.empty());
+
+        // "aa" renders as "a" and "hk" renders as "hao". Both sides of the
+        // inserted space snap to the end of "aa", i.e. raw position 2.
+        // |a hao -> |aahk
+        // a| hao -> aa|hk
+        // a |hao -> aa|hk
+        // a hao| -> aahk|
+        FCITX_ASSERT(c.cursorForPreeditPosition(0, mode).value() == 0);
+        FCITX_ASSERT(c.cursorForPreeditPosition(1, mode).value() == 2);
+        FCITX_ASSERT(c.cursorForPreeditPosition(2, mode).value() == 2);
+        FCITX_ASSERT(c.cursorForPreeditPosition(preedit.size(), mode).value() ==
+                     c.size());
+
+        // Landing at the end of "aa" keeps the displayed preedit unchanged.
+        c.setCursor(2);
+        auto [afterPreedit, afterCursor, afterHighlights] =
+            c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(afterPreedit == preedit) << afterPreedit;
+        FCITX_ASSERT(afterCursor == 1) << afterCursor;
+        (void)afterHighlights;
+
+        c.setUseShuangpin(false);
+        c.clear();
+        ime.setShuangpinProfile(nullptr);
+    }
+
+    // A trailing zero-initial syllable drops the "_" marker when the cursor
+    // is at the end, so the last preedit position must map back to the end of
+    // the raw input instead of landing inside "aa".
+    {
+        c.clear();
+        ime.setShuangpinProfile(std::make_shared<ShuangpinProfile>(
+            ShuangpinBuiltinProfile::Ziranma));
+        c.setUseShuangpin(true);
+        c.type("aa");
+
+        const auto mode = PinyinPreeditMode::Pinyin;
+        auto [preedit, cursor, highlights] = c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "a") << preedit;
+        FCITX_ASSERT(cursor == preedit.size()) << cursor;
+        (void)highlights;
+
+        // |a -> |aa
+        // a| -> aa|
+        FCITX_ASSERT(c.cursorForPreeditPosition(0, mode).value() == 0);
+        FCITX_ASSERT(c.cursorForPreeditPosition(1, mode).value() == 2);
+
+        // Raw 2 must keep the marker away, i.e. the preedit stays "a|".
+        c.setCursor(2);
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "a") << preedit;
+        FCITX_ASSERT(cursor == 1) << cursor;
+
+        // With the cursor between the two keys, the marker is displayed, and
+        // the byte positions of "_a" map back to the raw positions of "aa".
+        c.setCursor(1);
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "_a") << preedit;
+        FCITX_ASSERT(cursor == 1) << cursor;
+
+        // |_a -> |aa
+        // _|a -> a|a
+        // _a| -> aa|
+        FCITX_ASSERT(c.cursorForPreeditPosition(0, mode).value() == 0);
+        FCITX_ASSERT(c.cursorForPreeditPosition(1, mode).value() == 1);
+        FCITX_ASSERT(c.cursorForPreeditPosition(2, mode).value() == 2);
+
+        c.setUseShuangpin(false);
+        c.clear();
+        ime.setShuangpinProfile(nullptr);
+    }
+
+    // A zero-initial syllable that is not under the cursor must not pull the
+    // search cursor back, and positions after it must keep snapping left.
+    {
+        c.clear();
+        ime.setShuangpinProfile(std::make_shared<ShuangpinProfile>(
+            ShuangpinBuiltinProfile::Ziranma));
+        c.setUseShuangpin(true);
+        c.type("aahkaa");
+        c.setCursor(0);
+
+        const auto mode = PinyinPreeditMode::Pinyin;
+        auto [preedit, cursor, highlights] = c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "a hao a") << preedit;
+        FCITX_ASSERT(cursor == 0) << cursor;
+        (void)highlights;
+
+        // A separator and the inside of "hao" snap to the left.
+        // |a hao a -> |aahkaa
+        // a| hao a -> aa|hkaa
+        // a |hao a -> aa|hkaa
+        // a h|ao a -> aah|kaa
+        // a ha|o a -> aah|kaa
+        FCITX_ASSERT(c.cursorForPreeditPosition(0, mode).value() == 0);
+        FCITX_ASSERT(c.cursorForPreeditPosition(1, mode).value() == 2);
+        FCITX_ASSERT(c.cursorForPreeditPosition(2, mode).value() == 2);
+        FCITX_ASSERT(c.cursorForPreeditPosition(3, mode).value() == 3);
+        FCITX_ASSERT(c.cursorForPreeditPosition(4, mode).value() == 3)
+            << c.cursorForPreeditPosition(4, mode).value();
+
+        // The separator before the last syllable belongs to "hao" on its left,
+        // and so does the left edge of the last syllable: clicking "a" must
+        // not land inside "aa", where the "_" marker would appear.
+        // a hao| a -> aahk|aa
+        // a hao |a -> aahk|aa
+        // a hao a| -> aahkaa|
+        FCITX_ASSERT(c.cursorForPreeditPosition(5, mode).value() == 4);
+        FCITX_ASSERT(c.cursorForPreeditPosition(6, mode).value() == 4)
+            << c.cursorForPreeditPosition(6, mode).value();
+        FCITX_ASSERT(c.cursorForPreeditPosition(7, mode).value() == 6);
+
+        // Clicking the left edge of the last syllable keeps the preedit
+        // unchanged and puts the cursor before the separator.
+        c.setCursor(c.cursorForPreeditPosition(6, mode).value());
+        std::tie(preedit, cursor, highlights) =
+            c.preeditWithCursorHighlight(mode);
+        FCITX_ASSERT(preedit == "a hao a") << preedit;
+        FCITX_ASSERT(cursor == 5) << cursor;
+
+        c.setUseShuangpin(false);
+        c.clear();
+        ime.setShuangpinProfile(nullptr);
+    }
+
     return 0;
 }

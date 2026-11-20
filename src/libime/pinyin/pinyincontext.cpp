@@ -1076,17 +1076,17 @@ PinyinContext::preeditWithCursorHighlightImpl(PinyinPreeditMode mode,
             for (auto iter = node->path().begin(),
                       end = std::prev(node->path().end());
                  iter < end; iter++) {
+                const size_t previousEnd = resultSize;
                 if (!first) {
                     ss += " ";
                     resultSize += 1;
                 } else {
                     first = false;
                 }
-                auto from = (*iter)->index();
-                auto to = (*std::next(iter))->index();
-                size_t cursorInPinyin = c - from - len;
+                const auto from = (*iter)->index();
+                const auto to = (*std::next(iter))->index();
                 const size_t startPivot = resultSize;
-                auto pinyin = d->segs_.segment(from, to);
+                const auto pinyin = d->segs_.segment(from, to);
                 const auto *fixed =
                     std::any_cast<PinyinSyllable>(&(*iter)->annotation());
                 MatchedPinyinSyllables syls;
@@ -1154,29 +1154,45 @@ PinyinContext::preeditWithCursorHighlightImpl(PinyinPreeditMode mode,
                     }
                 }
 
+                size_t cursorInPinyin =
+                    c > from + len && c <= to + len ? c - from - len : 0;
+                const size_t realCursorInPinyin =
+                    cursor() > from + len && cursor() <= to + len
+                        ? cursor() - from - len
+                        : 0;
                 if (!actualPinyin.empty()) {
-                    if (c > from + len && c <= to + len) {
+                    // only modify actualPinyin when realCursorInPinyin
+                    if (realCursorInPinyin && useShuangpin() &&
+                        pinyin.size() == 2 && realCursorInPinyin == 1 &&
+                        syls[0].first == PinyinInitial::Zero) {
+                        // only add _ to real cursor
+                        actualPinyin =
+                            fcitx::stringutils::concat("_", actualPinyin);
+                    }
+                    // only move cursor when cursorInPinyin
+                    if (cursorInPinyin) {
                         if (useShuangpin()) {
-                            switch (cursorInPinyin) {
-                            case 0:
-                                break;
-                            case 1:
-                                if (pinyin.size() == 2 &&
-                                    syls[0].first == PinyinInitial::Zero) {
-                                    actualPinyin = fcitx::stringutils::concat(
-                                        "_", actualPinyin);
-                                }
-                                // Zero case, we just append one.
-                                if (syls[0].first != PinyinInitial::Zero) {
+                            // when useShuangpin, pinyin.size() can only be
+                            // 1 or 2
+                            if (pinyin.size() == 2 && cursorInPinyin == 1) {
+                                if (syls[0].first == PinyinInitial::Zero) {
+                                    if (!actualPinyin.starts_with('_')) {
+                                        // |aa → |a
+                                        // a|a → |a   ← below code is for this
+                                        // aa| → a|
+                                        cursorInPinyin = 0;
+                                    }
+                                } else {
                                     cursorInPinyin =
                                         PinyinEncoder::initialToString(
                                             syls[0].first)
                                             .size();
                                 }
-                                break;
-                            default:
+                            } else {
+                                //  |0 → |012345
+                                //  0| → 012345|   ← ensures these two rules
+                                // 01| → 012345|   ←──┘
                                 cursorInPinyin = actualPinyin.size();
-                                break;
                             }
                         } else {
                             // |012345 → |012
@@ -1207,7 +1223,9 @@ PinyinContext::preeditWithCursorHighlightImpl(PinyinPreeditMode mode,
                     highlights.emplace_back(startPivot, resultSize);
                 }
                 if (c > from + len && c <= to + len) {
-                    actualCursor = startPivot + cursorInPinyin;
+                    actualCursor = cursorInPinyin == 0
+                                       ? previousEnd
+                                       : startPivot + cursorInPinyin;
                 }
             }
         }
@@ -1273,6 +1291,19 @@ PinyinContext::cursorForPreeditPosition(size_t preeditByteCursor,
     // back to the previous one.
     if (target > selectedLength() && std::get<1>(preeditWithCursorHighlightImpl(
                                          mode, target)) > preeditByteCursor) {
+        --target;
+    }
+
+    auto targetCursor =
+        std::get<1>(preeditWithCursorHighlightImpl(mode, target));
+
+    // Among consecutive positions sharing the same preedit cursor, return the
+    // leftmost one.
+    // e.g. input "aa|aa" and "aaa|a" both render as predit "a| a",
+    // if user clicks "a |a", we need map it to "aa|aa" not "aaa|a"
+    while (target > selectedLength() &&
+           std::get<1>(preeditWithCursorHighlightImpl(mode, target - 1)) ==
+               targetCursor) {
         --target;
     }
     return target;

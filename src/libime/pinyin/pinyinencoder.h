@@ -247,6 +247,10 @@ operator<<(fcitx::LogMessageBuilder &log, PinyinSyllable syl);
  * fixed_.final() may be PinyinFinal::Invalid for an incomplete syllable.
  * In that case the range is still forced to be a separate segment, but the
  * final is not restricted and all finals are allowed.
+ *
+ * The fixed syllable is the canonical reading of the range. Explicitly
+ * enabled fuzzy pinyin settings may still expand it to alternative readings
+ * when matching.
  */
 struct LIBIMEPINYIN_EXPORT PinyinSegmentFix {
     size_t start_;

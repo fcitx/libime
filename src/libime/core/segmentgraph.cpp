@@ -107,6 +107,13 @@ void SegmentGraph::merge(SegmentGraph &graph,
     std::unordered_set<const SegmentGraphNode *> nodeToDiscard;
     for (size_t i = 0; i < since; i++) {
         for (auto &node : mutableNodes(i)) {
+            // Always take annotations from the new graph, even for reused
+            // nodes.
+            if (i < graph.graph_.size() && graph.graph_[i]) {
+                node.setAnnotation(graph.graph_[i]->annotation());
+            } else {
+                node.setAnnotation(std::any{});
+            }
             std::vector<SegmentGraphNode *> newNext;
             for (auto &next : node.mutableNexts()) {
                 SegmentGraphNode *n;

@@ -5,6 +5,7 @@
  */
 #include "pinyincontext.h"
 #include <algorithm>
+#include <any>
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -12,6 +13,8 @@
 #include <limits>
 #include <list>
 #include <memory>
+#include <optional>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -144,6 +147,21 @@ bool hasCorrection(const SentenceResult &candidate) {
         });
 }
 
+// Input: 10, [(2,4), (4,5), (8,9)]
+// Output: [(0,2), (5,8), (9,10)]
+template <std::ranges::random_access_range R>
+auto makeComplement(size_t size, R excluded) {
+    const size_t count = std::ranges::size(excluded);
+    return std::views::iota(size_t{0}, count + 1) |
+           std::views::transform(
+               [size, count, excluded = std::move(excluded)](size_t i) {
+                   const size_t begin = i == 0 ? 0 : excluded[i - 1].second;
+                   const size_t end = i == count ? size : excluded[i].first;
+                   return std::pair{begin, end};
+               }) |
+           std::views::filter([](auto gap) { return gap.first != gap.second; });
+}
+
 } // namespace
 
 class PinyinContextPrivate : public fcitx::QPtrHolder<PinyinContext> {
@@ -166,6 +184,103 @@ public:
     mutable std::unordered_set<std::string> candidatesToCursorSet_;
     std::vector<fcitx::ScopedConnection> conn_;
     std::list<PinyinWordNode> contextWords_;
+
+    std::vector<PinyinSegmentFix> fixes_;
+
+    SegmentGraph buildGraph() const {
+        FCITX_Q();
+        const size_t start = q->selectedLength();
+        const std::string_view input =
+            std::string_view{q->userInput()}.substr(start);
+        SegmentGraph graph{std::string{input}};
+        const auto spProfile = matchState_.shuangpinProfile();
+
+        // [] is a fix, a fixed span no need to parse
+        //                  ↓
+        // userInput: nihao[xi]an
+        //              ↑      ↑
+        // Others are free span, parse with parseUserInput
+        const auto firstFix = std::ranges::lower_bound(
+            fixes_, start, {}, &PinyinSegmentFix::start_);
+        const auto relativeFixes =
+            std::span{fixes_}.subspan(
+                static_cast<size_t>(firstFix - fixes_.begin())) |
+            std::views::transform([start](const PinyinSegmentFix &fix) {
+                return PinyinSegmentFix{fix.start_ - start, fix.end_ - start,
+                                        fix.fixed_};
+            });
+        auto fixedSpans =
+            relativeFixes |
+            std::views::transform([start](const PinyinSegmentFix &fix) {
+                return std::pair{fix.start_, fix.end_};
+            });
+
+        for (const auto &[from, to, fixed] : relativeFixes) {
+            graph.ensureNode(from).setAnnotation(fixed);
+            graph.addNext(from, to);
+        }
+        for (const auto &[from, to] :
+             makeComplement(input.size(), fixedSpans)) {
+            const std::string freeSpan{input.substr(from, to - from)};
+            const SegmentGraph subGraph =
+                spProfile ? PinyinEncoder::parseUserShuangpin(
+                                freeSpan, *spProfile, ime_->fuzzyFlags())
+                          : PinyinEncoder::parseUserPinyin(
+                                freeSpan, ime_->correctionProfile().get(),
+                                ime_->fuzzyFlags());
+            for (size_t i = 0, e = subGraph.size(); i <= e; i++) {
+                for (const auto &node : subGraph.nodes(i)) {
+                    for (const auto &next : node.nexts()) {
+                        graph.addNext(from + node.index(), from + next.index());
+                    }
+                }
+            }
+        }
+        return graph;
+    }
+
+    // Discard the decode state attached to the graph nodes after the
+    // absolute input position pos, keeping everything up to and including
+    // the node at pos. Only the node keyed state is dropped; the graph
+    // itself and the LRU caches in matchState_ are kept. Callers must run
+    // update() afterwards.
+    void discardDecodeStateAfter(size_t pos) {
+        FCITX_Q();
+        const size_t start = q->selectedLength();
+        size_t begin = 0;
+        if (pos >= start) {
+            begin = pos - start + 1;
+        }
+        std::unordered_set<const SegmentGraphNode *> nodes;
+        for (size_t i = begin; i <= segs_.size(); i++) {
+            for (const auto &node : segs_.nodes(i)) {
+                nodes.insert(&node);
+            }
+        }
+        if (nodes.empty()) {
+            return;
+        }
+        lattice_.discardNode(nodes);
+        matchState_.discardNode(nodes);
+    }
+
+    // Remove the fixes that are affected by an edit starting at from.
+    // Return the start of the first removed fix, if any. If any fix is
+    // removed, the decode state after that point is discarded as well,
+    // callers must run update() afterwards.
+    std::optional<size_t> discardFixesAfter(size_t from) {
+        // The fixes are ordered and non-overlapping, so their end_ is
+        // strictly increasing: the removed fixes always form a suffix.
+        auto iter =
+            std::ranges::upper_bound(fixes_, from, {}, &PinyinSegmentFix::end_);
+        if (iter == fixes_.end()) {
+            return std::nullopt;
+        }
+        const size_t first = iter->start_;
+        fixes_.erase(iter, fixes_.end());
+        discardDecodeStateAfter(first);
+        return first;
+    }
 
     size_t alignCursorToNextSegment() const {
         FCITX_Q();
@@ -476,29 +591,35 @@ bool PinyinContext::typeImpl(const char *s, size_t length) {
             return false;
         }
     }
-    auto changed = cancelTill(cursor());
-    changed = InputBuffer::typeImpl(s, length) || changed;
-    if (changed) {
+    const size_t pos = cursor();
+    const bool cancelled = cancelTill(pos);
+    const bool typed = InputBuffer::typeImpl(s, length);
+    if (typed) {
+        d->discardFixesAfter(pos);
+    }
+    if (cancelled || typed) {
         update();
     }
-    return changed;
+    return cancelled || typed;
 }
 
 void PinyinContext::erase(size_t from, size_t to) {
+    FCITX_D();
     if (from == to) {
         return;
     }
 
     // check if erase everything
     if (from == 0 && to >= size()) {
-        FCITX_D();
         d->clearCandidates();
         d->selected_.clear();
         d->lattice_.clear();
         d->matchState_.clear();
         d->segs_ = SegmentGraph();
+        d->fixes_.clear();
     } else {
         cancelTill(from);
+        d->discardFixesAfter(from);
     }
     InputBuffer::erase(from, to);
 
@@ -511,8 +632,9 @@ void PinyinContext::setCursor(size_t pos) {
     FCITX_D();
     auto oldCursor = cursor();
     auto cancelled = cancelTill(pos);
+    const auto touchedFix = d->discardFixesAfter(pos);
     InputBuffer::setCursor(pos);
-    if (cancelled) {
+    if (cancelled || touchedFix) {
         update();
     } else {
         if (cursor() != oldCursor) {
@@ -632,6 +754,50 @@ bool PinyinContext::cancelTill(size_t pos) {
     return cancelled;
 }
 
+void PinyinContext::setPinyinFixes(std::vector<PinyinSegmentFix> fixes) {
+    FCITX_D();
+    if (d->fixes_ == fixes) {
+        return;
+    }
+
+    for (size_t i = 0; i < fixes.size(); ++i) {
+        const auto &fix = fixes[i];
+        if (fix.start_ > fix.end_ || (i && (fixes[i - 1].start_ > fix.start_ ||
+                                            fixes[i - 1].end_ > fix.start_))) {
+            throw std::invalid_argument("Invalid pinyin fixes");
+        }
+    }
+
+    const size_t start = selectedLength();
+    auto it1 = std::ranges::lower_bound(d->fixes_, start, {},
+                                        &PinyinSegmentFix::start_);
+    auto it2 =
+        std::ranges::lower_bound(fixes, start, {}, &PinyinSegmentFix::start_);
+    // Both sequences are strictly ordered and non-overlapping, the first
+    // mismatched position between the two sequences inherently corresponds to
+    // the earliest `start_` offset across all added, removed or modified
+    // fixes.
+    auto [m1, m2] =
+        std::ranges::mismatch(it1, d->fixes_.end(), it2, fixes.end());
+    size_t firstChanged = std::numeric_limits<size_t>::max();
+    if (m1 != d->fixes_.end()) {
+        firstChanged = std::min(firstChanged, m1->start_);
+    }
+    if (m2 != fixes.end()) {
+        firstChanged = std::min(firstChanged, m2->start_);
+    }
+    d->fixes_ = std::move(fixes);
+    if (firstChanged != std::numeric_limits<size_t>::max()) {
+        d->discardDecodeStateAfter(firstChanged);
+    }
+    update();
+}
+
+const std::vector<PinyinSegmentFix> &PinyinContext::pinyinFixes() const {
+    FCITX_D();
+    return d->fixes_;
+}
+
 void PinyinContext::cancel() {
     FCITX_D();
     if (!d->selected_.empty()) {
@@ -679,20 +845,8 @@ void PinyinContext::update() {
     if (selected()) {
         d->clearCandidates();
     } else {
-        size_t start = 0;
         State state = this->state();
-        if (!d->selected_.empty()) {
-            start = d->selected_.back().back().offset_;
-        }
-        SegmentGraph newGraph;
-        if (auto spProfile = d->matchState_.shuangpinProfile()) {
-            newGraph = PinyinEncoder::parseUserShuangpin(
-                userInput().substr(start), *spProfile, d->ime_->fuzzyFlags());
-        } else {
-            newGraph = PinyinEncoder::parseUserPinyin(
-                userInput().substr(start), d->ime_->correctionProfile().get(),
-                d->ime_->fuzzyFlags());
-        }
+        SegmentGraph newGraph = d->buildGraph();
         d->segs_.merge(
             newGraph,
             [d](const std::unordered_set<const SegmentGraphNode *> &nodes) {
@@ -881,16 +1035,35 @@ std::pair<std::string, size_t> PinyinContext::preeditWithCursor() const {
     return preeditWithCursor(ime()->preeditMode());
 }
 
+std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+PinyinContext::preeditWithCursorHighlight() const {
+    return preeditWithCursorHighlight(ime()->preeditMode());
+}
+
 std::string PinyinContext::preedit(PinyinPreeditMode mode) const {
     return preeditWithCursor(mode).first;
 }
 
 std::pair<std::string, size_t>
 PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
+    auto [text, cursor, highlights] = preeditWithCursorHighlight(mode);
+    (void)highlights;
+    return {std::move(text), cursor};
+}
+
+std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+PinyinContext::preeditWithCursorHighlight(PinyinPreeditMode mode) const {
+    return preeditWithCursorHighlightImpl(mode, cursor());
+}
+
+std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+PinyinContext::preeditWithCursorHighlightImpl(PinyinPreeditMode mode,
+                                              size_t inputCursor) const {
     FCITX_D();
+    std::vector<std::pair<size_t, size_t>> highlights;
     std::string ss = selectedSentence();
     const auto len = selectedLength();
-    auto c = cursor();
+    auto c = inputCursor;
     size_t actualCursor = ss.size();
     // should not happen
     c = std::max(c, len);
@@ -903,19 +1076,28 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
             for (auto iter = node->path().begin(),
                       end = std::prev(node->path().end());
                  iter < end; iter++) {
+                const size_t previousEnd = resultSize;
                 if (!first) {
                     ss += " ";
                     resultSize += 1;
                 } else {
                     first = false;
                 }
-                auto from = (*iter)->index();
-                auto to = (*std::next(iter))->index();
-                size_t cursorInPinyin = c - from - len;
+                const auto from = (*iter)->index();
+                const auto to = (*std::next(iter))->index();
                 const size_t startPivot = resultSize;
-                auto pinyin = d->segs_.segment(from, to);
+                const auto pinyin = d->segs_.segment(from, to);
+                const auto *fixed =
+                    std::any_cast<PinyinSyllable>(&(*iter)->annotation());
                 MatchedPinyinSyllables syls;
-                if (mode == PinyinPreeditMode::Pinyin) {
+                std::string actualPinyin;
+                if (fixed) {
+                    // A fixed syllable is displayed as the fixed pinyin, not
+                    // as the raw input.
+                    syls = {{fixed->initial(), {{fixed->final(), false}}}};
+                    actualPinyin = PinyinEncoder::initialFinalToPinyinString(
+                        fixed->initial(), fixed->final());
+                } else if (mode == PinyinPreeditMode::Pinyin) {
                     // The reason that we don't use fuzzy flag from option is
                     // that we'd like to keep the preedit as is. Otherwise,
                     // "qign" would be displayed as "qing", which would be
@@ -926,9 +1108,7 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                                      PinyinFuzzyFlag::None)
                                : PinyinEncoder::stringToSyllables(
                                      pinyin, PinyinFuzzyFlag::None);
-                }
-                std::string actualPinyin;
-                if (!syls.empty() && !syls.front().second.empty()) {
+
                     std::string_view candidatePinyin =
                         node->as<PinyinLatticeNode>().encodedPinyin();
                     auto nthPinyin = std::distance(node->path().begin(), iter);
@@ -973,35 +1153,64 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                         matchPinyinCase(pinyin, actualPinyin);
                     }
                 }
+
+                size_t cursorInPinyin =
+                    c > from + len && c <= to + len ? c - from - len : 0;
+                const size_t realCursorInPinyin =
+                    cursor() > from + len && cursor() <= to + len
+                        ? cursor() - from - len
+                        : 0;
                 if (!actualPinyin.empty()) {
-                    if (c > from + len && c <= to + len) {
+                    // only modify actualPinyin when realCursorInPinyin
+                    if (realCursorInPinyin && useShuangpin() &&
+                        pinyin.size() == 2 && realCursorInPinyin == 1 &&
+                        syls[0].first == PinyinInitial::Zero) {
+                        // only add _ to real cursor
+                        actualPinyin =
+                            fcitx::stringutils::concat("_", actualPinyin);
+                    }
+                    // only move cursor when cursorInPinyin
+                    if (cursorInPinyin) {
                         if (useShuangpin()) {
-                            switch (cursorInPinyin) {
-                            case 0:
-                                break;
-                            case 1:
-                                if (pinyin.size() == 2 &&
-                                    syls[0].first == PinyinInitial::Zero) {
-                                    actualPinyin = fcitx::stringutils::concat(
-                                        "_", actualPinyin);
-                                }
-                                // Zero case, we just append one.
-                                if (syls[0].first != PinyinInitial::Zero) {
+                            // when useShuangpin, pinyin.size() can only be
+                            // 1 or 2
+                            if (pinyin.size() == 2 && cursorInPinyin == 1) {
+                                if (syls[0].first == PinyinInitial::Zero) {
+                                    if (!actualPinyin.starts_with('_')) {
+                                        // |aa → |a
+                                        // a|a → |a   ← below code is for this
+                                        // aa| → a|
+                                        cursorInPinyin = 0;
+                                    }
+                                } else {
                                     cursorInPinyin =
                                         PinyinEncoder::initialToString(
                                             syls[0].first)
                                             .size();
                                 }
-                                break;
-                            default:
+                            } else {
+                                //  |0 → |012345
+                                //  0| → 012345|   ← ensures these two rules
+                                // 01| → 012345|   ←──┘
                                 cursorInPinyin = actualPinyin.size();
-                                break;
                             }
                         } else {
-                            cursorInPinyin =
-                                std::min(actualPinyin.size(), cursorInPinyin);
-                            cursorInPinyin = fcitx::utf8::ncharByteLength(
-                                actualPinyin.begin(), cursorInPinyin);
+                            // |012345 → |012
+                            // 0|12345 → 0|12
+                            // 01|2345 → 01|2
+                            // 012|345 → 01|2
+                            // 0123|45 → 01|2
+                            // 01234|5 → 01|2
+                            // 012345| → 012|
+                            if (c == to + len) {
+                                cursorInPinyin = actualPinyin.size();
+                            } else {
+                                cursorInPinyin = std::min(
+                                    fcitx::utf8::length(actualPinyin) - 1,
+                                    cursorInPinyin);
+                                cursorInPinyin = fcitx::utf8::ncharByteLength(
+                                    actualPinyin.begin(), cursorInPinyin);
+                            }
                         }
                     }
                     ss.append(actualPinyin);
@@ -1010,8 +1219,13 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
                     ss.append(pinyin.data(), pinyin.size());
                     resultSize += pinyin.size();
                 }
+                if (fixed) {
+                    highlights.emplace_back(startPivot, resultSize);
+                }
                 if (c > from + len && c <= to + len) {
-                    actualCursor = startPivot + cursorInPinyin;
+                    actualCursor = cursorInPinyin == 0
+                                       ? previousEnd
+                                       : startPivot + cursorInPinyin;
                 }
             }
         }
@@ -1019,7 +1233,85 @@ PinyinContext::preeditWithCursor(PinyinPreeditMode mode) const {
     if (c == size()) {
         actualCursor = resultSize;
     }
-    return {ss, actualCursor};
+    return {std::move(ss), actualCursor, std::move(highlights)};
+}
+
+// A fix can render shorter than the raw input. With "012345" fixed to
+// "012":
+//
+//   ┌─────────┬─────────┐
+//   │ preedit │   raw   │
+//   ├─────────┼─────────┤
+//   │ |012    │ |012345 │
+//   │ 0|12    │ 0|12345 │
+//   │ 01|2    │ 01|2345 │
+//   │ 012|    │ 012345| │
+//   └─────────┴─────────┘
+//
+// A fix can also render longer than the raw input. With "012" fixed to
+// "012345":
+//
+//   ┌─────────┬──────┐
+//   │ preedit │ raw  │
+//   ├─────────┼──────┤
+//   │ |012345 │ |012 │
+//   │ 0|12345 │ 0|12 │
+//   │ 01|2345 │ 01|2 │
+//   │ 012|345 │ 01|2 │
+//   │ 0123|45 │ 01|2 │
+//   │ 01234|5 │ 01|2 │
+//   │ 012345| │ 012| │
+//   └─────────┴──────┘
+std::optional<size_t>
+PinyinContext::cursorForPreeditPosition(size_t preeditByteCursor,
+                                        PinyinPreeditMode mode) const {
+    const auto selectedBytes = selectedSentence().size();
+    // The selected sentence has no raw input cursor.
+    if (preeditByteCursor < selectedBytes) {
+        return std::nullopt;
+    }
+
+    // The preedit cursor only moves forward as the input cursor grows, so the
+    // positions whose preedit cursor is before the clicked position form a
+    // prefix. Find the first position that reaches the clicked position.
+    const auto positions = std::views::iota(selectedLength(), size() + 1);
+    const auto firstAfter =
+        std::ranges::partition_point(positions, [&](size_t p) {
+            return std::get<1>(preeditWithCursorHighlightImpl(mode, p)) <
+                   preeditByteCursor;
+        });
+    // Every position is before the clicked position, i.e. it is past the end
+    // of the preedit.
+    if (firstAfter == positions.end()) {
+        return size();
+    }
+
+    size_t target = *firstAfter;
+    // The first position already moved past the clicked position, so step
+    // back to the previous one.
+    if (target > selectedLength() && std::get<1>(preeditWithCursorHighlightImpl(
+                                         mode, target)) > preeditByteCursor) {
+        --target;
+    }
+
+    auto targetCursor =
+        std::get<1>(preeditWithCursorHighlightImpl(mode, target));
+
+    // Among consecutive positions sharing the same preedit cursor, return the
+    // leftmost one.
+    // e.g. input "aa|aa" and "aaa|a" both render as predit "a| a",
+    // if user clicks "a |a", we need map it to "aa|aa" not "aaa|a"
+    while (target > selectedLength() &&
+           std::get<1>(preeditWithCursorHighlightImpl(mode, target - 1)) ==
+               targetCursor) {
+        --target;
+    }
+    return target;
+}
+
+std::optional<size_t>
+PinyinContext::cursorForPreeditPosition(size_t preeditByteCursor) const {
+    return cursorForPreeditPosition(preeditByteCursor, ime()->preeditMode());
 }
 
 std::vector<std::string> PinyinContext::selectedWords() const {

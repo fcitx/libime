@@ -8,9 +8,11 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -19,6 +21,7 @@
 #include <libime/core/languagemodel.h>
 #include <libime/core/lattice.h>
 #include <libime/pinyin/libimepinyin_export.h>
+#include <libime/pinyin/pinyinencoder.h>
 #include "libime/core/historybigram.h"
 
 namespace libime {
@@ -65,6 +68,26 @@ public:
     bool cancelTill(size_t pos);
 
     /**
+     * Set the pinyin fixes.
+     *
+     * A fix forces the pinyin in [start, end) to be read as the given
+     * syllable. The offsets are relative to the whole user input. The fixes
+     * are expected to be ordered, non-overlapping and valid, i.e. the range
+     * must correspond to a real segment of the pinyin input.
+     * A fix that covers the part that has already been selected has no
+     * effect, unless the selection is cancelled.
+     * An empty list clears all the fixes.
+     */
+    void setPinyinFixes(std::vector<PinyinSegmentFix> fixes);
+
+    /**
+     * Return the current pinyin fixes.
+     *
+     * @see setPinyinFixes
+     */
+    const std::vector<PinyinSegmentFix> &pinyinFixes() const;
+
+    /**
      * Create a custom selection
      *
      * This allows Engine to do make a custom selection that is not pinyin.
@@ -95,10 +118,60 @@ public:
     std::pair<std::string, size_t>
     preeditWithCursor(PinyinPreeditMode mode) const;
 
+    /**
+     * Mixed preedit (selected hanzi + pinyin) with the cursor position and
+     * the byte ranges of the fixed syllables.
+     *
+     * A fixed syllable is rendered as its fixed pinyin instead of the raw
+     * input. The ranges refer to the returned preedit string, are sorted in
+     * ascending order, and do not overlap.
+     *
+     * @param mode how the unselected pinyin is rendered.
+     * @return a tuple containing:
+     *         - the preedit string,
+     *         - the byte offset of the cursor in the preedit string,
+     *         - the byte ranges of the fixed syllables in the preedit string.
+     */
+    std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+    preeditWithCursorHighlight(PinyinPreeditMode mode) const;
+
     std::string preedit() const;
 
     /// Mixed preedit (selected hanzi + pinyin).
     std::pair<std::string, size_t> preeditWithCursor() const;
+
+    /**
+     * Mixed preedit (selected hanzi + pinyin) with the cursor position and
+     * the byte ranges of the fixed syllables.
+     *
+     * @see preeditWithCursorHighlight(PinyinPreeditMode) const
+     */
+    std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+    preeditWithCursorHighlight() const;
+
+    /**
+     * Return the input cursor corresponding to a cursor position in the
+     * preedit.
+     *
+     * @param preeditByteCursor byte offset of the cursor in the preedit
+     *        string. It should be on a UTF-8 character boundary.
+     * @param mode how the unselected pinyin is rendered.
+     * @return the corresponding input cursor, or std::nullopt if the
+     *         position is within the selected sentence, which has no raw
+     *         input cursor.
+     */
+    std::optional<size_t>
+    cursorForPreeditPosition(size_t preeditByteCursor,
+                             PinyinPreeditMode mode) const;
+
+    /**
+     * Return the input cursor corresponding to a cursor position in the
+     * preedit.
+     *
+     * @see cursorForPreeditPosition(size_t, PinyinPreeditMode) const
+     */
+    std::optional<size_t>
+    cursorForPreeditPosition(size_t preeditByteCursor) const;
 
     /// Selected hanzi.
     std::string selectedSentence() const;
@@ -191,6 +264,9 @@ protected:
     bool typeImpl(const char *s, size_t length) override;
 
 private:
+    std::tuple<std::string, size_t, std::vector<std::pair<size_t, size_t>>>
+    preeditWithCursorHighlightImpl(PinyinPreeditMode mode,
+                                   size_t inputCursor) const;
     void update();
     bool learnWord();
     std::unique_ptr<PinyinContextPrivate> d_ptr;

@@ -9,6 +9,7 @@
 // Workaround a boost missing include bug.
 #include <boost/type_traits/add_const.hpp>
 
+#include <any>
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -49,6 +50,9 @@ public:
     SegmentGraphNode(size_t start) : start_(start) {}
     SegmentGraphNode(const SegmentGraphNode &node) = delete;
     virtual ~SegmentGraphNode() {}
+
+    void setAnnotation(std::any data) { annotation_ = std::move(data); }
+    const std::any &annotation() const { return annotation_; }
 
     SegmentGraphNodeConstRange nexts() const {
         const auto &nexts = childs();
@@ -114,6 +118,7 @@ protected:
 
 private:
     size_t start_;
+    std::any annotation_;
 };
 
 using SegmentGraphPath = std::vector<const SegmentGraphNode *>;

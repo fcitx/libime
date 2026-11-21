@@ -30,6 +30,7 @@
 #include "pinyincorrectionprofile.h"
 #include "pinyindata.h"
 #include "pinyindata_p.h"
+#include "pinyinencoder_p.h"
 #include "shuangpinprofile.h"
 
 namespace libime {
@@ -820,6 +821,18 @@ stringToSyllablesImpl(std::string_view pinyinView, const PinyinMap &map,
 }
 
 } // namespace
+
+MatchedPinyinSyllablesWithFuzzyFlags
+expandSyllableWithExplicitFuzzy(PinyinSyllable syllable,
+                                PinyinFuzzyFlags flags) {
+    MatchedPinyinSyllablesWithFuzzyFlags result;
+    auto identity = [](const PinyinFuzzyFlags &flags) { return flags; };
+    // The syllable is already normalized, so only the fuzzy rules explicitly
+    // enabled by flags should apply. Passing isSp=true also suppresses the
+    // input level {s,z,c} -> {sh,zh,ch} special case in getFuzzy.
+    getFuzzy(result, syllable, flags, /*isSp=*/true, identity);
+    return result;
+}
 
 MatchedPinyinSyllables
 PinyinEncoder::stringToSyllables(std::string_view pinyinView,

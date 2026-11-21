@@ -6,6 +6,7 @@
 
 #include "pinyindictionary.h"
 #include <algorithm>
+#include <any>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -43,8 +44,10 @@
 #include "libime/core/zstdfilter.h"
 #include "libime/pinyin/pinyinmatchstate.h"
 #include "constants.h"
+#include "pinyincontext.h"
 #include "pinyindecoder_p.h"
 #include "pinyinencoder.h"
+#include "pinyinencoder_p.h"
 #include "pinyinmatchstate_p.h"
 
 namespace libime {
@@ -526,12 +529,20 @@ void PinyinDictionaryPrivate::findMatchesBetween(
         return;
     }
 
-    const auto syls =
-        context.spProfile_
-            ? PinyinEncoder::shuangpinToSyllablesWithFuzzyFlags(
-                  pinyin, *context.spProfile_, context.flags_)
-            : PinyinEncoder::stringToSyllablesWithFuzzyFlags(
-                  pinyin, context.correctionProfile_.get(), context.flags_);
+    MatchedPinyinSyllablesWithFuzzyFlags syls;
+    if (const auto *fixed =
+            std::any_cast<PinyinSyllable>(&prevNode.annotation())) {
+        // A fixed segment is read as the given syllable, no matter what the
+        // segment text looks like. Explicitly enabled fuzzy pinyin still
+        // applies to that normalized syllable.
+        syls = expandSyllableWithExplicitFuzzy(*fixed, context.flags_);
+    } else if (context.spProfile_) {
+        syls = PinyinEncoder::shuangpinToSyllablesWithFuzzyFlags(
+            pinyin, *context.spProfile_, context.flags_);
+    } else {
+        syls = PinyinEncoder::stringToSyllablesWithFuzzyFlags(
+            pinyin, context.correctionProfile_.get(), context.flags_);
+    }
     const MatchedPinyinPaths &prevMatchedPaths = matchedPathsMap[&prevNode];
     MatchedPinyinPaths newPaths;
     for (const auto &path : prevMatchedPaths) {
